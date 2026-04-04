@@ -1,0 +1,41 @@
+@if (open) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
+    (click)="onBackdropClick()"
+  >
+    <div
+      (click)="stopPropagation($event)"
+      [class]="
+        'w-full overflow-hidden rounded-2xl bg-white shadow-xl border border-gray-200 ' +
+        maxWidthClass
+      "
+    >
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+        <h2 class="text-base font-semibold text-gray-900">
+          {{ title }}
+        </h2>
+
+        @if (showCloseButton) {
+          <button
+            type="button"
+            (click)="close()"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            <span class="text-xl leading-none">&times;</span>
+          </button>
+        }
+      </div>
+
+      <!-- Body -->
+      <div class="px-5 py-4 text-sm text-gray-700">
+        <ng-content select="[modal-body]"></ng-content>
+      </div>
+
+      <!-- Footer -->
+      <div class="border-t border-gray-200 px-5 py-4 bg-gray-50">
+        <ng-content select="[modal-footer]"></ng-content>
+      </div>
+    </div>
+  </div>
+}

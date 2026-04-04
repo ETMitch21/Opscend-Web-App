@@ -1,0 +1,154 @@
+<div class="">
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900">
+                {{ archivedView() ? 'Archived Customers' : 'Customers' }}
+            </h1>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button
+                type="button"
+                class="cursor-pointer rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
+                (click)="refresh()">
+                Refresh
+            </button>
+
+            <button
+                type="button"
+                class="cursor-pointer rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
+                (click)="toggleDeleted()">
+                {{ archivedView() ? 'View Active' : 'View Archived' }}
+            </button>
+
+            @if (!archivedView()) {
+                <button
+                    type="button"
+                    class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white"
+                    (click)="createCustomer()">
+                    New Customer
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="flex items-center justify-between gap-4 px-6 py-4">
+        <div class="relative w-80">
+            <input
+                type="text"
+                placeholder="Search customers..."
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 pl-10 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none"
+                [ngModel]="search()"
+                (ngModelChange)="search.set($event)" />
+
+            <svg
+                class="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="px-6 pb-6">
+
+    <div class="overflow-hidden rounded-2xl border border-app-border bg-app-surface">
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+                <thead class="border-b border-app-border bg-app-surface/70">
+                    <tr>
+                        <th class="px-4 py-3 font-medium">Name</th>
+                        <th class="px-4 py-3 font-medium">Email</th>
+                        <th class="px-4 py-3 font-medium">Phone</th>
+                        <th class="px-4 py-3 font-medium">Tags</th>
+                        <th class="px-4 py-3 font-medium">Updated</th>
+                        <th class="px-4 py-3 font-medium text-right">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (loading() && customers().length === 0) {
+                        <tr>
+                            <td colspan="6" class="px-4 py-10 text-center text-app-text/70">
+                                Loading customers...
+                            </td>
+                        </tr>
+                    } @else if (filteredCustomers().length === 0) {
+                        <tr>
+                            <td colspan="6" class="px-4 py-10 text-center text-app-text/70">
+                                {{ archivedView() ? 'No archived customers found.' : 'No customers found.' }}
+                            </td>
+                        </tr>
+                    } @else {
+                        @for (customer of filteredCustomers(); track trackById($index, customer)) {
+                            <tr class="border-b border-app-border last:border-b-0">
+                                <td class="px-4 py-4">
+                                    <div class="font-medium text-app-text">{{ customer.name }}</div>
+                                    <div class="text-xs text-app-text/60">{{ customer.id }}</div>
+                                </td>
+
+                                <td class="px-4 py-4">
+                                    {{ customer.email || '—' }}
+                                </td>
+
+                                <td class="px-4 py-4">
+                                    {{ (customer.phone || '—') | phone }}
+                                </td>
+
+                                <td class="px-4 py-4">
+                                    {{ formatTags(customer.tags) || '—' }}
+                                </td>
+
+                                <td class="px-4 py-4">
+                                    {{ customer.updatedAt | date:'short' }}
+                                </td>
+
+                                <td class="px-4 py-4">
+                                    <div class="flex justify-end gap-2">
+                                        @if (!archivedView()) {
+                                            <button
+                                                type="button"
+                                                class="cursor-pointer rounded-lg border border-app-border px-3 py-2 text-xs font-medium"
+                                                (click)="editCustomer(customer)">
+                                                Edit
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                class="cursor-pointer rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700"
+                                                (click)="archiveCustomer(customer)">
+                                                Archive
+                                            </button>
+                                        } @else {
+                                            <button
+                                                type="button"
+                                                class="cursor-pointer rounded-lg border border-app-border px-3 py-2 text-xs font-medium"
+                                                (click)="restoreCustomer(customer)">
+                                                Restore
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (hasMore() && !loading()) {
+        <div class="mt-4 flex justify-center">
+            <button
+                type="button"
+                class="rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
+                (click)="loadMore()">
+                Load More
+            </button>
+        </div>
+    }
+</div>

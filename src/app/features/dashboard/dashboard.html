@@ -1,0 +1,23 @@
+<div class="mx-auto max-w-full px-6">
+    <div class="mb-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-slate-900">
+                    Today Overview
+                </h1>
+                <p class="mt-1 text-sm text-slate-500">
+                    A quick look at appointments and technician workload.
+                </p>
+            </div>
+
+            <div class="text-sm font-medium text-slate-400">
+                {{ todayHeaderLabel }}
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-3 gap-6">
+        <div class="col-span-2">
+            <app-tech-day-view></app-tech-day-view>
+        </div>
+    </div>
+</div>

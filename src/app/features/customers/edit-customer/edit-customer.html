@@ -1,0 +1,132 @@
+@if (customer) {
+<div class="mt-4 mx-auto max-w-1/2">
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div class="flex justify-between items-center gap-2">
+            <button type="button" class="cursor-pointer text-sm font-medium hover:text-brand" (click)="cancel()">
+                <lucide-icon [name]="leftChevronIcon"></lucide-icon>
+            </button>
+            <h1 class="text-2xl font-semibold text-gray-900">
+                {{ customer.name }}
+            </h1>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
+                (click)="cancel()">
+                Cancel
+            </button>
+            <button type="button"
+                class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-80 disabled:cursor-not-allowed"
+                [disabled]="!editCustomerForm.valid" (click)="save()">
+                {{ working ? 'Updating...' : 'Update Customer' }}
+            </button>
+        </div>
+    </div>
+
+    <form [formGroup]="editCustomerForm">
+        <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <div class="relative w-full">
+                <input type="text" id="name" placeholder=" " formControlName="name"
+                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                <label for="name"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Full Name<sup class="text-danger text-xs">*</sup>
+                </label>
+            </div>
+        </div>
+        <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <div class="relative w-full">
+                <input type="email" id="email" placeholder=" " formControlName="email"
+                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                <label for="email"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Email address<sup class="text-danger text-xs">*</sup>
+                </label>
+            </div>
+            <div class="relative w-full">
+                <input type="tel" id="phone" placeholder=" " formControlName="phone"
+                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                <label for="phone"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Phone Number<sup class="text-danger text-xs">*</sup>
+                </label>
+            </div>
+        </div>
+        <div class="border-t border-gray-200 my-2 mx-8"></div>
+        <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <div class="relative w-full">
+                <textarea id="notes" rows="4" placeholder=" " formControlName="notes"
+                    class="peer w-full px-4 pt-6 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"></textarea>
+                <label for="notes"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Notes
+                </label>
+                <div class="flex justify-between mt-1 me-2 text-xs text-gray-400">
+                    <span></span>
+                    <span>{{ editCustomerForm.controls['notes'].value.length }} / 500</span>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="border-t border-gray-200 my-4 mx-8"></div>
+
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div class="flex justify-between items-center gap-2">
+            <h1 class="text-2xl font-semibold text-gray-900">
+                {{ customer.name.split(' ')[0] }}'s Devices
+            </h1>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button type="button"
+                class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-80 disabled:cursor-not-allowed"
+                (click)="openDeviceModal()">
+                Add Device
+            </button>
+        </div>
+    </div>
+
+    <div class="space-y-3 px-6">
+        @if (customerDevices.length) {
+        @for (device of customerDevices; track $index) {
+        <div class="rounded-3xl border border-slate-200 bg-white p-5">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900">{{ device.nickname }}</h3>
+                    @if (device.brand || device.model) { <p class="text-sm text-slate-500">{{ device.brand }} {{
+                        device.model }}</p> }
+                </div>
+
+                <button (click)="editDevice(device)" class="cursor-pointer text-sm font-medium text-brand hover:opacity-80">
+                    Edit
+                </button>
+            </div>
+
+            @if (device.brand || device.model || device.imei) {
+            <div class="mt-3 flex flex-wrap gap-2">
+                @if (device.brand) { <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">{{
+                    device.brand }}</span> }
+                @if (device.model) { <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">{{
+                    device.model}}</span> }
+                @if (device.imei) { <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">IMEI ••••
+                    {{ device.imei.slice(-5) }}</span> }
+            </div>
+            }
+
+            @if (device.notes) { <p class="mt-3 text-sm text-slate-500">{{ device.notes }}</p> }
+        </div>
+        }
+        } @else {
+        <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+            <h3 class="text-lg font-semibold text-slate-900">No devices yet</h3>
+            <p class="mt-1 text-sm text-slate-500">
+                Add this customer's first device to start tracking repairs and notes.
+            </p>
+        </div>
+        }
+    </div>
+
+</div>
+}

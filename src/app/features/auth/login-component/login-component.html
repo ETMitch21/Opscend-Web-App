@@ -1,0 +1,33 @@
+<div class="min-h-screen bg-app-bg flex items-center justify-center p-6">
+  <div class="w-full max-w-md rounded-app-lg border border-app-border bg-app-surface shadow-app-md p-8">
+    <h1 class="text-2xl font-semibold text-app-text">Welcome back</h1>
+    <p class="mt-2 text-sm text-app-text-muted">
+      Sign in to continue to Opscend.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="mt-6 space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-app-text">Email</label>
+          <input class="w-full rounded-app-md border border-app-border bg-white px-4 py-3 text-app-text outline-none"
+            type="email" autocomplete="email" formControlName="email" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium text-app-text">Password</label>
+          <input class="w-full rounded-app-md border border-app-border bg-white px-4 py-3 text-app-text outline-none"
+            type="password" autocomplete="current-password" formControlName="password" />
+        </div>
+
+        <button class="mt-2 w-full cursor-pointer rounded-app-md bg-brand px-4 py-3 text-sm font-medium text-white disabled:bg-brand-soft hover:bg-brand-soft"
+          [disabled]="loading || form.invalid">
+          {{ loading ? "Signing in..." : "Sign in" }}
+        </button>
+
+        <p class="font-muted text-sm">
+          Forgot Password? <a [routerLink]="['/forgot']">Reset Now</a>
+        </p>
+      </div>
+    </form>
+  </div>
+</div>

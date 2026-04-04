@@ -1,0 +1,377 @@
+<div class="mx-auto max-w-full px-6 py-6">
+    <div class="mb-6">
+        <h1 class="text-2xl font-semibold text-gray-900">Shop Settings</h1>
+        <p class="mt-1 text-sm text-gray-500">
+            Manage your shop details, booking defaults, and core POS settings.
+        </p>
+    </div>
+
+    @if (loading()) {
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <p class="text-sm text-gray-500">Loading shop settings...</p>
+    </div>
+    } @else {
+    <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <section class="space-y-6">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-gray-900">Business Info</h2>
+                        <p class="mt-1 text-sm text-gray-500">
+                            The basics people and systems use to identify your shop.
+                        </p>
+                    </div>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+                        [disabled]="saving()"
+                        (click)="save()">
+                        {{ saving() ? 'Saving...' : 'Save Settings' }}
+                    </button>
+                </div>
+
+                @if (error()) {
+                <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {{ error() }}
+                </div>
+                }
+
+                @if (success()) {
+                <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    {{ success() }}
+                </div>
+                }
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Shop Name
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="name"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="Summit Phone Repair" />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Legal Name
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="legalName"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="Optional" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Timezone
+                        </label>
+                        <select
+                            [(ngModel)]="timezone"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+                            @for (tz of timezones; track tz.value) {
+                            <option [value]="tz.value">
+                                {{ tz.label }}
+                            </option>
+                            }
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Used for scheduling, availability, and appointments.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Slug
+                        </label>
+                        <input type="text"
+                            [ngModel]="slug"
+                            disabled
+                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Phone
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="phone"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="Optional" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Email
+                        </label>
+                        <input type="email"
+                            [(ngModel)]="email"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="Optional" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-semibold text-gray-900">Address</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Your public or operational address details.
+                    </p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Address Line 1
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="addressLine1"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Address Line 2
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="addressLine2"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            City
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="addressCity"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            State
+                        </label>
+                        <select
+    [(ngModel)]="addressState"
+    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+
+    @for (state of states; track state.value) {
+    <option [value]="state.value">
+        {{ state.label }}
+    </option>
+    }
+</select>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Postal Code
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="addressPostalCode"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Country
+                        </label>
+                        <select
+    [(ngModel)]="addressCountry"
+    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+
+    @for (country of countries; track country.value) {
+    <option [value]="country.value">
+        {{ country.label }}
+    </option>
+    }
+</select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-semibold text-gray-900">Branding</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Light V1 branding controls for now.
+                    </p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-[120px_1fr]">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Brand Color
+                        </label>
+                        <div class="flex h-[50px] items-center gap-3 rounded-xl border border-gray-200 bg-white px-3">
+                            <input type="color"
+                                [ngModel]="primaryColor || '#000000'"
+                                (ngModelChange)="primaryColor = $event"
+                                class="h-8 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
+                            <input type="text"
+                                [(ngModel)]="primaryColor"
+                                class="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                                placeholder="#000000" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Logo URL
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="logoUrl"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="https://..." />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-6">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4 flex justify-between items-center">
+                    <div class="">
+                        <h2 class="text-base font-semibold text-gray-900">Booking</h2>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Control whether booking is enabled for this shop.
+                        </p>
+                    </div>
+                    <div class="">
+                        <a
+                            routerLink="/settings/shop/availability"
+                            class="cursor-pointer group flex items-center gap-1 text-xs font-medium text-brand transition hover:text-brand-soft">
+
+                            <span>{{ bookingEnabled ? 'Edit hours' : 'Set hours' }}</span>
+
+                            <lucide-icon
+                                [name]="arrowRight"
+                                class="h-3.5 w-3.5 transition group-hover:translate-x-0.5">
+                            </lucide-icon>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!bookingEnabled">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-gray-900">Booking Enabled</p>
+                            <p class="mt-1 text-xs text-gray-500">
+                                {{ bookingEnabled ? 'Customers can book and schedule' : 'Booking is turned off' }}
+                            </p>
+                        </div>
+
+                        <button type="button"
+                            class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
+                            [class.bg-brand]="bookingEnabled"
+                            [class.bg-gray-300]="!bookingEnabled"
+                            [disabled]="saving()"
+                            (click)="bookingEnabled = !bookingEnabled">
+                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
+                                [class.translate-x-6]="bookingEnabled"
+                                [class.translate-x-1]="!bookingEnabled">
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-semibold text-gray-900">Order Settings</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Simple V1 controls for order numbering defaults.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Prefix
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="orderPrefix"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="SPR" />
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Start Number
+                            </label>
+                            <input type="number"
+                                [(ngModel)]="orderStartNumber"
+                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Padding
+                            </label>
+                            <input type="number"
+                                [(ngModel)]="orderPadding"
+                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Default Fulfillment Status
+                        </label>
+                        <select
+                            [(ngModel)]="defaultFulfillmentStatus"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+                            <option value="unfulfilled">Unfulfilled</option>
+                            <option value="fulfilled">Fulfilled</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-semibold text-gray-900">Locale</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        These settings shape formatting and regional defaults.
+                    </p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-1">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Language
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="localeLanguage"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="en" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Currency
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="localeCurrency"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="USD" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Country
+                        </label>
+                        <input type="text"
+                            [(ngModel)]="localeCountry"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                            placeholder="US" />
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    }
+</div>

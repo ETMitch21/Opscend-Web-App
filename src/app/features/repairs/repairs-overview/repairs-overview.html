@@ -1,0 +1,298 @@
+<div class="">
+    <!-- Top Header -->
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <h1 class="text-2xl font-semibold text-gray-900">Repairs</h1>
+
+        <button
+            class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-soft transition"
+            [routerLink]="['/repairs', 'create']">
+            Create Repair
+        </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-6">
+        <nav class="flex space-x-6 text-sm font-medium text-gray-600">
+
+            <!-- All -->
+            <button (click)="setView('all')" class="pb-3 cursor-pointer border-b-2 transition"
+                [class.border-brand]="activeView() === 'all'" [class.text-brand]="activeView() === 'all'"
+                [class.border-transparent]="activeView() !== 'all'"
+                [class.hover:text-gray-900]="activeView() !== 'all'">
+
+                All Jobs
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().all }}
+                </span>
+            </button>
+
+            <!-- Open -->
+            <button (click)="setView('open')" class="pb-3 cursor-pointer border-b-2 transition"
+                [class.border-brand]="activeView() === 'open'" [class.text-brand]="activeView() === 'open'"
+                [class.border-transparent]="activeView() !== 'open'">
+
+                Open
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().open }}
+                </span>
+            </button>
+
+            <!-- Upcoming -->
+            <button (click)="setView('upcoming')" class="pb-3 cursor-pointer border-b-2 transition"
+                [class.border-brand]="activeView() === 'upcoming'" [class.text-brand]="activeView() === 'upcoming'"
+                [class.border-transparent]="activeView() !== 'upcoming'">
+
+                Upcoming
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().upcoming }}
+                </span>
+            </button>
+
+            <!-- Past -->
+            <button (click)="setView('past')" class="pb-3 cursor-pointer border-b-2 transition"
+                [class.border-brand]="activeView() === 'past'" [class.text-brand]="activeView() === 'past'"
+                [class.border-transparent]="activeView() !== 'past'">
+
+                Past
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().past }}
+                </span>
+            </button>
+
+            <!-- Picked Up -->
+            <button (click)="setView('complete')" class="pb-3 cursor-pointer border-b-2 transition"
+                [class.border-brand]="activeView() === 'complete'" [class.text-brand]="activeView() === 'complete'"
+                [class.border-transparent]="activeView() !== 'complete'">
+
+                Picked Up
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().complete }}
+                </span>
+            </button>
+
+            <!-- canceled -->
+            <button (click)="setView('canceled')" class="pb-3 cursor-pointer border-b-2 transition"
+                [class.border-brand]="activeView() === 'canceled'" [class.text-brand]="activeView() === 'canceled'"
+                [class.border-transparent]="activeView() !== 'canceled'">
+
+                Canceled
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().canceled }}
+                </span>
+            </button>
+
+        </nav>
+    </div>
+
+    <!-- Search + Filters -->
+    <div class="flex items-center justify-between gap-4 px-6 py-4">
+
+        <!-- Search -->
+        <div class="relative w-80">
+            <input type="text" placeholder="Search jobs..."
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 pl-10 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none"
+                [value]="searchTerm()" (input)="setSearchTerm($any($event.target).value)" />
+
+            <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
+                stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+            </svg>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex items-center gap-2">
+
+            <!-- Status dropdown -->
+            <div class="relative">
+                <select
+                    class="appearance-none rounded-full bg-gray-100 px-3 py-1.5 pr-8 text-sm text-gray-700 hover:bg-gray-200"
+                    (change)="setStatus($any($event.target).value || null)">
+                    <option value="">Any status</option>
+
+                    @for (status of statuses; track status) {
+                    <option [value]="status">
+                        {{ status.replaceAll('_', ' ') | titlecase }}
+                    </option>
+                    }
+                </select>
+
+                <lucide-icon [size]="14" [name]="chevronDownIcon"
+                    class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                </lucide-icon>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<div class="px-6 pb-6">
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <!-- Loading state -->
+        @if (loading()) {
+        <div class="flex items-center justify-center px-6 py-16">
+            <div class="text-sm text-gray-500">Loading repairs...</div>
+        </div>
+        }
+
+        <!-- Error state -->
+        @else if (error()) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <p class="text-sm font-medium text-red-600">{{ error() }}</p>
+            <button (click)="refresh()"
+                class="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+                Try Again
+            </button>
+        </div>
+        }
+
+        <!-- Empty state -->
+        @else if (filteredRepairs().length === 0) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <h3 class="text-base font-semibold text-gray-900">No repairs found</h3>
+            <p class="mt-1 text-sm text-gray-500">
+                Try adjusting your filters or create a new repair job.
+            </p>
+        </div>
+        }
+
+        <!-- Table -->
+        @else {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50/80">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Repair
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Status
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Appointment
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Customer
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Technician
+                        </th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            &nbsp;
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    @for (repair of filteredRepairs(); track trackByRepairId($index, repair)) {
+                    <tr class="transition hover:bg-gray-50/70">
+                        <!-- Repair -->
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2">
+                                    <p class="text-sm font-semibold text-gray-900">
+                                        {{ repair.problemSummary }}
+                                    </p>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    {{ repair.id }}
+                                </p>
+                            </div>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-6 py-4 align-top">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                [class.bg-amber-50]="repair.status === 'intake' || repair.status === 'awaiting_parts'"
+                                [class.text-amber-700]="repair.status === 'intake' || repair.status === 'awaiting_parts'"
+                                [class.bg-blue-50]="repair.status === 'diagnosing'"
+                                [class.text-blue-700]="repair.status === 'diagnosing'"
+                                [class.text-blue-700]="repair.status === 'scheduled'"
+                                [class.bg-blue-50]="repair.status === 'scheduled'"
+                                [class.bg-purple-50]="repair.status === 'ready'"
+                                [class.text-purple-700]="repair.status === 'ready'"
+                                [class.bg-emerald-50]="repair.status === 'picked_up'"
+                                [class.text-emerald-700]="repair.status === 'picked_up'"
+                                [class.bg-rose-50]="repair.status === 'canceled'"
+                                [class.text-rose-700]="repair.status === 'canceled'">
+                                {{ repair.status.replaceAll('_', ' ') | titlecase}}
+                            </span>
+                        </td>
+
+                        <!-- Appointment -->
+                        <td class="px-6 py-4 align-top">
+                            @if (hasAppointment(repair) && getAppointmentDate(repair); as apptDate) {
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium text-gray-900">
+                                    {{ apptDate | date:'MMM d, y' }}
+                                </span>
+                                <span class="text-xs text-gray-500">
+                                    {{ apptDate | date:'h:mm a' }}
+                                </span>
+
+                                @if (repair.appointment?.notes) {
+                                <span class="mt-1 line-clamp-2 text-xs text-gray-500">
+                                    {{ repair.appointment?.notes }}
+                                </span>
+                                }
+                            </div>
+                            } @else {
+                            <span class="text-sm text-gray-400">—</span>
+                            }
+                        </td>
+
+                        <!-- Customer -->
+                        <td class="px-6 py-4 align-top">
+                            @if (repair.customerId && repair.customer) {
+                                <span class="flex flex-col gap-1">
+                                    <span class="text-sm text-gray-900">{{ repair.customer.name }}</span>
+                                    <span class="text-xs text-gray-700">{{ repair.customer.phone | phone }}</span>
+                                </span>
+                            } @else {
+                            <span class="text-sm text-gray-400">Unassigned</span>
+                            }
+                        </td>
+
+                        <!-- Assigned -->
+                        <td class="px-6 py-4 align-top">
+                            @if (repair.assignedTo) {
+                            <span class="text-sm text-gray-900">{{ repair.assignedTo }}</span>
+                            } @else {
+                            <span class="text-sm text-gray-400">Unassigned</span>
+                            }
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-6 py-4 align-top text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button
+                                    class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    [routerLink]="['/repairs', 'detail', repair.id]">
+                                    View
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer / pagination -->
+        <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+            <p class="text-sm text-gray-500">
+                Showing {{ filteredRepairs().length }} repair<span
+                    [class.hidden]="filteredRepairs().length === 1">s</span>
+            </p>
+
+            @if (nextCursor()) {
+            <button (click)="loadMore()" [disabled]="loadingMore()"
+                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50">
+                {{ loadingMore() ? 'Loading...' : 'Load more' }}
+            </button>
+            }
+        </div>
+        }
+    </div>
+</div>

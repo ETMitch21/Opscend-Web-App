@@ -1,0 +1,68 @@
+<div class="mt-4 mx-auto max-w-1/2">
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900">
+                Create Customer
+            </h1>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
+                (click)="cancel()">
+                Cancel
+            </button>
+            <button type="button"
+                class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-80 disabled:cursor-not-allowed"
+                [disabled]="!newCustomerForm.valid" (click)="create()">
+                {{ working ? 'Creating...' : 'Create Customer' }}
+            </button>
+        </div>
+    </div>
+
+    <form [formGroup]="newCustomerForm">
+        <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <div class="relative w-full">
+                <input type="text" id="name" placeholder=" " formControlName="name"
+                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                <label for="name"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Full Name<sup class="text-danger text-xs">*</sup>
+                </label>
+            </div>
+        </div>
+        <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <div class="relative w-full">
+                <input type="email" id="email" placeholder=" " formControlName="email"
+                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                <label for="email"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Email address<sup class="text-danger text-xs">*</sup>
+                </label>
+            </div>
+            <div class="relative w-full">
+                <input type="tel" id="phone" placeholder=" " formControlName="phone"
+                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                <label for="phone"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Phone Number<sup class="text-danger text-xs">*</sup>
+                </label>
+            </div>
+        </div>
+        <div class="border-t border-gray-200 my-2 mx-8"></div>
+        <div class="flex items-center justify-between gap-4 px-6 py-4">
+            <div class="relative w-full">
+                <textarea id="notes" rows="4" placeholder=" " formControlName="notes"
+                    class="peer w-full px-4 pt-6 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"></textarea>
+                <label for="notes"
+                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                    Notes
+                </label>
+                <div class="flex justify-between mt-1 me-2 text-xs text-gray-400">
+                    <span></span>
+                    <span>{{ newCustomerForm.controls['notes'].value.length }} / 500</span>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

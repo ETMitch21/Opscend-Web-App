@@ -1,11 +1,13 @@
 {
-  "name": "web-ng",
+  "name": "opscend_web_app",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve web-ng",
+    "start:https": "ng serve web-ng --ssl true --ssl-cert ./certs/summit-phone-repair.lvh.me+3.pem --ssl-key ./certs/summit-phone-repair.lvh.me+3-key.pem --host summit-phone-repair.lvh.me",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
+    "dev": "concurrently \"npm --prefix api run dev\" \"npm --prefix web-ng run start:https\"",
     "test": "ng test"
   },
   "prettier": {
@@ -22,12 +24,17 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/cdk": "^20.2.14",
     "@angular/common": "^20.3.0",
     "@angular/compiler": "^20.3.0",
     "@angular/core": "^20.3.0",
     "@angular/forms": "^20.3.0",
+    "@angular/material": "^20.2.14",
     "@angular/platform-browser": "^20.3.0",
     "@angular/router": "^20.3.0",
+    "@fontsource/inter": "^5.2.8",
+    "lucide-angular": "^0.577.0",
+    "ngx-sonner": "^3.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -36,6 +43,7 @@
     "@angular/build": "^20.3.5",
     "@angular/cli": "^20.3.5",
     "@angular/compiler-cli": "^20.3.0",
+    "@tailwindcss/postcss": "^4.2.1",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
@@ -43,6 +51,8 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
     "typescript": "~5.9.2"
   }
 }

@@ -1,0 +1,79 @@
+<div class="mx-auto w-full max-w-3xl">
+    <div class="mb-6">
+        <h1 class="text-2xl font-semibold tracking-tight text-app-text">My profile</h1>
+        <p class="mt-1 text-sm text-app-text-muted">
+            Update your personal details and contact info.
+        </p>
+    </div>
+
+    <div class="rounded-3xl border border-app-border bg-app-surface p-6 shadow-sm">
+        @if (loading()) {
+        <div class="py-10 text-sm text-app-text-muted">
+            Loading profile...
+        </div>
+        } @else {
+        <form [formGroup]="form" class="space-y-6" (ngSubmit)="save()">
+            <div class="grid gap-6 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label class="mb-2 block text-sm font-medium text-app-text">Name</label>
+                    <input type="text" formControlName="name"
+                        class="w-full rounded-2xl border border-app-border bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                        placeholder="Your name" />
+
+                    @if (form.controls.name.touched && form.controls.name.invalid) {
+                    <p class="mt-2 text-xs text-red-600">
+                        Please enter your name.
+                    </p>
+                    }
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-app-text">Email</label>
+                    <input type="text" [value]="profile()?.email ?? ''" readonly
+                        class="w-full rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm text-app-text-muted outline-none" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-app-text">Role</label>
+                    <input type="text" [value]="profile()?.role ?? ''" readonly
+                        class="w-full rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm capitalize text-app-text-muted outline-none" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-app-text">Phone</label>
+                    <input type="text" formControlName="phone"
+                        class="w-full rounded-2xl border border-app-border bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                        placeholder="Phone number" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-app-text">Status</label>
+                    <input type="text" [value]="profile()?.status ?? ''" readonly
+                        class="w-full rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm capitalize text-app-text-muted outline-none" />
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="mb-2 block text-sm font-medium text-app-text">Notes</label>
+                    <textarea formControlName="notes" rows="4"
+                        class="w-full resize-none rounded-2xl border border-app-border bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                        placeholder="Add a few notes about yourself if needed"></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3">
+                <button type="button"
+                    class="cursor-pointer rounded-2xl border border-app-border px-4 py-2.5 text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
+                    (click)="loadProfile()" [disabled]="saving()">
+                    Reset
+                </button>
+
+                <button type="submit"
+                    class="cursor-pointer rounded-2xl bg-brand px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    [disabled]="saving()">
+                    {{ saving() ? 'Saving...' : 'Save changes' }}
+                </button>
+            </div>
+        </form>
+        }
+    </div>
+</div>

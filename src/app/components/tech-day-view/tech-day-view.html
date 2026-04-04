@@ -1,0 +1,165 @@
+<div class="h-full rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 px-5 py-4">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-base font-semibold text-slate-900">
+                        {{ showAllAppointments() ? 'Team Day View' : 'My Appointments' }}
+                    </h2>
+
+                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium"
+                        [class.bg-slate-100]="showAllAppointments()" [class.text-slate-700]="showAllAppointments()"
+                        [class.bg-brand/10]="!showAllAppointments()" [class.text-brand]="!showAllAppointments()">
+                        {{ showAllAppointments() ? 'All' : 'Mine' }}
+                    </span>
+                </div>
+
+                <p class="mt-1 text-sm text-slate-500">
+                    {{ formatSelectedDateHeading() }}
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                <div class="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+                    <button type="button" class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition"
+                        [class.bg-white]="!showAllAppointments()" [class.text-slate-900]="!showAllAppointments()"
+                        [class.shadow-sm]="!showAllAppointments()" [class.text-slate-500]="showAllAppointments()"
+                        (click)="showAllAppointments() && toggleAppointmentScope()">
+                        Mine
+                    </button>
+
+                    <button type="button" class="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition"
+                        [class.bg-white]="showAllAppointments()" [class.text-slate-900]="showAllAppointments()"
+                        [class.shadow-sm]="showAllAppointments()" [class.text-slate-500]="!showAllAppointments()"
+                        (click)="!showAllAppointments() && toggleAppointmentScope()">
+                        All
+                    </button>
+                </div>
+
+                <button type="button"
+                    class="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    (click)="previousDay()">
+                    Prev
+                </button>
+
+                <input type="date" [ngModel]="selectedDate()" (ngModelChange)="onDateChange($event)"
+                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-brand" />
+
+                <button type="button"
+                    class="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    (click)="nextDay()">
+                    Next
+                </button>
+
+                <button type="button"
+                    class="cursor-pointer rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-soft"
+                    (click)="goToToday()">
+                    Today
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-5 py-4">
+        @if (loading()) {
+        <div class="py-12 text-center text-sm text-slate-500">
+            Loading technician schedule...
+        </div>
+        } @else if (error(); as errorMessage) {
+        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ errorMessage }}
+        </div>
+        } @else {
+        <div class="space-y-4">
+            @if (unassignedAppointments().length) {
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <div class="mb-2 text-sm font-semibold text-amber-900">Unassigned Appointments</div>
+
+                <div class="space-y-2">
+                    @for (item of unassignedAppointments(); track trackAppointment($index, item)) {
+                    <div class="rounded-xl border border-amber-200 bg-white px-3 py-3">
+                        <div class="text-sm font-medium text-slate-900">
+                            {{ formatTimeRange(item.appointment.startAt, item.appointment.endAt) }}
+                        </div>
+                        <div class="mt-1 text-sm text-slate-600">
+                            {{ item.repair.customerName || 'Unknown customer' }}
+                            ·
+                            {{ item.repair.deviceDisplayName || 'Unknown device' }}
+                        </div>
+                        <div class="mt-1 text-xs text-slate-500">
+                            {{ item.repair.problemSummary }}
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+
+            @if (!rows().length) {
+            <div class="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+                {{ emptyStateMessage() }}
+            </div>
+            } @else {
+            @for (row of rows(); track trackUser($index, row)) {
+            <div class="rounded-2xl border border-slate-200">
+                <div
+                    class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                        <div class="text-sm font-semibold text-slate-900">
+                            {{ row.user.name }}
+                        </div>
+                        <div class="mt-1 text-sm text-slate-500">
+                            {{ appointmentCountLabel(row.appointments.length) }}
+                        </div>
+                    </div>
+
+                    <div class="inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium"
+                        [class.bg-emerald-50]="row.appointments.length === 0"
+                        [class.text-emerald-700]="row.appointments.length === 0"
+                        [class.bg-slate-100]="row.appointments.length > 0"
+                        [class.text-slate-700]="row.appointments.length > 0">
+                        {{ row.appointments.length === 0 ? 'Open' : 'Booked' }}
+                    </div>
+                </div>
+
+                <div class="px-4 py-4">
+                    @if (!row.appointments.length) {
+                    <div
+                        class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+                        No appointments scheduled.
+                    </div>
+                    } @else {
+                    <div class="grid gap-3">
+                        @for (item of row.appointments; track trackAppointment($index, item)) {
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-slate-900">
+                                        {{ formatTimeRange(item.appointment.startAt, item.appointment.endAt) }}
+                                    </div>
+
+                                    <div class="mt-1 text-sm text-slate-700">
+                                        {{ item.repair.customerName || 'Unknown customer' }}
+                                        @if (item.repair.deviceDisplayName) {
+                                        <span class="text-slate-400">·</span>
+                                        {{ item.repair.deviceDisplayName }}
+                                        }
+                                    </div>
+
+                                    <div class="mt-1 text-xs text-slate-500">
+                                        {{ item.repair.problemSummary }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+            }
+        </div>
+        }
+    </div>
+</div>

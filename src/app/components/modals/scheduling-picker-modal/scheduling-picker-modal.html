@@ -1,0 +1,289 @@
+@if (displayMode() === 'modal' ? isOpen() : true) {
+@if (displayMode() === 'modal') {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+  <div class="w-full max-w-5xl rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+    <div class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
+      <div>
+        @if (showHeader()) {
+        <h2 class="text-lg font-semibold text-slate-900">
+          {{ title() }}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ subtitle() }}
+        </p>
+        }
+      </div>
+
+      <button type="button"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+        (click)="close()">
+        <span class="text-xl leading-none">&times;</span>
+      </button>
+    </div>
+
+    <div class="px-6 py-5">
+      <ng-container *ngTemplateOutlet="schedulerContent"></ng-container>
+    </div>
+  </div>
+</div>
+} @else {
+@if (inlineCollapsed() && confirmedSelection()) {
+<div class="rounded-2xl border border-gray-300 bg-white shadow-sm">
+  <div class="px-4 py-3">
+    <div class="mb-1 text-xs text-gray-500">
+      Appointment Time
+    </div>
+
+    <div class="flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <p class="truncate text-sm font-medium text-gray-900">
+          {{ formatDateLabel(confirmedSelection()!.startAt) }}
+        </p>
+        <p class="truncate text-xs text-gray-500">
+          {{ formatTimeLabel(confirmedSelection()!.startAt) }} - {{ formatTimeLabel(confirmedSelection()!.endAt) }}
+        </p>
+      </div>
+
+      <button type="button"
+        class="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+        (click)="expandInlineEditor()">
+        Change
+      </button>
+    </div>
+  </div>
+</div>
+} @else {
+<div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+  @if (showHeader()) {
+  <div class="border-b border-slate-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">
+          {{ title() }}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          {{ subtitle() }}
+        </p>
+      </div>
+
+      <div>
+        <button type="button"
+          class="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+          [disabled]="!canConfirm()" (click)="confirm()">
+          Confirm Time
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <div class="px-6 py-5">
+    <ng-container *ngTemplateOutlet="schedulerContent"></ng-container>
+  </div>
+</div>
+}
+}
+
+<ng-template #schedulerContent>
+  @if (loading()) {
+  <div class="flex items-center justify-center py-16">
+    <div class="text-sm text-slate-500">Loading available times...</div>
+  </div>
+  } @else if (error()) {
+  <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    {{ error() }}
+  </div>
+  } @else if (!displaySlots().length) {
+  <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-10 text-center">
+    <p class="text-sm font-medium text-slate-700">No available slots found</p>
+    <p class="mt-1 text-sm text-slate-500">
+      Try a different date range or availability setup.
+    </p>
+  </div>
+  } @else {
+  <div class="space-y-4">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900">Available Dates</h3>
+            <p class="mt-1 text-xs text-slate-500">Choose a day to view times.</p>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button type="button"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+              (click)="previousMonth()">
+              <span aria-hidden="true">‹</span>
+            </button>
+
+            <button type="button"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+              (click)="nextMonth()">
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 text-center text-sm font-semibold text-slate-900">
+          {{ visibleMonthLabel() }}
+        </div>
+
+        <div class="mt-4 grid grid-cols-7 gap-2 text-center text-xs font-medium text-slate-400">
+          <div>Sun</div>
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+        </div>
+
+        <div class="mt-2 grid grid-cols-7 gap-2">
+          @for (day of calendarDays(); track day.dateKey) {
+          <button type="button" class="flex h-11 items-center justify-center rounded-xl text-sm transition"
+            [disabled]="!day.isAvailable" [class.cursor-not-allowed]="!day.isAvailable"
+            [class.opacity-40]="!day.isAvailable" [class.text-slate-300]="!day.inCurrentMonth && !day.isAvailable"
+            [class.text-slate-400]="!day.inCurrentMonth && day.isAvailable"
+            [class.text-slate-900]="day.inCurrentMonth && day.isAvailable && !day.isSelected"
+            [class.bg-white]="day.isAvailable && !day.isSelected" [class.border]="day.isAvailable"
+            [class.border-slate-200]="day.isAvailable && !day.isSelected"
+            [class.hover:border-slate-300]="day.isAvailable && !day.isSelected"
+            [class.hover:bg-slate-100]="day.isAvailable && !day.isSelected" [class.bg-brand]="day.isSelected"
+            [class.text-white]="day.isSelected" [class.font-semibold]="day.isSelected || day.isToday"
+            [class.ring-2]="day.isToday && !day.isSelected" [class.ring-slate-300]="day.isToday && !day.isSelected"
+            (click)="selectDate(day.dateKey)">
+            {{ day.dayNumber }}
+          </button>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 lg:h-[450px]">
+        <h3 class="text-sm font-semibold text-slate-900">
+          @if (selectedDate()) {
+          {{ formatCalendarDateLabel(selectedDate()!) }}
+          } @else {
+          Select a date
+          }
+        </h3>
+
+        <p class="mt-1 text-xs text-slate-500">Pick an available time slot.</p>
+
+        <div class="mt-4 min-h-0 flex-1 overflow-y-auto">
+          @if (!selectedDate()) {
+          <div class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
+            Select a date on the left to view available times.
+          </div>
+          } @else if (!selectedDateSlots().length) {
+          <div class="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
+            No available times for this date.
+          </div>
+          } @else {
+          <div class="flex flex-col gap-3">
+            @for (slot of selectedDateSlots(); track trackBySlot($index, slot)) {
+            <button type="button" [disabled]="isPastSlot(slot.startAt)"
+              class="w-full rounded-lg border px-4 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-40"
+              [class.border-brand]="isSelected(slot.startAt)" [class.bg-brand/5]="isSelected(slot.startAt)"
+              [class.text-brand]="isSelected(slot.startAt)" [class.shadow-sm]="isSelected(slot.startAt)"
+              [class.border-slate-200]="!isSelected(slot.startAt)" [class.bg-white]="!isSelected(slot.startAt)"
+              [class.text-slate-900]="!isSelected(slot.startAt)"
+              [class.hover:border-slate-300]="!isSelected(slot.startAt)"
+              [class.hover:bg-slate-50]="!isSelected(slot.startAt)" [class.text-slate-400]="isPastSlot(slot.startAt)"
+              (click)="selectSlot(slot.startAt)">
+              <div class="text-sm font-semibold">
+                {{ formatTimeLabel(slot.startAt) }}
+              </div>
+              <div class="mt-1 text-sm text-slate-500">
+                Ends {{ formatTimeLabel(slot.endAt) }}
+              </div>
+            </button>
+            }
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (selectedSlot()) {
+    <div class="rounded-2xl border border-slate-200 bg-white p-4">
+      <div class="mb-3">
+  <h3 class="text-sm font-semibold text-slate-900">Available Technicians</h3>
+
+  @if (activeRequest()?.assignedUserId) {
+    <p class="mt-1 text-sm text-slate-500">
+      This appointment will stay assigned to the selected technician.
+    </p>
+  } @else if (isUsingSuggestedTechnician() && selectedAssignedUserName()) {
+    <p class="mt-1 text-sm text-slate-500">
+      Suggested technician:
+      <span class="font-medium text-slate-700">
+        {{ selectedAssignedUserName() }}
+      </span>
+      based on current availability and workload.
+    </p>
+  } @else {
+    <p class="mt-1 text-sm text-slate-500">
+      Choose who should be assigned to this appointment.
+    </p>
+  }
+</div>
+
+      @if (activeRequest()?.assignedUserId) {
+      @if (availableUsersForSelectedSlot().length) {
+      <div class="flex flex-wrap gap-2">
+        @for (user of availableUsersForSelectedSlot(); track user.id) {
+        <div
+          class="inline-flex items-center rounded-full border border-brand bg-brand/10 px-3 py-2 text-sm font-medium text-brand">
+          {{ user.name }}
+        </div>
+        }
+      </div>
+      }
+      } @else if (!availableUsersForSelectedSlot().length) {
+      <div class="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-sm text-slate-500">
+        No technicians are available for this slot.
+      </div>
+      } @else {
+      <div class="flex flex-wrap gap-2">
+        @for (user of availableUsersForSelectedSlot(); track user.id) {
+        <button type="button" class="cursor-pointer rounded-full border px-3 py-2 text-sm font-medium transition"
+          [class.border-brand]="isAssignedUserSelected(user.id)" [class.bg-brand/10]="isAssignedUserSelected(user.id)"
+          [class.text-brand]="isAssignedUserSelected(user.id)"
+          [class.border-slate-200]="!isAssignedUserSelected(user.id)"
+          [class.bg-white]="!isAssignedUserSelected(user.id)" [class.text-slate-700]="!isAssignedUserSelected(user.id)"
+          (click)="selectAssignedUser(user.id)">
+          <div class="flex flex-col items-start">
+            <span>{{ user.name }}</span>
+            <span class="text-xs opacity-70">
+              {{ appointmentCountForUser(user.id) }} repairs scheduled @if (selectedDate()) { {{ formatCalendarDateSubLabel(selectedDate()!) }}} @else { today }
+            </span>
+          </div>
+        </button>
+        }
+      </div>
+      }
+    </div>
+    }
+
+    @if (displayMode() === 'modal') {
+    <div class="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
+        <button type="button"
+          class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          (click)="close()">
+          Cancel
+        </button>
+
+        <button type="button"
+          class="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+          [disabled]="!canConfirm()" (click)="confirm()">
+          Confirm Time
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+  }
+</ng-template>
+}
