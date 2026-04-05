@@ -1,3 +1,3 @@
 export const environment = {
-    apiBase: "/api/v1",
+    apiBase: "/api/v1"
 }

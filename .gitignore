@@ -42,7 +42,5 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 
-# Environment files
-/src/environments/environment.ts
 
 /certs
