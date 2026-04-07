@@ -17,8 +17,12 @@ import { MyProfileComponent } from './features/settings/profile/my-profile/my-pr
 import { ShopAvailability } from './features/settings/shop-availability/shop-availability';
 import { ShopSettings } from './features/settings/shop-settings/shop-settings';
 import { ShopUsers } from './features/settings/shop-users/shop-users';
+import { SignupComponent } from './features/auth/signup-component/signup-component';
+import { AcceptInviteComponent } from './features/auth/accept-invite-component/accept-invite-component';
 
 export const routes: Routes = [
+    { path: "signup", component: SignupComponent, canActivate: [PublicGuard] },
+    { path: "accept-invite", component: AcceptInviteComponent, canActivate: [PublicGuard] },
     { path: "login", component: LoginComponent, canActivate: [PublicGuard] },
     { path: "forgot", component: ForgotComponent, canActivate: [PublicGuard] },
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },

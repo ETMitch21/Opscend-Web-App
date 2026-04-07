@@ -26,6 +26,27 @@ export class AuthService {
 
   constructor(private http: HttpClient) { }
 
+  signup(data: {
+    shopName: string;
+    slug: string;
+    ownerName: string;
+    ownerEmail: string;
+    password: string;
+  }) {
+    return this.http
+      .post<{ accessToken: string; shopSlug: string }>(
+        `${environment.apiBase}/auth/signup-shop`,
+        data,
+        { withCredentials: true }
+      )
+      .pipe(
+        tap((res) => {
+          this.setStoredToken(res.accessToken);
+          this.accessTokenSubject.next(res.accessToken);
+        })
+      );
+  }
+
   getAccessToken(): string | null {
     return this.accessTokenSubject.value;
   }
@@ -139,6 +160,15 @@ export class AuthService {
   }
 
   setCurrentUser(user: CurrentUser | null): void {
-  this.currentUserSubject.next(user);
-}
+    this.currentUserSubject.next(user);
+  }
+
+  acceptInvite(token: string, password: string) {
+    return this.http.post<void>(
+      `${environment.apiBase}/authInvite/accept`,
+      { token, password },
+      { withCredentials: true }
+    );
+  }
+
 }

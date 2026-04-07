@@ -1,0 +1,20 @@
+<div class="mx-auto max-w-md py-16">
+    <h1 class="mb-2 text-2xl font-semibold">
+        You've been invited 🎉
+    </h1>
+
+    <p class="mb-6 text-sm text-gray-500">
+        Set your password to join the team.
+    </p>
+
+    <form (ngSubmit)="submit()" class="space-y-4">
+        <input type="password" [(ngModel)]="password" name="password" placeholder="Create password"
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none" required />
+
+        <button type="submit" [disabled]="loading"
+            class="w-full rounded-xl bg-black text-white py-3 text-sm font-medium">
+            {{ loading ? "Joining..." : "Join Team" }}
+        </button>
+
+    </form>
+</div>
