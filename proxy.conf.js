@@ -1,7 +1,7 @@
 module.exports = {
   "/api/v1": {
     target: "https://api.opscend.app", // Development: http://127.0.0.1:3001
-    secure: true,
+    secure: false,
     changeOrigin: false,
     logLevel: "debug",
     pathRewrite: { "^/api": "" },

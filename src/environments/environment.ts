@@ -1,3 +1,3 @@
 export const environment = {
-    apiBase: "/api/v1"
+    apiBase: "https://api.opscend.app/v1"
 }
