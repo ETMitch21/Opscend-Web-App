@@ -1,6 +1,6 @@
 module.exports = {
   "/api/v1": {
-    target: "http://127.0.0.1:3001",
+    target: "https://api.opscend.app", // Development: http://127.0.0.1:3001
     secure: true,
     changeOrigin: false,
     logLevel: "debug",
