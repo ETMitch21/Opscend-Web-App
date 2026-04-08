@@ -1,6 +1,15 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { BehaviorSubject, finalize, firstValueFrom, Observable, shareReplay, tap } from "rxjs";
+import {
+  BehaviorSubject,
+  finalize,
+  firstValueFrom,
+  Observable,
+  of,
+  shareReplay,
+  tap,
+  catchError,
+} from "rxjs";
 import { environment } from "../../../environments/environment";
 
 type LoginResponse = { accessToken: string };
@@ -25,7 +34,7 @@ export class AuthService {
 
   private refreshInFlight$: Observable<LoginResponse> | null = null;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   signup(data: {
     shopName: string;
@@ -126,9 +135,17 @@ export class AuthService {
   }
 
   logout() {
-    this.clearLocalSession();
-
-    return this.http.post(`${environment.apiBase}/auth/logout`, {}, { withCredentials: true });
+    return this.http
+      .post(`${environment.apiBase}/auth/logout`, {}, { withCredentials: true })
+      .pipe(
+        tap(() => {
+          this.clearLocalSession();
+        }),
+        catchError((err) => {
+          this.clearLocalSession();
+          throw err;
+        })
+      );
   }
 
   clearLocalSession() {
@@ -139,6 +156,8 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem("px_current_user");
     localStorage.removeItem("px_shop");
+
+    this.refreshInFlight$ = null;
   }
 
   refresh(): Observable<LoginResponse> {
@@ -180,5 +199,4 @@ export class AuthService {
       { withCredentials: true }
     );
   }
-
 }
