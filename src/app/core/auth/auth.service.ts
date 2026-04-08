@@ -126,9 +126,7 @@ export class AuthService {
   }
 
   logout() {
-    this.setStoredToken(null);
-    this.accessTokenSubject.next(null);
-    this.currentUserSubject.next(null);
+    this.clearLocalSession();
 
     return this.http.post(`${environment.apiBase}/auth/logout`, {}, { withCredentials: true });
   }
@@ -137,6 +135,10 @@ export class AuthService {
     this.setStoredToken(null);
     this.accessTokenSubject.next(null);
     this.currentUserSubject.next(null);
+
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem("px_current_user");
+    localStorage.removeItem("px_shop");
   }
 
   refresh(): Observable<LoginResponse> {
