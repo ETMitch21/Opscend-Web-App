@@ -13,7 +13,7 @@ import { environment } from "../../../environments/environment";
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private auth: AuthService) {}
+  constructor(private auth: AuthService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const token = this.auth.getAccessToken();
@@ -54,9 +54,11 @@ export class AuthInterceptor implements HttpInterceptor {
                 })
               );
             }),
-            catchError((refreshErr) => {
-              this.auth.clearLocalSession();
-              return throwError(() => refreshErr);
+            catchError((err) => {
+              if (err.status === 401) {
+                this.auth.clearLocalSession();
+              }
+              return throwError(() => err);
             })
           );
         }

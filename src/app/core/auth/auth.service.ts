@@ -139,28 +139,28 @@ export class AuthService {
     this.currentUserSubject.next(null);
   }
 
-   refresh(): Observable<LoginResponse> {
-      if (this.refreshInFlight$) return this.refreshInFlight$;
-  
-      this.refreshInFlight$ = this.http
-        .post<LoginResponse>(
-          `${environment.apiBase}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        )
-        .pipe(
-          tap((res) => {
-            this.setStoredToken(res.accessToken);
-            this.accessTokenSubject.next(res.accessToken);
-          }),
-          shareReplay(1),
-          finalize(() => {
-            this.refreshInFlight$ = null;
-          })
-        );
-  
-      return this.refreshInFlight$;
-    }
+  refresh(): Observable<LoginResponse> {
+    if (this.refreshInFlight$) return this.refreshInFlight$;
+
+    this.refreshInFlight$ = this.http
+      .post<LoginResponse>(
+        `${environment.apiBase}/auth/refresh`,
+        {},
+        { withCredentials: true }
+      )
+      .pipe(
+        tap((res) => {
+          this.setStoredToken(res.accessToken);
+          this.accessTokenSubject.next(res.accessToken);
+        }),
+        shareReplay(1),
+        finalize(() => {
+          this.refreshInFlight$ = null;
+        })
+      );
+
+    return this.refreshInFlight$;
+  }
 
   async refreshAndLoadUser(): Promise<CurrentUser | null> {
     await firstValueFrom(this.refresh());
