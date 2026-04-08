@@ -1,3 +1,4 @@
+// src/app/core/auth/auth.interceptor.ts
 import { Injectable } from "@angular/core";
 import {
   HttpEvent,
