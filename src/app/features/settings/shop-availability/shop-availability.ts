@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 type DayKey = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 type OverrideMode = 'available' | 'unavailable';
@@ -57,7 +58,7 @@ interface DayRow {
 })
 export class ShopAvailability implements OnInit {
   private readonly http = inject(HttpClient);
-  private readonly apiBase = '/api/v1/availability';
+  private readonly apiBase = `${environment.apiBase}/availability`;
 
   readonly loading = signal(false);
   readonly listLoading = signal(false);

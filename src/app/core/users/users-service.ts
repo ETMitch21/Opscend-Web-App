@@ -9,6 +9,7 @@ import {
   User,
   UserListResponse,
 } from './users.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -32,35 +33,35 @@ export class UsersService {
     }
 
     return await firstValueFrom(
-      this.http.get<UserListResponse>('/api/v1/users', { params: httpParams })
+      this.http.get<UserListResponse>(`${environment.apiBase}/users`, { params: httpParams })
     );
   }
 
   async get(id: string): Promise<User> {
-    return await firstValueFrom(this.http.get<User>(`/api/v1/users/${id}`));
+    return await firstValueFrom(this.http.get<User>(`${environment.apiBase}/users/${id}`));
   }
 
   async getMe(): Promise<User> {
-    return await firstValueFrom(this.http.get<User>('/api/v1/users/me'));
+    return await firstValueFrom(this.http.get<User>(`${environment.apiBase}/users/me`));
   }
 
   async create(payload: CreateUserPayload): Promise<User> {
-    return await firstValueFrom(this.http.post<User>('/api/v1/users', payload));
+    return await firstValueFrom(this.http.post<User>(`${environment.apiBase}/users`, payload));
   }
 
   async update(id: string, payload: UpdateUserPayload): Promise<User> {
-    return await firstValueFrom(this.http.patch<User>(`/api/v1/users/${id}`, payload));
+    return await firstValueFrom(this.http.patch<User>(`${environment.apiBase}/users/${id}`, payload));
   }
 
   async updateMe(payload: UpdateCurrentUserPayload): Promise<User> {
-    return await firstValueFrom(this.http.patch<User>('/api/v1/users/me', payload));
+    return await firstValueFrom(this.http.patch<User>(`${environment.apiBase}/users/me`, payload));
   }
 
   async delete(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(`/api/v1/users/${id}`));
+    await firstValueFrom(this.http.delete<void>(`${environment.apiBase}/users/${id}`));
   }
 
   async restore(id: string): Promise<User> {
-    return await firstValueFrom(this.http.post<User>(`/api/v1/users/${id}/restore`, {}));
+    return await firstValueFrom(this.http.post<User>(`${environment.apiBase}/users/${id}/restore`, {}));
   }
 }
