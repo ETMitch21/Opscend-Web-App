@@ -34,7 +34,7 @@ export class AuthService {
 
   private refreshInFlight$: Observable<LoginResponse> | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   signup(data: {
     shopName: string;
@@ -135,6 +135,8 @@ export class AuthService {
   }
 
   logout() {
+    console.log("AuthService logout called");
+
     return this.http
       .post(`${environment.apiBase}/auth/logout`, {}, { withCredentials: true })
       .pipe(

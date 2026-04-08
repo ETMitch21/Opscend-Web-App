@@ -147,9 +147,16 @@ export class AppShellComponent implements OnInit {
   }
 
   logout(): void {
+    console.log('Component logout called');
     this.closeProfileMenu();
-    this.auth.logout();
-    this.router.navigate(['/login']);
+    this.auth.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        this.router.navigate(['/login']);
+      }
+    });
   }
 
   onSearchInput(event: Event): void {
