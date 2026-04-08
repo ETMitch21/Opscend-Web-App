@@ -1,7 +1,6 @@
-// src/app/core/auth/auth.service.ts
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { BehaviorSubject, firstValueFrom, tap } from "rxjs";
+import { BehaviorSubject, firstValueFrom, Observable, tap, shareReplay, finalize } from "rxjs";
 import { environment } from "../../../environments/environment";
 
 type LoginResponse = { accessToken: string };
@@ -24,28 +23,9 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<CurrentUser | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient) { }
+  private refreshInFlight$: Observable<LoginResponse> | null = null;
 
-  signup(data: {
-    shopName: string;
-    slug: string;
-    ownerName: string;
-    ownerEmail: string;
-    password: string;
-  }) {
-    return this.http
-      .post<{ accessToken: string; shopSlug: string }>(
-        `${environment.apiBase}/auth/signup-shop`,
-        data,
-        { withCredentials: true }
-      )
-      .pipe(
-        tap((res) => {
-          this.setStoredToken(res.accessToken);
-          this.accessTokenSubject.next(res.accessToken);
-        })
-      );
-  }
+  constructor(private http: HttpClient) {}
 
   getAccessToken(): string | null {
     return this.accessTokenSubject.value;
@@ -64,18 +44,13 @@ export class AuthService {
   }
 
   private setStoredToken(token: string | null) {
-    if (token) {
-      localStorage.setItem(this.tokenKey, token);
-    } else {
-      localStorage.removeItem(this.tokenKey);
-    }
+    if (token) localStorage.setItem(this.tokenKey, token);
+    else localStorage.removeItem(this.tokenKey);
   }
 
   me() {
     return this.http.get<CurrentUser>(`${environment.apiBase}/auth/me`).pipe(
-      tap((user) => {
-        this.currentUserSubject.next(user);
-      })
+      tap((user) => this.currentUserSubject.next(user))
     );
   }
 
@@ -88,8 +63,7 @@ export class AuthService {
     }
 
     try {
-      const user = await firstValueFrom(this.me());
-      return user;
+      return await firstValueFrom(this.me());
     } catch (error) {
       console.error("Failed to load current user", error);
       this.currentUserSubject.next(null);
@@ -117,14 +91,6 @@ export class AuthService {
     return await this.loadMe();
   }
 
-  requestPasswordReset(email: string) {
-    return this.http.post<void>(`${environment.apiBase}/auth/password/forgot`, { email });
-  }
-
-  resetPassword(token: string, password: string) {
-    return this.http.post<void>(`${environment.apiBase}/auth/password/reset`, { token, password });
-  }
-
   logout() {
     this.setStoredToken(null);
     this.accessTokenSubject.next(null);
@@ -139,8 +105,10 @@ export class AuthService {
     this.currentUserSubject.next(null);
   }
 
-  refresh() {
-    return this.http
+  refresh(): Observable<LoginResponse> {
+    if (this.refreshInFlight$) return this.refreshInFlight$;
+
+    this.refreshInFlight$ = this.http
       .post<LoginResponse>(
         `${environment.apiBase}/auth/refresh`,
         {},
@@ -150,8 +118,14 @@ export class AuthService {
         tap((res) => {
           this.setStoredToken(res.accessToken);
           this.accessTokenSubject.next(res.accessToken);
+        }),
+        shareReplay(1),
+        finalize(() => {
+          this.refreshInFlight$ = null;
         })
       );
+
+    return this.refreshInFlight$;
   }
 
   async refreshAndLoadUser(): Promise<CurrentUser | null> {
@@ -162,13 +136,4 @@ export class AuthService {
   setCurrentUser(user: CurrentUser | null): void {
     this.currentUserSubject.next(user);
   }
-
-  acceptInvite(token: string, password: string) {
-    return this.http.post<void>(
-      `${environment.apiBase}/authInvite/accept`,
-      { token, password },
-      { withCredentials: true }
-    );
-  }
-
 }
