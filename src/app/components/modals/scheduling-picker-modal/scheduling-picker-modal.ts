@@ -157,9 +157,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
       this.availableUserIdsForSlot(slot.startAt, slot.endAt)
     );
 
-    return this.usersStore
-      .assignableUsers()
-      .filter((user) => availableIds.has(user.id));
+    return this.usersStore.assignableUsers().filter((user) => availableIds.has(user.id));
   });
 
   readonly canConfirm = computed(() => {
@@ -623,16 +621,16 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
       await this.usersStore.load();
     }
 
-    const assignableUsers = this.usersStore.assignableUsers();
+    const schedulableUsers = this.usersStore.assignableUsers();
 
-    if (!assignableUsers.length) {
+    if (!schedulableUsers.length) {
       this.unionSlots.set([]);
       this.slotUserMap.set({});
       return;
     }
 
     const results = await Promise.all(
-      assignableUsers.map(async (user) => {
+      schedulableUsers.map(async (user) => {
         const response = await firstValueFrom(
           this.availabilityService.listSlots({
             from: request.from,
@@ -751,8 +749,8 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   }
 
   appointmentCountForUser(userId: string): number {
-  return this.appointmentCountsByUserIdForSelectedDate()[userId] ?? 0;
-}
+    return this.appointmentCountsByUserIdForSelectedDate()[userId] ?? 0;
+  }
 
   private clearManualAssignmentSelection(): void {
     this.manuallySelectedAssignedUserId.set(null);

@@ -1,21 +1,49 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, DestroyRef, HostListener, inject } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
+import {
+  Component,
+  DestroyRef,
+  HostListener,
+  OnInit,
+  inject,
+  signal,
+} from '@angular/core';
+import {
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+  FormsModule,
+} from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
-import { ChevronLeftIcon, LucideAngularModule, LucideIconData } from 'lucide-angular';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  firstValueFrom,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
+import {
+  ChevronLeftIcon,
+  LucideAngularModule,
+  LucideIconData,
+} from 'lucide-angular';
 
 import { CustomersStore } from '../../../core/customers/customers.store';
 import { Customer } from '../../../core/customers/customer.model';
 import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
 import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
-import { SchedulingPickerModalComponent } from "../../../components/modals/scheduling-picker-modal/scheduling-picker-modal";
+import { SchedulingPickerModalComponent } from '../../../components/modals/scheduling-picker-modal/scheduling-picker-modal';
 import { SchedulingSelection } from '../../../core/scheduling/scheduling.types';
 import { RepairsStore } from '../../../core/repairs/repairs.store';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
 import { ToastService } from '../../../core/toast/toast-service';
+import { environment } from '../../../../environments/environment';
 
 type NewRepairForm = FormGroup<{
   customerId: FormControl<string | null>;
@@ -35,13 +63,32 @@ type NewRepairForm = FormGroup<{
   schedulingSelected: FormControl<boolean>;
 }>;
 
+interface ShopListResponse {
+  data: Array<{
+    settings?: {
+      booking?: {
+        enabled?: boolean;
+      };
+    };
+  }>;
+  nextCursor: string | null;
+}
+
 @Component({
   selector: 'app-new-repair',
-  imports: [CommonModule, LucideAngularModule, RouterModule, FormsModule, ReactiveFormsModule, PhonePipe, SchedulingPickerModalComponent],
+  imports: [
+    CommonModule,
+    LucideAngularModule,
+    RouterModule,
+    FormsModule,
+    ReactiveFormsModule,
+    PhonePipe,
+    SchedulingPickerModalComponent,
+  ],
   templateUrl: './new-repair.html',
   styleUrl: './new-repair.scss',
 })
-export class NewRepair {
+export class NewRepair implements OnInit {
   private readonly customersStore = inject(CustomersStore);
   private readonly customerDevicesStore = inject(CustomerDevicesStore);
   private readonly destroyRef = inject(DestroyRef);
@@ -49,8 +96,11 @@ export class NewRepair {
   private readonly appointmentsStore = inject(AppointmentsStore);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   public readonly leftChevronIcon: LucideIconData = ChevronLeftIcon;
+
+  readonly bookingEnabled = signal(false);
 
   public customerResults: Customer[] = [];
   public selectedCustomer: Customer | null = null;
@@ -99,18 +149,17 @@ export class NewRepair {
     }),
     problemSummary: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(500)]
+      validators: [Validators.required, Validators.maxLength(500)],
     }),
     quotedPriceDollars: new FormControl<number | null>(null, {
-      validators: [Validators.min(0)]
+      validators: [Validators.min(0)],
     }),
     schedulingSelected: new FormControl(false, {
       nonNullable: true,
-      validators: [Validators.required, Validators.requiredTrue]
-    })
+    }),
   });
 
-  readonly schedulingRequest = computed(() => ({
+  readonly schedulingRequest = () => ({
     title: 'Schedule Repair',
     subtitle: 'Choose an available appointment time.',
     from: this.schedulerFromIso(),
@@ -118,21 +167,25 @@ export class NewRepair {
     durationMinutes: this.selectedDurationMinutes(),
     assignedUserId: undefined,
     slotMinutes: 15,
-  }));
-
-  readonly schedulerFromIso = computed(() => {
-    return new Date().toISOString();
   });
 
-  readonly schedulerToIso = computed(() => {
+  readonly schedulerFromIso = () => {
+    return new Date().toISOString();
+  };
+
+  readonly schedulerToIso = () => {
     const end = new Date();
     end.setDate(end.getDate() + 14);
     return end.toISOString();
-  });
+  };
 
-  readonly selectedDurationMinutes = computed(() => {
+  readonly selectedDurationMinutes = () => {
     return 60;
-  });
+  };
+
+  ngOnInit(): void {
+    void this.loadBookingEnabled();
+  }
 
   constructor() {
     this.customerSearchControl.valueChanges
@@ -217,6 +270,7 @@ export class NewRepair {
 
     this.updateCustomerValidators();
     this.updateDeviceValidators();
+    this.updateSchedulingValidators();
   }
 
   get customerSearchControl(): FormControl<string> {
@@ -225,6 +279,39 @@ export class NewRepair {
 
   get deviceSearchControl(): FormControl<string> {
     return this.newRepairForm.controls.deviceSearchControl;
+  }
+
+  private async loadBookingEnabled(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<ShopListResponse>(`${environment.apiBase}/shops`)
+      );
+
+      const enabled = response.data?.[0]?.settings?.booking?.enabled === true;
+      this.bookingEnabled.set(enabled);
+    } catch (error) {
+      console.error('Failed to load booking setting.', error);
+      this.bookingEnabled.set(false);
+    } finally {
+      this.updateSchedulingValidators();
+    }
+  }
+
+  private updateSchedulingValidators(): void {
+    const schedulingControl = this.newRepairForm.controls.schedulingSelected;
+
+    if (this.bookingEnabled()) {
+      schedulingControl.setValidators([Validators.requiredTrue]);
+      schedulingControl.setValue(!!this.selectedSchedulingSelection, {
+        emitEvent: false,
+      });
+    } else {
+      schedulingControl.clearValidators();
+      schedulingControl.setValue(true, { emitEvent: false });
+      this.selectedSchedulingSelection = null;
+    }
+
+    schedulingControl.updateValueAndValidity({ emitEvent: false });
   }
 
   onCustomerFocus(): void {
@@ -348,9 +435,11 @@ export class NewRepair {
   }
 
   getDeviceDisplay(device: CustomerDevice): string {
-    return device.nickname?.trim()
-      || [device.brand, device.model].filter(Boolean).join(' ')
-      || 'Unnamed Device';
+    return (
+      device.nickname?.trim() ||
+      [device.brand, device.model].filter(Boolean).join(' ') ||
+      'Unnamed Device'
+    );
   }
 
   getDeviceSecondary(device: CustomerDevice): string {
@@ -460,10 +549,13 @@ export class NewRepair {
   }
 
   onSchedulingSelectionChange(selection: SchedulingSelection): void {
+    if (!this.bookingEnabled()) return;
+
     this.selectedSchedulingSelection = selection;
     this.newRepairForm.patchValue({
-      schedulingSelected: true
+      schedulingSelected: true,
     });
+    this.updateSchedulingValidators();
   }
 
   private async ensureCustomer(): Promise<string | null> {
@@ -557,7 +649,9 @@ export class NewRepair {
         customerId,
         customerDeviceId: deviceId,
         problemSummary: this.newRepairForm.controls.problemSummary.value.trim(),
-        assignedTo: this.selectedSchedulingSelection?.assignedTo ?? undefined,
+        assignedTo: this.bookingEnabled()
+          ? this.selectedSchedulingSelection?.assignedTo ?? undefined
+          : undefined,
       } as any);
 
       if (!repair) {
@@ -588,7 +682,7 @@ export class NewRepair {
         console.error('Repair created, but order creation failed.');
       }
 
-      if (this.selectedSchedulingSelection) {
+      if (this.bookingEnabled() && this.selectedSchedulingSelection) {
         const scheduled = await this.appointmentsStore.scheduleAppointment(
           repair.id,
           this.selectedSchedulingSelection.startAt,
@@ -601,7 +695,10 @@ export class NewRepair {
         }
       }
 
-      this.toastService.success('Repair Created Successfully', 'This repair was created successfully.');
+      this.toastService.success(
+        'Repair Created Successfully',
+        'This repair was created successfully.'
+      );
       this.router.navigate(['/repairs']);
     } catch (error) {
       console.error('Failed to create repair flow.', error);

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import {
   Component,
   HostListener,
@@ -11,7 +12,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import {
   LucideAngularModule,
   ArrowLeft,
@@ -42,6 +43,18 @@ import {
 } from '../../../core/scheduling/scheduling.types';
 import { SchedulingModalService } from '../../../core/scheduling/schedulingModal-service';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
+import { environment } from '../../../../environments/environment';
+
+interface ShopListResponse {
+  data: Array<{
+    settings?: {
+      booking?: {
+        enabled?: boolean;
+      };
+    };
+  }>;
+  nextCursor: string | null;
+}
 
 @Component({
   selector: 'app-repair-detail',
@@ -63,6 +76,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly http = inject(HttpClient);
 
   readonly store = inject(RepairsStore);
   readonly usersStore = inject(UsersStore);
@@ -71,8 +85,11 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly schedulingModalService = inject(SchedulingModalService);
 
   private readonly subscription = new Subscription();
+  private readonly schedulableRoles = new Set(['owner', 'manager', 'tech']);
 
   public readonly leftChevronIcon: LucideIconData = ChevronLeftIcon;
+
+  readonly bookingEnabled = signal(false);
 
   readonly icons = {
     ArrowLeft,
@@ -235,11 +252,15 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     this.repairId.set(id);
 
+    await this.loadBookingEnabled();
+
     this.subscription.add(
-      this.schedulingModalService.confirmed.subscribe((selection: SchedulingSelection | null) => {
-        if (!selection) return;
-        void this.handleSchedulingConfirmed(selection);
-      })
+      this.schedulingModalService.confirmed.subscribe(
+        (selection: SchedulingSelection | null) => {
+          if (!selection) return;
+          void this.handleSchedulingConfirmed(selection);
+        }
+      )
     );
 
     this.usersStore.load({ limit: 100 }).catch((error) => {
@@ -254,12 +275,6 @@ export class RepairDetail implements OnInit, OnDestroy {
       return;
     }
 
-    /**
-     * The scheduling picker’s modal mode confirms through SchedulingModalService,
-     * not through a local boolean + output flow.
-     *
-     * If your service exposes a differently named observable, swap it here.
-     */
     const confirmed$ =
       (this.schedulingModalService as any).selectionConfirmed ??
       (this.schedulingModalService as any).confirmedSelection ??
@@ -273,6 +288,21 @@ export class RepairDetail implements OnInit, OnDestroy {
           void this.handleSchedulingConfirmed(selection);
         })
       );
+    }
+  }
+
+  private async loadBookingEnabled(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<ShopListResponse>(`${environment.apiBase}/shops`)
+      );
+
+      this.bookingEnabled.set(
+        response.data?.[0]?.settings?.booking?.enabled === true
+      );
+    } catch (error) {
+      console.error('Failed to load booking setting.', error);
+      this.bookingEnabled.set(false);
     }
   }
 
@@ -685,11 +715,32 @@ export class RepairDetail implements OnInit, OnDestroy {
     );
   }
 
+  private isSchedulableUserId(userId: string | null | undefined): boolean {
+  if (!userId) return false;
+
+  const user =
+    this.usersStore.getById?.(userId) ??
+    this.usersStore.users().find((item) => item.id === userId);
+
+  const role = String(user?.role ?? '').trim().toLowerCase();
+  const status = String(user?.status ?? '').trim().toLowerCase();
+
+  return !!user && status === 'active' && this.schedulableRoles.has(role);
+}
+
   getSchedulingRequest(): SchedulingRequest | null {
+    if (!this.bookingEnabled()) return null;
+
     const repair = this.repair();
     const repairId = this.repairId();
 
     if (!repair || !repairId) return null;
+
+    const assignedUserId = this.isSchedulableUserId(
+      repair.appointment?.technicianUserId
+    )
+      ? repair.appointment?.technicianUserId ?? undefined
+      : undefined;
 
     return {
       title: repair.appointment ? 'Reschedule Appointment' : 'Schedule Appointment',
@@ -698,12 +749,14 @@ export class RepairDetail implements OnInit, OnDestroy {
       to: this.schedulerToIso(),
       durationMinutes: this.selectedDurationMinutes(),
       repairId,
-      assignedUserId: repair.appointment?.technicianUserId ?? undefined,
+      assignedUserId,
       slotMinutes: 15,
     };
   }
 
   openRescheduleModal(): void {
+    if (!this.bookingEnabled()) return;
+
     const request = this.getSchedulingRequest();
     if (!request) return;
 
@@ -713,6 +766,8 @@ export class RepairDetail implements OnInit, OnDestroy {
   private async handleSchedulingConfirmed(
     selection: SchedulingSelection
   ): Promise<void> {
+    if (!this.bookingEnabled()) return;
+
     const id = this.repairId();
     const repair = this.repair();
 
@@ -720,17 +775,17 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     const appointment = repair.appointment
       ? await this.appointmentsStore.rescheduleAppointment(
-        id,
-        selection.startAt,
-        selection.endAt,
-        selection.assignedUserId ?? undefined
-      )
+          id,
+          selection.startAt,
+          selection.endAt,
+          selection.assignedUserId ?? undefined
+        )
       : await this.appointmentsStore.scheduleAppointment(
-        id,
-        selection.startAt,
-        selection.endAt,
-        selection.assignedUserId ?? undefined
-      );
+          id,
+          selection.startAt,
+          selection.endAt,
+          selection.assignedUserId ?? undefined
+        );
 
     if (!appointment) {
       const code = this.appointmentsStore.errorCode();
