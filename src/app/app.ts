@@ -4,6 +4,8 @@ import { TenantService } from './core/tenant/tenant.service';
 import { NgxSonnerToaster } from 'ngx-sonner';
 import { AuthService } from './core/auth/auth.service';
 import { AppShellComponent } from "./components/app-shell-component/app-shell-component";
+import { filter, switchMap } from 'rxjs';
+import { ShopContextService } from './core/shop/shop-context.store';
 
 @Component({
   selector: 'app-root',
@@ -13,6 +15,7 @@ import { AppShellComponent } from "./components/app-shell-component/app-shell-co
 })
 export class App implements OnInit {
   private tenantService = inject(TenantService);
+  shopContext = inject(ShopContextService);
   private auth = inject(AuthService);
 
   public userIsLoggedIn: boolean = false;
@@ -49,6 +52,12 @@ export class App implements OnInit {
       this.userIsLoggedIn = token ? true : false;
       token ?? this.auth.loadMe()
     });
+    this.auth.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        switchMap(() => this.shopContext.load())
+      )
+      .subscribe();
     this.tenantService.init();
   }
 }

@@ -6,7 +6,7 @@
                     Today Overview
                 </h1>
                 <p class="mt-1 text-sm text-slate-500">
-                    A quick look at appointments and technician workload.
+                    A quick look at appointments and technician workload for {{ shopContext.shop?.name || 'your shop' }}.
                 </p>
             </div>
 
@@ -17,7 +17,9 @@
     </div>
     <div class="grid grid-cols-3 gap-6">
         <div class="col-span-2">
-            <app-tech-day-view></app-tech-day-view>
+            @if (shopContext.shop?.settings?.booking?.enabled) {
+                <app-tech-day-view></app-tech-day-view>
+            }
         </div>
     </div>
 </div>
