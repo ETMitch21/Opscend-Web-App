@@ -1,0 +1,90 @@
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
+            Integrations
+        </h1>
+        <p class="mt-1 text-sm text-slate-600">
+            Connect third-party tools to power pricing, workflows, and more.
+        </p>
+    </div>
+
+    @if (bannerTone) {
+    <div class="rounded-2xl border px-4 py-3 text-sm" [class.border-emerald-200]="bannerTone === 'success'"
+        [class.bg-emerald-50]="bannerTone === 'success'" [class.text-emerald-800]="bannerTone === 'success'"
+        [class.border-red-200]="bannerTone === 'error'" [class.bg-red-50]="bannerTone === 'error'"
+        [class.text-red-800]="bannerTone === 'error'">
+        {{ bannerMessage }}
+    </div>
+    }
+
+    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg font-semibold text-slate-700">
+                        MS
+                    </div>
+
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">MobileSentrix</h2>
+                        <p class="text-sm text-slate-600">
+                            Connect your supplier account for parts data and future pricing workflows.
+                        </p>
+                    </div>
+                </div>
+
+                @if (loadingStatus) {
+                <div
+                    class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    Checking connection…
+                </div>
+                } @else if (isConnected) {
+                <div
+                    class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                    Connected
+                </div>
+                } @else {
+                <div
+                    class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                    Not connected
+                </div>
+                }
+
+                <div class="space-y-1 text-sm text-slate-600">
+                    <p>
+                        Provider:
+                        <span class="font-medium text-slate-900">MobileSentrix</span>
+                    </p>
+
+                    <p>
+                        Connected at:
+                        <span class="font-medium text-slate-900">
+                            {{ status?.connectedAt ? (status?.connectedAt | date:'medium') : '—' }}
+                        </span>
+                    </p>
+
+                    <p>
+                        Last updated:
+                        <span class="font-medium text-slate-900">
+                            {{ status?.updatedAt ? (status?.updatedAt | date:'medium') : '—' }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex shrink-0 flex-col gap-3 sm:flex-row">
+                <button type="button" (click)="onConnect()" [disabled]="connecting || loadingStatus || isConnected"
+                    class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    {{ connecting ? "Redirecting…" : (isConnected ? "Connected" : "Connect MobileSentrix") }}
+                </button>
+
+                <button type="button" (click)="onDisconnect()"
+                    [disabled]="disconnecting || loadingStatus || !isConnected"
+                    class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                    {{ disconnecting ? "Disconnecting…" : "Disconnect" }}
+                </button>
+            </div>
+        </div>
+    </section>
+</div>

@@ -69,12 +69,18 @@ export const routes: Routes = [
                         pathMatch: 'full'
                     }
                 ]
+            },
+            {
+                path: 'integrations',
+                loadComponent: () => import("./features/settings/shop-integrations/shop-integrations").then(
+                    (m) => m.ShopIntegrations
+                ),
             }
         ],
         canActivate: [AuthGuard]
     },
-    { 
-        path: 'repairs', 
+    {
+        path: 'repairs',
         component: Repairs,
         children: [
             {
