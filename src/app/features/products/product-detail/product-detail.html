@@ -1,0 +1,476 @@
+<div class="px-6 py-6">
+  @if (loading()) {
+  <div class="flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-16 shadow-sm">
+    <div class="text-sm text-gray-500">Loading product...</div>
+  </div>
+  }
+
+  @else if (error()) {
+  <div
+    class="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
+    <p class="text-sm font-medium text-red-600">{{ error() }}</p>
+
+    <div class="mt-4 flex items-center gap-3">
+      <button type="button"
+        class="cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+        (click)="refresh()">
+        Try Again
+      </button>
+
+      <a [routerLink]="['/products']"
+        class="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        Back to Products
+      </a>
+    </div>
+  </div>
+  }
+
+  @else if (product(); as product) {
+  <div class="mx-auto max-w-6xl space-y-6">
+
+    <!-- HEADER -->
+    <div class="flex flex-col gap-6">
+      <div class="flex items-start justify-between gap-4">
+        <!-- Left -->
+        <div class="flex justify-between items-center gap-2">
+          <button type="button" class="cursor-pointer text-sm font-medium hover:text-brand"
+            [routerLink]="['/products']">
+            <lucide-icon [name]="leftChevronIcon"></lucide-icon>
+          </button>
+          <h1 class="text-2xl max-w-[450px] truncate font-semibold text-gray-900">
+            {{ product.name }}
+          </h1>
+        </div>
+
+        <!-- Right -->
+        <div class="flex items-center gap-3">
+          <button type="button"
+            class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-soft transition disabled:opacity-80 disabled:cursor-not-allowed"
+            [disabled]="saving()" (click)="save()">
+            {{ saving() ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Chips -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- SKU / ID -->
+        <span class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
+          {{ product.sku || product.id }}
+        </span>
+
+        <!-- Status -->
+        @if (form.controls.status.value === 'active') {
+        <span class="rounded-full bg-blue-50/60 px-3 py-1 text-xs font-medium text-blue-600">
+          Active
+        </span>
+        } @else {
+        <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+          Inactive
+        </span>
+        }
+
+        <!-- Created -->
+        <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-gray-400">
+          Created {{ product.createdAt | date:'MMM d, y' }}
+        </span>
+
+        <!-- Archived -->
+        @if (isArchived()) {
+        <span class="rounded-full bg-rose-50/60 px-3 py-1 text-xs font-medium text-rose-600">
+          Archived
+        </span>
+        }
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div class="flex items-start justify-between gap-6">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+            Pricing Intelligence
+          </p>
+          <h2 class="mt-2 text-2xl font-semibold tracking-tight text-gray-900">
+            {{ formatMoney(pricingSourcePriceCents()) }}
+          </h2>
+          <p class="mt-1 text-sm text-gray-500">
+            Current selling price
+          </p>
+        </div>
+
+        @if (suggestedPriceCents() !== null) {
+        <div class="text-right">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+            Suggested
+          </p>
+          <p class="mt-2 text-xl font-semibold text-gray-900">
+            {{ formatMoney(suggestedPriceCents()) }}
+          </p>
+          <p class="mt-1 text-sm text-gray-500">
+            Based on your pricing rule
+          </p>
+        </div>
+        }
+      </div>
+
+      <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_0.9fr]">
+        <!-- Left: visual -->
+        <div class="rounded-2xl bg-gray-50 p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-700">Margin health</p>
+              <p class="mt-1 text-sm text-gray-500">
+                Profit compared to current selling price
+              </p>
+            </div>
+
+            <div class="text-right">
+              <p class="text-2xl font-semibold tracking-tight text-gray-900">
+                @if (marginPercent() !== null) {
+                {{ marginPercent() }}%
+                } @else {
+                —
+                }
+              </p>
+              <p class="text-sm text-gray-500">margin</p>
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <div class="h-3 w-full overflow-hidden rounded-full bg-gray-100">
+              <div class="h-full rounded-full transition-all duration-500 ease-out shadow-sm relative overflow-hidden"
+                [style.width.%]="marginBarWidth()" [class.bg-gradient-to-r]="true"
+                [class.from-rose-500]="marginTone() === 'low'" [class.to-rose-400]="marginTone() === 'low'"
+                [class.from-amber-500]="marginTone() === 'medium'" [class.to-amber-400]="marginTone() === 'medium'"
+                [class.from-emerald-500]="marginTone() === 'high'" [class.to-emerald-400]="marginTone() === 'high'">
+                <span class="absolute inset-0 bg-white/20 blur-sm opacity-30"></span>
+              </div>
+            </div>
+
+            <div class="mt-3 flex items-center justify-between text-[11px] font-medium text-gray-400">
+              <span>Low</span>
+              <span>Healthy</span>
+              <span>Strong</span>
+            </div>
+          </div>
+
+          <div class="mt-6 grid grid-cols-3 gap-3">
+            <div class="rounded-2xl bg-white px-4 py-3 ring-1 ring-gray-200">
+              <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Cost
+              </p>
+              <p class="mt-2 text-lg font-semibold text-gray-900">
+                {{ formatMoney(pricingSourceCostCents()) }}
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-white px-4 py-3 ring-1 ring-gray-200">
+              <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Profit
+              </p>
+              <p class="mt-2 text-lg font-semibold text-gray-900">
+                {{ formatMoney(profitCents()) }}
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-white px-4 py-3 ring-1 ring-gray-200">
+              <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
+                Markup
+              </p>
+              <p class="mt-2 text-lg font-semibold text-gray-900">
+                @if (markupPercent() !== null) {
+                {{ markupPercent() }}%
+                } @else {
+                —
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: recommendation / quick context -->
+        <div class="rounded-2xl bg-gray-50 p-5">
+          <p class="text-sm font-medium text-gray-700">Pricing snapshot</p>
+
+          <div class="mt-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">Current price</span>
+              <span class="text-sm font-medium text-gray-900">
+                {{ formatMoney(pricingSourcePriceCents()) }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">Current cost</span>
+              <span class="text-sm font-medium text-gray-900">
+                {{ formatMoney(pricingSourceCostCents()) }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">Profit per sale</span>
+              <span class="text-sm font-medium text-gray-900">
+                {{ formatMoney(profitCents()) }}
+              </span>
+            </div>
+
+            <div class="h-px bg-gray-200"></div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">Suggested price</span>
+              <span class="text-sm font-semibold text-gray-900">
+                {{ formatMoney(suggestedPriceCents()) }}
+              </span>
+            </div>
+
+            @if (suggestedPriceCents() !== null) {
+            <div class="rounded-2xl bg-white px-4 py-3 ring-1 ring-gray-200">
+              <p class="text-xs uppercase tracking-wide text-gray-500">
+                Recommendation
+              </p>
+              <p class="mt-2 text-sm leading-6 text-gray-700">
+                @if (pricingSourcePriceCents() < suggestedPriceCents()!) { Your current price is below your target
+                  model. } @else if (pricingSourcePriceCents()> suggestedPriceCents()!) {
+                  Your current price is above your target model.
+                  } @else {
+                  Your current price matches your target model.
+                  }
+              </p>
+            </div>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN GRID -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
+
+      <!-- LEFT -->
+      <div class="space-y-6">
+        <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 class="text-base font-semibold text-gray-900">Overview</h2>
+
+          <form class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2" [formGroup]="form">
+
+            <div class="sm:col-span-2">
+              <label class="mb-2 block text-sm font-medium text-gray-700">Name</label>
+              <input type="text" formControlName="name"
+                class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand" />
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">SKU</label>
+              <input type="text" formControlName="sku"
+                class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand" />
+            </div>
+
+            <div></div>
+
+            <!-- PRICE -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Selling Price</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input type="text" inputmode="decimal"
+                  class="w-full rounded-xl border border-gray-300 px-4 py-2.5 pl-7 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                  [value]="sellingPriceDisplay" (input)="onSellingPriceChange($any($event.target).value)"
+                  (blur)="normalizeSellingPriceDisplay()" />
+              </div>
+            </div>
+
+            <!-- COST -->
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700">Cost</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input type="text" inputmode="decimal"
+                  class="w-full rounded-xl border border-gray-300 px-4 py-2.5 pl-7 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                  [value]="costDisplay" (input)="onCostChange($any($event.target).value)"
+                  (blur)="normalizeCostDisplay()" />
+              </div>
+            </div>
+
+            <!-- TAGS -->
+            <div class="sm:col-span-2">
+              <label class="mb-2 block text-sm font-medium text-gray-700">Tags</label>
+              <input type="text" formControlName="tagsText"
+                class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand" />
+
+              @if (form.controls.tagsText.value) {
+              <div class="mt-3 flex flex-wrap gap-2">
+                @for (tag of form.controls.tagsText.value.split(','); track $index) {
+                @if (tag.trim()) {
+                <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                  {{ tag.trim() }}
+                </span>
+                }
+                }
+              </div>
+              }
+            </div>
+
+          </form>
+        </section>
+        <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div class="flex items-start justify-between gap-4">
+            <div class="max-w-2xl">
+              <h2 class="text-base font-semibold text-gray-900">
+                @if (isArchived()) {
+                Restore Product
+                } @else {
+                Archive Product
+                }
+              </h2>
+
+              <p class="mt-2 text-sm leading-6 text-gray-500">
+                @if (isArchived()) {
+                This product is currently archived. Archived products are hidden from normal active workflows, but the
+                record is still preserved. Restore it to make it active in your catalog again.
+                } @else {
+                Archiving removes this product from normal active workflows without deleting its record. Use this when a
+                product is discontinued, no longer stocked, or should no longer appear in your active catalog.
+                }
+              </p>
+            </div>
+
+            <div class="shrink-0">
+              @if (isArchived()) {
+              <button type="button"
+                class="rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving()" (click)="restore()">
+                {{ saving() ? 'Working...' : 'Restore Product' }}
+              </button>
+              } @else {
+              <button type="button"
+                class="cursor-pointer rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving()" (click)="archive()">
+                {{ saving() ? 'Working...' : 'Archive Product' }}
+              </button>
+              }
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="space-y-6">
+        <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="text-base font-semibold text-gray-900">MobileSentrix</h2>
+              <p class="mt-1 text-sm text-gray-500">Live supplier snapshot</p>
+            </div>
+          </div>
+
+          @if (mobileSentrixLoading()) {
+          <div class="mt-5 rounded-2xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+            Loading supplier data...
+          </div>
+          } @else if (mobileSentrixError()) {
+          <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
+            {{ mobileSentrixError() }}
+          </div>
+          } @else if (mobileSentrixConnected() === false) {
+          <div class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-500">
+            MobileSentrix is not connected for this shop.
+          </div>
+          } @else if (mobileSentrixMatch(); as msProduct) {
+          <div class="mt-5 space-y-4">
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+              @if (msProduct.imageUrl) {
+              <img [src]="msProduct.imageUrl" [alt]="msProduct.title" class="h-48 w-full object-contain p-4" />
+              } @else {
+              <div class="flex h-48 items-center justify-center text-sm text-gray-400">
+                No image
+              </div>
+              }
+            </div>
+
+            <div>
+              <h3 class="text-sm font-semibold leading-5 text-gray-900">
+                {{ msProduct.title }}
+              </h3>
+
+              <div class="mt-2 space-y-1 text-sm text-gray-600">
+                <div>
+                  <span class="text-gray-400">SKU:</span>
+                  {{ msProduct.sku || '—' }}
+                </div>
+
+                <div>
+                  <span class="text-gray-400">Current Cost:</span>
+                  <span class="mx-1 text-gray-900">
+                    {{ formatMoney(msProduct.costCents) }}
+                  </span>
+
+                  @if (currentSupplierCostTrend() === 'up') {
+                  <span class="inline-flex items-center gap-0 text-rose-600">
+                    <span class="me-2 text-rose-500" aria-hidden="true">
+                      <lucide-icon [name]="arrowUpIcon" [size]="16" class="relative top-[1px]"></lucide-icon>
+                    </span>
+                    <span class="top-[1px]">
+                      {{ formatMoney(currentSupplierCostDiffAbs()) }}
+                      @if (currentSupplierCostDiffPercent() !== null) {
+                      ({{ currentSupplierCostDiffPercent() }}%)
+                      }
+                    </span>
+                  </span>
+                  } @else if (currentSupplierCostTrend() === 'down') {
+                  <span class="inline-flex items-center gap-0 text-emerald-600">
+                    <span class="me-2 text-emerald-500" aria-hidden="true">
+                      <lucide-icon [name]="arrowDownIcon" [size]="16" class="relative top-[1px]"></lucide-icon>
+                    </span>
+                    <span class="top-[1px]">
+                      {{ formatMoney(currentSupplierCostDiffAbs()) }}
+                      @if (currentSupplierCostDiffPercent() !== null) {
+                      ({{ currentSupplierCostDiffPercent() }}%)
+                      }
+                    </span>
+                  </span>
+                  } @else if (currentSupplierCostTrend() === 'same') {
+                  <span class="inline-flex items-center gap-0 text-gray-400">
+                    <span class="me-2 text-gray-400" aria-hidden="true">
+                      <lucide-icon [name]="arrowRightIcon" [size]="16" class="relative top-[1px]"></lucide-icon>
+                    </span>
+                    <span class="top-[1px]">$0.00 (0%)</span>
+                  </span>
+                  }
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                  <span class="text-gray-400">Inventory:</span>
+
+                  @if (msProduct.inStock) {
+                  <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    In Stock
+                  </span>
+                  } @else {
+                  <span class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">
+                    Out of Stock
+                  </span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            @if (msProduct.link) {
+            <a [href]="msProduct.link" target="_blank" rel="noopener noreferrer"
+              class="cursor-pointer inline-flex text-sm font-medium text-brand hover:underline">
+              View on MobileSentrix
+            </a>
+            }
+          </div>
+          } @else {
+          <div class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-500">
+            No matching MobileSentrix item found for this product yet.
+          </div>
+          }
+        </section>
+      </div>
+
+    </div>
+  </div>
+  }
+</div>

@@ -401,6 +401,131 @@
         </div>
 
         <div class="space-y-6">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        @if (repairValue.customer?.name) {
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
+                            {{ getInitials(repairValue.customer?.name) }}
+                        </div>
+                        } @else {
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                            <lucide-icon [name]="icons.UserRound" class="h-4 w-4"></lucide-icon>
+                        </div>
+                        }
+
+                        <div class="min-w-0">
+                            <p class="text-xs font-medium uppercase tracking-wide text-gray-400">Customer</p>
+                            <p class="truncate text-sm font-semibold text-gray-900 mb-1">
+                                {{ repairValue.customer?.name || 'Unassigned' }}
+                            </p>
+                            <p class="text-xs font-light text-gray-800">
+                                {{ repairValue.customer?.phone | phone }}
+                            </p>
+                            <p class="text-xs font-light text-gray-800">
+                                {{ repairValue.customer?.email }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="my-4 h-px w-full bg-gray-100"></div>
+
+                @if (repairValue.customer) {
+                <div class="space-y-3">
+                    <div class="flex justify-center items-center gap-3">
+                        @if (repairValue.customer.phone) {
+                        <a [href]="'tel:' + repairValue.customer.phone" type="button"
+                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand">
+                            <lucide-icon [name]="icons.PhoneIcon" class="h-3 w-3"></lucide-icon> Call
+                        </a>
+                        }
+                        @if (repairValue.customer.email) {
+                        <a [href]="'mailto:' + repairValue.customer.email" type="button"
+                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand">
+                            <lucide-icon [name]="icons.MailIcon" class="h-3 w-3"></lucide-icon> Email
+                        </a>
+                        }
+                        <a [routerLink]="['/customers', repair()?.customerId, 'edit']" type="button"
+                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand">
+                            View Profile <lucide-icon [name]="icons.ArrowRight" class="h-3 w-3"></lucide-icon>
+                        </a>
+                    </div>
+                </div>
+                } @else {
+                <div class="flex items-center justify-center py-4 text-sm text-gray-400">
+                    No customer assigned
+                </div>
+                }
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <!-- Header -->
+                <div class="flex items-center gap-3">
+                    <!-- Icon -->
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                        <lucide-icon [name]="icons.SmartphoneIcon" class="h-5 w-5"></lucide-icon>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="flex flex-col">
+                        <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                            Device
+                        </span>
+                        <span class="text-sm font-semibold text-gray-900">
+                            {{ repairValue.customerDevice?.nickname || repairValue.customerDevice?.displayName }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="my-4 h-px bg-gray-100"></div>
+
+                <!-- Device Details -->
+                <div class="space-y-2 text-sm text-gray-600">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Model</span>
+                        <span class="font-medium text-gray-900">
+                            {{ repairValue.customerDevice?.brand }} {{ repairValue.customerDevice?.model }}
+                        </span>
+                    </div>
+
+                    @if (repairValue.customerDevice?.imei) {
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">IMEI</span>
+                        <span class="font-mono text-xs text-gray-700">
+                            {{ repairValue.customerDevice?.imei }}
+                        </span>
+                    </div>
+                    }
+
+                    @if (repairValue.customerDevice?.serial) {
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Serial</span>
+                        <span class="font-mono text-xs text-gray-700">
+                            {{ repairValue.customerDevice?.serial }}
+                        </span>
+                    </div>
+                    }
+                </div>
+
+                <!-- Notes -->
+                @if (repairValue.customerDevice?.notes) {
+                <div class="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
+                    {{ repairValue.customerDevice?.notes }}
+                </div>
+                }
+                <!-- Actions -->
+                <div class="mt-4 flex gap-2">
+                    <button
+                        (click)="editAssignedDevice(repairValue.customerId, repairValue.customerDevice)"
+                        class="cursor-pointer flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                        Edit
+                    </button>
+                </div>
+
+            </div>
             @if (bookingEnabled()) {
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
@@ -414,8 +539,7 @@
                         <span class="text-xs font-medium text-gray-500">
                             Scheduled
                         </span>
-                        <button
-                            type="button"
+                        <button type="button"
                             class="cursor-pointer text-sm font-medium text-brand transition hover:text-brand-soft"
                             (click)="openRescheduleModal()">
                             Reschedule

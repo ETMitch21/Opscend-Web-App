@@ -60,6 +60,7 @@ export interface Repair {
     orderId: string | null;
 
     customer?: any;
+    customerDevice?: any;
 
     status: RepairStatus;
 

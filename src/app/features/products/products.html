@@ -1,0 +1,271 @@
+<div class="">
+    <!-- Top Header -->
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <h1 class="text-2xl font-semibold text-gray-900">Products</h1>
+
+        <button
+            class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft"
+            (click)="openCreateDrawer()">
+            Create Product
+        </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-6">
+        <nav class="flex space-x-6 text-sm font-medium text-gray-600">
+            <!-- All -->
+            <button (click)="setView('all')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'all'" [class.text-brand]="activeView() === 'all'"
+                [class.border-transparent]="activeView() !== 'all'"
+                [class.hover:text-gray-900]="activeView() !== 'all'">
+                All Products
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().all }}
+                </span>
+            </button>
+
+            <!-- Active -->
+            <button (click)="setView('active')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'active'" [class.text-brand]="activeView() === 'active'"
+                [class.border-transparent]="activeView() !== 'active'"
+                [class.hover:text-gray-900]="activeView() !== 'active'">
+                Active
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().active }}
+                </span>
+            </button>
+
+            <!-- Inactive -->
+            <button (click)="setView('inactive')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'inactive'" [class.text-brand]="activeView() === 'inactive'"
+                [class.border-transparent]="activeView() !== 'inactive'"
+                [class.hover:text-gray-900]="activeView() !== 'inactive'">
+                Inactive
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().inactive }}
+                </span>
+            </button>
+
+            <!-- Archived -->
+            <button (click)="setView('archived')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'archived'" [class.text-brand]="activeView() === 'archived'"
+                [class.border-transparent]="activeView() !== 'archived'"
+                [class.hover:text-gray-900]="activeView() !== 'archived'">
+                Archived
+                <span class="ml-1 text-xs text-gray-400">
+                    {{ counts().archived }}
+                </span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Search + Filters -->
+    <div class="flex items-center justify-between gap-4 px-6 py-4">
+        <!-- Search -->
+        <div class="relative w-80">
+            <input type="text" placeholder="Search products..."
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 pl-10 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                [value]="searchTerm()" (input)="setSearchTerm($any($event.target).value)" />
+
+            <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
+                stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="px-6 pb-6">
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <!-- Loading state -->
+        @if (loading()) {
+        <div class="flex items-center justify-center px-6 py-16">
+            <div class="text-sm text-gray-500">Loading products...</div>
+        </div>
+        }
+
+        <!-- Error state -->
+        @else if (error()) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <p class="text-sm font-medium text-red-600">{{ error() }}</p>
+            <button (click)="refresh()"
+                class="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+                Try Again
+            </button>
+        </div>
+        }
+
+        <!-- Empty state -->
+        @else if (filteredProducts().length === 0) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <h3 class="text-base font-semibold text-gray-900">No products found</h3>
+            <p class="mt-1 text-sm text-gray-500">
+                Try adjusting your filters or create a new product.
+            </p>
+        </div>
+        }
+
+        <!-- Table -->
+        @else {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50/80">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Product
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Status
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Price
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Cost
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Tags
+                        </th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            &nbsp;
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    @for (product of filteredProducts(); track trackByProductId($index, product)) {
+                    <tr class="transition hover:bg-gray-50/70">
+                        <!-- Product -->
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex flex-col gap-1">
+
+                                <!-- Title -->
+                                <div class="max-w-[280px] truncate text-sm font-semibold text-gray-900"
+                                    [title]="product.name">
+                                    {{ product.name }}
+                                </div>
+
+                                <!-- Meta -->
+                                <div class="text-xs text-gray-500">
+                                    @if (product.sku) {
+                                    SKU: {{ product.sku }}
+                                    } @else {
+                                    {{ product.id }}
+                                    }
+                                </div>
+
+                            </div>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-6 py-4 align-top">
+                            @if (product.deletedAt) {
+                            <span
+                                class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
+                                Archived
+                            </span>
+                            } @else {
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                [class.bg-emerald-50]="product.status === 'active'"
+                                [class.text-emerald-700]="product.status === 'active'"
+                                [class.bg-gray-100]="product.status === 'inactive'"
+                                [class.text-gray-700]="product.status === 'inactive'">
+                                {{ product.status | titlecase }}
+                            </span>
+                            }
+                        </td>
+
+                        <!-- Price -->
+                        <td class="px-6 py-4 align-top">
+                            <span class="text-sm font-medium text-gray-900">
+                                {{ formatMoney(product.price) }}
+                            </span>
+                        </td>
+
+                        <!-- Cost -->
+                        <td class="px-6 py-4 align-top">
+                            <span class="text-sm text-gray-700">
+                                {{ formatMoney(product.cost) }}
+                            </span>
+                        </td>
+
+                        <!-- Tags -->
+                        <td class="px-6 py-4 align-top">
+                            @if (product.tags.length) {
+                            <div class="max-w-[260px] text-sm text-gray-600" [title]="product.tags.join(', ')">
+
+                                <span class="font-medium text-gray-700">
+                                    {{ product.tags[0] }}
+                                </span>
+
+                                @if (product.tags.length > 1) {
+                                <span class="text-gray-400">
+                                    · {{ product.tags[1] }}
+                                </span>
+                                }
+
+                                @if (product.tags.length > 2) {
+                                <span class="text-gray-400">
+                                    · +{{ product.tags.length - 2 }}
+                                </span>
+                                }
+
+                            </div>
+                            } @else {
+                            <span class="text-sm text-gray-400">—</span>
+                            }
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-6 py-4 align-top text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button
+                                    class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    [routerLink]="['/products', 'detail', product.id]">
+                                    View
+                                </button>
+
+                                @if (product.deletedAt) {
+                                <button
+                                    class="cursor-pointer rounded-lg border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+                                    (click)="restoreProduct(product.id)">
+                                    Restore
+                                </button>
+                                } @else {
+                                <button
+                                    class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50"
+                                    (click)="archiveProduct(product.id)">
+                                    Archive
+                                </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer / pagination -->
+        <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+            <p class="text-sm text-gray-500">
+                Showing {{ filteredProducts().length }} product<span
+                    [class.hidden]="filteredProducts().length === 1">s</span>
+            </p>
+
+            @if (nextCursor()) {
+            <button (click)="loadMore()" [disabled]="loadingMore()"
+                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50">
+                {{ loadingMore() ? 'Loading...' : 'Load more' }}
+            </button>
+            }
+        </div>
+        }
+    </div>
+</div>
+
+@if (createDrawerOpen()) {
+<app-product-create-drawer (closed)="closeCreateDrawer()" (created)="handleProductCreated()">
+</app-product-create-drawer>
+}

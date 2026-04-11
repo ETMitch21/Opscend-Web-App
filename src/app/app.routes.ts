@@ -19,6 +19,8 @@ import { ShopSettings } from './features/settings/shop-settings/shop-settings';
 import { ShopUsers } from './features/settings/shop-users/shop-users';
 import { SignupComponent } from './features/auth/signup-component/signup-component';
 import { AcceptInviteComponent } from './features/auth/accept-invite-component/accept-invite-component';
+import { Products } from './features/products/products';
+import { ProductDetail } from './features/products/product-detail/product-detail';
 
 export const routes: Routes = [
     { path: "signup", component: SignupComponent, canActivate: [PublicGuard] },
@@ -78,6 +80,24 @@ export const routes: Routes = [
             }
         ],
         canActivate: [AuthGuard]
+    },
+    {
+        path: 'products',
+        children: [
+            {
+                path: 'overview',
+                component: Products
+            },
+            {
+                path: 'detail/:id',
+                component: ProductDetail
+            },
+            {
+                path: '',
+                redirectTo: 'overview',
+                pathMatch: 'full'
+            }
+        ]
     },
     {
         path: 'repairs',

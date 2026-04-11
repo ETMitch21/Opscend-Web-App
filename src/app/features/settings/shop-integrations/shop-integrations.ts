@@ -51,11 +51,11 @@ export class ShopIntegrations {
   }
 
   onConnect(): void {
-    if (this.connecting || this.isConnected) return;
+  if (this.connecting || this.isConnected) return;
 
-    this.connecting = true;
-    this.mobilesentrix.connect();
-  }
+  this.connecting = true;
+  this.mobilesentrix.connect();
+}
 
   onDisconnect(): void {
     if (this.disconnecting) return;

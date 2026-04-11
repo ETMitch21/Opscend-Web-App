@@ -14,6 +14,7 @@ import {
   UsersIcon,
   UserIcon,
   WrenchIcon,
+  BoxIcon,
   XIcon
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
@@ -67,6 +68,7 @@ export class AppShellComponent implements OnInit {
   readonly wrenchIcon = WrenchIcon;
   readonly usersIcon = UsersIcon;
   readonly userIcon = UserIcon;
+  readonly boxesIcon = BoxIcon
   readonly calendarClockIcon = CalendarClockIcon;
 
   layoutDashboardIcon: LucideIconData = LayoutDashboard;
@@ -89,6 +91,7 @@ export class AppShellComponent implements OnInit {
 
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
+    { label: 'Products', route: '/products', icon: this.boxesIcon},
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
     { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon }
   ];

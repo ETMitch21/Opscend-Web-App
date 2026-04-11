@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
+  DestroyRef,
   HostListener,
   OnDestroy,
   OnInit,
@@ -20,11 +21,16 @@ import {
   Save,
   Clock3,
   MessageSquareText,
+  MailIcon,
+  PhoneIcon,
   LucideIconData,
   ChevronLeftIcon,
   ChevronDown,
   Check,
   UserRoundX,
+  UserRound,
+  ArrowRight,
+  SmartphoneIcon,
 } from 'lucide-angular';
 
 import { RepairsStore } from '../../../core/repairs/repairs.store';
@@ -44,6 +50,11 @@ import {
 import { SchedulingModalService } from '../../../core/scheduling/schedulingModal-service';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
 import { environment } from '../../../../environments/environment';
+import { PhonePipe } from '../../../core/pipes/phone-pipe';
+import { ManageDevicesModalService } from '../../../components/modals/manage-devices-modal-component/manage-devices-modal-service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
+import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
 
 interface ShopListResponse {
   data: Array<{
@@ -66,6 +77,7 @@ interface ShopListResponse {
     LucideAngularModule,
     RepairOrderCard,
     SchedulingPickerModalComponent,
+    PhonePipe,
   ],
   templateUrl: './repair-detail.html',
   styleUrl: './repair-detail.scss',
@@ -77,6 +89,9 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
+  private readonly manageDevicesModalService = inject(ManageDevicesModalService);
+  private readonly customerDevicesStore = inject(CustomerDevicesStore);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly store = inject(RepairsStore);
   readonly usersStore = inject(UsersStore);
@@ -93,6 +108,7 @@ export class RepairDetail implements OnInit, OnDestroy {
 
   readonly icons = {
     ArrowLeft,
+    ArrowRight,
     Paperclip,
     Save,
     Clock3,
@@ -100,6 +116,10 @@ export class RepairDetail implements OnInit, OnDestroy {
     ChevronDown,
     Check,
     UserRoundX,
+    UserRound,
+    MailIcon,
+    PhoneIcon,
+    SmartphoneIcon
   };
 
   readonly repairId = signal<string | null>(null);
@@ -289,6 +309,16 @@ export class RepairDetail implements OnInit, OnDestroy {
         })
       );
     }
+
+    this.manageDevicesModalService.modalClosed$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.customerDevicesStore.clearSelected();
+        if(this.repair()) {
+          let id = this.repair()?.id;
+          id ? this.store.loadRepair(id) : null;
+        }
+      });
   }
 
   private async loadBookingEnabled(): Promise<void> {
@@ -826,6 +856,11 @@ export class RepairDetail implements OnInit, OnDestroy {
         ? 'The appointment was updated successfully.'
         : 'The appointment was created successfully.'
     );
+  }
+
+  editAssignedDevice(customerId:string, customerDevice:CustomerDevice) {
+    this.customerDevicesStore.setSelected(customerDevice);
+    this.manageDevicesModalService.open(customerId);
   }
 
   @HostListener('document:click', ['$event'])
