@@ -1,475 +1,497 @@
 <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
   <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
     <div>
-      <h2 class="text-sm font-semibold text-gray-900">Order</h2>
-      <p class="text-xs text-gray-500">Pricing & payments</p>
-    </div>
+      <div class="mb-2 flex items-center gap-2">
+        <lucide-icon [name]="icons.Package2" class="h-4 w-4 text-gray-400"></lucide-icon>
+        <h2 class="text-sm font-semibold text-gray-900">Order</h2>
+      </div>
 
-    @if (order(); as orderValue) {
+      @if (order(); as orderValue) {
       <div class="flex flex-wrap items-center gap-2">
-        <span class="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">
+        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
           {{ orderValue.orderNumber }}
         </span>
 
-        <span class="rounded-full border px-3 py-1 text-xs font-semibold"
+        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
           [ngClass]="statusClasses(orderValue.paymentStatus)">
-          {{ orderValue.paymentStatus }}
+          <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
+          {{ orderValue.paymentStatus | titlecase}}
         </span>
 
-        <span class="rounded-full border px-3 py-1 text-xs font-semibold"
+        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
           [ngClass]="statusClasses(orderValue.fulfillmentStatus)">
-          {{ orderValue.fulfillmentStatus }}
+          <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
+          {{ orderValue.fulfillmentStatus | titlecase }}
         </span>
       </div>
+      }
+    </div>
+    @if (order()?.paymentStatus !== 'voided') {
+    <div class="flex justify-end gap-2">
+      <button type="button"
+        class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white transition hover:bg-emerald-700"
+        (click)="openPaymentModal()">
+        <lucide-icon [name]="icons.CreditCard" class="h-3.5 w-3.5"></lucide-icon>
+        Add Payment
+      </button>
+      <button type="button"
+        class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600"
+        (click)="openRefundModal()">
+        <lucide-icon [name]="icons.RotateCcw" class="h-3.5 w-3.5"></lucide-icon>
+        Add Refund
+      </button>
+      @if (canVoid() && !moneyLocked()) {
+      <button type="button"
+        class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3 text-xs font-medium text-white transition hover:bg-red-600"
+        (click)="voidOrder()">
+        <lucide-icon [name]="icons.XCircle" class="h-3.5 w-3.5"></lucide-icon>
+        Void
+      </button>
+      }
+      @if (!moneyLocked()) {
+      <button type="button"
+        class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-xs font-medium text-white transition hover:bg-brand-soft disabled:opacity-70"
+        [disabled]="saving() || !itemsArray().length" (click)="saveItems()">
+        <lucide-icon [name]="icons.Save" class="h-3.5 w-3.5"></lucide-icon>
+        Save
+      </button>
+      }
+    </div>
     }
   </div>
 
-  <div class="p-6 space-y-6">
+  <div class="space-y-6">
     @if (!orderId() && !order()) {
-      <div class="rounded-xl border border-dashed border-gray-200 p-5">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <h3 class="text-sm font-semibold text-gray-900">No order linked yet</h3>
-            <p class="mt-1 text-sm text-gray-500">
-              Create an order to price the repair and collect payment.
-            </p>
+    <div class="rounded-xl border border-dashed border-gray-200 p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">No order linked yet</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Create an order to price the repair and collect payment.
+          </p>
+        </div>
+
+        <button type="button"
+          class="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:opacity-60"
+          [disabled]="saving() || disabled()" (click)="createOrder()">
+          <lucide-icon [name]="icons.FilePlus2" class="h-4 w-4"></lucide-icon>
+          Create Order
+        </button>
+      </div>
+    </div>
+    } @else if (loading()) {
+    <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 pb-4 text-sm text-gray-500">
+      Loading order...
+    </div>
+    } @else if (order(); as orderValue) {
+    <div class="space-y-6">
+      <form [formGroup]="itemsForm">
+        @if (!moneyLocked()) {
+
+        @if (orderValue.paymentStatus !== 'voided') {
+        <div class="relative">
+          <div class="flex flex-col gap-3 py-1 pe-6 sm:flex-row sm:items-center border border-gray-200 bg-gray-50">
+            <div class="relative flex-1">
+              <lucide-icon [name]="icons.Search"
+                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 me-3 -translate-y-1/2 text-gray-400">
+              </lucide-icon>
+
+              <input type="text" [formControl]="itemSearchControl" placeholder="Add a product or service..."
+                class="h-11 w-full bg-transparent pl-12 pr-4 text-sm text-gray-900 outline-none transition"
+                (focus)="onSearchFocus()" (blur)="onSearchBlur()" />
+            </div>
+
+            <button type="button"
+              class="cursor-pointer inline-flex h-8 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              (click)="addCustomItem()">
+              <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+              Custom
+            </button>
           </div>
 
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:opacity-60"
-            [disabled]="saving() || disabled()"
-            (click)="createOrder()">
-            <lucide-icon [name]="icons.FilePlus2" class="h-4 w-4"></lucide-icon>
-            Create Order
+          @if (searchFocused() && filteredCatalogItems().length) {
+          <div
+            class="absolute left-6 right-6 top-full z-20 mt-2 max-h-72 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+            @for (result of filteredCatalogItems(); track trackCatalogItem($index, result)) {
+            <button type="button"
+              class="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-gray-50"
+              (click)="addCatalogItem(result)">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+
+                  <span class="truncate text-sm font-medium text-gray-900">
+                    {{ result.name }}
+                  </span>
+                </div>
+
+                @if (result.description) {
+                <p class="mt-1 truncate text-xs text-gray-500">
+                  {{ result.description }}
+                </p>
+                }
+              </div>
+
+              <div class="ml-4 text-sm font-semibold text-gray-900">
+                {{ money(result.priceCents ?? 0) }}
+              </div>
+            </button>
+            }
+          </div>
+          }
+        </div>
+        }
+        }
+
+        <div formArrayName="items" class="space-y-3">
+          <div class="group border-b border-gray-200">
+            <div class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2">
+              <div class="text-xs font-bold">
+                Item
+              </div>
+              <div class="text-xs text-center font-bold">
+                Qty
+              </div>
+              <div class="text-xs text-right font-bold">
+                Price
+              </div>
+              <div class="text-xs text-right font-bold">
+                Line Total
+              </div>
+              <div class="text-xs font-bold min-w-[50px]">
+                &nbsp;
+              </div>
+            </div>
+          </div>
+          @for (item of itemsArray().controls; track $index) {
+          <div [formGroupName]="$index" class="group border-b border-gray-200">
+            <div class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2">
+              <div class="min-w-0">
+                <h3 class="max-w-[155px] truncate text-sm text-gray-900">
+                  {{ item.get('name')?.value || 'Untitled item' }}
+                </h3>
+
+                @if (item.get('notes')?.value) {
+                <p class="max-w-[150px] mt-0.5 truncate text-xs text-gray-500">
+                  {{ item.get('notes')?.value }}
+                </p>
+                }
+              </div>
+              <div class="text-center">
+                <p class="text-xs text-gray-900">
+                  {{ item.get('quantity')?.value || 1 }}
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-gray-900">
+                  {{ money(toCents(item.get('unitPriceDollars')?.value)) }}
+                </p>
+              </div>
+              <div class="text-right font-medium">
+                <p class="text-xs text-gray-900">
+                  {{ lineTotal($index) }}
+                </p>
+              </div>
+              <div class="min-w-[50px] flex justify-end">
+                @if (!moneyLocked()) {
+                <div class="flex items-center gap-1">
+                  <button type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+                    (click)="toggleExpandedItem($index)">
+                    <lucide-icon [name]="icons.Pencil" class="h-4 w-4"></lucide-icon>
+                  </button>
+
+                  <button type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
+                    (click)="removeItem($index)">
+                    <lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon>
+                  </button>
+                </div>
+                }
+              </div>
+            </div>
+
+            @if (expandedItemIndex() === $index && !moneyLocked()) {
+            <div class="border-t border-gray-100 bg-gray-50/70 px-3 py-3">
+              <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500">Type</label>
+                  <select formControlName="type"
+                    class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
+                    <option value="service">Service</option>
+                    <option value="product">Product</option>
+                  </select>
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="mb-1 block text-xs font-medium text-gray-500">Name</label>
+                  <input type="text" formControlName="name"
+                    class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+                </div>
+
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500">Qty</label>
+                  <input type="number" min="1" formControlName="quantity"
+                    class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+                </div>
+
+                <div>
+                  <label class="mb-1 block text-xs font-medium text-gray-500">Unit Price</label>
+                  <input type="number" min="0" step="0.01" formControlName="unitPriceDollars"
+                    class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+                </div>
+
+                <div class="md:col-span-2 xl:col-span-3">
+                  <label class="mb-1 block text-xs font-medium text-gray-500">Notes</label>
+                  <input type="text" formControlName="notes"
+                    class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+          } @empty {
+          <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center">
+            <div class="text-sm font-medium text-gray-900">No items yet</div>
+            <div class="mt-1 text-sm text-gray-500">
+              Search above to add a service or product.
+            </div>
+          </div>
+          }
+        </div>
+
+        <div>
+          <div
+            class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2 group border-b border-gray-200">
+            <div class="min-w-0 col-span-3">
+              <p class="text-xs text-right font-bold text-gray-900">
+                Subtotal
+              </p>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs text-right text-gray-900">
+                {{ money(draftSubtotalCents()) }}
+              </p>
+            </div>
+            <div class="min-w-[50px]">
+
+            </div>
+          </div>
+          <div
+            class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2 group border-b border-gray-200">
+            <div class="min-w-0 col-span-3">
+              <p class="text-xs text-right font-bold text-gray-900">
+                Discount
+              </p>
+            </div>
+            <div class="min-w-0 col-span-2">
+              <div class="relative ml-[52px]">
+                <span class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                  $
+                </span>
+                <input type="number" min="0" step="0.01" formControlName="discountDollars" placeholder="Discount"
+                  [disabled]="moneyLocked()"
+                  class="h-8 w-full rounded-lg border border-gray-200 bg-gray-50 pl-5 pr-2 text-xs outline-none transition focus:border-gray-300 focus:bg-white" />
+              </div>
+            </div>
+          </div>
+          <div
+            class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2 group border-b border-gray-200">
+            <div class="min-w-0 col-span-3">
+              <p class="text-xs text-right font-bold text-gray-900">
+                Total
+              </p>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs text-right font-bold text-gray-900">
+                {{ money(draftTotalCents()) }}
+              </p>
+            </div>
+            <div class="min-w-[50px]">
+
+            </div>
+          </div>
+        </div>
+      </form>
+
+      @if (orderValue.payments.length) {
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-100 px-4 py-3">
+          <h3 class="text-sm font-semibold text-gray-900">Payments</h3>
+        </div>
+
+        <div class="divide-y divide-gray-100">
+          @for (payment of orderValue.payments; track payment.id) {
+          <div class="flex items-start justify-between gap-4 px-4 py-3 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                  [ngClass]="paymentTypeClasses(payment.type)">
+                  {{ payment.type }}
+                </span>
+                <span class="text-sm font-medium text-gray-900">{{ payment.method }}</span>
+              </div>
+
+              <div class="mt-1 text-xs text-gray-500">
+                {{ formatDate(payment.createdAt) }}
+              </div>
+
+              @if (payment.reference) {
+              <div class="mt-1 text-xs text-gray-500">
+                Ref: {{ payment.reference }}
+              </div>
+              }
+
+              @if (payment.note) {
+              <div class="mt-1 text-sm text-gray-500">
+                {{ payment.note }}
+              </div>
+              }
+            </div>
+
+            <div class="text-sm font-semibold text-gray-900">
+              {{ money(payment.amountCents) }}
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+  @if (showPaymentForm()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <button type="button" class="cursor-pointer absolute inset-0 bg-gray-900/30 backdrop-blur-sm"
+      (click)="closePaymentModal()">
+    </button>
+
+    <div class="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">Add Payment</h3>
+          <p class="mt-0.5 text-xs text-gray-500">Record money received on this order.</p>
+        </div>
+
+        <button type="button"
+          class="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          (click)="closePaymentModal()">
+          <lucide-icon [name]="icons.XCircle" class="h-4 w-4"></lucide-icon>
+        </button>
+      </div>
+
+      <form class="space-y-3 p-4" [formGroup]="paymentForm">
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Amount</label>
+          <input type="number" min="0.01" step="0.01" formControlName="amountDollars"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Method</label>
+          <select formControlName="method"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
+            <option value="card">Card</option>
+            <option value="cash">Cash</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Reference</label>
+          <input type="text" formControlName="reference"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Note</label>
+          <input type="text" formControlName="note"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button"
+            class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+            (click)="closePaymentModal()">
+            Cancel
+          </button>
+
+          <button type="button"
+            class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white transition hover:bg-emerald-700"
+            (click)="collectPayment()">
+            <lucide-icon [name]="icons.Wallet" class="h-3.5 w-3.5"></lucide-icon>
+            Save Payment
           </button>
         </div>
-      </div>
-    } @else if (loading()) {
-      <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-        Loading order...
-      </div>
-    } @else if (order(); as orderValue) {
-      <div class="space-y-6">
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Subtotal</div>
-            <div class="mt-1 text-base font-semibold text-gray-900">
-              {{ money(orderValue.totals.subtotalCents) }}
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Discount</div>
-            <div class="mt-1 text-base font-semibold text-gray-900">
-              -{{ money(orderValue.totals.discountCents) }}
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Paid</div>
-            <div class="mt-1 text-base font-semibold text-emerald-700">
-              {{ money(orderValue.totals.paidCents) }}
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Balance</div>
-            <div class="mt-1 text-base font-semibold"
-              [ngClass]="orderValue.totals.balanceCents === 0 ? 'text-emerald-700' : 'text-rose-600'">
-              {{ money(orderValue.totals.balanceCents) }}
-            </div>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-4">
-          <div>
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-500">Total</div>
-            <div class="mt-1 text-lg font-semibold text-gray-900">
-              {{ money(orderValue.totals.totalCents) }}
-            </div>
-          </div>
-
-          @if (moneyLocked()) {
-            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
-              Items locked after payment activity
-            </div>
-          }
-        </div>
-
-        <div class="rounded-xl border border-gray-200 p-4">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-900">Line Items</h3>
-              <p class="mt-1 text-xs text-gray-500">
-                Build the repair total here.
-              </p>
-            </div>
-
-            @if (!moneyLocked()) {
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand"
-                  (click)="addItem('service')">
-                  Add Service
-                </button>
-
-                <button
-                  type="button"
-                  class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand"
-                  (click)="addItem('product')">
-                  Add Product
-                </button>
-              </div>
-            }
-          </div>
-
-          @if (moneyLocked()) {
-            <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Items can’t be edited after payments or refunds exist.
-            </div>
-          }
-
-          <form class="mt-4 space-y-3" [formGroup]="itemsForm">
-            <div class="hidden grid-cols-12 gap-3 px-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 lg:grid">
-              <div class="col-span-1">Type</div>
-              <div class="col-span-4">Name</div>
-              <div class="col-span-1">Qty</div>
-              <div class="col-span-2">Unit Price</div>
-              <div class="col-span-3 text-right">Line Total</div>
-              <div class="col-span-1"></div>
-            </div>
-
-            <div formArrayName="items" class="space-y-3">
-              @for (item of itemsArray().controls; track $index) {
-                <div
-                  class="rounded-xl border border-gray-200 bg-gray-50 p-3 lg:grid lg:grid-cols-12 lg:items-center lg:gap-3"
-                  [formGroupName]="$index">
-
-                  <div class="lg:col-span-1">
-                    <label class="mb-1 block text-xs font-medium text-gray-600 lg:hidden">Type</label>
-                    <select
-                      formControlName="type"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                      [disabled]="moneyLocked()">
-                      <option value="service">Service</option>
-                      <option value="product">Product</option>
-                    </select>
-                  </div>
-
-                  <div class="mt-3 lg:col-span-4 lg:mt-0">
-                    <label class="mb-1 block text-xs font-medium text-gray-600 lg:hidden">Name</label>
-                    <input
-                      type="text"
-                      formControlName="name"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                      [disabled]="moneyLocked()" />
-                  </div>
-
-                  <div class="mt-3 lg:col-span-1 lg:mt-0">
-                    <label class="mb-1 block text-xs font-medium text-gray-600 lg:hidden">Qty</label>
-                    <input
-                      type="number"
-                      min="1"
-                      formControlName="quantity"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                      [disabled]="moneyLocked()" />
-                  </div>
-
-                  <div class="mt-3 lg:col-span-2 lg:mt-0">
-                    <label class="mb-1 block text-xs font-medium text-gray-600 lg:hidden">Unit Price</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      formControlName="unitPriceDollars"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                      [disabled]="moneyLocked()" />
-                  </div>
-
-                  <div class="mt-3 lg:col-span-3 lg:mt-0">
-                    <label class="mb-1 block text-xs font-medium text-gray-600 lg:hidden">Line Total</label>
-                    <div
-                      class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900 lg:text-right">
-                      {{ lineTotal($index) }}
-                    </div>
-                  </div>
-
-                  <div class="mt-3 flex justify-end lg:col-span-1 lg:mt-0">
-                    @if (!moneyLocked()) {
-                      <button
-                        type="button"
-                        class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-                        (click)="removeItem($index)">
-                        Remove
-                      </button>
-                    }
-                  </div>
-
-                  <div class="mt-3 lg:col-span-12 lg:mt-3">
-                    <label class="mb-1 block text-xs font-medium text-gray-600">Notes</label>
-                    <input
-                      type="text"
-                      formControlName="notes"
-                      class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                      [disabled]="moneyLocked()" />
-                  </div>
-                </div>
-              } @empty {
-                <div class="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                  No items yet.
-                </div>
-              }
-            </div>
-
-            <div class="grid gap-3 pt-1 sm:grid-cols-[220px_minmax(0,1fr)]">
-              <div>
-                <label class="mb-1 block text-xs font-medium text-gray-600">Discount</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  formControlName="discountDollars"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-                  [disabled]="moneyLocked()" />
-              </div>
-
-              <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-gray-500">Draft subtotal</span>
-                  <span class="font-medium text-gray-900">{{ money(draftSubtotalCents()) }}</span>
-                </div>
-
-                <div class="mt-2 flex items-center justify-between text-sm">
-                  <span class="text-gray-500">Draft discount</span>
-                  <span class="font-medium text-gray-900">-{{ money(draftDiscountCents()) }}</span>
-                </div>
-
-                <div class="mt-3 flex items-center justify-between border-t border-gray-200 pt-3 text-sm font-semibold">
-                  <span class="text-gray-900">Draft total</span>
-                  <span class="text-gray-900">{{ money(draftTotalCents()) }}</span>
-                </div>
-              </div>
-            </div>
-
-            @if (!moneyLocked()) {
-              <div class="flex justify-end">
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:opacity-70"
-                  [disabled]="saving() || !itemsArray().length"
-                  (click)="saveItems()">
-                  <lucide-icon [name]="icons.Save" class="h-4 w-4"></lucide-icon>
-                  Save Items
-                </button>
-              </div>
-            }
-          </form>
-        </div>
-
-        <div class="rounded-xl border border-gray-200 p-4">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-900">Payments</h3>
-              <p class="mt-1 text-xs text-gray-500">
-                Collect money and review payment history.
-              </p>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand"
-                (click)="showPaymentForm.set(!showPaymentForm())">
-                Collect Payment
-              </button>
-
-              <button
-                type="button"
-                class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand"
-                (click)="showRefundForm.set(!showRefundForm())">
-                Refund
-              </button>
-
-              @if (canVoid()) {
-                <button
-                  type="button"
-                  class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-50"
-                  (click)="voidOrder()">
-                  Void
-                </button>
-              }
-            </div>
-          </div>
-
-          @if (showPaymentForm()) {
-            <form class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4" [formGroup]="paymentForm">
-              <div class="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Amount</label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    formControlName="amountDollars"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand" />
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Method</label>
-                  <select
-                    formControlName="method"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand">
-                    <option value="card">Card</option>
-                    <option value="cash">Cash</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Reference</label>
-                  <input
-                    type="text"
-                    formControlName="reference"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand" />
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Note</label>
-                  <input
-                    type="text"
-                    formControlName="note"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand" />
-                </div>
-              </div>
-
-              <div class="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-white hover:text-gray-900"
-                  (click)="showPaymentForm.set(false)">
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  class="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:opacity-70"
-                  [disabled]="saving()"
-                  (click)="collectPayment()">
-                  Save Payment
-                </button>
-              </div>
-            </form>
-          }
-
-          @if (showRefundForm()) {
-            <form class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4" [formGroup]="refundForm">
-              <div class="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Amount</label>
-                  <input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    formControlName="amountDollars"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand" />
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Method</label>
-                  <select
-                    formControlName="method"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand">
-                    <option value="card">Card</option>
-                    <option value="cash">Cash</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Reference</label>
-                  <input
-                    type="text"
-                    formControlName="reference"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand" />
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-600">Note</label>
-                  <input
-                    type="text"
-                    formControlName="note"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand" />
-                </div>
-              </div>
-
-              <div class="mt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  class="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-white hover:text-gray-900"
-                  (click)="showRefundForm.set(false)">
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  class="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:opacity-70"
-                  [disabled]="saving()"
-                  (click)="refund()">
-                  Save Refund
-                </button>
-              </div>
-            </form>
-          }
-
-          <div class="mt-4 space-y-3">
-            @for (payment of orderValue.payments; track payment.id) {
-              <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="rounded-full border px-2.5 py-1 text-[11px] font-semibold"
-                        [ngClass]="paymentTypeClasses(payment.type)">
-                        {{ payment.type }}
-                      </span>
-
-                      <span class="text-sm font-semibold text-gray-900">
-                        {{ money(payment.amountCents) }}
-                      </span>
-                    </div>
-
-                    <div class="mt-1 text-xs text-gray-500">
-                      {{ payment.method }}
-                      @if (payment.reference) {
-                        • {{ payment.reference }}
-                      }
-                    </div>
-
-                    @if (payment.note) {
-                      <div class="mt-1 text-xs text-gray-500">
-                        {{ payment.note }}
-                      </div>
-                    }
-                  </div>
-
-                  <div class="shrink-0 text-xs text-gray-500">
-                    {{ formatDate(payment.createdAt) }}
-                  </div>
-                </div>
-              </div>
-            } @empty {
-              <div class="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
-                No payments yet.
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    }
+      </form>
+    </div>
   </div>
+  }
+
+  @if (showRefundForm()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <button type="button" class="cursor-pointer absolute inset-0 bg-gray-900/30 backdrop-blur-sm"
+      (click)="closeRefundModal()">
+    </button>
+
+    <div class="relative z-10 w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">Add Refund</h3>
+          <p class="mt-0.5 text-xs text-gray-500">Record money sent back to the customer.</p>
+        </div>
+
+        <button type="button"
+          class="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          (click)="closeRefundModal()">
+          <lucide-icon [name]="icons.XCircle" class="h-4 w-4"></lucide-icon>
+        </button>
+      </div>
+
+      <form class="space-y-3 p-4" [formGroup]="refundForm">
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Amount</label>
+          <input type="number" min="0.01" step="0.01" formControlName="amountDollars"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Method</label>
+          <select formControlName="method"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
+            <option value="card">Card</option>
+            <option value="cash">Cash</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Reference</label>
+          <input type="text" formControlName="reference"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+        </div>
+
+        <div>
+          <label class="mb-1 block text-xs font-medium text-gray-500">Note</label>
+          <input type="text" formControlName="note"
+            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button"
+            class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+            (click)="closeRefundModal()">
+            Cancel
+          </button>
+
+          <button type="button"
+            class="cursor-pointer  inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600"
+            (click)="refund()">
+            <lucide-icon [name]="icons.RotateCcw" class="h-3.5 w-3.5"></lucide-icon>
+            Save Refund
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  }
 </div>
