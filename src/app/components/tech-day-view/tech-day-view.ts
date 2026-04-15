@@ -36,7 +36,13 @@ export class TechDayView implements OnInit {
     return this.appointmentsStore.error() || this.usersStore.error();
   });
 
-  readonly assignableUsers = computed(() => this.usersStore.assignableUsers());
+  private readonly schedulingRoles = new Set(['owner', 'manager', 'tech']);
+
+  readonly assignableUsers = computed(() =>
+    this.usersStore
+      .assignableUsers()
+      .filter((user) => this.isSchedulingUser(user))
+  );
 
   readonly visibleUsers = computed(() => {
     if (this.showAllAppointments()) {
@@ -47,7 +53,7 @@ export class TechDayView implements OnInit {
     if (!currentUserId) return [];
 
     const currentUser = this.usersStore.getById(currentUserId);
-    return currentUser ? [currentUser] : [];
+    return currentUser && this.isSchedulingUser(currentUser) ? [currentUser] : [];
   });
 
   readonly appointmentsForSelectedDate = computed(() => {
@@ -65,7 +71,12 @@ export class TechDayView implements OnInit {
 
   readonly visibleAppointments = computed(() => {
     if (this.showAllAppointments()) {
-      return this.appointmentsForSelectedDate();
+      const allowedUserIds = new Set(this.assignableUsers().map((user) => user.id));
+
+      return this.appointmentsForSelectedDate().filter((item) => {
+        const assignedUserId = item.appointment.assignedUserId;
+        return !!assignedUserId && allowedUserIds.has(assignedUserId);
+      });
     }
 
     const currentUserId = this.currentUserId();
@@ -182,6 +193,11 @@ export class TechDayView implements OnInit {
 
   trackAppointment(_: number, item: AppointmentListItem): string {
     return item.appointment.id;
+  }
+
+  private isSchedulingUser(user: User | null | undefined): boolean {
+    if (!user) return false;
+    return this.schedulingRoles.has(user.role);
   }
 
   private async loadData(): Promise<void> {
