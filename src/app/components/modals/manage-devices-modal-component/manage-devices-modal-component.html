@@ -1,94 +1,86 @@
-<app-modal
-  [open]="showDeviceModal"
-  [title]="modalStatus === 'edit' ? 'Edit Device' : 'Create Device'"
-  maxWidthClass="max-w-lg"
-  (closed)="closeDeviceModal()"
->
-  <div modal-body class="space-y-3">
-    <form [formGroup]="deviceForm">
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <input type="text" id="nickname" placeholder=" " formControlName="nickname"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="nickname"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Nickname<sup class="text-danger text-xs">*</sup>
-                </label>
-            </div>
-        </div>
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <input type="text" id="imei" placeholder=" " formControlName="imei"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="imei"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    IMEI
-                </label>
-                <div class="flex justify-between mt-1 me-2 text-xs text-gray-400">
-                    <span></span>
-                    <span>{{ deviceForm.controls['imei'].value.length }} / 15</span>
+<app-modal [open]="showDeviceModal" [title]="modalStatus === 'edit' ? 'Edit Device' : 'Create Device'"
+    maxWidthClass="max-w-lg" (closed)="closeDeviceModal()">
+    <div modal-body class="space-y-3">
+        <form [formGroup]="deviceForm">
+            <div class="flex items-center justify-between gap-4 px-6 py-4">
+                <div class="relative w-full">
+                    <input type="text" id="nickname" placeholder=" " formControlName="nickname"
+                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                    <label for="nickname"
+                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                        Nickname<sup class="text-danger text-xs">*</sup>
+                    </label>
                 </div>
             </div>
-            <div class="relative w-full">
-                <input type="text" id="serial" placeholder=" " formControlName="serial"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="serial"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Serial #
-                </label>
-                <div class="mt-5"></div>
-            </div>
-        </div>
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <input type="text" id="brand" placeholder=" " formControlName="brand"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="brand"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Brand
-                </label>
-            </div>
-            <div class="relative w-full">
-                <input type="text" id="model" placeholder=" " formControlName="model"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="model"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Model
-                </label>
-            </div>
-        </div>
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <textarea id="notes" rows="2" placeholder=" " formControlName="notes"
-                    class="peer w-full px-4 pt-6 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"></textarea>
-                <label for="notes"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Notes
-                </label>
-                <div class="flex justify-between mt-1 me-2 text-xs text-gray-400">
-                    <span></span>
-                    <span>{{ deviceForm.controls['notes'].value.length }} / 500</span>
+            <div class="flex items-center justify-between gap-4 px-6 py-4">
+                <div class="relative w-full">
+                    <input type="text" id="imei" placeholder=" " formControlName="imei"
+                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                    <label for="imei"
+                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                        IMEI <sup class="text-danger text-xs">*</sup>
+                    </label>
+                    <div class="mt-1 text-right me-2 text-xs text-gray-400">
+                        <span>{{ deviceForm.controls['imei'].value.length }} / 15</span>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </form>
-  </div>
 
-  <div modal-footer class="flex items-center justify-end gap-2">
-    <button
-      type="button"
-      (click)="closeDeviceModal()"
-      class="cursor-pointer rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
-    >
-      Cancel
-    </button>
-    <button
-      type="button"
-      class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-80 transition disabled:opacity-80 disabled:cursor-not-allowed"
-      [disabled]="!deviceForm.valid"
-      (click)="saveDevice()"
-    >
-      {{ modalStatus === 'edit' ? 'Update' : 'Create' }}
-    </button>
-  </div>
+                <div class="relative w-full">
+                    <input type="text" id="serial" placeholder=" " formControlName="serial"
+                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                    <label for="serial"
+                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                        Serial # <sup class="text-danger text-xs">*</sup>
+                    </label>
+                    <div class="mt-1 flex items-center justify-between me-2 text-xs text-gray-400">
+                        <span>&nbsp;</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-6 py-4">
+                <div class="relative w-full">
+                    <input type="text" id="brand" placeholder=" " formControlName="brand"
+                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                    <label for="brand"
+                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                        Brand <sup class="text-danger text-xs">*</sup>
+                    </label>
+                </div>
+                <div class="relative w-full">
+                    <input type="text" id="model" placeholder=" " formControlName="model"
+                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
+                    <label for="model"
+                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                        Model <sup class="text-danger text-xs">*</sup>
+                    </label>
+                </div>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-6 py-4">
+                <div class="relative w-full">
+                    <textarea id="notes" rows="2" placeholder=" " formControlName="notes"
+                        class="peer w-full px-4 pt-6 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"></textarea>
+                    <label for="notes"
+                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                        Notes
+                    </label>
+                    <div class="flex justify-between mt-1 me-2 text-xs text-gray-400">
+                        <span></span>
+                        <span>{{ deviceForm.controls['notes'].value.length }} / 500</span>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div modal-footer class="flex items-center justify-end gap-2">
+        <button type="button" (click)="closeDeviceModal()"
+            class="cursor-pointer rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition">
+            Cancel
+        </button>
+        <button type="button"
+            class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-80 transition disabled:opacity-80 disabled:cursor-not-allowed"
+            [disabled]="!deviceForm.valid" (click)="saveDevice()">
+            {{ modalStatus === 'edit' ? 'Update' : 'Create' }}
+        </button>
+    </div>
 </app-modal>

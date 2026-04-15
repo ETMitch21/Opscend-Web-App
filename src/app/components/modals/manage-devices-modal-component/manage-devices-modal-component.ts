@@ -33,6 +33,8 @@ export class ManageDevicesModalComponent implements OnInit {
   public showDeviceModal = false;
   public modalStatus: 'edit' | 'new' = 'new';
 
+  private nicknameManuallyEdited = false;
+
   public readonly deviceForm: DeviceForm = new FormGroup({
     nickname: new FormControl('', {
       nonNullable: true,
@@ -48,10 +50,11 @@ export class ManageDevicesModalComponent implements OnInit {
     }),
     imei: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.minLength(15), Validators.maxLength(15)],
+      validators: [Validators.required, Validators.minLength(1), Validators.maxLength(15)],
     }),
     serial: new FormControl('', {
       nonNullable: true,
+      validators: [Validators.minLength(1)],
     }),
     notes: new FormControl('', {
       nonNullable: true,
@@ -75,11 +78,32 @@ export class ManageDevicesModalComponent implements OnInit {
           this.setupModal();
         }
       });
+
+    this.deviceForm.controls.nickname.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if ((value ?? '').trim().length > 0) {
+          this.nicknameManuallyEdited = true;
+        }
+      });
+
+    this.deviceForm.controls.brand.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.syncGeneratedNickname();
+      });
+
+    this.deviceForm.controls.model.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.syncGeneratedNickname();
+      });
   }
 
   private setupModal(): void {
     const selected = this.customerDeviceStore.selected();
     this.modalStatus = selected ? 'edit' : 'new';
+    this.nicknameManuallyEdited = false;
 
     if (selected) {
       this.deviceForm.patchValue({
@@ -90,6 +114,8 @@ export class ManageDevicesModalComponent implements OnInit {
         serial: selected.serial ?? '',
         notes: selected.notes ?? '',
       });
+
+      this.nicknameManuallyEdited = !!selected.nickname?.trim();
       return;
     }
 
@@ -120,11 +146,14 @@ export class ManageDevicesModalComponent implements OnInit {
 
     const selected = this.customerDeviceStore.selected();
     const formValue = this.deviceForm.getRawValue();
+    const displayName = this.buildDisplayName(formValue.brand, formValue.model);
+    const nickname = formValue.nickname.trim();
 
     try {
       if (selected) {
         await this.customerDeviceStore.update(selected.id, {
-          nickname: formValue.nickname,
+          nickname,
+          displayName,
           brand: formValue.brand,
           model: formValue.model,
           imei: formValue.imei,
@@ -143,8 +172,8 @@ export class ManageDevicesModalComponent implements OnInit {
       }
 
       await this.customerDeviceStore.create(this.customerId, {
-        nickname: formValue.nickname,
-        displayName: formValue.nickname,
+        nickname,
+        displayName,
         brand: formValue.brand,
         model: formValue.model,
         imei: formValue.imei,
@@ -157,5 +186,20 @@ export class ManageDevicesModalComponent implements OnInit {
     } catch (e: any) {
       this.toastService.error(e);
     }
+  }
+
+  private syncGeneratedNickname(): void {
+    if (this.modalStatus === 'edit' || this.nicknameManuallyEdited) return;
+
+    const generated = this.buildDisplayName(
+      this.deviceForm.controls.brand.value,
+      this.deviceForm.controls.model.value
+    );
+
+    this.deviceForm.controls.nickname.setValue(generated, { emitEvent: false });
+  }
+
+  private buildDisplayName(brand: string, model: string): string {
+    return [brand.trim(), model.trim()].filter((part) => part.length > 0).join(' ');
   }
 }
