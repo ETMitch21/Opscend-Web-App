@@ -216,7 +216,16 @@
                         </th>
 
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Device
+                            <button type="button"
+                                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
+                                (click)="setSort('device')">
+                                <span>Device</span>
+                                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition"
+                                    [class.text-brand]="isSortedBy('device')"
+                                    [class.text-gray-300]="!isSortedBy('device')"
+                                    [style.transform]="getSortIconRotation('device')">
+                                </lucide-icon>
+                            </button>
                         </th>
 
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">

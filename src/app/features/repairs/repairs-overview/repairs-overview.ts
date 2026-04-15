@@ -30,6 +30,7 @@ type RepairSortKey =
   | 'status'
   | 'appointment'
   | 'customer'
+  | 'device'
   | 'technician';
 
 type SortDirection = 'asc' | 'desc';
@@ -389,6 +390,12 @@ export class RepairsOverview {
           b.customer?.name || ''
         );
 
+      case 'device':
+        return this.compareStrings(
+          this.getDeviceSortValue(a),
+          this.getDeviceSortValue(b)
+        );
+
       case 'technician':
         return this.compareStrings(
           a.assignedTo || '',
@@ -398,6 +405,17 @@ export class RepairsOverview {
       default:
         return 0;
     }
+  }
+
+  private getDeviceSortValue(repair: Repair): string {
+    const device = (repair as any).customerDevice;
+
+    return (
+      device?.nickname ||
+      [device?.manufacturer, device?.model].filter((value) => !!value).join(' ') ||
+      repair.customerDeviceId ||
+      ''
+    ).toLowerCase();
   }
 
   private getAppointmentTimestamp(repair: Repair): number {
