@@ -15,6 +15,7 @@ import {
   UserIcon,
   WrenchIcon,
   BoxIcon,
+  BlocksIcon,
   XIcon
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
@@ -68,7 +69,8 @@ export class AppShellComponent implements OnInit {
   readonly wrenchIcon = WrenchIcon;
   readonly usersIcon = UsersIcon;
   readonly userIcon = UserIcon;
-  readonly boxesIcon = BoxIcon
+  readonly boxesIcon = BoxIcon;
+  readonly blocksIcon = BlocksIcon;
   readonly calendarClockIcon = CalendarClockIcon;
 
   layoutDashboardIcon: LucideIconData = LayoutDashboard;
@@ -137,6 +139,11 @@ export class AppShellComponent implements OnInit {
   goToShopSettings(): void {
     this.closeProfileMenu();
     this.router.navigate(['/settings/shop/general']);
+  }
+
+  goToShopIntegrations(): void {
+    this.closeProfileMenu();
+    this.router.navigate(['/settings/integrations']);
   }
 
   goToShopUsers(): void {

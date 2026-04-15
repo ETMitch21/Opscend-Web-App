@@ -170,6 +170,13 @@
 
                             <button type="button"
                                 class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
+                                (click)="goToShopIntegrations()">
+                                <lucide-icon [size]="18" [img]="blocksIcon"></lucide-icon>
+                                <span>Shop Integrations</span>
+                            </button>
+
+                            <button type="button"
+                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
                                 (click)="goToShopUsers()">
                                 <lucide-icon [size]="18" [img]="usersIcon"></lucide-icon>
                                 <span>Manage Users</span>
