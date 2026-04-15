@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TenantService } from './core/tenant/tenant.service';
 import { NgxSonnerToaster } from 'ngx-sonner';

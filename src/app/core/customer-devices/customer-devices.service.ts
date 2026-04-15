@@ -2,7 +2,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
 import {
   CreateCustomerDeviceRequest,
   CustomerDevice,
@@ -10,13 +9,19 @@ import {
   CustomerDeviceListResponse,
   UpdateCustomerDeviceRequest,
 } from './customer-device.model';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CustomerDevicesService {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}`;
+  private readonly baseUrl = `${this.apiBase}`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   list(
     customerId: string,

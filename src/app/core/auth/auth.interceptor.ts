@@ -1,4 +1,3 @@
-// src/app/core/auth/auth.interceptor.ts
 import { Injectable } from "@angular/core";
 import {
   HttpEvent,
@@ -9,17 +8,31 @@ import {
 } from "@angular/common/http";
 import { Observable, catchError, switchMap, throwError } from "rxjs";
 import { AuthService } from "./auth.service";
-import { environment } from "../../../environments/environment";
+import { AppConfigService } from "../app-config/app-config.service";
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private auth: AuthService) { }
+  constructor(
+    private auth: AuthService,
+    private appConfig: AppConfigService
+  ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (req.url === "/config.json" || req.url.endsWith("/config.json")) {
+      return next.handle(req);
+    }
+
+    let apiBase = "";
+    try {
+      apiBase = this.appConfig.config.apiBase;
+    } catch {
+      return next.handle(req);
+    }
+
     const token = this.auth.getAccessToken();
 
     const isApiRequest =
-      req.url.startsWith(environment.apiBase) || req.url.startsWith("/api/");
+      req.url.startsWith(apiBase) || req.url.startsWith("/api/");
 
     const isAuthCall =
       req.url.includes("/auth/login") ||
@@ -54,11 +67,11 @@ export class AuthInterceptor implements HttpInterceptor {
                 })
               );
             }),
-            catchError((err) => {
-              if (err.status === 401) {
+            catchError((refreshErr) => {
+              if (refreshErr instanceof HttpErrorResponse && refreshErr.status === 401) {
                 this.auth.clearLocalSession();
               }
-              return throwError(() => err);
+              return throwError(() => refreshErr);
             })
           );
         }

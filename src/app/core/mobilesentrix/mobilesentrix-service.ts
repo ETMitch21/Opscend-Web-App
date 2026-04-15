@@ -1,7 +1,6 @@
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { Observable } from "rxjs";
-import { environment } from "../../../environments/environment";
 import {
   MobileSentrixDisconnectResponse,
   MobileSentrixSearchParams,
@@ -9,13 +8,20 @@ import {
   MobileSentrixStatusResponse,
 } from "./mobilesentrix-model";
 import { ShopService } from "../shop/shop-service";
+import { AppConfigService } from "../app-config/app-config.service";
 
 @Injectable({
   providedIn: "root",
 })
 export class MobileSentrixService {
-  private readonly baseUrl = `${environment.apiBase}/integrations/mobilesentrix`;
+  private readonly appConfig = inject(AppConfigService);
+
+  private readonly baseUrl = `${this.apiBase}/integrations/mobilesentrix`;
   private shopId: string = "";
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   constructor(private http: HttpClient, private shopService: ShopService) {
     this.shopService.getMyShop().subscribe((shop) => {
@@ -32,15 +38,22 @@ export class MobileSentrixService {
   connect(): void {
     if (!this.shopId) return;
 
+    const {
+      mobilesentrixUrl,
+      mobilesentrixConsumerName,
+      mobilesentrixConsumerKey,
+      mobilesentrixConsumerSecret,
+    } = this.appConfig.config;
+
     const callbackUrl = `${window.location.origin}/api/v1/integrations/mobilesentrix/callback/${encodeURIComponent(this.shopId)}`;
 
     const url =
-      `${environment.mobilesentrixUrl}/oauth/authorize/identifier` +
-      `?consumer=${encodeURIComponent(environment.mobilesentrixConsumerName)}` +
+      `${mobilesentrixUrl}/oauth/authorize/identifier` +
+      `?consumer=${encodeURIComponent(mobilesentrixConsumerName)}` +
       `&authtype=1` +
       `&flowentry=SignIn` +
-      `&consumer_key=${encodeURIComponent(environment.mobilesentrixConsumerKey)}` +
-      `&consumer_secret=${encodeURIComponent(environment.mobilesentrixConsumerSecret)}` +
+      `&consumer_key=${encodeURIComponent(mobilesentrixConsumerKey)}` +
+      `&consumer_secret=${encodeURIComponent(mobilesentrixConsumerSecret)}` +
       `&callback=${encodeURIComponent(callbackUrl)}`;
 
     window.location.href = url;

@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import type {
   AvailabilityOverride,
   AvailabilityOverridesListParams,
@@ -14,13 +13,19 @@ import type {
   CreateAvailabilityRuleDto,
   UpdateAvailabilityRuleDto,
 } from './availability-model';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AvailabilityService {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}/availability`;
+  private readonly baseUrl = `${this.apiBase}/availability`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   listRules(): Observable<AvailabilityRulesListResponse> {
     return this.http.get<AvailabilityRulesListResponse>(`${this.baseUrl}/rules`);

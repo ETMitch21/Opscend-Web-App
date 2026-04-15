@@ -49,12 +49,12 @@ import {
 } from '../../../core/scheduling/scheduling.types';
 import { SchedulingModalService } from '../../../core/scheduling/schedulingModal-service';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
-import { environment } from '../../../../environments/environment';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
 import { ManageDevicesModalService } from '../../../components/modals/manage-devices-modal-component/manage-devices-modal-service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
 import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
+import { AppConfigService } from '../../../core/app-config/app-config.service';
 
 interface ShopListResponse {
   data: Array<{
@@ -85,6 +85,7 @@ interface ShopListResponse {
 export class RepairDetail implements OnInit, OnDestroy {
   readonly statusMenuOpen = signal(false);
 
+  private readonly appConfig = inject(AppConfigService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -157,6 +158,10 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly notes = this.store.selectedRepairNotes;
   readonly attachments = this.store.selectedRepairAttachments;
 
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
+  
   readonly events = computed(() => {
     const events = [...this.store.selectedRepairEvents()];
     return events.sort(
@@ -324,7 +329,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   private async loadBookingEnabled(): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.get<ShopListResponse>(`${environment.apiBase}/shops`)
+        this.http.get<ShopListResponse>(`${this.apiBase}/shops`)
       );
 
       this.bookingEnabled.set(

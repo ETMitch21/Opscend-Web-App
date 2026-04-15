@@ -43,6 +43,7 @@ __screenshots__/
 Thumbs.db
 
 # Environment files
-/src/environments/environment.ts
+public/config.json
+.env.local
 
 /certs

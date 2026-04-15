@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import {
   BehaviorSubject,
@@ -10,7 +10,7 @@ import {
   tap,
   catchError,
 } from "rxjs";
-import { environment } from "../../../environments/environment";
+import { AppConfigService } from "../app-config/app-config.service";
 
 type LoginResponse = { accessToken: string };
 
@@ -24,7 +24,13 @@ export interface CurrentUser {
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
+  private readonly appConfig = inject(AppConfigService);
+
   private readonly tokenKey = "px_access_token";
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   private accessTokenSubject = new BehaviorSubject<string | null>(this.getStoredToken());
   accessToken$ = this.accessTokenSubject.asObservable();
@@ -45,7 +51,7 @@ export class AuthService {
   }) {
     return this.http
       .post<{ accessToken: string; shopSlug: string }>(
-        `${environment.apiBase}/auth/signup-shop`,
+        `${this.apiBase}/auth/signup-shop`,
         data,
         { withCredentials: true }
       )
@@ -82,7 +88,7 @@ export class AuthService {
   }
 
   me() {
-    return this.http.get<CurrentUser>(`${environment.apiBase}/auth/me`).pipe(
+    return this.http.get<CurrentUser>(`${this.apiBase}/auth/me`).pipe(
       tap((user) => {
         this.currentUserSubject.next(user);
       })
@@ -109,7 +115,7 @@ export class AuthService {
   login(email: string, password: string) {
     return this.http
       .post<LoginResponse>(
-        `${environment.apiBase}/auth/login`,
+        `${this.apiBase}/auth/login`,
         { email, password },
         { withCredentials: true }
       )
@@ -127,18 +133,18 @@ export class AuthService {
   }
 
   requestPasswordReset(email: string) {
-    return this.http.post<void>(`${environment.apiBase}/auth/password/forgot`, { email });
+    return this.http.post<void>(`${this.apiBase}/auth/password/forgot`, { email });
   }
 
   resetPassword(token: string, password: string) {
-    return this.http.post<void>(`${environment.apiBase}/auth/password/reset`, { token, password });
+    return this.http.post<void>(`${this.apiBase}/auth/password/reset`, { token, password });
   }
 
   logout() {
     console.log("AuthService logout called");
 
     return this.http
-      .post(`${environment.apiBase}/auth/logout`, {}, { withCredentials: true })
+      .post(`${this.apiBase}/auth/logout`, {}, { withCredentials: true })
       .pipe(
         tap(() => {
           this.clearLocalSession();
@@ -167,7 +173,7 @@ export class AuthService {
 
     this.refreshInFlight$ = this.http
       .post<LoginResponse>(
-        `${environment.apiBase}/auth/refresh`,
+        `${this.apiBase}/auth/refresh`,
         {},
         { withCredentials: true }
       )
@@ -196,7 +202,7 @@ export class AuthService {
 
   acceptInvite(token: string, password: string) {
     return this.http.post<void>(
-      `${environment.apiBase}/authInvite/accept`,
+      `${this.apiBase}/authInvite/accept`,
       { token, password },
       { withCredentials: true }
     );

@@ -10,14 +10,19 @@ import {
   PatchOrderPayload,
   ReplaceOrderItemsPayload,
 } from './orders-model';
-import { environment } from '../../../environments/environment';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class OrdersService {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}/orders`;
+  private readonly baseUrl = `${this.apiBase}/orders`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   getById(orderId: string): Observable<Order> {
     return this.http.get<Order>(`${this.baseUrl}/${orderId}`);

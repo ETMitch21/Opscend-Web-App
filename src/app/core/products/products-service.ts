@@ -8,14 +8,19 @@ import {
   ProductListParams,
   ProductListResponse,
 } from './products-model';
-import { environment } from '../../../environments/environment';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProductsService {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}/products`;
+  private readonly baseUrl = `${this.apiBase}/products`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   getById(productId: string): Observable<Product> {
     return this.http.get<Product>(`${this.baseUrl}/${productId}`);

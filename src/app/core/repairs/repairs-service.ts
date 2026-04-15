@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, switchMap } from 'rxjs';
-import { environment } from '../../../environments/environment';
+
 import { 
   RepairListResponse, 
   RepairListParams, 
@@ -19,14 +19,20 @@ import {
   AttachmentCompleteDto, 
   AttachmentListResponse, 
   AttachmentDownloadResponse } from './repair.model';
+import { AppConfigService } from '../app-config/app-config.service';
 
 
 @Injectable({
   providedIn: 'root',
 })
 export class RepairsService {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}/repairs`;
+  private readonly baseUrl = `${this.apiBase}/repairs`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   createRepair(payload: CreateRepairDto): Observable<Repair> {
     return this.http.post<Repair>(this.baseUrl, payload);

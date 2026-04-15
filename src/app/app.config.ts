@@ -1,5 +1,7 @@
 import {
   ApplicationConfig,
+  inject,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
@@ -14,6 +16,7 @@ import {
 import { routes } from './app.routes';
 import { tenantInterceptor } from './core/tenant/tenant-interceptor';
 import { AuthInterceptor } from './core/auth/auth.interceptor';
+import { AppConfigService } from './core/app-config/app-config.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -25,5 +28,9 @@ export const appConfig: ApplicationConfig = {
       withInterceptorsFromDi()
     ),
     provideRouter(routes),
+    provideAppInitializer(() => {
+      const config = inject(AppConfigService);
+      return config.load();
+    }),
   ],
 };

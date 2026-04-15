@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import type {
   Appointment,
   AppointmentListParams,
@@ -9,14 +8,21 @@ import type {
   AppointmentResponse,
   UpsertAppointmentDto,
 } from './appointments.model';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AppointmentsService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}/appointments`;
-  private readonly repairsBaseUrl = `${environment.apiBase}/repairs`;
+  private readonly appConfig = inject(AppConfigService);
+
+  private readonly baseUrl = `${this.apiBase}/appointments`;
+  private readonly repairsBaseUrl = `${this.apiBase}/repairs`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   listAppointments(params: AppointmentListParams): Observable<AppointmentListResponse> {
     let httpParams = new HttpParams()

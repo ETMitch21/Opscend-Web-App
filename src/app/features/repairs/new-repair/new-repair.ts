@@ -43,7 +43,7 @@ import { SchedulingSelection } from '../../../core/scheduling/scheduling.types';
 import { RepairsStore } from '../../../core/repairs/repairs.store';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
 import { ToastService } from '../../../core/toast/toast-service';
-import { environment } from '../../../../environments/environment';
+import { AppConfigService } from '../../../core/app-config/app-config.service';
 
 type NewRepairForm = FormGroup<{
   customerId: FormControl<string | null>;
@@ -89,6 +89,7 @@ interface ShopListResponse {
   styleUrl: './new-repair.scss',
 })
 export class NewRepair implements OnInit {
+  private readonly appConfig = inject(AppConfigService);
   private readonly customersStore = inject(CustomersStore);
   private readonly customerDevicesStore = inject(CustomerDevicesStore);
   private readonly destroyRef = inject(DestroyRef);
@@ -101,6 +102,7 @@ export class NewRepair implements OnInit {
   public readonly leftChevronIcon: LucideIconData = ChevronLeftIcon;
 
   readonly bookingEnabled = signal(false);
+  
 
   public customerResults: Customer[] = [];
   public selectedCustomer: Customer | null = null;
@@ -158,6 +160,10 @@ export class NewRepair implements OnInit {
       nonNullable: true,
     }),
   });
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   readonly schedulingRequest = () => ({
     title: 'Schedule Repair',
@@ -284,7 +290,7 @@ export class NewRepair implements OnInit {
   private async loadBookingEnabled(): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.get<ShopListResponse>(`${environment.apiBase}/shops`)
+        this.http.get<ShopListResponse>(`${this.apiBase}/shops`)
       );
 
       const enabled = response.data?.[0]?.settings?.booking?.enabled === true;

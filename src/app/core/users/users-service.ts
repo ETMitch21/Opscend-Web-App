@@ -9,13 +9,18 @@ import {
   User,
   UserListResponse,
 } from './users.model';
-import { environment } from '../../../environments/environment';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UsersService {
+  private appConfig = inject(AppConfigService);
   private http = inject(HttpClient);
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   async list(params?: ListUsersParams): Promise<UserListResponse> {
     let httpParams = new HttpParams();
@@ -33,35 +38,35 @@ export class UsersService {
     }
 
     return await firstValueFrom(
-      this.http.get<UserListResponse>(`${environment.apiBase}/users`, { params: httpParams })
+      this.http.get<UserListResponse>(`${this.apiBase}/users`, { params: httpParams })
     );
   }
 
   async get(id: string): Promise<User> {
-    return await firstValueFrom(this.http.get<User>(`${environment.apiBase}/users/${id}`));
+    return await firstValueFrom(this.http.get<User>(`${this.apiBase}/users/${id}`));
   }
 
   async getMe(): Promise<User> {
-    return await firstValueFrom(this.http.get<User>(`${environment.apiBase}/users/me`));
+    return await firstValueFrom(this.http.get<User>(`${this.apiBase}/users/me`));
   }
 
   async create(payload: CreateUserPayload): Promise<User> {
-    return await firstValueFrom(this.http.post<User>(`${environment.apiBase}/users`, payload));
+    return await firstValueFrom(this.http.post<User>(`${this.apiBase}/users`, payload));
   }
 
   async update(id: string, payload: UpdateUserPayload): Promise<User> {
-    return await firstValueFrom(this.http.patch<User>(`${environment.apiBase}/users/${id}`, payload));
+    return await firstValueFrom(this.http.patch<User>(`${this.apiBase}/users/${id}`, payload));
   }
 
   async updateMe(payload: UpdateCurrentUserPayload): Promise<User> {
-    return await firstValueFrom(this.http.patch<User>(`${environment.apiBase}/users/me`, payload));
+    return await firstValueFrom(this.http.patch<User>(`${this.apiBase}/users/me`, payload));
   }
 
   async delete(id: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(`${environment.apiBase}/users/${id}`));
+    await firstValueFrom(this.http.delete<void>(`${this.apiBase}/users/${id}`));
   }
 
   async restore(id: string): Promise<User> {
-    return await firstValueFrom(this.http.post<User>(`${environment.apiBase}/users/${id}/restore`, {}));
+    return await firstValueFrom(this.http.post<User>(`${this.apiBase}/users/${id}/restore`, {}));
   }
 }

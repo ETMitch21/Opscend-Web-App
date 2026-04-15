@@ -1,7 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map, Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import {
   CreateCustomerRequest,
   Customer,
@@ -9,13 +8,19 @@ import {
   CustomerListResponse,
   UpdateCustomerRequest,
 } from './customer.model';
+import { AppConfigService } from '../app-config/app-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CustomersService {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}/customers`;
+  private readonly baseUrl = `${this.apiBase}/customers`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
 
   list(query: CustomerListQuery = {}): Observable<CustomerListResponse> {
     let params = new HttpParams();

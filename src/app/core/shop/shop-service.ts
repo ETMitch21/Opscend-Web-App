@@ -1,8 +1,7 @@
-// src/app/core/shop/shop.service.ts
 import { Injectable, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable, map } from "rxjs";
-import { environment } from "../../../environments/environment";
+import { AppConfigService } from "../app-config/app-config.service";
 
 export type ShopStatus = "active" | "inactive" | "suspended";
 export type FulfillmentStatus = "fulfilled" | "unfulfilled";
@@ -76,8 +75,14 @@ export interface ShopsListResponse {
 
 @Injectable({ providedIn: "root" })
 export class ShopService {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBase}/shops`;
+
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
+
+  private readonly baseUrl = `${this.apiBase}/shops`;
 
   /**
    * Non-root callers get their own shop as the first item in GET /shops

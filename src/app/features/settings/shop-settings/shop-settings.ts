@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { ArrowRightIcon, LucideAngularModule } from "lucide-angular";
 import { RouterModule } from '@angular/router';
-import { environment } from '../../../../environments/environment';
+import { AppConfigService } from '../../../core/app-config/app-config.service';
 
 type FulfillmentStatus = 'unfulfilled' | 'fulfilled';
 
@@ -62,6 +62,7 @@ interface ShopResponse {
   templateUrl: './shop-settings.html',
 })
 export class ShopSettings implements OnInit {
+  private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
 
   readonly loading = signal(false);
@@ -173,6 +174,10 @@ export class ShopSettings implements OnInit {
     void this.load();
   }
 
+  private get apiBase(): string {
+    return this.appConfig.config.apiBase;
+  }
+
   async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
@@ -180,7 +185,7 @@ export class ShopSettings implements OnInit {
 
     try {
       const listRes = await firstValueFrom(
-        this.http.get<{ data: ShopResponse[]; nextCursor: string | null }>(`${environment.apiBase}/shops`)
+        this.http.get<{ data: ShopResponse[]; nextCursor: string | null }>(`${this.apiBase}/shops`)
       );
 
       const shop = listRes?.data?.[0] ?? null;
@@ -266,7 +271,7 @@ export class ShopSettings implements OnInit {
       }
 
       await firstValueFrom(
-        this.http.patch(`${environment.apiBase}/shops/${shopId}`, {
+        this.http.patch(`${this.apiBase}/shops/${shopId}`, {
           name: this.name.trim(),
           legalName: this.legalName.trim() || null,
           timezone: this.timezone.trim(),
