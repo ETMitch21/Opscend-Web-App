@@ -112,7 +112,7 @@ export class ShopAvailability implements OnInit {
 
   async loadWeeklyHours(): Promise<void> {
     const res = await firstValueFrom(
-      this.http.get<AvailabilityRulesResponse>(`${this.apiBase}/rules`)
+      this.http.get<AvailabilityRulesResponse>(`${this.apiBase}/availability/rules`)
     );
 
     const allRules = res?.data ?? [];
@@ -158,7 +158,7 @@ export class ShopAvailability implements OnInit {
       const to = this.addDays(from, 90);
 
       const res = await firstValueFrom(
-        this.http.get<AvailabilityOverridesResponse>(`${this.apiBase}/overrides`, {
+        this.http.get<AvailabilityOverridesResponse>(`${this.apiBase}/availability/overrides`, {
           params: {
             from: from.toISOString(),
             to: to.toISOString(),
@@ -195,7 +195,7 @@ export class ShopAvailability implements OnInit {
       for (const day of current) {
         if (day.ruleId) {
           await firstValueFrom(
-            this.http.patch(`${this.apiBase}/rules/${day.ruleId}`, {
+            this.http.patch(`${this.apiBase}/availability/rules/${day.ruleId}`, {
               startMin: day.startMin,
               endMin: day.endMin,
               isActive: day.open,
@@ -203,7 +203,7 @@ export class ShopAvailability implements OnInit {
           );
         } else if (day.open) {
           await firstValueFrom(
-            this.http.post(`${this.apiBase}/rules`, {
+            this.http.post(`${this.apiBase}/availability/rules`, {
               dayOfWeek: day.dayOfWeek,
               startMin: day.startMin,
               endMin: day.endMin,
@@ -336,7 +336,7 @@ export class ShopAvailability implements OnInit {
       }
 
       await firstValueFrom(
-        this.http.post(`${this.apiBase}/overrides`, {
+        this.http.post(`${this.apiBase}/availability/overrides`, {
           mode: this.overrideMode,
           startAt: startAt.toISOString(),
           endAt: endAt.toISOString(),
@@ -367,7 +367,7 @@ export class ShopAvailability implements OnInit {
     this.success.set(null);
 
     try {
-      await firstValueFrom(this.http.delete(`${this.apiBase}/overrides/${id}`));
+      await firstValueFrom(this.http.delete(`${this.apiBase}/availability/overrides/${id}`));
       await this.loadOverrides();
       this.success.set('Shop exception removed.');
     } catch (err) {
