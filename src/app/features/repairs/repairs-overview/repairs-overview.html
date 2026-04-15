@@ -164,20 +164,74 @@
                 <thead class="bg-gray-50/80">
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Repair
+                            <button type="button"
+                                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
+                                (click)="setSort('repair')">
+                                <span>Repair</span>
+                                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition"
+                                    [class.text-brand]="isSortedBy('repair')"
+                                    [class.text-gray-300]="!isSortedBy('repair')"
+                                    [style.transform]="getSortIconRotation('repair')">
+                                </lucide-icon>
+                            </button>
                         </th>
+
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Status
+                            <button type="button"
+                                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
+                                (click)="setSort('status')">
+                                <span>Status</span>
+                                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition"
+                                    [class.text-brand]="isSortedBy('status')"
+                                    [class.text-gray-300]="!isSortedBy('status')"
+                                    [style.transform]="getSortIconRotation('status')">
+                                </lucide-icon>
+                            </button>
                         </th>
+
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Appointment
+                            <button type="button"
+                                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
+                                (click)="setSort('appointment')">
+                                <span>Appointment</span>
+                                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition"
+                                    [class.text-brand]="isSortedBy('appointment')"
+                                    [class.text-gray-300]="!isSortedBy('appointment')"
+                                    [style.transform]="getSortIconRotation('appointment')">
+                                </lucide-icon>
+                            </button>
                         </th>
+
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Customer
+                            <button type="button"
+                                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
+                                (click)="setSort('customer')">
+                                <span>Customer</span>
+                                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition"
+                                    [class.text-brand]="isSortedBy('customer')"
+                                    [class.text-gray-300]="!isSortedBy('customer')"
+                                    [style.transform]="getSortIconRotation('customer')">
+                                </lucide-icon>
+                            </button>
                         </th>
+
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Technician
+                            Device
                         </th>
+
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            <button type="button"
+                                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
+                                (click)="setSort('technician')">
+                                <span>Technician</span>
+                                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition"
+                                    [class.text-brand]="isSortedBy('technician')"
+                                    [class.text-gray-300]="!isSortedBy('technician')"
+                                    [style.transform]="getSortIconRotation('technician')">
+                                </lucide-icon>
+                            </button>
+                        </th>
+
                         <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                             &nbsp;
                         </th>
@@ -245,12 +299,53 @@
                         <!-- Customer -->
                         <td class="px-6 py-4 align-top">
                             @if (repair.customerId && repair.customer) {
-                                <span class="flex flex-col gap-1">
-                                    <span class="text-sm text-gray-900">{{ repair.customer.name }}</span>
-                                    <span class="text-xs text-gray-700">{{ repair.customer.phone | phone }}</span>
-                                </span>
+                            <span class="flex flex-col gap-1">
+                                <span class="text-sm text-gray-900">{{ repair.customer.name }}</span>
+                                <span class="text-xs text-gray-700">{{ repair.customer.phone | phone }}</span>
+                            </span>
                             } @else {
                             <span class="text-sm text-gray-400">Unassigned</span>
+                            }
+                        </td>
+
+                        <!-- Device -->
+                        <td class="px-6 py-4 align-top">
+                            @if ($any(repair).customerDevice?.nickname) {
+                            <span class="flex flex-col gap-1">
+                                <span class="text-sm text-gray-900">{{ $any(repair).customerDevice.nickname }}</span>
+
+                                @if ($any(repair).customerDevice?.manufacturer && $any(repair).customerDevice?.model) {
+                                <span class="text-xs text-gray-500">
+                                    {{ $any(repair).customerDevice.manufacturer }} {{ $any(repair).customerDevice.model
+                                    }}
+                                </span>
+                                } @else if ($any(repair).customerDevice?.manufacturer) {
+                                <span class="text-xs text-gray-500">
+                                    {{ $any(repair).customerDevice.manufacturer }}
+                                </span>
+                                } @else if ($any(repair).customerDevice?.model) {
+                                <span class="text-xs text-gray-500">
+                                    {{ $any(repair).customerDevice.model }}
+                                </span>
+                                }
+                            </span>
+                            } @else if ($any(repair).customerDevice?.manufacturer && $any(repair).customerDevice?.model)
+                            {
+                            <span class="text-sm text-gray-900">
+                                {{ $any(repair).customerDevice.manufacturer }} {{ $any(repair).customerDevice.model }}
+                            </span>
+                            } @else if ($any(repair).customerDevice?.manufacturer) {
+                            <span class="text-sm text-gray-900">
+                                {{ $any(repair).customerDevice.manufacturer }}
+                            </span>
+                            } @else if ($any(repair).customerDevice?.model) {
+                            <span class="text-sm text-gray-900">
+                                {{ $any(repair).customerDevice.model }}
+                            </span>
+                            } @else if (repair.customerDeviceId) {
+                            <span class="text-xs text-gray-500">{{ repair.customerDeviceId }}</span>
+                            } @else {
+                            <span class="text-sm text-gray-400">—</span>
                             }
                         </td>
 

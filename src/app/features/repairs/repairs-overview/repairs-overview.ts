@@ -15,7 +15,7 @@ import {
 } from '../../../core/repairs/repair.model';
 import { ChevronDownIcon, LucideAngularModule } from 'lucide-angular';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
-import { RouterLink } from "@angular/router";
+import { RouterLink } from '@angular/router';
 
 type RepairViewFilter =
   | 'all'
@@ -24,6 +24,15 @@ type RepairViewFilter =
   | 'complete'
   | 'canceled'
   | 'open';
+
+type RepairSortKey =
+  | 'repair'
+  | 'status'
+  | 'appointment'
+  | 'customer'
+  | 'technician';
+
+type SortDirection = 'asc' | 'desc';
 
 @Component({
   selector: 'app-repairs-overview',
@@ -36,7 +45,7 @@ type RepairViewFilter =
 export class RepairsOverview {
   private readonly repairsService = inject(RepairsService);
 
-  readonly chevronDownIcon = ChevronDownIcon
+  readonly chevronDownIcon = ChevronDownIcon;
 
   readonly repairs = signal<Repair[]>([]);
   readonly loading = signal(false);
@@ -44,34 +53,18 @@ export class RepairsOverview {
   readonly error = signal<string | null>(null);
   readonly nextCursor = signal<string | null>(null);
 
-  /**
-   * View-level filters
-   * These are mostly client-side so the user can quickly pivot the list.
-   */
   readonly activeView = signal<RepairViewFilter>('all');
   readonly searchTerm = signal('');
   readonly selectedStatus = signal<RepairStatus | null>(null);
 
-  /**
-   * API-supported filters right now from GET /repairs:
-   * - status
-   * - customerId
-   * - customerDeviceId
-   * - orderId
-   * - limit
-   * - cursor
-   *
-   * There is currently no server-side filter for tags, appointment date range,
-   * assignedTo, or generic search in the repairs API. :contentReference[oaicite:0]{index=0}
-   */
   readonly customerId = signal('');
   readonly customerDeviceId = signal('');
   readonly orderId = signal('');
   readonly pageSize = signal(25);
 
-  /**
-   * Statuses available in the API / model.
-   */
+  readonly sortKey = signal<RepairSortKey>('appointment');
+  readonly sortDirection = signal<SortDirection>('asc');
+
   readonly statuses: ReadonlyArray<RepairStatus> = [
     'intake',
     'scheduled',
@@ -94,9 +87,6 @@ export class RepairsOverview {
     { value: 'canceled', label: 'Canceled' },
   ];
 
-  /**
-   * Counters for tabs / chips in the template.
-   */
   readonly counts = computed(() => {
     const repairs = this.repairs();
     const now = Date.now();
@@ -107,15 +97,10 @@ export class RepairsOverview {
       upcoming: repairs.filter((r) => this.isUpcomingRepair(r, now)).length,
       past: repairs.filter((r) => this.isPastRepair(r, now)).length,
       complete: repairs.filter((r) => r.status === 'picked_up').length,
-      canceled: repairs.filter((r) => r.status === 'picked_up').length,
+      canceled: repairs.filter((r) => r.status === 'canceled').length,
     };
   });
 
-  /**
-   * Final list shown in the UI.
-   * Server filters happen via the API request.
-   * View filters and free-text search happen client-side.
-   */
   readonly filteredRepairs = computed(() => {
     let list = [...this.repairs()];
     const activeView = this.activeView();
@@ -147,12 +132,17 @@ export class RepairsOverview {
       list = list.filter((repair) => this.matchesSearch(repair, search));
     }
 
+    const sortKey = this.sortKey();
+    const sortDirection = this.sortDirection();
+
+    list.sort((a, b) => {
+      const comparison = this.compareRepairs(a, b, sortKey);
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
     return list;
   });
 
-  /**
-   * Helpful summary object for the template.
-   */
   readonly activeFiltersSummary = computed(() => ({
     view: this.activeView(),
     status: this.selectedStatus(),
@@ -206,11 +196,6 @@ export class RepairsOverview {
   setView(view: RepairViewFilter): void {
     this.activeView.set(view);
 
-    /**
-     * Only apply server-side status filtering where it cleanly maps.
-     * Upcoming / past are appointment-date concepts and must stay client-side
-     * with the current API.
-     */
     switch (view) {
       case 'complete':
         this.selectedStatus.set('picked_up');
@@ -263,6 +248,25 @@ export class RepairsOverview {
     this.pageSize.set(next);
   }
 
+  setSort(key: RepairSortKey): void {
+    if (this.sortKey() === key) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+
+    this.sortKey.set(key);
+    this.sortDirection.set(key === 'appointment' ? 'asc' : 'asc');
+  }
+
+  isSortedBy(key: RepairSortKey): boolean {
+    return this.sortKey() === key;
+  }
+
+  getSortIconRotation(key: RepairSortKey): string {
+    if (this.sortKey() !== key) return 'rotate(0deg)';
+    return this.sortDirection() === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+
   clearFilters(): void {
     this.activeView.set('all');
     this.selectedStatus.set(null);
@@ -297,6 +301,8 @@ export class RepairsOverview {
         .toPromise();
 
       if (!response) return;
+
+      console.log(response.data);
 
       this.repairs.set(response.data);
       this.nextCursor.set(response.nextCursor);
@@ -352,10 +358,61 @@ export class RepairsOverview {
       repair.conditionNotes ?? '',
       ...(repair.accessories ?? []),
       repair.appointment?.notes ?? '',
+      repair.customer?.name ?? '',
+      repair.customer?.phone ?? '',
     ]
       .join(' ')
       .toLowerCase()
       .includes(search);
+  }
+
+  private compareRepairs(a: Repair, b: Repair, key: RepairSortKey): number {
+    switch (key) {
+      case 'repair':
+        return this.compareStrings(
+          a.problemSummary || a.id,
+          b.problemSummary || b.id
+        );
+
+      case 'status':
+        return this.compareStrings(a.status, b.status);
+
+      case 'appointment':
+        return this.compareNumbers(
+          this.getAppointmentTimestamp(a),
+          this.getAppointmentTimestamp(b)
+        );
+
+      case 'customer':
+        return this.compareStrings(
+          a.customer?.name || '',
+          b.customer?.name || ''
+        );
+
+      case 'technician':
+        return this.compareStrings(
+          a.assignedTo || '',
+          b.assignedTo || ''
+        );
+
+      default:
+        return 0;
+    }
+  }
+
+  private getAppointmentTimestamp(repair: Repair): number {
+    if (!repair.appointment?.startAt) return Number.MAX_SAFE_INTEGER;
+
+    const value = new Date(repair.appointment.startAt).getTime();
+    return Number.isNaN(value) ? Number.MAX_SAFE_INTEGER : value;
+  }
+
+  private compareStrings(a: string, b: string): number {
+    return a.localeCompare(b, undefined, { sensitivity: 'base' });
+  }
+
+  private compareNumbers(a: number, b: number): number {
+    return a - b;
   }
 
   private isOpenRepair(repair: Repair): boolean {
