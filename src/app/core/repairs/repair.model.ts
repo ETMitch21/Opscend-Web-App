@@ -14,6 +14,8 @@ export type RepairNoteVisibility = 'internal' | 'customer';
 
 export type RepairEventType = 'status_change' | 'system' | string;
 
+export type RepairUnlockType = 'none' | 'pin' | 'pattern';
+
 export interface RepairEvent {
     id: string;
     type: RepairEventType;
@@ -69,6 +71,10 @@ export interface Repair {
     conditionNotes: string | null;
 
     passcodeProvided: boolean;
+    unlockType: RepairUnlockType;
+    pinCode: string | null;
+    patternCode: string | null;
+
     accessories: string[];
 
     assignedTo: string | null;
@@ -108,6 +114,10 @@ export interface CreateRepairDto {
     conditionNotes?: string | null;
 
     passcodeProvided?: boolean;
+    unlockType?: RepairUnlockType;
+    pinCode?: string | null;
+    patternCode?: string | null;
+
     accessories?: string[];
 
     assignedTo?: string | null;
@@ -121,6 +131,10 @@ export interface UpdateRepairDto {
     conditionNotes?: string | null;
 
     passcodeProvided?: boolean;
+    unlockType?: RepairUnlockType;
+    pinCode?: string | null;
+    patternCode?: string | null;
+    
     accessories?: string[];
 
     assignedTo?: string | null;
