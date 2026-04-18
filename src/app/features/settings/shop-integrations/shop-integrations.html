@@ -1,90 +1,376 @@
-<div class="space-y-6">
-    <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">
-            Integrations
-        </h1>
-        <p class="mt-1 text-sm text-slate-600">
+<div class="mx-auto max-w-full px-6 py-6">
+    <div class="mb-6">
+        <h1 class="text-2xl font-semibold text-gray-900">Shop Integrations</h1>
+        <p class="mt-1 text-sm text-gray-500">
             Connect third-party tools to power pricing, workflows, and more.
         </p>
     </div>
 
-    @if (bannerTone) {
-    <div class="rounded-2xl border px-4 py-3 text-sm" [class.border-emerald-200]="bannerTone === 'success'"
-        [class.bg-emerald-50]="bannerTone === 'success'" [class.text-emerald-800]="bannerTone === 'success'"
-        [class.border-red-200]="bannerTone === 'error'" [class.bg-red-50]="bannerTone === 'error'"
-        [class.text-red-800]="bannerTone === 'error'">
-        {{ bannerMessage }}
-    </div>
-    }
-
-    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg font-semibold text-slate-700">
-                        MS
-                    </div>
-
-                    <div>
-                        <h2 class="text-lg font-semibold text-slate-900">MobileSentrix</h2>
-                        <p class="text-sm text-slate-600">
-                            Connect your supplier account for parts data and future pricing workflows.
-                        </p>
-                    </div>
-                </div>
-
-                @if (loadingStatus) {
-                <div
-                    class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                    Checking connection…
-                </div>
-                } @else if (isConnected) {
-                <div
-                    class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                    Connected
-                </div>
-                } @else {
-                <div
-                    class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
-                    Not connected
-                </div>
-                }
-
-                <div class="space-y-1 text-sm text-slate-600">
-                    <p>
-                        Provider:
-                        <span class="font-medium text-slate-900">MobileSentrix</span>
-                    </p>
-
-                    <p>
-                        Connected at:
-                        <span class="font-medium text-slate-900">
-                            {{ status?.connectedAt ? (status?.connectedAt | date:'medium') : '—' }}
-                        </span>
-                    </p>
-
-                    <p>
-                        Last updated:
-                        <span class="font-medium text-slate-900">
-                            {{ status?.updatedAt ? (status?.updatedAt | date:'medium') : '—' }}
-                        </span>
-                    </p>
-                </div>
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            @if (loadingStatus) {
+            <div class="self-start inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                Checking connection…
             </div>
+            } @else if (isConnected) {
+            <div class="mb-6 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-semibold text-gray-900">MobileSentrix</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Connect your supplier account for enhanced parts &amp; pricing workflows.
+                    </p>
+                </div>
 
-            <div class="flex shrink-0 flex-col gap-3 sm:flex-row">
-                <button type="button" (click)="onConnect()" [disabled]="connecting || loadingStatus || isConnected"
-                    class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
-                    {{ connecting ? "Redirecting…" : (isConnected ? "Connected" : "Connect MobileSentrix") }}
-                </button>
-
-                <button type="button" (click)="onDisconnect()"
-                    [disabled]="disconnecting || loadingStatus || !isConnected"
-                    class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" (click)="onDisconnect()" [disabled]="disconnecting || loadingStatus"
+                    class="cursor-pointer inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
                     {{ disconnecting ? "Disconnecting…" : "Disconnect" }}
                 </button>
             </div>
-        </div>
-    </section>
+
+            <div class="my-4 border-t border-gray-100"></div>
+
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                    What your shop has now
+                </p>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <span
+                        class="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-600">
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        Supplier part search
+                    </span>
+
+                    <span
+                        class="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-600">
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        Live pricing lookup
+                    </span>
+
+                    <span
+                        class="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-600">
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        Product import
+                    </span>
+
+                    <span
+                        class="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-600">
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        Inventory sourcing
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-5">
+                <div class="my-4 border-t border-gray-100"></div>
+
+                <div class="flex w-full flex-wrap items-center gap-2 text-sm">
+                    <div class="group relative inline-flex">
+                        <a href="https://www.mobilesentrix.com" target="_blank"
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            MobileSentrix
+                        </a>
+                        <div
+                            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                            <div
+                                class="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-gray-200 bg-white">
+                            </div>
+                            Provider
+                        </div>
+                    </div>
+
+                    <div class="group relative inline-flex">
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            {{ status?.connectedAt ? (status?.connectedAt | date:'short') : '—' }}
+                        </span>
+                        <div
+                            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                            <div
+                                class="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-gray-200 bg-white">
+                            </div>
+                            Connected at
+                        </div>
+                    </div>
+
+                    <div class="group relative inline-flex">
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            {{ status?.updatedAt ? (status?.updatedAt | date:'short') : '—' }}
+                        </span>
+                        <div
+                            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                            <div
+                                class="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-gray-200 bg-white">
+                            </div>
+                            Last updated
+                        </div>
+                    </div>
+                </div>
+            </div>
+            } @else {
+            <div class="flex flex-1 flex-col items-center justify-center text-center">
+                <h2 class="text-base font-semibold text-gray-900">MobileSentrix</h2>
+                <p class="mt-1 mb-4 text-sm text-gray-500">
+                    Connect your supplier account for enhanced parts &amp; pricing workflows.
+                </p>
+
+                <button type="button" (click)="onConnect()" [disabled]="connecting || loadingStatus"
+                    class="cursor-pointer inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    {{ connecting ? "Redirecting…" : "Connect MobileSentrix" }}
+                </button>
+
+                <div class="mt-6 w-full border-t border-gray-100"></div>
+
+                <div class="mt-6 w-full text-left">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                        What this unlocks
+                    </p>
+
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                            Supplier part search
+                        </span>
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                            Live pricing lookup
+                        </span>
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                            Product import
+                        </span>
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                            Inventory sourcing
+                        </span>
+                    </div>
+                </div>
+            </div>
+            }
+        </section>
+
+        <section class="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            @if (loadingStripeStatus) {
+            <div class="self-start inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                Checking connection…
+            </div>
+            } @else if (isStripeConnected) {
+            <div class="mb-6 flex items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-semibold text-gray-900">Stripe</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Connect your shop to accept payments &amp; receive payouts through Stripe.
+                    </p>
+                </div>
+
+                <button type="button" (click)="onStripeDisconnect()"
+                    [disabled]="stripeDisconnecting || loadingStripeStatus || !isStripeConnected"
+                    class="cursor-pointer inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                    {{ stripeDisconnecting ? "Disconnecting…" : "Disconnect" }}
+                </button>
+            </div>
+
+            <div class="my-4 border-t border-gray-100"></div>
+
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                    What Your Shop Has Now
+                </p>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
+                        [ngClass]="stripeStatus?.chargesEnabled
+                ? 'border-green-200 bg-green-50 text-green-600'
+                : 'border-gray-200 bg-gray-50 text-gray-600'">
+                        @if (stripeStatus?.chargesEnabled) {
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        }
+                        Card payments
+                    </span>
+
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
+                        [ngClass]="stripeStatus?.payoutsEnabled
+                ? 'border-green-200 bg-green-50 text-green-600'
+                : 'border-gray-200 bg-gray-50 text-gray-600'">
+                        @if (stripeStatus?.payoutsEnabled) {
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        }
+                        Payouts
+                    </span>
+
+                    <span
+                        class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                        Refunds
+                    </span>
+                </div>
+            </div>
+
+            <div class="my-4 border-t border-gray-100"></div>
+
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                    Setup status
+                </p>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
+                        [ngClass]="stripeStatus?.detailsSubmitted
+                ? 'border-green-200 bg-green-50 text-green-600'
+                : 'border-amber-200 bg-amber-50 text-amber-700'">
+                        @if (stripeStatus?.detailsSubmitted) {
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        }
+                        {{ stripeStatus?.detailsSubmitted ? 'Business details submitted' : 'Business details needed' }}
+                    </span>
+
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
+                        [ngClass]="stripeStatus?.onboardingCompleteAt
+                ? 'border-green-200 bg-green-50 text-green-600'
+                : 'border-amber-200 bg-amber-50 text-amber-700'">
+                        @if (stripeStatus?.onboardingCompleteAt) {
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        }
+                        {{ stripeStatus?.onboardingCompleteAt ? 'Onboarding complete' : 'Onboarding incomplete' }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-5">
+                <div class="my-4 border-t border-gray-100"></div>
+
+                <div class="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="sm:max-w-[70%]">
+                            <p class="text-sm font-medium text-gray-900">Manage in Stripe</p>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Open your Stripe dashboard to review payouts, complete account setup, and manage
+                                connected account details.
+                            </p>
+                        </div>
+
+                        <button type="button" (click)="onOpenStripeDashboard()"
+                            [disabled]="stripeOpeningDashboard || loadingStripeStatus || !isStripeConnected"
+                            class="cursor-pointer inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                            {{ stripeOpeningDashboard ? "Opening…" : "Open Dashboard" }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="my-4 border-t border-gray-100"></div>
+
+                <div class="flex w-full flex-wrap items-center gap-2 text-sm">
+                    <div class="group relative inline-flex">
+                        <a href="https://stripe.com" target="_blank"
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            Stripe
+                        </a>
+                        <div
+                            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                            <div
+                                class="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-gray-200 bg-white">
+                            </div>
+                            Provider
+                        </div>
+                    </div>
+
+                    <div class="group relative inline-flex">
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            {{ stripeStatus?.accountId || '—' }}
+                        </span>
+                        <div
+                            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                            <div
+                                class="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-gray-200 bg-white">
+                            </div>
+                            Account ID
+                        </div>
+                    </div>
+
+                    <div class="group relative inline-flex">
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            {{ stripeStatus?.onboardingCompleteAt ? (stripeStatus?.onboardingCompleteAt | date:'short')
+                            : '—' }}
+                        </span>
+                        <div
+                            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                            <div
+                                class="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-gray-200 bg-white">
+                            </div>
+                            Onboarding completed
+                        </div>
+                    </div>
+
+                    <div class="group relative inline-flex">
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            {{ stripeStatus?.updatedAt ? (stripeStatus?.updatedAt | date:'short') : '—' }}
+                        </span>
+                        <div
+                            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 opacity-0 shadow-lg transition duration-150 group-hover:opacity-100">
+                            <div
+                                class="absolute left-1/2 top-0 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-l border-t border-gray-200 bg-white">
+                            </div>
+                            Last updated
+                        </div>
+                    </div>
+                </div>
+            </div>
+            } @else {
+            <div class="flex flex-1 flex-col items-center justify-center text-center">
+                <h2 class="text-base font-semibold text-gray-900">Stripe</h2>
+                <p class="mt-1 mb-4 text-sm text-gray-500">
+                    Connect your shop to accept payments &amp; receive payouts through Stripe.
+                </p>
+
+                <button type="button" (click)="onStripeConnect()" [disabled]="stripeConnecting || loadingStripeStatus"
+                    class="cursor-pointer inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    {{ stripeConnecting ? "Redirecting…" : "Connect Stripe" }}
+                </button>
+
+                <div class="mt-6 w-full border-t border-gray-100"></div>
+
+                <div class="mt-6 w-full text-left">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                        What this unlocks
+                    </p>
+
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                            Card payments
+                        </span>
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                            Refunds
+                        </span>
+                        <span
+                            class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                            Payouts to your bank
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-5 w-full text-left">
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">
+                        Setup status
+                    </p>
+
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span
+                            class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                            Business details needed
+                        </span>
+                        <span
+                            class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                            Onboarding incomplete
+                        </span>
+                    </div>
+                </div>
+            </div>
+            }
+        </section>
+    </div>
 </div>

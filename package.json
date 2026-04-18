@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "prebuild": "node scripts/write-config.mjs",
-    "prestart": "node scripts/write-config.mjs",
+    "prebuild": "node --env-file=.env scripts/write-config.mjs",
+    "prestart": "node --env-file=.env scripts/write-config.mjs",
     "start": "ng serve web-ng",
     "start:https": "ng serve web-ng --ssl true --ssl-cert ./certs/summit-phone-repair.lvh.me+3.pem --ssl-key ./certs/summit-phone-repair.lvh.me+3-key.pem --host summit-phone-repair.lvh.me",
     "build": "ng build",

@@ -45,5 +45,6 @@ Thumbs.db
 # Environment files
 public/config.json
 .env.local
+.env
 
 /certs
