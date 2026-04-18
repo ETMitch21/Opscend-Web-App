@@ -45,7 +45,7 @@ export class MobileSentrixService {
       mobilesentrixConsumerSecret,
     } = this.appConfig.config;
 
-    const callbackUrl = `${this.apiBase}/integrations/mobilesentrix/callback/${encodeURIComponent(this.shopId)}`;
+    const callbackUrl = `${window.location.origin}/api/v1/integrations/mobilesentrix/callback/${encodeURIComponent(this.shopId)}`;
 
     const url =
       `${mobilesentrixUrl}/oauth/authorize/identifier` +
