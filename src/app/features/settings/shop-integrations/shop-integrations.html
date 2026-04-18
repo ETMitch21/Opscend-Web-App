@@ -199,8 +199,13 @@
                         Payouts
                     </span>
 
-                    <span
-                        class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600">
+                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium"
+                        [ngClass]="stripeStatus?.chargesEnabled
+                ? 'border-green-200 bg-green-50 text-green-600'
+                : 'border-gray-200 bg-gray-50 text-gray-600'">
+                        @if (stripeStatus?.chargesEnabled) {
+                        <lucide-icon [name]="checkmarkIcon" class="me-1 h-4 w-4"></lucide-icon>
+                        }
                         Refunds
                     </span>
                 </div>
