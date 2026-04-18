@@ -15,7 +15,7 @@
         <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
           [ngClass]="statusClasses(orderValue.paymentStatus)">
           <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
-          {{ orderValue.paymentStatus | titlecase}}
+          {{ orderValue.paymentStatus | titlecase }}
         </span>
 
         <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
@@ -26,6 +26,7 @@
       </div>
       }
     </div>
+
     @if (order()?.paymentStatus !== 'voided') {
     <div class="flex justify-end gap-2">
       <button type="button"
@@ -34,12 +35,14 @@
         <lucide-icon [name]="icons.CreditCard" class="h-3.5 w-3.5"></lucide-icon>
         Add Payment
       </button>
+
       <button type="button"
         class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600"
         (click)="openRefundModal()">
         <lucide-icon [name]="icons.RotateCcw" class="h-3.5 w-3.5"></lucide-icon>
         Add Refund
       </button>
+
       @if (canVoid() && !moneyLocked()) {
       <button type="button"
         class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3 text-xs font-medium text-white transition hover:bg-red-600"
@@ -48,6 +51,7 @@
         Void
       </button>
       }
+
       @if (!moneyLocked()) {
       <button type="button"
         class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-xs font-medium text-white transition hover:bg-brand-soft disabled:opacity-70"
@@ -87,13 +91,12 @@
     <div class="space-y-6">
       <form [formGroup]="itemsForm">
         @if (!moneyLocked()) {
-
         @if (orderValue.paymentStatus !== 'voided') {
         <div class="relative">
-          <div class="flex flex-col gap-3 py-1 pe-6 sm:flex-row sm:items-center border border-gray-200 bg-gray-50">
+          <div class="flex flex-col gap-3 border border-gray-200 bg-gray-50 py-1 pe-6 sm:flex-row sm:items-center">
             <div class="relative flex-1">
               <lucide-icon [name]="icons.Search"
-                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 me-3 -translate-y-1/2 text-gray-400">
+                class="pointer-events-none absolute left-3 top-1/2 me-3 h-4 w-4 -translate-y-1/2 text-gray-400">
               </lucide-icon>
 
               <input type="text" [formControl]="itemSearchControl" placeholder="Add a product or service..."
@@ -118,7 +121,6 @@
               (click)="addCatalogItem(result)">
               <div class="min-w-0">
                 <div class="flex items-center gap-2">
-
                   <span class="truncate text-sm font-medium text-gray-900">
                     {{ result.name }}
                   </span>
@@ -145,23 +147,14 @@
         <div formArrayName="items" class="space-y-3">
           <div class="group border-b border-gray-200">
             <div class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2">
-              <div class="text-xs font-bold">
-                Item
-              </div>
-              <div class="text-xs text-center font-bold">
-                Qty
-              </div>
-              <div class="text-xs text-right font-bold">
-                Price
-              </div>
-              <div class="text-xs text-right font-bold">
-                Line Total
-              </div>
-              <div class="text-xs font-bold min-w-[50px]">
-                &nbsp;
-              </div>
+              <div class="text-xs font-bold">Item</div>
+              <div class="text-center text-xs font-bold">Qty</div>
+              <div class="text-right text-xs font-bold">Price</div>
+              <div class="text-right text-xs font-bold">Line Total</div>
+              <div class="min-w-[50px] text-xs font-bold">&nbsp;</div>
             </div>
           </div>
+
           @for (item of itemsArray().controls; track $index) {
           <div [formGroupName]="$index" class="group border-b border-gray-200">
             <div class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2">
@@ -171,27 +164,31 @@
                 </h3>
 
                 @if (item.get('notes')?.value) {
-                <p class="max-w-[150px] mt-0.5 truncate text-xs text-gray-500">
+                <p class="mt-0.5 max-w-[150px] truncate text-xs text-gray-500">
                   {{ item.get('notes')?.value }}
                 </p>
                 }
               </div>
+
               <div class="text-center">
                 <p class="text-xs text-gray-900">
                   {{ item.get('quantity')?.value || 1 }}
                 </p>
               </div>
+
               <div class="text-right">
                 <p class="text-xs text-gray-900">
                   {{ money(toCents(item.get('unitPriceDollars')?.value)) }}
                 </p>
               </div>
+
               <div class="text-right font-medium">
                 <p class="text-xs text-gray-900">
                   {{ lineTotal($index) }}
                 </p>
               </div>
-              <div class="min-w-[50px] flex justify-end">
+
+              <div class="flex min-w-[50px] justify-end">
                 @if (!moneyLocked()) {
                 <div class="flex items-center gap-1">
                   <button type="button"
@@ -261,29 +258,24 @@
 
         <div>
           <div
-            class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2 group border-b border-gray-200">
-            <div class="min-w-0 col-span-3">
-              <p class="text-xs text-right font-bold text-gray-900">
-                Subtotal
-              </p>
+            class="group grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 border-b border-gray-200 px-3 py-2">
+            <div class="col-span-3 min-w-0">
+              <p class="text-right text-xs font-bold text-gray-900">Subtotal</p>
             </div>
             <div class="min-w-0">
-              <p class="text-xs text-right text-gray-900">
+              <p class="text-right text-xs text-gray-900">
                 {{ money(draftSubtotalCents()) }}
               </p>
             </div>
-            <div class="min-w-[50px]">
-
-            </div>
+            <div class="min-w-[50px]"></div>
           </div>
+
           <div
-            class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2 group border-b border-gray-200">
-            <div class="min-w-0 col-span-3">
-              <p class="text-xs text-right font-bold text-gray-900">
-                Discount
-              </p>
+            class="group grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 border-b border-gray-200 px-3 py-2">
+            <div class="col-span-3 min-w-0">
+              <p class="text-right text-xs font-bold text-gray-900">Discount</p>
             </div>
-            <div class="min-w-0 col-span-2">
+            <div class="col-span-2 min-w-0">
               <div class="relative ml-[52px]">
                 <span class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                   $
@@ -294,21 +286,18 @@
               </div>
             </div>
           </div>
+
           <div
-            class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2 group border-b border-gray-200">
-            <div class="min-w-0 col-span-3">
-              <p class="text-xs text-right font-bold text-gray-900">
-                Total
-              </p>
+            class="group grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 border-b border-gray-200 px-3 py-2">
+            <div class="col-span-3 min-w-0">
+              <p class="text-right text-xs font-bold text-gray-900">Total</p>
             </div>
             <div class="min-w-0">
-              <p class="text-xs text-right font-bold text-gray-900">
+              <p class="text-right text-xs font-bold text-gray-900">
                 {{ money(draftTotalCents()) }}
               </p>
             </div>
-            <div class="min-w-[50px]">
-
-            </div>
+            <div class="min-w-[50px]"></div>
           </div>
         </div>
       </form>
@@ -321,7 +310,7 @@
 
         <div class="divide-y divide-gray-100">
           @for (payment of orderValue.payments; track payment.id) {
-          <div class="flex items-start justify-between gap-4 px-4 py-3 mb-4">
+          <div class="mb-4 flex items-start justify-between gap-4 px-4 py-3">
             <div>
               <div class="flex items-center gap-2">
                 <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold"
@@ -359,6 +348,7 @@
     </div>
     }
   </div>
+
   @if (showPaymentForm()) {
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <button type="button" class="cursor-pointer absolute inset-0 bg-gray-900/30 backdrop-blur-sm"
@@ -390,12 +380,25 @@
           <label class="mb-1 block text-xs font-medium text-gray-500">Method</label>
           <select formControlName="method"
             class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
-            <option value="card">Card</option>
+            @if (stripeAvailable()) {
+            <option value="stripe">Stripe</option>
+            }
+            <option value="card">Manual Card</option>
             <option value="cash">Cash</option>
             <option value="other">Other</option>
           </select>
         </div>
 
+        @if (stripeConnectedButNotReady()) {
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p class="text-xs font-medium text-amber-800">Stripe connected, not ready</p>
+          <p class="mt-1 text-xs text-amber-700">
+            This shop has Stripe connected, but card charges are not enabled yet.
+          </p>
+        </div>
+        }
+
+        @if (paymentMethod() !== 'stripe') {
         <div>
           <label class="mb-1 block text-xs font-medium text-gray-500">Reference</label>
           <input type="text" formControlName="reference"
@@ -407,6 +410,25 @@
           <input type="text" formControlName="note"
             class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
         </div>
+        } @else {
+        <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <div class="mb-2">
+            <p class="text-xs font-medium text-gray-700">Secure card form</p>
+            <p class="mt-1 text-xs text-gray-500">
+              Card details are collected securely by Stripe.
+            </p>
+          </div>
+
+          @if (initializingStripePayment()) {
+          <div class="mb-2 rounded-lg border border-dashed border-gray-200 bg-white px-3 py-3 text-xs text-gray-500">
+            Preparing Stripe...
+          </div>
+          }
+
+          <div #stripeCardHost class="rounded-lg border border-gray-200 bg-white p-3">
+          </div>
+        </div>
+        }
 
         <div class="flex justify-end gap-2 pt-2">
           <button type="button"
@@ -417,9 +439,9 @@
 
           <button type="button"
             class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white transition hover:bg-emerald-700"
-            (click)="collectPayment()">
+            [disabled]="saving() || initializingStripePayment()" (click)="collectPayment()">
             <lucide-icon [name]="icons.Wallet" class="h-3.5 w-3.5"></lucide-icon>
-            Save Payment
+            {{ paymentMethod() === 'stripe' ? 'Charge Card' : 'Save Payment' }}
           </button>
         </div>
       </form>
@@ -458,12 +480,16 @@
           <label class="mb-1 block text-xs font-medium text-gray-500">Method</label>
           <select formControlName="method"
             class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
-            <option value="card">Card</option>
+            @if (stripeAvailable()) {
+            <option value="stripe">Stripe</option>
+            }
+            <option value="card">Manual Card</option>
             <option value="cash">Cash</option>
             <option value="other">Other</option>
           </select>
         </div>
 
+        @if (refundMethod() !== 'stripe') {
         <div>
           <label class="mb-1 block text-xs font-medium text-gray-500">Reference</label>
           <input type="text" formControlName="reference"
@@ -475,6 +501,14 @@
           <input type="text" formControlName="note"
             class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300" />
         </div>
+        } @else {
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p class="text-xs font-medium text-amber-800">Stripe refund</p>
+          <p class="mt-1 text-xs text-amber-700">
+            This will issue a real refund against the Stripe payment on this order.
+          </p>
+        </div>
+        }
 
         <div class="flex justify-end gap-2 pt-2">
           <button type="button"
@@ -484,10 +518,10 @@
           </button>
 
           <button type="button"
-            class="cursor-pointer  inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600"
-            (click)="refund()">
+            class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600"
+            [disabled]="saving()" (click)="refund()">
             <lucide-icon [name]="icons.RotateCcw" class="h-3.5 w-3.5"></lucide-icon>
-            Save Refund
+            {{ refundMethod() === 'stripe' ? 'Process Refund' : 'Save Refund' }}
           </button>
         </div>
       </form>

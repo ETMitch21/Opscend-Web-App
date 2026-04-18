@@ -3,5 +3,6 @@
   "mobilesentrixUrl": "",
   "mobilesentrixConsumerName": "",
   "mobilesentrixConsumerKey": "",
-  "mobilesentrixConsumerSecret": ""
+  "mobilesentrixConsumerSecret": "",
+  "stripePublishableKey": ""
 }

@@ -1,7 +1,7 @@
 export type FulfillmentStatus = 'fulfilled' | 'unfulfilled';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded' | 'voided';
 export type OrderSource = 'pos' | 'booking' | 'online';
-export type PaymentMethod = 'cash' | 'card' | 'other';
+export type PaymentMethod = 'cash' | 'card' | 'other' | 'stripe';
 export type OrderItemType = 'product' | 'service';
 export type OrderPaymentType = 'payment' | 'refund';
 
@@ -114,4 +114,28 @@ export interface CreateRefundPayload {
   method: PaymentMethod;
   reference?: string | null;
   note?: string | null;
+}
+
+export interface CreateStripePaymentIntentPayload {
+  amountCents?: number;
+  customerEmail?: string;
+  description?: string;
+}
+
+export interface CreateStripePaymentIntentResponse {
+  ok: true;
+  orderId: string;
+  paymentIntentId: string;
+  clientSecret: string | null;
+  status: string;
+  amountCents: number;
+}
+
+export interface RecordStripePaymentPayload {
+  paymentIntentId: string;
+}
+
+export interface CreateStripeRefundPayload {
+  amountCents: number;
+  reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
 }

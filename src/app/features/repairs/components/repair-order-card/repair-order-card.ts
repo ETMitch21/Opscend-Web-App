@@ -1,37 +1,42 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import {
   FormArray,
-  FormBuilder,
   FormControl,
+  NonNullableFormBuilder,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import {
-  LucideAngularModule,
   BadgeDollarSign,
   CreditCard,
   FilePlus2,
   LoaderCircle,
+  LucideAngularModule,
   Package2,
+  Pencil,
+  Plus,
   ReceiptText,
   RotateCcw,
   Save,
+  Search,
   Trash2,
   Wallet,
   XCircle,
-  Search,
-  Plus,
-  Pencil,
 } from 'lucide-angular';
+import type { StripeCardElement, StripeElements } from '@stripe/stripe-js';
+
 import { OrdersStore } from '../../../../core/orders/orders-store';
 import {
   CreateOrderItemPayload,
@@ -39,8 +44,10 @@ import {
   OrderItemType,
   PaymentMethod,
 } from '../../../../core/orders/orders-model';
-import { ToastService } from '../../../../core/toast/toast-service';
 import { ProductsStore } from '../../../../core/products/products-store';
+import { StripeService } from '../../../../core/stripe/stripe-service';
+import type { StripeStatusResponse } from '../../../../core/stripe/stripe-model';
+import { ToastService } from '../../../../core/toast/toast-service';
 
 type CatalogItemType = OrderItemType;
 
@@ -55,11 +62,7 @@ interface CatalogItemOption {
 @Component({
   selector: 'app-repair-order-card',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    LucideAngularModule,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
   templateUrl: './repair-order-card.html',
 })
 export class RepairOrderCard {
@@ -70,10 +73,29 @@ export class RepairOrderCard {
 
   readonly createRequested = output<void>();
 
-  private readonly fb = inject(FormBuilder);
+  private readonly fb = inject(NonNullableFormBuilder);
   readonly ordersStore = inject(OrdersStore);
   readonly productsStore = inject(ProductsStore);
+  private readonly stripeService = inject(StripeService);
   private readonly toast = inject(ToastService);
+
+  readonly stripeCardHost = viewChild<ElementRef<HTMLDivElement>>('stripeCardHost');
+
+  private stripeElements: StripeElements | null = null;
+  private cardElement: StripeCardElement | null = null;
+  private stripeCardMounted = false;
+
+  readonly loadingStripeStatus = signal(false);
+  readonly stripeStatus = signal<StripeStatusResponse | null>(null);
+  readonly initializingStripePayment = signal(false);
+
+  readonly showPaymentForm = signal(false);
+  readonly showRefundForm = signal(false);
+  readonly searchFocused = signal(false);
+  readonly expandedItemIndex = signal<number | null>(null);
+
+  readonly paymentMethod = signal<PaymentMethod>('card');
+  readonly refundMethod = signal<PaymentMethod>('card');
 
   readonly icons = {
     FilePlus2,
@@ -98,51 +120,52 @@ export class RepairOrderCard {
   readonly error = this.ordersStore.selectedOrderError;
   readonly moneyLocked = this.ordersStore.orderLockedByMoney;
 
-  readonly showPaymentForm = signal(false);
-  readonly showRefundForm = signal(false);
-  readonly searchFocused = signal(false);
-  readonly expandedItemIndex = signal<number | null>(null);
+  readonly stripeAvailable = computed(() => {
+    const status = this.stripeStatus();
+    return !!status?.connected && !!status?.chargesEnabled && !!status?.accountId;
+  });
 
-  // Products are now real/store-backed.
+  readonly stripeConnectedButNotReady = computed(() => {
+    const status = this.stripeStatus();
+    return !!status?.connected && !status?.chargesEnabled;
+  });
+
   readonly products = computed<CatalogItemOption[]>(() =>
     this.productsStore.activeProducts().map((product) => ({
       id: product.id,
       type: 'product',
       name: product.name,
-      description: product.sku ? `Product Sku: ${product.sku}` : null,
+      description: product.sku ? `Product SKU: ${product.sku}` : null,
       priceCents: Number(product.price ?? 0),
     }))
   );
 
-  // Keep services empty for now until that store exists.
   readonly services = computed<CatalogItemOption[]>(() => []);
 
   readonly itemSearchControl = new FormControl('', { nonNullable: true });
 
   readonly itemsForm = this.fb.group({
-    discountDollars: [0, [Validators.min(0)]],
+    discountDollars: this.fb.control(0, [Validators.min(0)]),
     items: this.fb.array([]),
   });
 
-  readonly paymentForm = this.fb.nonNullable.group({
-    amountDollars: [0, [Validators.required, Validators.min(0.01)]],
-    method: ['card' as PaymentMethod, Validators.required],
-    reference: [''],
-    note: [''],
+  readonly paymentForm = this.fb.group({
+    amountDollars: this.fb.control(0, [Validators.required, Validators.min(0.01)]),
+    method: this.fb.control<PaymentMethod>('card', [Validators.required]),
+    reference: this.fb.control(''),
+    note: this.fb.control(''),
   });
 
-  readonly refundForm = this.fb.nonNullable.group({
-    amountDollars: [0, [Validators.required, Validators.min(0.01)]],
-    method: ['card' as PaymentMethod, Validators.required],
-    reference: [''],
-    note: [''],
+  readonly refundForm = this.fb.group({
+    amountDollars: this.fb.control(0, [Validators.required, Validators.min(0.01)]),
+    method: this.fb.control<PaymentMethod>('card', [Validators.required]),
+    reference: this.fb.control(''),
+    note: this.fb.control(''),
   });
 
   readonly itemsArray = computed(() => this.itemsForm.controls.items as FormArray);
 
-  readonly catalogItems = computed(() => {
-    return [...this.products(), ...this.services()];
-  });
+  readonly catalogItems = computed(() => [...this.products(), ...this.services()]);
 
   readonly filteredCatalogItems = computed(() => {
     const query = this.itemSearchControl.value.trim().toLowerCase();
@@ -174,142 +197,150 @@ export class RepairOrderCard {
     return Math.min(Math.max(0, discount), subtotal);
   });
 
-  readonly draftTotalCents = computed(() => {
-    return this.draftSubtotalCents() - this.draftDiscountCents();
-  });
+  readonly draftTotalCents = computed(() =>
+    Math.max(0, this.draftSubtotalCents() - this.draftDiscountCents())
+  );
 
-  private readonly loadProductsEffect = effect(() => {
-    if (this.productsStore.productsLoaded() || this.productsStore.productsLoading()) return;
-    void this.productsStore.loadProducts({
-      limit: 100,
-      status: 'active',
-      includeDeleted: false,
+  constructor() {
+    effect(() => {
+      const orderId = this.orderId();
+      if (orderId) {
+        void this.ordersStore.loadOrder(orderId);
+      } else {
+        this.ordersStore.clearSelectedOrder();
+        this.resetItemsForm();
+      }
     });
-  });
 
-  private readonly loadOrderEffect = effect(() => {
-    const orderId = this.orderId();
+    effect(() => {
+      const order = this.order();
+      if (order) {
+        this.syncItemsFormFromOrder(order);
+      } else {
+        this.resetItemsForm();
+      }
+    });
 
-    if (!orderId) {
-      this.ordersStore.clearSelectedOrder();
-      this.resetItemsForm();
-      return;
+    this.paymentForm.controls.method.valueChanges.subscribe((value) => {
+      const method = (value ?? 'card') as PaymentMethod;
+      this.paymentMethod.set(method);
+
+      if (method === 'stripe') {
+        if (!this.stripeAvailable()) {
+          this.paymentForm.patchValue({ method: 'card' }, { emitEvent: false });
+          this.paymentMethod.set('card');
+          this.toast.error('Stripe unavailable', 'Stripe is not connected and ready for this shop.');
+          return;
+        }
+
+        if (this.showPaymentForm()) {
+          setTimeout(() => {
+            void this.ensureStripeCardElementReady();
+          }, 0);
+        }
+      } else {
+        this.destroyStripeCardElement();
+      }
+    });
+
+    this.refundForm.controls.method.valueChanges.subscribe((value) => {
+      const method = (value ?? 'card') as PaymentMethod;
+      this.refundMethod.set(method);
+
+      if (method === 'stripe' && !this.stripeAvailable()) {
+        this.refundForm.patchValue({ method: 'card' }, { emitEvent: false });
+        this.refundMethod.set('card');
+        this.toast.error('Stripe unavailable', 'Stripe is not connected and ready for this shop.');
+      }
+    });
+
+    void this.loadStripeStatus();
+  }
+
+  async loadStripeStatus(): Promise<void> {
+    this.loadingStripeStatus.set(true);
+    try {
+      const status = await firstValueFrom(this.stripeService.getStatus());
+      this.stripeStatus.set(status ?? null);
+    } catch {
+      this.stripeStatus.set(null);
+    } finally {
+      this.loadingStripeStatus.set(false);
     }
+  }
 
-    const current = this.ordersStore.selectedOrder();
-    if (current?.id === orderId) return;
-
-    this.ordersStore.loadOrder(orderId);
-  });
-
-  private readonly syncItemsEffect = effect(() => {
-    const order = this.order();
-    if (!order) {
-      this.resetItemsForm();
-      return;
-    }
-
-    this.syncItemsFormFromOrder(order);
-  });
-
-  createOrder(): void {
-    if (this.disabled()) return;
+  async createOrder(): Promise<void> {
     this.createRequested.emit();
   }
 
-  addItem(type: OrderItemType): void {
-    this.itemsArray().push(
-      this.createItemGroup({
-        type,
-        name: '',
-        quantity: 1,
-        unitPriceDollars: 0,
-        notes: '',
-        sourceId: null,
-      })
+  addCatalogItem(item: CatalogItemOption): void {
+    const existingIndex = this.itemRowsRawValue().findIndex(
+      (row) =>
+        row.name.trim().toLowerCase() === item.name.trim().toLowerCase() &&
+        row.type === item.type &&
+        (row.sourceId ?? null) === item.id
     );
+
+    if (existingIndex >= 0) {
+      const control = this.itemsArray().at(existingIndex);
+      const quantity = Number(control.get('quantity')?.value ?? 1);
+      control.patchValue({ quantity: quantity + 1 });
+      this.expandedItemIndex.set(existingIndex);
+    } else {
+      this.itemsArray().push(
+        this.createItemGroup({
+          type: item.type,
+          name: item.name,
+          quantity: 1,
+          unitPriceDollars: (item.priceCents ?? 0) / 100,
+          notes: '',
+          sourceId: item.id,
+        })
+      );
+      this.expandedItemIndex.set(this.itemsArray().length - 1);
+    }
+
+    this.itemSearchControl.setValue('', { emitEvent: true });
+    this.searchFocused.set(false);
   }
 
   addCustomItem(): void {
-    const index = this.itemsArray().length;
-
     this.itemsArray().push(
       this.createItemGroup({
         type: 'service',
-        name: '',
         quantity: 1,
         unitPriceDollars: 0,
         notes: '',
         sourceId: null,
       })
     );
-
-    this.expandedItemIndex.set(index);
-    this.searchFocused.set(false);
-    this.itemSearchControl.setValue('', { emitEvent: false });
-  }
-
-  addCatalogItem(item: CatalogItemOption): void {
-    this.itemsArray().push(
-      this.createItemGroup({
-        type: item.type,
-        name: item.name,
-        quantity: 1,
-        unitPriceDollars: (item.priceCents ?? 0) / 100,
-        notes: '',
-        sourceId: item.id,
-      })
-    );
-
-    this.itemSearchControl.setValue('', { emitEvent: false });
-    this.searchFocused.set(false);
-  }
-
-  toggleExpandedItem(index: number): void {
-    if (this.moneyLocked()) return;
-    this.expandedItemIndex.set(this.expandedItemIndex() === index ? null : index);
+    this.expandedItemIndex.set(this.itemsArray().length - 1);
   }
 
   removeItem(index: number): void {
     this.itemsArray().removeAt(index);
-
-    const expanded = this.expandedItemIndex();
-    if (expanded === null) return;
-
-    if (expanded === index) {
+    if (this.expandedItemIndex() === index) {
       this.expandedItemIndex.set(null);
-      return;
     }
+  }
 
-    if (expanded > index) {
-      this.expandedItemIndex.set(expanded - 1);
-    }
+  toggleExpandedItem(index: number): void {
+    this.expandedItemIndex.set(this.expandedItemIndex() === index ? null : index);
   }
 
   onSearchFocus(): void {
-    if (this.moneyLocked()) return;
     this.searchFocused.set(true);
-
-    if (!this.productsStore.productsLoaded() && !this.productsStore.productsLoading()) {
-      void this.productsStore.loadProducts({
-        limit: 100,
-        status: 'active',
-        includeDeleted: false,
-      });
-    }
   }
 
   onSearchBlur(): void {
-    setTimeout(() => {
-      this.searchFocused.set(false);
-    }, 150);
+    setTimeout(() => this.searchFocused.set(false), 150);
   }
 
   async saveItems(): Promise<void> {
     const order = this.order();
-    if (!order || this.moneyLocked()) return;
+    if (!order) return;
 
-    if (this.itemsForm.invalid || !this.itemsArray().length) {
+    if (this.itemsForm.invalid) {
       this.itemsForm.markAllAsTouched();
       return;
     }
@@ -346,8 +377,15 @@ export class RepairOrderCard {
     }
 
     const value = this.paymentForm.getRawValue();
+    const amountCents = this.toCents(value.amountDollars);
+
+    if (value.method === 'stripe') {
+      await this.collectStripePayment(order.id, amountCents);
+      return;
+    }
+
     const updated = await this.ordersStore.addPayment(order.id, {
-      amountCents: this.toCents(value.amountDollars),
+      amountCents,
       method: value.method,
       reference: value.reference.trim() || null,
       note: value.note.trim() || null,
@@ -356,10 +394,11 @@ export class RepairOrderCard {
     if (updated) {
       this.paymentForm.patchValue({
         amountDollars: 0,
-        method: 'card',
+        method: this.stripeAvailable() ? 'stripe' : 'card',
         reference: '',
         note: '',
       });
+      this.paymentMethod.set(this.stripeAvailable() ? 'stripe' : 'card');
       this.closePaymentModal();
       this.toast.success('Payment added', 'Order payment recorded.');
     } else {
@@ -377,8 +416,38 @@ export class RepairOrderCard {
     }
 
     const value = this.refundForm.getRawValue();
+    const amountCents = this.toCents(value.amountDollars);
+
+    if (value.method === 'stripe') {
+      if (!this.stripeAvailable()) {
+        this.toast.error('Stripe unavailable', 'Stripe is not connected and ready for this shop.');
+        return;
+      }
+
+      const updated = await this.ordersStore.createStripeRefund(order.id, {
+        amountCents,
+        reason: 'requested_by_customer',
+      });
+
+      if (updated) {
+        this.refundForm.patchValue({
+          amountDollars: 0,
+          method: this.stripeAvailable() ? 'stripe' : 'card',
+          reference: '',
+          note: '',
+        });
+        this.refundMethod.set(this.stripeAvailable() ? 'stripe' : 'card');
+        this.closeRefundModal();
+        this.toast.success('Refund processed', 'Stripe refund recorded on order.');
+      } else {
+        this.toast.error('Refund failed', this.error() ?? 'Unable to process Stripe refund.');
+      }
+
+      return;
+    }
+
     const updated = await this.ordersStore.addRefund(order.id, {
-      amountCents: this.toCents(value.amountDollars),
+      amountCents,
       method: value.method,
       reference: value.reference.trim() || null,
       note: value.note.trim() || null,
@@ -387,10 +456,11 @@ export class RepairOrderCard {
     if (updated) {
       this.refundForm.patchValue({
         amountDollars: 0,
-        method: 'card',
+        method: this.stripeAvailable() ? 'stripe' : 'card',
         reference: '',
         note: '',
       });
+      this.refundMethod.set(this.stripeAvailable() ? 'stripe' : 'card');
       this.closeRefundModal();
       this.toast.success('Refund added', 'Refund recorded on order.');
     } else {
@@ -415,7 +485,11 @@ export class RepairOrderCard {
     const order = this.order();
     if (!order) return false;
 
-    return order.totals.paidCents === 0 && order.totals.refundedCents === 0 && order.paymentStatus !== 'voided';
+    return (
+      order.totals.paidCents === 0 &&
+      order.totals.refundedCents === 0 &&
+      order.paymentStatus !== 'voided'
+    );
   }
 
   money(valueCents: number | null | undefined): string {
@@ -474,6 +548,163 @@ export class RepairOrderCard {
     return `${item.type}-${item.id}`;
   }
 
+  openPaymentModal(): void {
+    const order = this.order();
+    const defaultMethod: PaymentMethod = this.stripeAvailable() ? 'stripe' : 'card';
+
+    this.showRefundForm.set(false);
+    this.paymentForm.patchValue({
+      amountDollars: order ? Math.max(0, order.totals.balanceCents) / 100 : 0,
+      method: defaultMethod,
+      reference: '',
+      note: '',
+    });
+    this.paymentMethod.set(defaultMethod);
+    this.showPaymentForm.set(true);
+
+    if (defaultMethod === 'stripe') {
+      setTimeout(() => {
+        void this.ensureStripeCardElementReady();
+      }, 0);
+    }
+  }
+
+  closePaymentModal(): void {
+    this.showPaymentForm.set(false);
+    this.destroyStripeCardElement();
+  }
+
+  openRefundModal(): void {
+    const order = this.order();
+    const refundable = order
+      ? Math.max(0, (order.totals.paidCents ?? 0) - (order.totals.refundedCents ?? 0))
+      : 0;
+    const defaultMethod: PaymentMethod = this.stripeAvailable() ? 'stripe' : 'card';
+
+    this.showPaymentForm.set(false);
+    this.refundForm.patchValue({
+      amountDollars: refundable / 100,
+      method: defaultMethod,
+      reference: '',
+      note: '',
+    });
+    this.refundMethod.set(defaultMethod);
+    this.showRefundForm.set(true);
+  }
+
+  closeRefundModal(): void {
+    this.showRefundForm.set(false);
+  }
+
+  private async collectStripePayment(orderId: string, amountCents: number): Promise<void> {
+    const order = this.order();
+    const stripeAccountId = this.stripeStatus()?.accountId;
+
+    if (!order || !stripeAccountId) return;
+
+    if (!this.stripeAvailable()) {
+      this.toast.error('Stripe unavailable', 'Stripe is not connected and ready for this shop.');
+      return;
+    }
+
+    const ready = await this.ensureStripeCardElementReady();
+    if (!ready || !this.cardElement) {
+      this.toast.error('Payment failed', 'Unable to load secure card form.');
+      return;
+    }
+
+    const intent = await this.ordersStore.createStripePaymentIntent(orderId, {
+      amountCents,
+      description: `Payment for order ${order.orderNumber}`,
+    });
+
+    if (!intent?.clientSecret) {
+      this.toast.error('Payment failed', this.error() ?? 'Unable to start Stripe payment.');
+      return;
+    }
+
+    const confirm = await this.stripeService.confirmCardPayment({
+      stripeAccountId,
+      clientSecret: intent.clientSecret,
+      card: this.cardElement,
+    });
+
+    if (confirm.error) {
+      this.toast.error('Payment failed', confirm.error.message ?? 'Stripe payment failed.');
+      return;
+    }
+
+    const paymentIntentId = confirm.paymentIntent?.id ?? intent.paymentIntentId;
+
+    if (!paymentIntentId) {
+      this.toast.error('Payment failed', 'Stripe payment completed but payment id was missing.');
+      return;
+    }
+
+    const updated = await this.ordersStore.recordStripePayment(orderId, {
+      paymentIntentId,
+    });
+
+    if (updated) {
+      this.paymentForm.patchValue({
+        amountDollars: 0,
+        method: this.stripeAvailable() ? 'stripe' : 'card',
+        reference: '',
+        note: '',
+      });
+      this.paymentMethod.set(this.stripeAvailable() ? 'stripe' : 'card');
+      this.closePaymentModal();
+      this.toast.success('Payment added', 'Stripe payment recorded.');
+    } else {
+      this.toast.error('Payment failed', this.error() ?? 'Unable to record Stripe payment.');
+    }
+  }
+
+  private async ensureStripeCardElementReady(): Promise<boolean> {
+    if (this.initializingStripePayment()) return false;
+    if (!this.showPaymentForm()) return false;
+    if (this.paymentMethod() !== 'stripe') return false;
+    if (!this.stripeAvailable()) return false;
+    if (this.stripeCardMounted && this.cardElement) return true;
+
+    const host = this.stripeCardHost();
+    const stripeAccountId = this.stripeStatus()?.accountId;
+
+    if (!host || !stripeAccountId) return false;
+
+    this.initializingStripePayment.set(true);
+
+    try {
+      await this.mountStripeCardElement(stripeAccountId);
+      return true;
+    } finally {
+      this.initializingStripePayment.set(false);
+    }
+  }
+
+  private async mountStripeCardElement(stripeAccountId: string): Promise<void> {
+    const host = this.stripeCardHost();
+    if (!host) return;
+
+    this.destroyStripeCardElement();
+
+    const stripeReady = await this.stripeService.createCardElement({
+      stripeAccountId,
+    });
+
+    this.stripeElements = stripeReady.elements;
+    this.cardElement = stripeReady.card;
+    this.cardElement.mount(host.nativeElement);
+    this.stripeCardMounted = true;
+  }
+
+  private destroyStripeCardElement(): void {
+    this.cardElement?.destroy();
+    this.cardElement = null;
+    this.stripeElements = null;
+    this.stripeCardMounted = false;
+  }
+
   private resetItemsForm(): void {
     const array = this.itemsArray();
     while (array.length) {
@@ -526,12 +757,22 @@ export class RepairOrderCard {
     sourceId?: string | null;
   }) {
     return this.fb.group({
-      type: [input?.type ?? 'service', Validators.required],
-      name: [input?.name ?? '', [Validators.required, Validators.maxLength(120)]],
-      quantity: [input?.quantity ?? 1, [Validators.required, Validators.min(1), Validators.max(100)]],
-      unitPriceDollars: [input?.unitPriceDollars ?? 0, [Validators.required, Validators.min(0)]],
-      notes: [input?.notes ?? ''],
-      sourceId: [input?.sourceId ?? null],
+      type: this.fb.control<OrderItemType>(input?.type ?? 'service', Validators.required),
+      name: this.fb.control(input?.name ?? '', [
+        Validators.required,
+        Validators.maxLength(120),
+      ]),
+      quantity: this.fb.control(input?.quantity ?? 1, [
+        Validators.required,
+        Validators.min(1),
+        Validators.max(100),
+      ]),
+      unitPriceDollars: this.fb.control(input?.unitPriceDollars ?? 0, [
+        Validators.required,
+        Validators.min(0),
+      ]),
+      notes: this.fb.control(input?.notes ?? ''),
+      sourceId: this.fb.control<string | null>(input?.sourceId ?? null),
     });
   }
 
@@ -551,23 +792,5 @@ export class RepairOrderCard {
       notes: string;
       sourceId?: string | null;
     }>;
-  }
-
-  openPaymentModal(): void {
-    this.showRefundForm.set(false);
-    this.showPaymentForm.set(true);
-  }
-
-  closePaymentModal(): void {
-    this.showPaymentForm.set(false);
-  }
-
-  openRefundModal(): void {
-    this.showPaymentForm.set(false);
-    this.showRefundForm.set(true);
-  }
-
-  closeRefundModal(): void {
-    this.showRefundForm.set(false);
   }
 }

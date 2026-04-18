@@ -8,6 +8,7 @@ export interface AppConfig {
   mobilesentrixConsumerName: string;
   mobilesentrixConsumerKey: string;
   mobilesentrixConsumerSecret: string;
+  stripePublishableKey: string;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -5,9 +5,13 @@ import {
   CreateOrderPayload,
   CreatePaymentPayload,
   CreateRefundPayload,
+  CreateStripePaymentIntentPayload,
+  CreateStripePaymentIntentResponse,
+  CreateStripeRefundPayload,
   Order,
   OrderListResponse,
   PatchOrderPayload,
+  RecordStripePaymentPayload,
   ReplaceOrderItemsPayload,
 } from './orders-model';
 import { AppConfigService } from '../app-config/app-config.service';
@@ -64,6 +68,36 @@ export class OrdersService {
 
   addRefund(orderId: string, payload: CreateRefundPayload): Observable<Order> {
     return this.http.post<Order>(`${this.baseUrl}/${orderId}/refunds`, payload);
+  }
+
+  createStripePaymentIntent(
+    orderId: string,
+    payload: CreateStripePaymentIntentPayload
+  ): Observable<CreateStripePaymentIntentResponse> {
+    return this.http.post<CreateStripePaymentIntentResponse>(
+      `${this.baseUrl}/${orderId}/payments/stripe/intent`,
+      payload
+    );
+  }
+
+  recordStripePayment(
+    orderId: string,
+    payload: RecordStripePaymentPayload
+  ): Observable<Order> {
+    return this.http.post<Order>(
+      `${this.baseUrl}/${orderId}/payments/stripe/record`,
+      payload
+    );
+  }
+
+  createStripeRefund(
+    orderId: string,
+    payload: CreateStripeRefundPayload
+  ): Observable<Order> {
+    return this.http.post<Order>(
+      `${this.baseUrl}/${orderId}/refunds/stripe`,
+      payload
+    );
   }
 
   voidOrder(orderId: string): Observable<Order> {

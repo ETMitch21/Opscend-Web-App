@@ -7,6 +7,7 @@ const config = {
     mobilesentrixConsumerKey: process.env.mobilesentrixConsumerKey || '',
     mobilesentrixConsumerSecret: process.env.mobilesentrixConsumerSecret || '',
     mobilesentrixConsumerName: process.env.mobilesentrixConsumerName || '',
+    stripePublishableKey: process.env.stripePublishableKey || ''
 };
 
 const outPath = path.resolve('public/config.json');
