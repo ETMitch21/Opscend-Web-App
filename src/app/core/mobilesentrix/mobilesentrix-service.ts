@@ -39,13 +39,14 @@ export class MobileSentrixService {
     if (!this.shopId) return;
 
     const {
+      apiBase,
       mobilesentrixUrl,
       mobilesentrixConsumerName,
       mobilesentrixConsumerKey,
       mobilesentrixConsumerSecret,
     } = this.appConfig.config;
 
-    const callbackUrl = `${this.appConfig.config.apiBase}/integrations/mobilesentrix/callback/${encodeURIComponent(this.shopId)}`;
+    const callbackUrl = `${apiBase}/integrations/mobilesentrix/callback/${encodeURIComponent(this.shopId)}`;
 
     const url =
       `${mobilesentrixUrl}/oauth/authorize/identifier` +
