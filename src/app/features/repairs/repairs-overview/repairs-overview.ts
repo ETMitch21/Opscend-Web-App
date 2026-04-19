@@ -13,7 +13,7 @@ import {
   type RepairListParams,
   type RepairStatus,
 } from '../../../core/repairs/repair.model';
-import { ChevronDownIcon, LucideAngularModule } from 'lucide-angular';
+import { ChevronDownIcon, Building2, House, LucideAngularModule } from 'lucide-angular';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
 import { RouterLink } from '@angular/router';
 
@@ -31,7 +31,8 @@ type RepairSortKey =
   | 'appointment'
   | 'customer'
   | 'device'
-  | 'technician';
+  | 'technician'
+  | 'serviceMode';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -47,6 +48,8 @@ export class RepairsOverview {
   private readonly repairsService = inject(RepairsService);
 
   readonly chevronDownIcon = ChevronDownIcon;
+  readonly buildingIcon = Building2;
+  readonly houseIcon = House;
 
   readonly repairs = signal<Repair[]>([]);
   readonly loading = signal(false);
@@ -57,6 +60,7 @@ export class RepairsOverview {
   readonly activeView = signal<RepairViewFilter>('all');
   readonly searchTerm = signal('');
   readonly selectedStatus = signal<RepairStatus | null>(null);
+  readonly serviceMode = signal<'in_shop' | 'on_site' | null>(null);
 
   readonly customerId = signal('');
   readonly customerDeviceId = signal('');
@@ -194,6 +198,14 @@ export class RepairsOverview {
     }
   }
 
+  setServiceMode(value: string | null): void {
+    if (value === 'in_shop' || value === 'on_site') {
+      this.serviceMode.set(value);
+    } else {
+      this.serviceMode.set(null);
+    }
+  }
+
   setView(view: RepairViewFilter): void {
     this.activeView.set(view);
 
@@ -271,6 +283,7 @@ export class RepairsOverview {
   clearFilters(): void {
     this.activeView.set('all');
     this.selectedStatus.set(null);
+    this.serviceMode.set(null);
     this.searchTerm.set('');
     this.customerId.set('');
     this.customerDeviceId.set('');
@@ -323,12 +336,17 @@ export class RepairsOverview {
     };
 
     const status = this.selectedStatus();
+    const serviceMode = this.serviceMode();
     const customerId = this.customerId().trim();
     const customerDeviceId = this.customerDeviceId().trim();
     const orderId = this.orderId().trim();
 
     if (status) {
       params.status = status;
+    }
+
+    if (serviceMode) {
+      params.serviceMode = serviceMode;
     }
 
     if (customerId) {
@@ -351,12 +369,18 @@ export class RepairsOverview {
       repair.id,
       repair.problemSummary,
       repair.status,
+      repair.serviceMode,
       repair.orderId ?? '',
       repair.customerId,
       repair.customerDeviceId,
       repair.assignedTo ?? '',
       repair.intakeNotes ?? '',
       repair.conditionNotes ?? '',
+      repair.serviceAddressLabel ?? '',
+      repair.serviceAddressLine1 ?? '',
+      repair.serviceAddressCity ?? '',
+      repair.serviceAddressState ?? '',
+      repair.serviceAddressPostalCode ?? '',
       ...(repair.accessories ?? []),
       repair.appointment?.notes ?? '',
       repair.customer?.name ?? '',
@@ -408,11 +432,11 @@ export class RepairsOverview {
   }
 
   private getDeviceSortValue(repair: Repair): string {
-    const device = (repair as any).customerDevice;
+    const device = repair.customerDevice;
 
     return (
       device?.nickname ||
-      [device?.manufacturer, device?.model].filter((value) => !!value).join(' ') ||
+      [device?.brand, device?.model].filter((value) => !!value).join(' ') ||
       repair.customerDeviceId ||
       ''
     ).toLowerCase();

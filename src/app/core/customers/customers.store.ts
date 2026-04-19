@@ -1,9 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom, Observable } from 'rxjs';
 import {
+  CreateCustomerAddressRequest,
   CreateCustomerRequest,
   Customer,
+  CustomerAddress,
   CustomerListQuery,
+  UpdateCustomerAddressRequest,
   UpdateCustomerRequest,
 } from './customer.model';
 import { CustomersService } from './customers-services';
@@ -16,6 +19,7 @@ export class CustomersStore {
 
   private readonly _items = signal<Customer[]>([]);
   private readonly _selected = signal<Customer | null>(null);
+  private readonly _addresses = signal<CustomerAddress[]>([]);
   private readonly _loading = signal(false);
   private readonly _saving = signal(false);
   private readonly _error = signal<string | null>(null);
@@ -24,6 +28,7 @@ export class CustomersStore {
 
   readonly items = this._items.asReadonly();
   readonly selected = this._selected.asReadonly();
+  readonly addresses = this._addresses.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly saving = this._saving.asReadonly();
   readonly error = this._error.asReadonly();
@@ -195,6 +200,120 @@ export class CustomersStore {
     }
   }
 
+  async loadAddresses(customerId: string): Promise<CustomerAddress[]> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      const rows = await firstValueFrom(this.customersService.listAddresses(customerId));
+      this._addresses.set(rows);
+      return rows;
+    } catch (err: any) {
+      this._error.set(err?.error?.error ?? 'Failed to load customer addresses.');
+      return [];
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  async createAddress(
+    customerId: string,
+    payload: CreateCustomerAddressRequest
+  ): Promise<CustomerAddress | null> {
+    this._saving.set(true);
+    this._error.set(null);
+
+    try {
+      const created = await firstValueFrom(
+        this.customersService.createAddress(customerId, payload)
+      );
+
+      this._addresses.update((items) => {
+        const next = items.filter((x) => !created.isDefault || !x.isDefault);
+        return created.isDefault ? [created, ...next] : [...next, created];
+      });
+
+      return created;
+    } catch (err: any) {
+      this._error.set(err?.error?.error ?? 'Failed to create customer address.');
+      return null;
+    } finally {
+      this._saving.set(false);
+    }
+  }
+
+  async updateAddress(
+    customerId: string,
+    addressId: string,
+    payload: UpdateCustomerAddressRequest
+  ): Promise<CustomerAddress | null> {
+    this._saving.set(true);
+    this._error.set(null);
+
+    try {
+      const updated = await firstValueFrom(
+        this.customersService.updateAddress(customerId, addressId, payload)
+      );
+
+      this._addresses.update((items) =>
+        items.map((item) => ({
+          ...item,
+          isDefault: updated.isDefault ? item.id === updated.id : item.isDefault,
+        })).map((item) => (item.id === updated.id ? updated : item))
+      );
+
+      return updated;
+    } catch (err: any) {
+      this._error.set(err?.error?.error ?? 'Failed to update customer address.');
+      return null;
+    } finally {
+      this._saving.set(false);
+    }
+  }
+
+  async setDefaultAddress(customerId: string, addressId: string): Promise<CustomerAddress | null> {
+    this._saving.set(true);
+    this._error.set(null);
+
+    try {
+      const updated = await firstValueFrom(
+        this.customersService.setDefaultAddress(customerId, addressId)
+      );
+
+      this._addresses.update((items) =>
+        items
+          .map((item) => ({
+            ...item,
+            isDefault: item.id === updated.id,
+          }))
+          .sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+      );
+
+      return updated;
+    } catch (err: any) {
+      this._error.set(err?.error?.error ?? 'Failed to set default address.');
+      return null;
+    } finally {
+      this._saving.set(false);
+    }
+  }
+
+  async deleteAddress(customerId: string, addressId: string): Promise<boolean> {
+    this._saving.set(true);
+    this._error.set(null);
+
+    try {
+      await firstValueFrom(this.customersService.deleteAddress(customerId, addressId));
+      this._addresses.update((items) => items.filter((item) => item.id !== addressId));
+      return true;
+    } catch (err: any) {
+      this._error.set(err?.error?.error ?? 'Failed to delete customer address.');
+      return false;
+    } finally {
+      this._saving.set(false);
+    }
+  }
+
   setSelected(customer: Customer | null): void {
     this._selected.set(customer);
   }
@@ -210,6 +329,7 @@ export class CustomersStore {
   reset(): void {
     this._items.set([]);
     this._selected.set(null);
+    this._addresses.set([]);
     this._loading.set(false);
     this._saving.set(false);
     this._error.set(null);

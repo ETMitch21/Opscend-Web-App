@@ -17,6 +17,28 @@ export class ShopContextService {
   private hasLoaded = false;
   private inFlight$?: Observable<Shop | null>;
 
+  get onsiteEnabled(): boolean {
+    return this.shopSubject.value?.settings.onsite.enabled ?? false;
+  }
+
+  get onsiteTripFeeEnabled(): boolean {
+    return this.shopSubject.value?.settings.onsite.tripFeeEnabled ?? false;
+  }
+
+  get onsiteDefaultTripFeeCents(): number | null {
+    return this.shopSubject.value?.settings.onsite.defaultTripFeeCents ?? null;
+  }
+
+  get onsiteServiceAreaMode(): "radius" | "zip_codes" | "custom" {
+    return this.shopSubject.value?.settings.onsite.serviceAreaMode ?? "radius";
+  }
+
+  get onsiteServiceAreaZipCodes(): string[] {
+    return (
+      this.shopSubject.value?.settings.onsite.zipCodes?.map((x) => x.postalCode) ?? []
+    );
+  }
+
   get shop(): Shop | null {
     return this.shopSubject.value;
   }

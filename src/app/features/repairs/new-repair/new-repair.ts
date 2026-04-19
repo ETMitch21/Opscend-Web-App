@@ -34,7 +34,10 @@ import {
 } from 'lucide-angular';
 
 import { CustomersStore } from '../../../core/customers/customers.store';
-import { Customer } from '../../../core/customers/customer.model';
+import {
+  Customer,
+  CustomerAddress,
+} from '../../../core/customers/customer.model';
 import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
 import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
@@ -44,6 +47,8 @@ import { RepairsStore } from '../../../core/repairs/repairs.store';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
 import { ToastService } from '../../../core/toast/toast-service';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
+import { RepairServiceMode } from '../../../core/repairs/repair.model';
+import { ShopContextService } from '../../../core/shop/shop-context.store';
 
 type NewRepairForm = FormGroup<{
   customerId: FormControl<string | null>;
@@ -61,6 +66,16 @@ type NewRepairForm = FormGroup<{
   problemSummary: FormControl<string>;
   quotedPriceDollars: FormControl<number | null>;
   schedulingSelected: FormControl<boolean>;
+  serviceMode: FormControl<RepairServiceMode>;
+  serviceAddressId: FormControl<string | null>;
+  addressLabel: FormControl<string>;
+  addressLine1: FormControl<string>;
+  addressLine2: FormControl<string>;
+  addressCity: FormControl<string>;
+  addressState: FormControl<string>;
+  addressPostalCode: FormControl<string>;
+  addressCountry: FormControl<string>;
+  addressNotes: FormControl<string>;
 }>;
 
 interface ShopListResponse {
@@ -68,6 +83,11 @@ interface ShopListResponse {
     settings?: {
       booking?: {
         enabled?: boolean;
+      };
+      onsite?: {
+        enabled?: boolean;
+        tripFeeEnabled?: boolean;
+        defaultTripFeeCents?: number | null;
       };
     };
   }>;
@@ -98,11 +118,76 @@ export class NewRepair implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
+  private readonly shopContext = inject(ShopContextService);
+
+  public shopCountry = 'US';
+
+  readonly states = [
+    { label: 'Alabama', value: 'AL' },
+    { label: 'Alaska', value: 'AK' },
+    { label: 'Arizona', value: 'AZ' },
+    { label: 'Arkansas', value: 'AR' },
+    { label: 'California', value: 'CA' },
+    { label: 'Colorado', value: 'CO' },
+    { label: 'Connecticut', value: 'CT' },
+    { label: 'Delaware', value: 'DE' },
+    { label: 'Florida', value: 'FL' },
+    { label: 'Georgia', value: 'GA' },
+    { label: 'Hawaii', value: 'HI' },
+    { label: 'Idaho', value: 'ID' },
+    { label: 'Illinois', value: 'IL' },
+    { label: 'Indiana', value: 'IN' },
+    { label: 'Iowa', value: 'IA' },
+    { label: 'Kansas', value: 'KS' },
+    { label: 'Kentucky', value: 'KY' },
+    { label: 'Louisiana', value: 'LA' },
+    { label: 'Maine', value: 'ME' },
+    { label: 'Maryland', value: 'MD' },
+    { label: 'Massachusetts', value: 'MA' },
+    { label: 'Michigan', value: 'MI' },
+    { label: 'Minnesota', value: 'MN' },
+    { label: 'Mississippi', value: 'MS' },
+    { label: 'Missouri', value: 'MO' },
+    { label: 'Montana', value: 'MT' },
+    { label: 'Nebraska', value: 'NE' },
+    { label: 'Nevada', value: 'NV' },
+    { label: 'New Hampshire', value: 'NH' },
+    { label: 'New Jersey', value: 'NJ' },
+    { label: 'New Mexico', value: 'NM' },
+    { label: 'New York', value: 'NY' },
+    { label: 'North Carolina', value: 'NC' },
+    { label: 'North Dakota', value: 'ND' },
+    { label: 'Ohio', value: 'OH' },
+    { label: 'Oklahoma', value: 'OK' },
+    { label: 'Oregon', value: 'OR' },
+    { label: 'Pennsylvania', value: 'PA' },
+    { label: 'Rhode Island', value: 'RI' },
+    { label: 'South Carolina', value: 'SC' },
+    { label: 'South Dakota', value: 'SD' },
+    { label: 'Tennessee', value: 'TN' },
+    { label: 'Texas', value: 'TX' },
+    { label: 'Utah', value: 'UT' },
+    { label: 'Vermont', value: 'VT' },
+    { label: 'Virginia', value: 'VA' },
+    { label: 'Washington', value: 'WA' },
+    { label: 'West Virginia', value: 'WV' },
+    { label: 'Wisconsin', value: 'WI' },
+    { label: 'Wyoming', value: 'WY' },
+    { label: 'District of Columbia', value: 'DC' },
+    { label: 'Puerto Rico', value: 'PR' },
+  ];
 
   public readonly leftChevronIcon: LucideIconData = ChevronLeftIcon;
 
   readonly bookingEnabled = signal(false);
-  
+  readonly onsiteEnabled = signal(false);
+  readonly onsiteTripFeeEnabled = signal(false);
+  readonly onsiteDefaultTripFeeCents = signal<number | null>(null);
+
+  public customerAddresses: CustomerAddress[] = [];
+  public loadingCustomerAddresses = false;
+  public creatingInlineAddress = false;
+
 
   public customerResults: Customer[] = [];
   public selectedCustomer: Customer | null = null;
@@ -159,6 +244,37 @@ export class NewRepair implements OnInit {
     schedulingSelected: new FormControl(false, {
       nonNullable: true,
     }),
+    serviceMode: new FormControl<RepairServiceMode>('in_shop', {
+      nonNullable: true,
+    }),
+    serviceAddressId: new FormControl<string | null>(null),
+    addressLabel: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.maxLength(80)],
+    }),
+    addressLine1: new FormControl('', {
+      nonNullable: true,
+    }),
+    addressLine2: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.maxLength(120)],
+    }),
+    addressCity: new FormControl('', {
+      nonNullable: true,
+    }),
+    addressState: new FormControl('', {
+      nonNullable: true,
+    }),
+    addressPostalCode: new FormControl('', {
+      nonNullable: true,
+    }),
+    addressCountry: new FormControl('US', {
+      nonNullable: true,
+    }),
+    addressNotes: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.maxLength(500)],
+    }),
   });
 
   private get apiBase(): string {
@@ -189,7 +305,17 @@ export class NewRepair implements OnInit {
     return 60;
   };
 
+  private centsToDollars(value: number | null | undefined): number | null {
+    if (value == null) return null;
+    return value / 100;
+  }
+
+  private normalizePostalCode(value: string): string {
+    return value.trim().toUpperCase();
+  }
+
   ngOnInit(): void {
+    void this.loadShopCountry();
     void this.loadBookingEnabled();
   }
 
@@ -293,13 +419,23 @@ export class NewRepair implements OnInit {
         this.http.get<ShopListResponse>(`${this.apiBase}/shops`)
       );
 
-      const enabled = response.data?.[0]?.settings?.booking?.enabled === true;
-      this.bookingEnabled.set(enabled);
+      const settings = response.data?.[0]?.settings;
+
+      this.bookingEnabled.set(settings?.booking?.enabled === true);
+      this.onsiteEnabled.set(settings?.onsite?.enabled === true);
+      this.onsiteTripFeeEnabled.set(settings?.onsite?.tripFeeEnabled === true);
+      this.onsiteDefaultTripFeeCents.set(
+        settings?.onsite?.defaultTripFeeCents ?? null
+      );
     } catch (error) {
-      console.error('Failed to load booking setting.', error);
+      console.error('Failed to load booking/on-site settings.', error);
       this.bookingEnabled.set(false);
+      this.onsiteEnabled.set(false);
+      this.onsiteTripFeeEnabled.set(false);
+      this.onsiteDefaultTripFeeCents.set(null);
     } finally {
       this.updateSchedulingValidators();
+      this.updateServiceValidators();
     }
   }
 
@@ -318,6 +454,236 @@ export class NewRepair implements OnInit {
     }
 
     schedulingControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+
+  private async loadCustomerAddresses(customerId: string): Promise<void> {
+    this.loadingCustomerAddresses = true;
+
+    try {
+      this.customerAddresses = await this.customersStore.loadAddresses(customerId);
+
+      const currentId = this.newRepairForm.controls.serviceAddressId.value;
+      const stillExists = !!currentId && this.customerAddresses.some((x) => x.id === currentId);
+
+      if (stillExists) return;
+
+      const defaultAddress =
+        this.customerAddresses.find((x) => x.isDefault) ??
+        this.customerAddresses[0] ??
+        null;
+
+      this.newRepairForm.patchValue({
+        serviceAddressId:
+          this.newRepairForm.controls.serviceMode.value === 'on_site'
+            ? defaultAddress?.id ?? null
+            : null,
+      });
+    } finally {
+      this.loadingCustomerAddresses = false;
+      this.updateServiceValidators();
+    }
+  }
+
+  private resetCustomerAddresses(): void {
+    this.customerAddresses = [];
+    this.loadingCustomerAddresses = false;
+    this.creatingInlineAddress = false;
+
+    this.newRepairForm.patchValue(
+      {
+        serviceAddressId: null,
+        addressLabel: '',
+        addressLine1: '',
+        addressLine2: '',
+        addressCity: '',
+        addressState: '',
+        addressPostalCode: '',
+        addressCountry: this.shopCountry,
+        addressNotes: '',
+      },
+      { emitEvent: false }
+    );
+  }
+
+  private updateServiceValidators(): void {
+    const serviceModeControl = this.newRepairForm.controls.serviceMode;
+    const serviceAddressIdControl = this.newRepairForm.controls.serviceAddressId;
+
+    const addressLine1Control = this.newRepairForm.controls.addressLine1;
+    const addressCityControl = this.newRepairForm.controls.addressCity;
+    const addressStateControl = this.newRepairForm.controls.addressState;
+    const addressPostalCodeControl = this.newRepairForm.controls.addressPostalCode;
+    const addressCountryControl = this.newRepairForm.controls.addressCountry;
+
+    if (!this.onsiteEnabled()) {
+      serviceModeControl.setValue('in_shop', { emitEvent: false });
+
+      serviceAddressIdControl.clearValidators();
+      addressLine1Control.clearValidators();
+      addressCityControl.clearValidators();
+      addressStateControl.clearValidators();
+      addressPostalCodeControl.clearValidators();
+      addressCountryControl.clearValidators();
+
+      this.creatingInlineAddress = false;
+
+      this.newRepairForm.patchValue(
+        {
+          serviceAddressId: null,
+          addressLabel: '',
+          addressLine1: '',
+          addressLine2: '',
+          addressCity: '',
+          addressState: '',
+          addressPostalCode: '',
+          addressCountry: 'US',
+          addressNotes: '',
+        },
+        { emitEvent: false }
+      );
+    } else if (serviceModeControl.value === 'on_site') {
+      if (this.creatingInlineAddress) {
+        serviceAddressIdControl.clearValidators();
+        addressLine1Control.setValidators([Validators.required, Validators.maxLength(120)]);
+        addressCityControl.setValidators([Validators.required, Validators.maxLength(80)]);
+        addressStateControl.setValidators([Validators.required, Validators.maxLength(80)]);
+        addressPostalCodeControl.setValidators([Validators.required, Validators.maxLength(20)]);
+        addressCountryControl.setValidators([
+          Validators.required,
+          Validators.minLength(2),
+          Validators.maxLength(2),
+        ]);
+      } else {
+        serviceAddressIdControl.setValidators([Validators.required]);
+        addressLine1Control.clearValidators();
+        addressCityControl.clearValidators();
+        addressStateControl.clearValidators();
+        addressPostalCodeControl.clearValidators();
+        addressCountryControl.clearValidators();
+
+        if (!serviceAddressIdControl.value && this.customerAddresses.length) {
+          const defaultAddress =
+            this.customerAddresses.find((x) => x.isDefault) ??
+            this.customerAddresses[0];
+
+          serviceAddressIdControl.setValue(defaultAddress?.id ?? null, {
+            emitEvent: false,
+          });
+        }
+      }
+    } else {
+      serviceAddressIdControl.clearValidators();
+      addressLine1Control.clearValidators();
+      addressCityControl.clearValidators();
+      addressStateControl.clearValidators();
+      addressPostalCodeControl.clearValidators();
+      addressCountryControl.clearValidators();
+
+      this.creatingInlineAddress = false;
+
+      this.newRepairForm.patchValue(
+        {
+          serviceAddressId: null,
+          addressLabel: '',
+          addressLine1: '',
+          addressLine2: '',
+          addressCity: '',
+          addressState: '',
+          addressPostalCode: '',
+          addressCountry: 'US',
+          addressNotes: '',
+        },
+        { emitEvent: false }
+      );
+    }
+
+    serviceAddressIdControl.updateValueAndValidity({ emitEvent: false });
+    addressLine1Control.updateValueAndValidity({ emitEvent: false });
+    addressCityControl.updateValueAndValidity({ emitEvent: false });
+    addressStateControl.updateValueAndValidity({ emitEvent: false });
+    addressPostalCodeControl.updateValueAndValidity({ emitEvent: false });
+    addressCountryControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  onServiceModeChange(mode: RepairServiceMode): void {
+    this.newRepairForm.patchValue({
+      serviceMode: mode,
+    });
+
+    if (mode === 'in_shop') {
+      this.creatingInlineAddress = false;
+      this.newRepairForm.patchValue({
+        serviceAddressId: null,
+        addressLabel: '',
+        addressLine1: '',
+        addressLine2: '',
+        addressCity: '',
+        addressState: '',
+        addressPostalCode: '',
+        addressCountry: this.shopCountry,
+        addressNotes: '',
+      });
+    }
+
+    if (mode === 'on_site' && !this.customerAddresses.length) {
+      this.creatingInlineAddress = true;
+    }
+
+    this.updateServiceValidators();
+  }
+
+  startInlineAddress(): void {
+    this.creatingInlineAddress = true;
+    this.newRepairForm.patchValue({
+      serviceAddressId: null,
+      addressLabel: '',
+      addressLine1: '',
+      addressLine2: '',
+      addressCity: '',
+      addressState: '',
+      addressPostalCode: '',
+      addressCountry: this.shopCountry,
+      addressNotes: '',
+    });
+    this.updateServiceValidators();
+  }
+
+  cancelInlineAddress(): void {
+    this.creatingInlineAddress = false;
+
+    const defaultAddress =
+      this.customerAddresses.find((x) => x.isDefault) ??
+      this.customerAddresses[0] ??
+      null;
+
+    this.newRepairForm.patchValue({
+      serviceAddressId: defaultAddress?.id ?? null,
+      addressLabel: '',
+      addressLine1: '',
+      addressLine2: '',
+      addressCity: '',
+      addressState: '',
+      addressPostalCode: '',
+      addressCountry: this.shopCountry,
+      addressNotes: '',
+    });
+
+    this.updateServiceValidators();
+  }
+
+  formatAddressLabel(address: CustomerAddress): string {
+    return address.label?.trim() || 'Address';
+  }
+
+  formatAddressSummary(address: CustomerAddress): string {
+    return [
+      address.line1,
+      address.line2,
+      `${address.city}, ${address.state} ${address.postalCode}`.trim(),
+    ]
+      .filter(Boolean)
+      .join(' • ');
   }
 
   onCustomerFocus(): void {
@@ -352,6 +718,7 @@ export class NewRepair implements OnInit {
 
     this.updateCustomerValidators();
     this.updateDeviceValidators();
+    void this.loadCustomerAddresses(customer.id);
   }
 
   startNewCustomer(): void {
@@ -366,9 +733,11 @@ export class NewRepair implements OnInit {
 
     this.clearSelectedDevice();
     this.newDevice = false;
+    this.resetCustomerAddresses();
 
     this.updateCustomerValidators();
     this.updateDeviceValidators();
+    this.updateServiceValidators();
   }
 
   clearSelectedCustomer(): void {
@@ -384,9 +753,11 @@ export class NewRepair implements OnInit {
 
     this.clearSelectedDevice();
     this.newDevice = false;
+    this.resetCustomerAddresses();
 
     this.updateCustomerValidators();
     this.updateDeviceValidators();
+    this.updateServiceValidators();
   }
 
   selectDevice(device: CustomerDevice): void {
@@ -593,6 +964,7 @@ export class NewRepair implements OnInit {
     );
 
     this.updateCustomerValidators();
+    await this.loadCustomerAddresses(createdCustomer.id);
 
     return createdCustomer.id;
   }
@@ -632,6 +1004,54 @@ export class NewRepair implements OnInit {
     return createdDevice.id;
   }
 
+
+  private async ensureServiceAddress(customerId: string): Promise<string | null> {
+    if (!this.onsiteEnabled() || this.newRepairForm.controls.serviceMode.value !== 'on_site') {
+      return null;
+    }
+
+    if (!this.creatingInlineAddress) {
+      return this.newRepairForm.controls.serviceAddressId.value;
+    }
+
+    const created = await this.customersStore.createAddress(customerId, {
+      label: this.newRepairForm.controls.addressLabel.value.trim() || null,
+      line1: this.newRepairForm.controls.addressLine1.value.trim(),
+      line2: this.newRepairForm.controls.addressLine2.value.trim() || null,
+      city: this.newRepairForm.controls.addressCity.value.trim(),
+      state: this.newRepairForm.controls.addressState.value.trim(),
+      postalCode: this.normalizePostalCode(
+        this.newRepairForm.controls.addressPostalCode.value
+      ),
+      country: this.newRepairForm.controls.addressCountry.value.trim().toUpperCase(),
+      notes: this.newRepairForm.controls.addressNotes.value.trim() || null,
+      isDefault: this.customerAddresses.length === 0,
+    });
+
+    if (!created) {
+      console.error('Failed to create service address.');
+      return null;
+    }
+
+    await this.loadCustomerAddresses(customerId);
+    this.creatingInlineAddress = false;
+
+    this.newRepairForm.patchValue({
+      serviceAddressId: created.id,
+      addressLabel: '',
+      addressLine1: '',
+      addressLine2: '',
+      addressCity: '',
+      addressState: '',
+      addressPostalCode: '',
+      addressCountry: 'US',
+      addressNotes: '',
+    });
+
+    this.updateServiceValidators();
+    return created.id;
+  }
+
   private dollarsToCents(value: number | null | undefined): number {
     const numeric = Number(value ?? 0);
     if (!Number.isFinite(numeric)) return 0;
@@ -651,6 +1071,19 @@ export class NewRepair implements OnInit {
       const deviceId = await this.ensureDevice(customerId);
       if (!deviceId) return;
 
+      const serviceMode = this.onsiteEnabled()
+        ? this.newRepairForm.controls.serviceMode.value
+        : 'in_shop';
+
+      const serviceAddressId =
+        serviceMode === 'on_site'
+          ? await this.ensureServiceAddress(customerId)
+          : null;
+
+      if (serviceMode === 'on_site' && !serviceAddressId) {
+        return;
+      }
+
       const repair = await this.repairsStore.createRepair({
         customerId,
         customerDeviceId: deviceId,
@@ -658,6 +1091,14 @@ export class NewRepair implements OnInit {
         assignedTo: this.bookingEnabled()
           ? this.selectedSchedulingSelection?.assignedTo ?? undefined
           : undefined,
+        serviceMode,
+        serviceAddressId:
+          serviceMode === 'on_site' ? serviceAddressId ?? undefined : undefined,
+        tripFeeApplied: serviceMode === 'on_site' && this.onsiteTripFeeEnabled(),
+        tripFeeCents:
+          serviceMode === 'on_site' && this.onsiteTripFeeEnabled()
+            ? this.onsiteDefaultTripFeeCents()
+            : null,
       } as any);
 
       if (!repair) {
@@ -669,16 +1110,32 @@ export class NewRepair implements OnInit {
         this.newRepairForm.controls.quotedPriceDollars.value
       );
 
+      const items = [
+        {
+          type: 'service',
+          name: 'Repair Service',
+          quantity: 1,
+          unitPriceCents: quotedPriceCents,
+          notes: null,
+        },
+      ];
+
+      if (
+        serviceMode === 'on_site' &&
+        this.onsiteTripFeeEnabled() &&
+        this.onsiteDefaultTripFeeCents() != null
+      ) {
+        items.push({
+          type: 'service',
+          name: 'On-Site Trip Fee',
+          quantity: 1,
+          unitPriceCents: this.onsiteDefaultTripFeeCents()!,
+          notes: null,
+        });
+      }
+
       const order = await this.repairsStore.createOrderFromRepair(repair.id, {
-        items: [
-          {
-            type: 'service',
-            name: 'Repair Service',
-            quantity: 1,
-            unitPriceCents: quotedPriceCents,
-            notes: null,
-          },
-        ],
+        items,
         discountCents: 0,
         tags: ['repair'],
         notes: 'Created from new repair flow',
@@ -709,5 +1166,17 @@ export class NewRepair implements OnInit {
     } catch (error) {
       console.error('Failed to create repair flow.', error);
     }
+  }
+
+  private async loadShopCountry(): Promise<void> {
+    const shop = await firstValueFrom(this.shopContext.load());
+    this.shopCountry = shop?.address?.country || shop?.locale?.country || 'US';
+
+    this.newRepairForm.patchValue(
+      {
+        addressCountry: this.shopCountry,
+      },
+      { emitEvent: false }
+    );
   }
 }

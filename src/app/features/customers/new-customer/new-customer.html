@@ -14,7 +14,7 @@
             </button>
             <button type="button"
                 class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-80 disabled:cursor-not-allowed"
-                [disabled]="!newCustomerForm.valid" (click)="create()">
+                [disabled]="!newCustomerForm.valid || working" (click)="create()">
                 {{ working ? 'Creating...' : 'Create Customer' }}
             </button>
         </div>
@@ -65,4 +65,72 @@
             </div>
         </div>
     </form>
-</div>
+
+    <div class="border-t border-gray-200 my-4 mx-8"></div>
+
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div>
+            <h2 class="text-2xl font-semibold text-gray-900">
+                Address
+            </h2>
+        </div>
+
+        <button type="button" class="cursor-pointer rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
+            (click)="toggleAddAddress()">
+            {{ addAddress ? 'Remove Address' : 'Add Address' }}
+        </button>
+    </div>
+
+    @if (addAddress) {
+    <form [formGroup]="addressForm">
+        <div class="space-y-4 px-6 pb-6">
+            <div>
+                <input type="text" formControlName="label" placeholder="Label (Home, Work, Office)"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500" />
+            </div>
+
+            <div>
+                <input type="text" formControlName="line1" placeholder="Address line 1"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500" />
+            </div>
+
+            <div>
+                <input type="text" formControlName="line2" placeholder="Address line 2"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500" />
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <input type="text" formControlName="city" placeholder="City"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500" />
+
+                <select formControlName="state"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500">
+                    <option value="">State</option>
+                    @for (state of states; track state.value) {
+                    <option [value]="state.value">
+                        {{ state.label }}
+                    </option>
+                    }
+                </select>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <input type="text" formControlName="postalCode" placeholder="Postal Code"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500" />
+
+                <input type="text" [value]="shopCountry" disabled
+                    class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none" />
+            </div>
+
+            <div>
+                <textarea rows="3" formControlName="notes" placeholder="Address notes"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500 resize-none"></textarea>
+            </div>
+
+            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" formControlName="isDefault" />
+                Set as default address
+            </label>
+        </div>
+    </form>
+    }

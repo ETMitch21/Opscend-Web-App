@@ -24,8 +24,7 @@
 
                     <button type="button"
                         class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-                        [disabled]="saving()"
-                        (click)="save()">
+                        [disabled]="saving()" (click)="save()">
                         {{ saving() ? 'Saving...' : 'Save Settings' }}
                     </button>
                 </div>
@@ -37,7 +36,8 @@
                 }
 
                 @if (success()) {
-                <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <div
+                    class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                     {{ success() }}
                 </div>
                 }
@@ -47,8 +47,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Shop Name
                         </label>
-                        <input type="text"
-                            [(ngModel)]="name"
+                        <input type="text" [(ngModel)]="name"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="Summit Phone Repair" />
                     </div>
@@ -57,8 +56,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Legal Name
                         </label>
-                        <input type="text"
-                            [(ngModel)]="legalName"
+                        <input type="text" [(ngModel)]="legalName"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="Optional" />
                     </div>
@@ -67,8 +65,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Timezone
                         </label>
-                        <select
-                            [(ngModel)]="timezone"
+                        <select [(ngModel)]="timezone"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
                             @for (tz of timezones; track tz.value) {
                             <option [value]="tz.value">
@@ -85,9 +82,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Slug
                         </label>
-                        <input type="text"
-                            [ngModel]="slug"
-                            disabled
+                        <input type="text" [ngModel]="slug" disabled
                             class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none" />
                     </div>
 
@@ -95,8 +90,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Phone
                         </label>
-                        <input type="text"
-                            [(ngModel)]="phone"
+                        <input type="text" [(ngModel)]="phone"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="Optional" />
                     </div>
@@ -105,8 +99,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Email
                         </label>
-                        <input type="email"
-                            [(ngModel)]="email"
+                        <input type="email" [(ngModel)]="email"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="Optional" />
                     </div>
@@ -126,8 +119,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Address Line 1
                         </label>
-                        <input type="text"
-                            [(ngModel)]="addressLine1"
+                        <input type="text" [(ngModel)]="addressLine1"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
                     </div>
 
@@ -135,8 +127,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Address Line 2
                         </label>
-                        <input type="text"
-                            [(ngModel)]="addressLine2"
+                        <input type="text" [(ngModel)]="addressLine2"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
                     </div>
 
@@ -144,8 +135,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             City
                         </label>
-                        <input type="text"
-                            [(ngModel)]="addressCity"
+                        <input type="text" [(ngModel)]="addressCity"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
                     </div>
 
@@ -153,24 +143,22 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             State
                         </label>
-                        <select
-    [(ngModel)]="addressState"
-    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+                        <select [(ngModel)]="addressState"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
 
-    @for (state of states; track state.value) {
-    <option [value]="state.value">
-        {{ state.label }}
-    </option>
-    }
-</select>
+                            @for (state of states; track state.value) {
+                            <option [value]="state.value">
+                                {{ state.label }}
+                            </option>
+                            }
+                        </select>
                     </div>
 
                     <div>
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Postal Code
                         </label>
-                        <input type="text"
-                            [(ngModel)]="addressPostalCode"
+                        <input type="text" [(ngModel)]="addressPostalCode"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
                     </div>
 
@@ -178,16 +166,15 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Country
                         </label>
-                        <select
-    [(ngModel)]="addressCountry"
-    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+                        <select [(ngModel)]="addressCountry"
+                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
 
-    @for (country of countries; track country.value) {
-    <option [value]="country.value">
-        {{ country.label }}
-    </option>
-    }
-</select>
+                            @for (country of countries; track country.value) {
+                            <option [value]="country.value">
+                                {{ country.label }}
+                            </option>
+                            }
+                        </select>
                     </div>
                 </div>
             </div>
@@ -206,14 +193,11 @@
                             Brand Color
                         </label>
                         <div class="flex h-[50px] items-center gap-3 rounded-xl border border-gray-200 bg-white px-3">
-                            <input type="color"
-                                [ngModel]="primaryColor || '#000000'"
+                            <input type="color" [ngModel]="primaryColor || '#000000'"
                                 (ngModelChange)="primaryColor = $event"
                                 class="h-8 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
-                            <input type="text"
-                                [(ngModel)]="primaryColor"
-                                class="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                                placeholder="#000000" />
+                            <input type="text" [(ngModel)]="primaryColor"
+                                class="min-w-0 flex-1 bg-transparent text-sm outline-none" placeholder="#000000" />
                         </div>
                     </div>
 
@@ -221,8 +205,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Logo URL
                         </label>
-                        <input type="text"
-                            [(ngModel)]="logoUrl"
+                        <input type="text" [(ngModel)]="logoUrl"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="https://..." />
                     </div>
@@ -240,15 +223,12 @@
                         </p>
                     </div>
                     <div class="">
-                        <a
-                            routerLink="/settings/shop/availability"
+                        <a routerLink="/settings/shop/availability"
                             class="cursor-pointer group flex items-center gap-1 text-xs font-medium text-brand transition hover:text-brand-soft">
 
                             <span>{{ bookingEnabled ? 'Edit hours' : 'Set hours' }}</span>
 
-                            <lucide-icon
-                                [name]="arrowRight"
-                                class="h-3.5 w-3.5 transition group-hover:translate-x-0.5">
+                            <lucide-icon [name]="arrowRight" class="h-3.5 w-3.5 transition group-hover:translate-x-0.5">
                             </lucide-icon>
                         </a>
                     </div>
@@ -265,16 +245,151 @@
 
                         <button type="button"
                             class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
-                            [class.bg-brand]="bookingEnabled"
-                            [class.bg-gray-300]="!bookingEnabled"
-                            [disabled]="saving()"
-                            (click)="bookingEnabled = !bookingEnabled">
+                            [class.bg-brand]="bookingEnabled" [class.bg-gray-300]="!bookingEnabled"
+                            [disabled]="saving()" (click)="bookingEnabled = !bookingEnabled">
                             <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                [class.translate-x-6]="bookingEnabled"
-                                [class.translate-x-1]="!bookingEnabled">
+                                [class.translate-x-6]="bookingEnabled" [class.translate-x-1]="!bookingEnabled">
                             </span>
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-semibold text-gray-900">On-Site Repairs</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Control whether on-site repairs are available and how service areas are defined.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!onsiteEnabled">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-900">Enable On-Site Repairs</p>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    {{ onsiteEnabled ? 'On-site jobs can be created.' : 'Only in-shop jobs can be
+                                    created.' }}
+                                </p>
+                            </div>
+
+                            <button type="button"
+                                class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
+                                [class.bg-brand]="onsiteEnabled" [class.bg-gray-300]="!onsiteEnabled"
+                                [disabled]="saving()" (click)="onsiteEnabled = !onsiteEnabled; onOnsiteEnabledChange()">
+                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
+                                    [class.translate-x-6]="onsiteEnabled" [class.translate-x-1]="!onsiteEnabled">
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (onsiteEnabled) {
+                    <div class="rounded-2xl border border-gray-200 p-4">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-900">Auto-Apply Trip Fee</p>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Adds a default trip fee to on-site repairs.
+                                </p>
+                            </div>
+
+                            <button type="button"
+                                class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
+                                [class.bg-brand]="onsiteTripFeeEnabled" [class.bg-gray-300]="!onsiteTripFeeEnabled"
+                                [disabled]="saving()"
+                                (click)="onsiteTripFeeEnabled = !onsiteTripFeeEnabled; onOnsiteTripFeeEnabledChange()">
+                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
+                                    [class.translate-x-6]="onsiteTripFeeEnabled"
+                                    [class.translate-x-1]="!onsiteTripFeeEnabled">
+                                </span>
+                            </button>
+                        </div>
+
+                        @if (onsiteTripFeeEnabled) {
+                        <div class="mt-4">
+                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Default Trip Fee
+                            </label>
+                            <input type="number" [(ngModel)]="onsiteDefaultTripFeeDollars" min="0" step="0.01"
+                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                                placeholder="0.00" />
+                        </div>
+                        }
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 p-4">
+                        <div class="grid gap-4">
+                            <div>
+                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                    Service Area Mode
+                                </label>
+                                <select [(ngModel)]="onsiteServiceAreaMode" (ngModelChange)="onServiceAreaModeChange()"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+                                    @for (mode of serviceAreaModes; track mode.value) {
+                                    <option [value]="mode.value">
+                                        {{ mode.label }}
+                                    </option>
+                                    }
+                                </select>
+                            </div>
+
+                            @if (onsiteServiceAreaMode === 'radius') {
+                            <div>
+                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                    Radius Miles
+                                </label>
+                                <input type="number" [(ngModel)]="onsiteServiceAreaMiles" min="0" step="1"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                                    placeholder="25" />
+                            </div>
+                            }
+
+                            @if (onsiteServiceAreaMode === 'zip_codes') {
+                            <div>
+                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                    ZIP Codes
+                                </label>
+
+                                <div
+                                    class="rounded-xl border border-gray-200 bg-white px-3 py-2 focus-within:border-brand">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        @for (zip of serviceAreaZips; track zip.id) {
+                                        <div
+                                            class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                            <span>{{ zip.postalCode }}</span>
+                                            <button type="button" class="text-gray-400 hover:text-gray-600"
+                                                (click)="removeServiceAreaZip(zip.id)">
+                                                ×
+                                            </button>
+                                        </div>
+                                        }
+
+                                        <input type="text" placeholder="Add ZIP..."
+                                            class="min-w-[120px] flex-1 bg-transparent py-0.5 text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                                            [(ngModel)]="serviceAreaZipInput"
+                                            (keydown)="onServiceAreaZipKeydown($event)" />
+                                    </div>
+                                </div>
+
+                                <p class="mt-2 ps-1 text-xs text-gray-500">
+                                    Press enter or comma to add.
+                                </p>
+                            </div>
+                            }
+
+                            <div>
+                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                    Notes
+                                </label>
+                                <textarea [(ngModel)]="onsiteServiceAreaNotes" rows="3"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand resize-none"
+                                    placeholder="Optional internal note about your on-site coverage area."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    }
                 </div>
             </div>
 
@@ -291,8 +406,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Prefix
                         </label>
-                        <input type="text"
-                            [(ngModel)]="orderPrefix"
+                        <input type="text" [(ngModel)]="orderPrefix"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="SPR" />
                     </div>
@@ -302,8 +416,7 @@
                             <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                                 Start Number
                             </label>
-                            <input type="number"
-                                [(ngModel)]="orderStartNumber"
+                            <input type="number" [(ngModel)]="orderStartNumber"
                                 class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
                         </div>
 
@@ -311,8 +424,7 @@
                             <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                                 Padding
                             </label>
-                            <input type="number"
-                                [(ngModel)]="orderPadding"
+                            <input type="number" [(ngModel)]="orderPadding"
                                 class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
                         </div>
                     </div>
@@ -321,8 +433,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Default Fulfillment Status
                         </label>
-                        <select
-                            [(ngModel)]="defaultFulfillmentStatus"
+                        <select [(ngModel)]="defaultFulfillmentStatus"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
                             <option value="unfulfilled">Unfulfilled</option>
                             <option value="fulfilled">Fulfilled</option>
@@ -344,8 +455,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Language
                         </label>
-                        <input type="text"
-                            [(ngModel)]="localeLanguage"
+                        <input type="text" [(ngModel)]="localeLanguage"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="en" />
                     </div>
@@ -354,8 +464,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Currency
                         </label>
-                        <input type="text"
-                            [(ngModel)]="localeCurrency"
+                        <input type="text" [(ngModel)]="localeCurrency"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="USD" />
                     </div>
@@ -364,8 +473,7 @@
                         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
                             Country
                         </label>
-                        <input type="text"
-                            [(ngModel)]="localeCountry"
+                        <input type="text" [(ngModel)]="localeCountry"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
                             placeholder="US" />
                     </div>

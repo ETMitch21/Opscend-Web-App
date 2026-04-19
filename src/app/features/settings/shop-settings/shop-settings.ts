@@ -8,6 +8,14 @@ import { RouterModule } from '@angular/router';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
 
 type FulfillmentStatus = 'unfulfilled' | 'fulfilled';
+type ServiceAreaMode = 'radius' | 'zip_codes' | 'custom';
+
+interface ShopServiceAreaZip {
+  id: string;
+  shopId: string;
+  postalCode: string;
+  createdAt: string;
+}
 
 interface ShopResponse {
   id: string;
@@ -51,6 +59,15 @@ interface ShopResponse {
         padding: number | null;
         defaultFulfillmentStatus: FulfillmentStatus | null;
       };
+    };
+    onsite: {
+      enabled: boolean;
+      tripFeeEnabled: boolean;
+      defaultTripFeeCents: number | null;
+      serviceAreaMode: ServiceAreaMode;
+      serviceAreaMiles: number | null;
+      serviceAreaNotes: string | null;
+      zipCodes: ShopServiceAreaZip[];
     };
   };
 }
@@ -169,6 +186,35 @@ export class ShopSettings implements OnInit {
   orderStartNumber: number | null = 1;
   orderPadding: number | null = 4;
   defaultFulfillmentStatus: FulfillmentStatus = 'unfulfilled';
+  onsiteEnabled = false;
+  onsiteTripFeeEnabled = false;
+  onsiteDefaultTripFeeDollars: number | null = null;
+  onsiteServiceAreaMode: ServiceAreaMode = 'radius';
+  onsiteServiceAreaMiles: number | null = null;
+  onsiteServiceAreaNotes = '';
+
+  serviceAreaZipInput = '';
+  serviceAreaZips: ShopServiceAreaZip[] = [];
+
+  readonly serviceAreaModes: Array<{ label: string; value: ServiceAreaMode }> = [
+    { label: 'Radius', value: 'radius' },
+    { label: 'ZIP Codes', value: 'zip_codes' },
+    { label: 'Custom', value: 'custom' },
+  ];
+
+  private centsToDollars(value: number | null | undefined): number | null {
+    if (value == null) return null;
+    return value / 100;
+  }
+
+  private dollarsToCents(value: number | null | undefined): number | null {
+    if (value == null || Number.isNaN(Number(value))) return null;
+    return Math.round(Number(value) * 100);
+  }
+
+  private normalizeZip(value: string): string {
+    return value.trim().toUpperCase();
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -225,11 +271,86 @@ export class ShopSettings implements OnInit {
       this.orderPadding = shop.settings?.pos?.orders?.padding ?? 4;
       this.defaultFulfillmentStatus =
         shop.settings?.pos?.orders?.defaultFulfillmentStatus ?? 'unfulfilled';
+      this.onsiteEnabled = !!shop.settings?.onsite?.enabled;
+      this.onsiteTripFeeEnabled = !!shop.settings?.onsite?.tripFeeEnabled;
+      this.onsiteDefaultTripFeeDollars = this.centsToDollars(
+        shop.settings?.onsite?.defaultTripFeeCents ?? null
+      );
+      this.onsiteServiceAreaMode = shop.settings?.onsite?.serviceAreaMode ?? 'radius';
+      this.onsiteServiceAreaMiles = shop.settings?.onsite?.serviceAreaMiles ?? null;
+      this.onsiteServiceAreaNotes = shop.settings?.onsite?.serviceAreaNotes ?? '';
+      this.serviceAreaZips = [...(shop.settings?.onsite?.zipCodes ?? [])].sort((a, b) =>
+        a.postalCode.localeCompare(b.postalCode)
+      );
+      this.serviceAreaZipInput = '';
     } catch (err) {
       console.error(err);
       this.error.set('Could not load shop settings.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  addServiceAreaZip(): void {
+    const postalCode = this.normalizeZip(this.serviceAreaZipInput);
+    if (!postalCode) return;
+
+    const exists = this.serviceAreaZips.some((zip) => zip.postalCode === postalCode);
+    if (exists) {
+      this.serviceAreaZipInput = '';
+      return;
+    }
+
+    this.serviceAreaZips = [
+      ...this.serviceAreaZips,
+      {
+        id: `temp:${postalCode}`,
+        shopId: this.shopId() ?? '',
+        postalCode,
+        createdAt: new Date().toISOString(),
+      },
+    ].sort((a, b) => a.postalCode.localeCompare(b.postalCode));
+
+    this.serviceAreaZipInput = '';
+  }
+
+  removeServiceAreaZip(id: string): void {
+    this.serviceAreaZips = this.serviceAreaZips.filter((zip) => zip.id !== id);
+  }
+
+  onServiceAreaZipKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      this.addServiceAreaZip();
+    }
+  }
+
+  onOnsiteEnabledChange(): void {
+    if (!this.onsiteEnabled) {
+      this.onsiteTripFeeEnabled = false;
+      this.onsiteDefaultTripFeeDollars = null;
+      this.onsiteServiceAreaMode = 'radius';
+      this.onsiteServiceAreaMiles = null;
+      this.onsiteServiceAreaNotes = '';
+      this.serviceAreaZipInput = '';
+      this.serviceAreaZips = [];
+    }
+  }
+
+  onOnsiteTripFeeEnabledChange(): void {
+    if (!this.onsiteTripFeeEnabled) {
+      this.onsiteDefaultTripFeeDollars = null;
+    }
+  }
+
+  onServiceAreaModeChange(): void {
+    if (this.onsiteServiceAreaMode !== 'radius') {
+      this.onsiteServiceAreaMiles = null;
+    }
+
+    if (this.onsiteServiceAreaMode !== 'zip_codes') {
+      this.serviceAreaZipInput = '';
+      this.serviceAreaZips = [];
     }
   }
 
@@ -270,6 +391,33 @@ export class ShopSettings implements OnInit {
         return;
       }
 
+      if (this.onsiteEnabled) {
+        if (this.onsiteTripFeeEnabled) {
+          if (
+            this.onsiteDefaultTripFeeDollars !== null &&
+            this.onsiteDefaultTripFeeDollars < 0
+          ) {
+            this.error.set('Default trip fee must be 0 or greater.');
+            this.saving.set(false);
+            return;
+          }
+        }
+
+        if (this.onsiteServiceAreaMode === 'radius') {
+          if (this.onsiteServiceAreaMiles !== null && this.onsiteServiceAreaMiles < 0) {
+            this.error.set('Service area miles must be 0 or greater.');
+            this.saving.set(false);
+            return;
+          }
+        }
+
+        if (this.onsiteServiceAreaMode === 'zip_codes' && this.serviceAreaZips.length === 0) {
+          this.error.set('Add at least one ZIP code for ZIP code service areas.');
+          this.saving.set(false);
+          return;
+        }
+      }
+
       await firstValueFrom(
         this.http.patch(`${this.apiBase}/shops/${shopId}`, {
           name: this.name.trim(),
@@ -306,9 +454,79 @@ export class ShopSettings implements OnInit {
                 defaultFulfillmentStatus: this.defaultFulfillmentStatus,
               },
             },
+            onsite: {
+              enabled: this.onsiteEnabled,
+              tripFeeEnabled: this.onsiteTripFeeEnabled,
+              defaultTripFeeCents: this.onsiteTripFeeEnabled
+                ? this.dollarsToCents(this.onsiteDefaultTripFeeDollars)
+                : null,
+              serviceAreaMode: this.onsiteEnabled ? this.onsiteServiceAreaMode : 'radius',
+              serviceAreaMiles:
+                this.onsiteEnabled && this.onsiteServiceAreaMode === 'radius'
+                  ? this.onsiteServiceAreaMiles
+                  : null,
+              serviceAreaNotes:
+                this.onsiteEnabled ? this.onsiteServiceAreaNotes.trim() || null : null,
+            },
           },
         })
       );
+
+      if (this.onsiteEnabled) {
+        const existingZipIds = new Set(
+          this.serviceAreaZips
+            .filter((zip) => !zip.id.startsWith('temp:'))
+            .map((zip) => zip.id)
+        );
+
+        const currentZipRes = await firstValueFrom(
+          this.http.get<{ data: ShopServiceAreaZip[] }>(
+            `${this.apiBase}/shops/${shopId}/settings/onsite/service-area/zips`
+          )
+        );
+
+        const currentZips = currentZipRes.data ?? [];
+
+        for (const zip of currentZips) {
+          if (!existingZipIds.has(zip.id)) {
+            await firstValueFrom(
+              this.http.delete(
+                `${this.apiBase}/shops/${shopId}/settings/onsite/service-area/zips/${zip.id}`
+              )
+            );
+          }
+        }
+
+        const currentPostalCodes = new Set(
+          currentZips.map((zip) => this.normalizeZip(zip.postalCode))
+        );
+
+        for (const zip of this.serviceAreaZips) {
+          const postalCode = this.normalizeZip(zip.postalCode);
+          if (!currentPostalCodes.has(postalCode)) {
+            await firstValueFrom(
+              this.http.post(
+                `${this.apiBase}/shops/${shopId}/settings/onsite/service-area/zips`,
+                { postalCode }
+              )
+            );
+          }
+        }
+      } else {
+        const currentZipRes = await firstValueFrom(
+          this.http.get<{ data: ShopServiceAreaZip[] }>(
+            `${this.apiBase}/shops/${shopId}/settings/onsite/service-area/zips`
+          )
+        );
+
+        for (const zip of currentZipRes.data ?? []) {
+          await firstValueFrom(
+            this.http.delete(
+              `${this.apiBase}/shops/${shopId}/settings/onsite/service-area/zips/${zip.id}`
+            )
+          );
+        }
+      }
 
       this.success.set('Shop settings updated.');
       await this.load();

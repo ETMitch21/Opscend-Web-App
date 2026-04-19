@@ -14,6 +14,54 @@ export interface Customer {
   updatedAt: string;
 }
 
+export interface CustomerAddress {
+  id: string;
+  shopId: string;
+  customerId: string;
+
+  label: string | null;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+
+  isDefault: boolean;
+  notes: string | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerAddressListResponse {
+  data: CustomerAddress[];
+}
+
+export interface CreateCustomerAddressRequest {
+  label?: string | null;
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault?: boolean;
+  notes?: string | null;
+}
+
+export interface UpdateCustomerAddressRequest {
+  label?: string | null;
+  line1?: string;
+  line2?: string | null;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  isDefault?: boolean;
+  notes?: string | null;
+}
+
 export interface CustomerListResponse {
   data: Customer[];
   nextCursor: string | null;

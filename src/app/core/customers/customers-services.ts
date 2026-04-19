@@ -2,10 +2,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import {
+  CreateCustomerAddressRequest,
   CreateCustomerRequest,
   Customer,
+  CustomerAddress,
+  CustomerAddressListResponse,
   CustomerListQuery,
   CustomerListResponse,
+  UpdateCustomerAddressRequest,
   UpdateCustomerRequest,
 } from './customer.model';
 import { AppConfigService } from '../app-config/app-config.service';
@@ -45,14 +49,14 @@ export class CustomersService {
   }
 
   search(query: string): Observable<Customer[]> {
-  const params = new HttpParams()
-    .set('search', query)
-    .set('limit', '10');
+    const params = new HttpParams()
+      .set('search', query)
+      .set('limit', '10');
 
-  return this.http
-    .get<CustomerListResponse>(this.baseUrl, { params })
-    .pipe(map((res) => res.data));
-}
+    return this.http
+      .get<CustomerListResponse>(this.baseUrl, { params })
+      .pipe(map((res) => res.data));
+  }
 
   getById(id: string): Observable<Customer> {
     return this.http.get<Customer>(`${this.baseUrl}/${id}`);
@@ -72,5 +76,45 @@ export class CustomersService {
 
   restore(id: string): Observable<Customer> {
     return this.http.post<Customer>(`${this.baseUrl}/${id}/restore`, null);
+  }
+
+  listAddresses(customerId: string): Observable<CustomerAddress[]> {
+    return this.http
+      .get<CustomerAddressListResponse>(`${this.baseUrl}/${customerId}/addresses`)
+      .pipe(map((res) => res.data));
+  }
+
+  createAddress(
+    customerId: string,
+    payload: CreateCustomerAddressRequest
+  ): Observable<CustomerAddress> {
+    return this.http.post<CustomerAddress>(
+      `${this.baseUrl}/${customerId}/addresses`,
+      payload
+    );
+  }
+
+  updateAddress(
+    customerId: string,
+    addressId: string,
+    payload: UpdateCustomerAddressRequest
+  ): Observable<CustomerAddress> {
+    return this.http.patch<CustomerAddress>(
+      `${this.baseUrl}/${customerId}/addresses/${addressId}`,
+      payload
+    );
+  }
+
+  setDefaultAddress(customerId: string, addressId: string): Observable<CustomerAddress> {
+    return this.http.post<CustomerAddress>(
+      `${this.baseUrl}/${customerId}/addresses/${addressId}/default`,
+      null
+    );
+  }
+
+  deleteAddress(customerId: string, addressId: string): Observable<null> {
+    return this.http.delete<null>(
+      `${this.baseUrl}/${customerId}/addresses/${addressId}`
+    );
   }
 }

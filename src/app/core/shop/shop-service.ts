@@ -5,6 +5,7 @@ import { AppConfigService } from "../app-config/app-config.service";
 
 export type ShopStatus = "active" | "inactive" | "suspended";
 export type FulfillmentStatus = "fulfilled" | "unfulfilled";
+export type ServiceAreaMode = "radius" | "zip_codes" | "custom";
 
 export interface ShopAddress {
   line1: string;
@@ -31,12 +32,28 @@ export interface ShopOrderSettings {
   defaultFulfillmentStatus: FulfillmentStatus | null;
 }
 
+export interface ShopServiceAreaZip {
+  id: string;
+  shopId: string;
+  postalCode: string;
+  createdAt: string;
+}
+
 export interface ShopSettings {
   pos: {
     orders: ShopOrderSettings;
   };
   booking: {
     enabled: boolean;
+  };
+  onsite: {
+    enabled: boolean;
+    tripFeeEnabled: boolean;
+    defaultTripFeeCents: number | null;
+    serviceAreaMode: ServiceAreaMode;
+    serviceAreaMiles: number | null;
+    serviceAreaNotes: string | null;
+    zipCodes: ShopServiceAreaZip[];
   };
 }
 
@@ -84,9 +101,6 @@ export class ShopService {
 
   private readonly baseUrl = `${this.apiBase}/shops`;
 
-  /**
-   * Non-root callers get their own shop as the first item in GET /shops
-   */
   getMyShop(): Observable<Shop | null> {
     return this.http.get<ShopsListResponse>(this.baseUrl).pipe(
       map((res) => res.data?.[0] ?? null)
@@ -102,9 +116,6 @@ export class ShopService {
   }
 }
 
-/**
- * Frontend patch body matching backend PATCH /shops/:id shape
- */
 export interface ShopUpdateBody {
   name?: string;
   legalName?: string;
@@ -143,6 +154,14 @@ export interface ShopUpdateBody {
     };
     booking?: {
       enabled?: boolean;
+    };
+    onsite?: {
+      enabled?: boolean;
+      tripFeeEnabled?: boolean;
+      defaultTripFeeCents?: number | null;
+      serviceAreaMode?: ServiceAreaMode;
+      serviceAreaMiles?: number | null;
+      serviceAreaNotes?: string | null;
     };
   };
 

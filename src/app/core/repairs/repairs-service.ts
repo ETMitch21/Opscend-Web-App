@@ -2,23 +2,24 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, switchMap } from 'rxjs';
 
-import { 
-  RepairListResponse, 
-  RepairListParams, 
-  CreateRepairDto, 
-  UpdateRepairDto, 
-  CreateRepairNoteDto, 
-  CreateRepairOrderDto, 
-  RepairAttachment, 
-  RepairStatus, 
-  RepairNote, 
-  Repair, 
-  Order, 
-  AttachmentInitDto, 
-  AttachmentInitResponse, 
-  AttachmentCompleteDto, 
-  AttachmentListResponse, 
-  AttachmentDownloadResponse } from './repair.model';
+import {
+  RepairListResponse,
+  RepairListParams,
+  CreateRepairDto,
+  UpdateRepairDto,
+  CreateRepairNoteDto,
+  CreateRepairOrderDto,
+  RepairAttachment,
+  RepairStatus,
+  RepairNote,
+  Repair,
+  Order,
+  AttachmentInitDto,
+  AttachmentInitResponse,
+  AttachmentCompleteDto,
+  AttachmentListResponse,
+  AttachmentDownloadResponse
+} from './repair.model';
 import { AppConfigService } from '../app-config/app-config.service';
 
 
@@ -51,6 +52,10 @@ export class RepairsService {
 
     if (params?.status) {
       httpParams = httpParams.set('status', params.status);
+    }
+
+    if (params?.serviceMode) {
+      httpParams = httpParams.set('serviceMode', params.serviceMode);
     }
 
     if (params?.customerId) {
