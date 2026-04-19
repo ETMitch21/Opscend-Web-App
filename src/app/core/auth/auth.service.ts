@@ -5,7 +5,6 @@ import {
   finalize,
   firstValueFrom,
   Observable,
-  of,
   shareReplay,
   tap,
   catchError,
@@ -13,6 +12,7 @@ import {
 import { AppConfigService } from "../app-config/app-config.service";
 
 type LoginResponse = { accessToken: string };
+type AuthStatus = "unknown" | "hydrating" | "authenticated" | "anonymous";
 
 export interface CurrentUser {
   id: string;
@@ -38,7 +38,11 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<CurrentUser | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
+  private authStatusSubject = new BehaviorSubject<AuthStatus>("unknown");
+  authStatus$ = this.authStatusSubject.asObservable();
+
   private refreshInFlight$: Observable<LoginResponse> | null = null;
+  private bootstrapPromise: Promise<void> | null = null;
 
   constructor(private http: HttpClient) { }
 
@@ -59,6 +63,7 @@ export class AuthService {
         tap((res) => {
           this.setStoredToken(res.accessToken);
           this.accessTokenSubject.next(res.accessToken);
+          this.authStatusSubject.next("authenticated");
         })
       );
   }
@@ -73,6 +78,14 @@ export class AuthService {
 
   getCurrentUserId(): string | null {
     return this.currentUserSubject.value?.id ?? null;
+  }
+
+  getAuthStats(): AuthStatus {
+    return this.authStatusSubject.value;
+  }
+
+  isAuthenticated(): boolean {
+    return this.authStatusSubject.value === "authenticated";
   }
 
   private getStoredToken(): string | null {
@@ -100,13 +113,15 @@ export class AuthService {
 
     if (!token) {
       this.currentUserSubject.next(null);
+      this.authStatusSubject.next("anonymous");
       return null;
     }
 
     try {
-      return await firstValueFrom(this.me());
+      const user = await firstValueFrom(this.me());
+      this.authStatusSubject.next("authenticated");
+      return user;
     } catch (error) {
-      console.error("Failed to load current user", error);
       this.currentUserSubject.next(null);
       return null;
     }
@@ -123,6 +138,7 @@ export class AuthService {
         tap((res) => {
           this.setStoredToken(res.accessToken);
           this.accessTokenSubject.next(res.accessToken);
+          this.authStatusSubject.next("authenticated");
         })
       );
   }
@@ -160,6 +176,7 @@ export class AuthService {
     this.setStoredToken(null);
     this.accessTokenSubject.next(null);
     this.currentUserSubject.next(null);
+    this.authStatusSubject.next("anonymous");
 
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem("px_current_user");
@@ -181,6 +198,7 @@ export class AuthService {
         tap((res) => {
           this.setStoredToken(res.accessToken);
           this.accessTokenSubject.next(res.accessToken);
+          this.authStatusSubject.next("authenticated");
         }),
         shareReplay(1),
         finalize(() => {
@@ -194,6 +212,38 @@ export class AuthService {
   async refreshAndLoadUser(): Promise<CurrentUser | null> {
     await firstValueFrom(this.refresh());
     return await this.loadMe();
+  }
+
+  async bootstrap(): Promise<void> {
+    if (this.bootstrapPromise) return this.bootstrapPromise;
+
+    this.bootstrapPromise = (async () => {
+      this.authStatusSubject.next("hydrating");
+
+      try {
+        await firstValueFrom(this.refresh());
+        await this.loadMe();
+        return;
+      } catch (error) {
+        const storedToken = this.getStoredToken();
+
+        if (storedToken) {
+          const user = await this.loadMe();
+          if (user) {
+            this.authStatusSubject.next("authenticated");
+            return;
+          }
+        }
+
+        this.clearLocalSession();
+      }
+    })();
+
+    try {
+      await this.bootstrapPromise;
+    } finally {
+      this.bootstrapPromise = null;
+    }
   }
 
   setCurrentUser(user: CurrentUser | null): void {

@@ -51,7 +51,7 @@ export class AuthInterceptor implements HttpInterceptor {
       catchError((err: unknown) => {
         if (
           err instanceof HttpErrorResponse &&
-          err.status === 401 &&
+          (err.status === 401 || err.status === 403) &&
           token &&
           isApiRequest &&
           !isAuthCall
@@ -68,7 +68,7 @@ export class AuthInterceptor implements HttpInterceptor {
               );
             }),
             catchError((refreshErr) => {
-              if (refreshErr instanceof HttpErrorResponse && refreshErr.status === 401) {
+              if (refreshErr instanceof HttpErrorResponse && (refreshErr.status === 401 || refreshErr.status === 403)) {
                 this.auth.clearLocalSession();
               }
               return throwError(() => refreshErr);

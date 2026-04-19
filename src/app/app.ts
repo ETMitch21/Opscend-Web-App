@@ -45,19 +45,19 @@ export class App implements OnInit {
   }
 
   ngOnInit(): void {
-    this.auth.refresh().subscribe({
-      error: () => this.auth.clearLocalSession()
-    });
-    this.auth.accessToken$.subscribe((token: string | null) => {
-      this.userIsLoggedIn = token ? true : false;
-      token ?? this.auth.loadMe()
-    });
-    this.auth.currentUser$
-      .pipe(
-        filter((user) => !!user),
-        switchMap(() => this.shopContext.load())
-      )
-      .subscribe();
     this.tenantService.init();
+
+    this.auth.bootstrap().then(() => {
+      this.auth.accessToken$.subscribe((token: string | null) => {
+        this.userIsLoggedIn = !!token;
+      });
+
+      this.auth.currentUser$
+        .pipe(
+          filter((user) => !!user),
+          switchMap(() => this.shopContext.load())
+        )
+        .subscribe();
+    });
   }
 }

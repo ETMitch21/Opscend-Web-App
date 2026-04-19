@@ -6,11 +6,10 @@ import { AuthService } from "./auth.service";
 export class AuthGuard implements CanActivate {
   constructor(private auth: AuthService, private router: Router) {}
 
-  canActivate(): boolean | UrlTree {
-    const token = this.auth.getAccessToken();
+  async canActivate(): Promise<boolean | UrlTree> {
+    await this.auth.bootstrap();
 
-    // No token => send to login
-    if (!token) {
+    if (!this.auth.isAuthenticated()) {
       return this.router.createUrlTree(["/login"], {
         queryParams: { returnUrl: window.location.pathname },
       });
