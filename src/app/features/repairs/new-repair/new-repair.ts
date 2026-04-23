@@ -23,6 +23,7 @@ import {
   distinctUntilChanged,
   filter,
   firstValueFrom,
+  Observable,
   of,
   switchMap,
   tap,
@@ -42,13 +43,17 @@ import { CustomerDevicesStore } from '../../../core/customer-devices/customer-de
 import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
 import { SchedulingPickerModalComponent } from '../../../components/modals/scheduling-picker-modal/scheduling-picker-modal';
-import { SchedulingSelection } from '../../../core/scheduling/scheduling.types';
+import { SchedulingRequest, SchedulingSelection } from '../../../core/scheduling/scheduling.types';
 import { RepairsStore } from '../../../core/repairs/repairs.store';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
 import { ToastService } from '../../../core/toast/toast-service';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
 import { RepairServiceMode } from '../../../core/repairs/repair.model';
 import { ShopContextService } from '../../../core/shop/shop-context.store';
+import type {
+  ServiceAreaCheckReason,
+  ServiceAreaCheckResponse,
+} from '../../../core/shop/shop-service';
 
 type NewRepairForm = FormGroup<{
   customerId: FormControl<string | null>;
@@ -201,6 +206,9 @@ export class NewRepair implements OnInit {
   public searchingDevices = false;
   public newDevice = false;
   public selectedSchedulingSelection: SchedulingSelection | null = null;
+  public serviceAreaCheckInFlight = false;
+  public serviceAreaCheckedAddressKey: string | null = null;
+  public serviceAreaStatus: ServiceAreaCheckResponse | null = null;
 
   public readonly newRepairForm: NewRepairForm = new FormGroup({
     customerId: new FormControl<string | null>(null),
@@ -281,15 +289,66 @@ export class NewRepair implements OnInit {
     return this.appConfig.config.apiBase;
   }
 
-  readonly schedulingRequest = () => ({
-    title: 'Schedule Repair',
-    subtitle: 'Choose an available appointment time.',
-    from: this.schedulerFromIso(),
-    to: this.schedulerToIso(),
-    durationMinutes: this.selectedDurationMinutes(),
-    assignedUserId: undefined,
-    slotMinutes: 15,
-  });
+  readonly schedulingRequest = () => {
+    if (!this.bookingEnabled()) {
+      return null;
+    }
+
+    const serviceMode = this.onsiteEnabled()
+      ? this.newRepairForm.controls.serviceMode.value
+      : 'in_shop';
+
+    if (serviceMode === 'on_site') {
+      if (this.serviceAreaCheckInFlight) {
+        return null;
+      }
+
+      if (!this.serviceAreaStatus?.allowed) {
+        return null;
+      }
+    }
+
+    const request: SchedulingRequest = {
+      title: 'Schedule Repair',
+      subtitle: 'Choose an available appointment time.',
+      from: this.schedulerFromIso(),
+      to: this.schedulerToIso(),
+      durationMinutes: this.selectedDurationMinutes(),
+      assignedUserId: undefined,
+      slotMinutes: 15,
+      serviceMode,
+    };
+
+    if (serviceMode !== 'on_site') {
+      return request;
+    }
+
+    if (this.creatingInlineAddress) {
+      const inlineAddress = this.buildInlineSchedulingAddress();
+
+      if (!inlineAddress) {
+        return null;
+      }
+
+      return {
+        ...request,
+        serviceAddressId: null,
+        serviceAddress: inlineAddress,
+      };
+    }
+
+    const selectedAddressId = this.newRepairForm.controls.serviceAddressId.value;
+
+    if (!selectedAddressId) {
+      return null;
+    }
+
+    return {
+      ...request,
+      serviceAddressId: selectedAddressId,
+      serviceAddress: null,
+    };
+  };
 
   readonly schedulerFromIso = () => {
     return new Date().toISOString();
@@ -305,6 +364,26 @@ export class NewRepair implements OnInit {
     return 60;
   };
 
+  readonly isOnSiteMode = (): boolean =>
+    this.newRepairForm.controls.serviceMode.value === 'on_site';
+
+  readonly hasValidOnsiteAddress = (): boolean => {
+    if (!this.isOnSiteMode()) return true;
+    return this.serviceAreaStatus?.allowed === true;
+  };
+
+  readonly shouldShowSchedulingPicker = (): boolean => {
+    if (!this.bookingEnabled()) return false;
+    if (!this.isOnSiteMode()) return true;
+    return this.hasValidOnsiteAddress();
+  };
+
+  readonly canCreateRepair = (): boolean => {
+    if (!this.newRepairForm.valid) return false;
+    if (!this.isOnSiteMode()) return true;
+    return this.hasValidOnsiteAddress() && !this.serviceAreaCheckInFlight;
+  };
+
   private centsToDollars(value: number | null | undefined): number | null {
     if (value == null) return null;
     return value / 100;
@@ -312,6 +391,229 @@ export class NewRepair implements OnInit {
 
   private normalizePostalCode(value: string): string {
     return value.trim().toUpperCase();
+  }
+
+  private buildInlineServiceAreaPayload() {
+    return {
+      serviceMode: this.newRepairForm.controls.serviceMode.value,
+      line1: this.newRepairForm.controls.addressLine1.value.trim(),
+      line2: this.newRepairForm.controls.addressLine2.value.trim() || null,
+      city: this.newRepairForm.controls.addressCity.value.trim(),
+      state: this.newRepairForm.controls.addressState.value.trim(),
+      postalCode: this.normalizePostalCode(
+        this.newRepairForm.controls.addressPostalCode.value
+      ),
+      country: this.newRepairForm.controls.addressCountry.value.trim().toUpperCase(),
+    };
+  }
+
+  private getSelectedAddressForCheck(): CustomerAddress | null {
+    const serviceAddressId = this.newRepairForm.controls.serviceAddressId.value;
+    if (!serviceAddressId) return null;
+
+    return this.customerAddresses.find((x) => x.id === serviceAddressId) ?? null;
+  }
+
+  private buildSelectedAddressServiceAreaPayload() {
+    const address = this.getSelectedAddressForCheck();
+    if (!address) return null;
+
+    return {
+      serviceMode: this.newRepairForm.controls.serviceMode.value,
+      line1: address.line1,
+      line2: address.line2 ?? null,
+      city: address.city,
+      state: address.state,
+      postalCode: this.normalizePostalCode(address.postalCode),
+      country: address.country,
+    };
+  }
+
+  private buildInlineSchedulingAddress() {
+    const line1 = this.newRepairForm.controls.addressLine1.value.trim();
+    const city = this.newRepairForm.controls.addressCity.value.trim();
+    const state = this.newRepairForm.controls.addressState.value.trim();
+    const postalCode = this.normalizePostalCode(
+      this.newRepairForm.controls.addressPostalCode.value
+    );
+    const country = this.newRepairForm.controls.addressCountry.value.trim().toUpperCase();
+
+    if (!line1 || !city || !state || !postalCode || !country) {
+      return null;
+    }
+
+    return {
+      line1,
+      line2: this.newRepairForm.controls.addressLine2.value.trim() || null,
+      city,
+      state,
+      postalCode,
+      country,
+    };
+  }
+
+  private getServiceAreaAddressKey(
+    payload: {
+      serviceMode?: 'in_shop' | 'on_site';
+      line1?: string;
+      line2?: string | null;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      country?: string;
+    } | null
+  ): string | null {
+    if (!payload) return null;
+
+    return JSON.stringify({
+      serviceMode: payload.serviceMode ?? 'in_shop',
+      line1: payload.line1?.trim() ?? '',
+      line2: payload.line2?.trim() ?? '',
+      city: payload.city?.trim() ?? '',
+      state: payload.state?.trim() ?? '',
+      postalCode: payload.postalCode?.trim().toUpperCase() ?? '',
+      country: payload.country?.trim().toUpperCase() ?? '',
+    });
+  }
+
+  private clearServiceAreaStatus(resetSelection = true): void {
+    this.serviceAreaStatus = null;
+    this.serviceAreaCheckedAddressKey = null;
+    this.serviceAreaCheckInFlight = false;
+
+    if (resetSelection) {
+      this.selectedSchedulingSelection = null;
+      this.newRepairForm.controls.schedulingSelected.setValue(false, {
+        emitEvent: false,
+      });
+      this.updateSchedulingValidators();
+    }
+  }
+
+  private toastForServiceAreaReason(reason: ServiceAreaCheckReason): void {
+    switch (reason) {
+      case 'ok':
+        this.toastService.success(
+          'Address confirmed',
+          'This on-site address is inside your service area.'
+        );
+        return;
+      case 'onsite_disabled':
+        this.toastService.error(
+          'On-site repairs disabled',
+          'On-site service is not enabled for this shop.'
+        );
+        return;
+      case 'service_address_required':
+        this.toastService.error(
+          'Address incomplete',
+          'Enter a complete service address before continuing.'
+        );
+        return;
+      case 'outside_service_area':
+        this.toastService.error(
+          'Outside service area',
+          'That address is outside your current on-site service area.'
+        );
+        return;
+      case 'address_not_resolved':
+        this.toastService.error(
+          'Address not found',
+          'We could not verify that address. Please review it and try again.'
+        );
+        return;
+      case 'shop_address_missing':
+        this.toastService.error(
+          'Shop location missing',
+          'Your shop address is not fully configured for service-area checks.'
+        );
+        return;
+      case 'in_shop':
+      default:
+        return;
+    }
+  }
+
+  async validateServiceArea(showToast = true): Promise<void> {
+    if (!this.onsiteEnabled()) {
+      this.clearServiceAreaStatus();
+      return;
+    }
+
+    if (!this.isOnSiteMode()) {
+      this.clearServiceAreaStatus(false);
+      this.serviceAreaStatus = {
+        allowed: true,
+        reason: 'in_shop',
+      };
+      return;
+    }
+
+    const payload = this.creatingInlineAddress
+      ? this.buildInlineServiceAreaPayload()
+      : this.buildSelectedAddressServiceAreaPayload();
+
+    const key = this.getServiceAreaAddressKey(payload);
+
+    if (!payload || !key) {
+      this.clearServiceAreaStatus();
+      if (showToast) {
+        this.toastForServiceAreaReason('service_address_required');
+      }
+      return;
+    }
+
+    if (this.serviceAreaCheckedAddressKey === key && this.serviceAreaStatus) {
+      if (showToast) {
+        this.toastForServiceAreaReason(this.serviceAreaStatus.reason);
+      }
+      return;
+    }
+
+    this.serviceAreaCheckInFlight = true;
+    this.selectedSchedulingSelection = null;
+    this.newRepairForm.controls.schedulingSelected.setValue(false, {
+      emitEvent: false,
+    });
+    this.updateSchedulingValidators();
+
+    try {
+      const result = await firstValueFrom(this.shopContext.checkServiceArea(payload));
+      this.serviceAreaStatus = result;
+      this.serviceAreaCheckedAddressKey = key;
+
+      if (showToast) {
+        this.toastForServiceAreaReason(result.reason);
+      }
+    } catch (error) {
+      console.error('Failed to check service area.', error);
+      this.serviceAreaStatus = {
+        allowed: false,
+        reason: 'address_not_resolved',
+      };
+      this.serviceAreaCheckedAddressKey = key;
+
+      if (showToast) {
+        this.toastService.error(
+          'Service area check failed',
+          'We could not verify that address right now.'
+        );
+      }
+    } finally {
+      this.serviceAreaCheckInFlight = false;
+    }
+  }
+
+  onInlineAddressPostalBlur(): void {
+    if (!this.isOnSiteMode() || !this.creatingInlineAddress) return;
+    void this.validateServiceArea(true);
+  }
+
+  onServiceAddressSelectionChange(): void {
+    this.clearServiceAreaStatus(false);
+
+    if (!this.isOnSiteMode() || this.creatingInlineAddress) return;
+    void this.validateServiceArea(true);
   }
 
   ngOnInit(): void {
@@ -479,6 +781,15 @@ export class NewRepair implements OnInit {
             ? defaultAddress?.id ?? null
             : null,
       });
+
+      this.clearServiceAreaStatus(false);
+
+      if (
+        this.newRepairForm.controls.serviceMode.value === 'on_site' &&
+        this.newRepairForm.controls.serviceAddressId.value
+      ) {
+        await this.validateServiceArea(false);
+      }
     } finally {
       this.loadingCustomerAddresses = false;
       this.updateServiceValidators();
@@ -489,6 +800,7 @@ export class NewRepair implements OnInit {
     this.customerAddresses = [];
     this.loadingCustomerAddresses = false;
     this.creatingInlineAddress = false;
+    this.clearServiceAreaStatus(false);
 
     this.newRepairForm.patchValue(
       {
@@ -611,6 +923,8 @@ export class NewRepair implements OnInit {
       serviceMode: mode,
     });
 
+    this.clearServiceAreaStatus();
+
     if (mode === 'in_shop') {
       this.creatingInlineAddress = false;
       this.newRepairForm.patchValue({
@@ -635,6 +949,7 @@ export class NewRepair implements OnInit {
 
   startInlineAddress(): void {
     this.creatingInlineAddress = true;
+    this.clearServiceAreaStatus();
     this.newRepairForm.patchValue({
       serviceAddressId: null,
       addressLabel: '',
@@ -651,6 +966,7 @@ export class NewRepair implements OnInit {
 
   cancelInlineAddress(): void {
     this.creatingInlineAddress = false;
+    this.clearServiceAreaStatus();
 
     const defaultAddress =
       this.customerAddresses.find((x) => x.isDefault) ??
@@ -1049,6 +1365,13 @@ export class NewRepair implements OnInit {
     });
 
     this.updateServiceValidators();
+    this.serviceAreaStatus = {
+      allowed: true,
+      reason: 'ok',
+    };
+    this.serviceAreaCheckedAddressKey = this.getServiceAreaAddressKey(
+      this.buildSelectedAddressServiceAreaPayload()
+    );
     return created.id;
   }
 
@@ -1059,10 +1382,23 @@ export class NewRepair implements OnInit {
   }
 
   async createRepair(): Promise<void> {
-    if (this.newRepairForm.invalid) {
-      this.newRepairForm.markAllAsTouched();
+    if (!this.canCreateRepair()) {
+      if (this.newRepairForm.invalid) {
+        this.newRepairForm.markAllAsTouched();
+      }
+
+      if (this.isOnSiteMode() && !this.hasValidOnsiteAddress()) {
+        this.toastService.error(
+          'Valid on-site address required',
+          'Please confirm a serviceable on-site address before creating this repair.'
+        );
+      }
       return;
     }
+
+    const schedulingSelection = this.selectedSchedulingSelection
+  ? { ...this.selectedSchedulingSelection }
+  : null;
 
     try {
       const customerId = await this.ensureCustomer();
@@ -1089,8 +1425,8 @@ export class NewRepair implements OnInit {
         customerDeviceId: deviceId,
         problemSummary: this.newRepairForm.controls.problemSummary.value.trim(),
         assignedTo: this.bookingEnabled()
-          ? this.selectedSchedulingSelection?.assignedTo ?? undefined
-          : undefined,
+  ? schedulingSelection?.assignedTo ?? undefined
+  : undefined,
         serviceMode,
         serviceAddressId:
           serviceMode === 'on_site' ? serviceAddressId ?? undefined : undefined,
@@ -1145,18 +1481,18 @@ export class NewRepair implements OnInit {
         console.error('Repair created, but order creation failed.');
       }
 
-      if (this.bookingEnabled() && this.selectedSchedulingSelection) {
-        const scheduled = await this.appointmentsStore.scheduleAppointment(
-          repair.id,
-          this.selectedSchedulingSelection.startAt,
-          this.selectedSchedulingSelection.endAt,
-          this.selectedSchedulingSelection.assignedUserId ?? undefined
-        );
+      if (this.bookingEnabled() && schedulingSelection) {
+  const scheduled = await this.appointmentsStore.scheduleAppointment(
+    repair.id,
+    schedulingSelection.startAt,
+    schedulingSelection.endAt,
+    schedulingSelection.assignedUserId ?? undefined
+  );
 
-        if (!scheduled) {
-          console.error('Repair created, but appointment scheduling failed.');
-        }
-      }
+  if (!scheduled) {
+    console.error('Repair created, but appointment scheduling failed.');
+  }
+}
 
       this.toastService.success(
         'Repair Created Successfully',

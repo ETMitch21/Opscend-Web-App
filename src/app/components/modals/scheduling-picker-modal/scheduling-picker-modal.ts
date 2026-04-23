@@ -298,14 +298,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
 
       const monthRequest = this.buildMonthBoundRequest(request, visibleMonth);
 
-      const requestKey = JSON.stringify({
-        from: monthRequest.from,
-        to: monthRequest.to,
-        durationMinutes: monthRequest.durationMinutes,
-        repairId: monthRequest.repairId,
-        assignedUserId: monthRequest.assignedUserId ?? null,
-        slotMinutes: monthRequest.slotMinutes,
-      });
+      const requestKey = this.buildRequestKey(monthRequest);
 
       if (this.lastRequestKey() === requestKey) {
         return;
@@ -340,14 +333,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
             initialMonth
           );
 
-          const requestKey = JSON.stringify({
-            from: monthRequest.from,
-            to: monthRequest.to,
-            durationMinutes: monthRequest.durationMinutes,
-            repairId: monthRequest.repairId,
-            assignedUserId: monthRequest.assignedUserId ?? null,
-            slotMinutes: monthRequest.slotMinutes,
-          });
+          const requestKey = this.buildRequestKey(monthRequest);
 
           this.selectedAssignedUserId.set(context.request.assignedUserId ?? null);
 
@@ -388,6 +374,9 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
         repairId: request.repairId,
         assignedUserId: request.assignedUserId,
         slotMinutes: request.slotMinutes,
+        serviceMode: request.serviceMode,
+        serviceAddressId: request.serviceAddressId,
+        serviceAddress: request.serviceAddress,
       });
     } else {
       await this.loadUnionSlots(request);
@@ -616,12 +605,46 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
     return new Date(date.getFullYear(), date.getMonth(), 1);
   }
 
+  private buildRequestKey(request: SchedulingRequest): string {
+    return JSON.stringify({
+      from: request.from,
+      to: request.to,
+      durationMinutes: request.durationMinutes,
+      repairId: request.repairId,
+      assignedUserId: request.assignedUserId ?? null,
+      slotMinutes: request.slotMinutes,
+      serviceMode: request.serviceMode ?? null,
+      serviceAddressId: request.serviceAddressId ?? null,
+      serviceAddress: request.serviceAddress
+        ? {
+          line1: request.serviceAddress.line1 ?? '',
+          line2: request.serviceAddress.line2 ?? null,
+          city: request.serviceAddress.city ?? '',
+          state: request.serviceAddress.state ?? '',
+          postalCode: request.serviceAddress.postalCode ?? '',
+          country: request.serviceAddress.country ?? '',
+          geo: request.serviceAddress.geo ?? null,
+        }
+        : null,
+    });
+  }
+
   private async loadUnionSlots(request: SchedulingRequest): Promise<void> {
     if (!this.usersStore.loaded()) {
       await this.usersStore.load();
     }
 
-    const schedulableUsers = this.usersStore.assignableUsers();
+    let schedulableUsers = this.usersStore
+      .assignableUsers()
+      .filter((user) => user.status === 'active')
+      .slice(0, 8);
+
+    if (request.serviceMode === 'on_site' && !request.assignedUserId) {
+      const preferredUsers = schedulableUsers.filter((user) => user.role === 'Tech');
+      if (preferredUsers.length) {
+        schedulableUsers = preferredUsers.slice(0, 4);
+      }
+    }
 
     if (!schedulableUsers.length) {
       this.unionSlots.set([]);
@@ -631,21 +654,32 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
 
     const results = await Promise.all(
       schedulableUsers.map(async (user) => {
-        const response = await firstValueFrom(
-          this.availabilityService.listSlots({
-            from: request.from,
-            to: request.to,
-            durationMinutes: request.durationMinutes,
-            repairId: request.repairId,
-            assignedUserId: user.id,
-            slotMinutes: request.slotMinutes,
-          })
-        );
+        try {
+          const response = await firstValueFrom(
+            this.availabilityService.listSlots({
+              from: request.from,
+              to: request.to,
+              durationMinutes: request.durationMinutes,
+              repairId: request.repairId,
+              assignedUserId: user.id,
+              slotMinutes: request.slotMinutes,
+              serviceMode: request.serviceMode,
+              serviceAddressId: request.serviceAddressId,
+              serviceAddress: request.serviceAddress,
+            })
+          );
 
-        return {
-          userId: user.id,
-          slots: response.data,
-        };
+          return {
+            userId: user.id,
+            slots: response?.data ?? [],
+          };
+        } catch (error) {
+          console.error('Failed to load slots for user.', user.id, error);
+          return {
+            userId: user.id,
+            slots: [],
+          };
+        }
       })
     );
 

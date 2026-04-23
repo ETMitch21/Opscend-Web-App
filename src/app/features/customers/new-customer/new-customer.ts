@@ -22,6 +22,7 @@ type AddressForm = FormGroup<{
   state: FormControl<string>;
   postalCode: FormControl<string>;
   country: FormControl<string>;
+  geo: FormControl<{ lat: number; lng: number } | null>;
   notes: FormControl<string>;
   isDefault: FormControl<boolean>;
 }>;
@@ -149,6 +150,7 @@ export class NewCustomer implements OnInit {
     country: new FormControl('US', {
       nonNullable: true,
     }),
+    geo: new FormControl<{ lat: number; lng: number } | null>(null),
     notes: new FormControl('', {
       nonNullable: true,
       validators: [Validators.maxLength(500)],
@@ -172,6 +174,7 @@ export class NewCustomer implements OnInit {
         state: '',
         postalCode: '',
         country: 'US',
+        geo: null,
         notes: '',
         isDefault: true,
       });
@@ -216,6 +219,7 @@ export class NewCustomer implements OnInit {
           state: this.addressForm.controls.state.value.trim(),
           postalCode: this.addressForm.controls.postalCode.value.trim(),
           country: this.addressForm.controls.country.value.trim().toUpperCase(),
+          geo: this.addressForm.controls.geo.value,
           notes: this.addressForm.controls.notes.value.trim() || null,
           isDefault: this.addressForm.controls.isDefault.value,
         });

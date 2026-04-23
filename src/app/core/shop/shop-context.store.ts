@@ -2,7 +2,7 @@
 import { Injectable, inject } from "@angular/core";
 import { BehaviorSubject, Observable, of } from "rxjs";
 import { finalize, shareReplay, tap } from "rxjs/operators";
-import { Shop, ShopService } from "./shop-service"
+import { Shop, ShopService, ServiceAreaCheckRequest, ServiceAreaCheckResponse } from "./shop-service"
 
 @Injectable({ providedIn: "root" })
 export class ShopContextService {
@@ -111,6 +111,21 @@ export class ShopContextService {
       ...current,
       ...partial,
     });
+  }
+
+  checkServiceArea(
+    payload: ServiceAreaCheckRequest
+  ): Observable<ServiceAreaCheckResponse> {
+    const shopId = this.shopId;
+
+    if (!shopId) {
+      return of({
+        allowed: false,
+        reason: "shop_address_missing",
+      });
+    }
+
+    return this.shopService.checkServiceArea(shopId, payload);
   }
 
   clear(): void {

@@ -1,3 +1,20 @@
+export type SchedulingServiceMode = 'in_shop' | 'on_site';
+
+export interface SchedulingGeoPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface SchedulingInlineAddress {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  geo?: SchedulingGeoPoint | null;
+}
+
 export interface SchedulingRequest {
   title?: string;
   subtitle?: string;
@@ -7,6 +24,10 @@ export interface SchedulingRequest {
   repairId?: string;
   assignedUserId?: string | null;
   slotMinutes?: number;
+
+  serviceMode?: SchedulingServiceMode;
+  serviceAddressId?: string | null;
+  serviceAddress?: SchedulingInlineAddress | null;
 }
 
 export interface SchedulingSlot {

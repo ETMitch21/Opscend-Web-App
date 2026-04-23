@@ -6,6 +6,7 @@ import { UsersStore } from '../../core/users/users-store';
 import { AuthService } from '../../core/auth/auth.service';
 import type { AppointmentListItem } from '../../core/appointments/appointments.model';
 import type { User } from '../../core/users/users.model';
+import { Building2, House, LucideAngularModule } from 'lucide-angular';
 
 type TechDayRow = {
   user: User;
@@ -15,13 +16,16 @@ type TechDayRow = {
 @Component({
   selector: 'app-tech-day-view',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './tech-day-view.html',
 })
 export class TechDayView implements OnInit {
   private readonly appointmentsStore = inject(AppointmentsStore);
   private readonly usersStore = inject(UsersStore);
   private readonly authService = inject(AuthService);
+
+  readonly buildingIcon = Building2;
+  readonly houseIcon = House;
 
   readonly selectedDate = signal(this.formatDateInput(new Date()));
   readonly showAllAppointments = signal(false);
@@ -90,6 +94,8 @@ export class TechDayView implements OnInit {
   readonly rows = computed<TechDayRow[]>(() => {
     const appointments = this.visibleAppointments();
 
+    console.log(appointments)
+
     return this.visibleUsers()
       .map((user) => ({
         user,
@@ -147,6 +153,27 @@ export class TechDayView implements OnInit {
 
   toggleAppointmentScope(): void {
     this.showAllAppointments.update((value) => !value);
+  }
+
+  hasTravelToNext(item: AppointmentListItem): boolean {
+    return item.travelToNextMinutes != null && item.travelToNextMinutes > 0;
+  }
+
+  travelToNextLabel(item: AppointmentListItem): string {
+    const minutes = item.travelToNextMinutes ?? 0;
+
+    if (minutes < 60) {
+      return `${minutes} min drive`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (!remainingMinutes) {
+      return `${hours} hr drive`;
+    }
+
+    return `${hours} hr ${remainingMinutes} min drive`;
   }
 
   async previousDay(): Promise<void> {

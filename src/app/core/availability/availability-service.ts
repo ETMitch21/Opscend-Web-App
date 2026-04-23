@@ -65,7 +65,7 @@ export class AvailabilityService {
     return this.http.delete<null>(`${this.baseUrl}/overrides/${id}`);
   }
 
-  listSlots(params: AvailabilitySlotsParams): Observable<AvailabilitySlotsResponse> {
+    listSlots(params: AvailabilitySlotsParams): Observable<AvailabilitySlotsResponse> {
     let httpParams = new HttpParams()
       .set('from', params.from)
       .set('to', params.to);
@@ -84,6 +84,36 @@ export class AvailabilityService {
 
     if (params.slotMinutes != null) {
       httpParams = httpParams.set('slotMinutes', String(params.slotMinutes));
+    }
+
+    if (params.serviceMode) {
+      httpParams = httpParams.set('serviceMode', params.serviceMode);
+    }
+
+    if (params.serviceAddressId) {
+      httpParams = httpParams.set('serviceAddressId', params.serviceAddressId);
+    }
+
+    if (params.serviceAddress) {
+      httpParams = httpParams.set('serviceAddressLine1', params.serviceAddress.line1);
+
+      if (params.serviceAddress.line2) {
+        httpParams = httpParams.set('serviceAddressLine2', params.serviceAddress.line2);
+      }
+
+      httpParams = httpParams
+        .set('serviceAddressCity', params.serviceAddress.city)
+        .set('serviceAddressState', params.serviceAddress.state)
+        .set('serviceAddressPostalCode', params.serviceAddress.postalCode)
+        .set('serviceAddressCountry', params.serviceAddress.country);
+
+      if (params.serviceAddress.geo?.lat != null) {
+        httpParams = httpParams.set('serviceAddressLat', String(params.serviceAddress.geo.lat));
+      }
+
+      if (params.serviceAddress.geo?.lng != null) {
+        httpParams = httpParams.set('serviceAddressLng', String(params.serviceAddress.geo.lng));
+      }
     }
 
     return this.http.get<AvailabilitySlotsResponse>(`${this.baseUrl}/slots`, {

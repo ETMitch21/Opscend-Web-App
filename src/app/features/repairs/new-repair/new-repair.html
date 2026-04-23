@@ -13,7 +13,7 @@
 
         <button
             class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-soft transition disabled:opacity-80 disabled:cursor-not-allowed"
-            [disabled]="!newRepairForm.valid" (click)="createRepair()">
+            [disabled]="!canCreateRepair()" (click)="createRepair()">
             Create Repair
         </button>
     </div>
@@ -382,6 +382,7 @@
                         </div>
 
                         <select formControlName="serviceAddressId"
+                            (change)="onServiceAddressSelectionChange()"
                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand"
                             [class.border-red-300]="newRepairForm.controls.serviceAddressId.invalid && newRepairForm.controls.serviceAddressId.touched">
                             <option [ngValue]="null">Select an address</option>
@@ -457,6 +458,7 @@
 
                             <div>
                                 <input type="text" formControlName="addressPostalCode" placeholder="Postal Code"
+                                    (blur)="onInlineAddressPostalBlur()"
                                     class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
                             </div>
 
@@ -472,13 +474,29 @@
                         </div>
                     </div>
                     }
+
+                    @if (serviceAreaCheckInFlight) {
+                    <p class="text-xs text-gray-500">Checking service area...</p>
+                    } @else if (serviceAreaStatus && serviceAreaStatus.allowed) {
+                    <p class="text-xs font-medium text-emerald-600">This address is inside your service area.</p>
+                    } @else if (serviceAreaStatus && !serviceAreaStatus.allowed) {
+                    <p class="text-xs font-medium text-red-600">This address is not currently serviceable.</p>
+                    }
                 </div>
                 }
             </div>
         </div>
         }
 
-        @if (bookingEnabled()) {
+        @if (bookingEnabled() && newRepairForm.controls.serviceMode.value === 'on_site' && !hasValidOnsiteAddress()) {
+        <div class="px-6 py-2">
+            <p class="text-xs text-gray-500">
+                Confirm a valid on-site service address to view available appointment times.
+            </p>
+        </div>
+        }
+
+        @if (shouldShowSchedulingPicker()) {
         <div class="border-t border-gray-200 my-2 mx-8"></div>
 
         <div class="px-6 py-4">

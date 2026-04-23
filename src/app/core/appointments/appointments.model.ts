@@ -22,12 +22,14 @@ export interface AppointmentRepairContext {
   problemSummary: string;
   customerId: string;
   customerName: string | null;
+  serviceMode: string | null;
   deviceDisplayName: string | null;
 }
 
 export interface AppointmentListItem {
   appointment: Appointment;
   repair: AppointmentRepairContext;
+  travelToNextMinutes: number | null;
 }
 
 export interface AppointmentListResponse {

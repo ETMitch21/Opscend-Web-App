@@ -90,6 +90,30 @@ export interface ShopsListResponse {
   nextCursor: string | null;
 }
 
+export interface ServiceAreaCheckRequest {
+  serviceMode?: "in_shop" | "on_site";
+  line1?: string;
+  line2?: string | null;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+}
+
+export type ServiceAreaCheckReason =
+  | "ok"
+  | "in_shop"
+  | "onsite_disabled"
+  | "service_address_required"
+  | "outside_service_area"
+  | "address_not_resolved"
+  | "shop_address_missing";
+
+export interface ServiceAreaCheckResponse {
+  allowed: boolean;
+  reason: ServiceAreaCheckReason;
+}
+
 @Injectable({ providedIn: "root" })
 export class ShopService {
   private readonly appConfig = inject(AppConfigService);
@@ -113,6 +137,16 @@ export class ShopService {
 
   updateShop(id: string, body: Partial<ShopUpdateBody>): Observable<Shop> {
     return this.http.patch<Shop>(`${this.baseUrl}/${id}`, body);
+  }
+
+  checkServiceArea(
+    id: string,
+    body: ServiceAreaCheckRequest
+  ): Observable<ServiceAreaCheckResponse> {
+    return this.http.post<ServiceAreaCheckResponse>(
+      `${this.baseUrl}/${id}/settings/onsite/service-area/check`,
+      body
+    );
   }
 }
 

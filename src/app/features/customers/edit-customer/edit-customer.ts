@@ -12,6 +12,7 @@ import {
   CustomerAddress,
   CreateCustomerAddressRequest,
   UpdateCustomerAddressRequest,
+  GeoPoint,
 } from '../../../core/customers/customer.model';
 import { ToastService } from '../../../core/toast/toast-service';
 import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
@@ -34,6 +35,7 @@ type AddressForm = FormGroup<{
   state: FormControl<string>;
   postalCode: FormControl<string>;
   country: FormControl<string>;
+  geo: FormControl<GeoPoint | null>;
   notes: FormControl<string>;
   isDefault: FormControl<boolean>;
 }>;
@@ -176,6 +178,7 @@ export class EditCustomer implements OnInit {
       nonNullable: true,
       validators: [Validators.required, Validators.minLength(2), Validators.maxLength(2)],
     }),
+    geo: new FormControl<GeoPoint | null>(null),
     notes: new FormControl('', {
       nonNullable: true,
       validators: [Validators.maxLength(500)],
@@ -320,6 +323,7 @@ export class EditCustomer implements OnInit {
       state: '',
       postalCode: '',
       country: 'US',
+      geo: null,
       notes: '',
       isDefault: this.addresses.length === 0,
     });
@@ -336,6 +340,7 @@ export class EditCustomer implements OnInit {
       state: address.state,
       postalCode: address.postalCode,
       country: address.country,
+      geo: address.geo,
       notes: address.notes ?? '',
       isDefault: address.isDefault,
     });
@@ -354,6 +359,7 @@ export class EditCustomer implements OnInit {
       state: '',
       postalCode: '',
       country: 'US',
+      geo: null,
       notes: '',
       isDefault: false,
     });
@@ -378,6 +384,7 @@ export class EditCustomer implements OnInit {
         state: raw.state.trim(),
         postalCode: raw.postalCode.trim(),
         country: raw.country.trim().toUpperCase(),
+        geo: this.addressForm.controls.geo.value,
         notes: raw.notes.trim() || null,
         isDefault: raw.isDefault,
       };

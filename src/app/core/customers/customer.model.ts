@@ -89,3 +89,56 @@ export interface UpdateCustomerRequest {
   tags?: string[];
   notes?: string | null;
 }
+
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface CustomerAddress {
+  id: string;
+  shopId: string;
+  customerId: string;
+
+  label: string | null;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+
+  geo: GeoPoint | null;
+
+  isDefault: boolean;
+  notes: string | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCustomerAddressRequest {
+  label?: string | null;
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  geo?: GeoPoint | null;
+  isDefault?: boolean;
+  notes?: string | null;
+}
+
+export interface UpdateCustomerAddressRequest {
+  label?: string | null;
+  line1?: string;
+  line2?: string | null;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  geo?: GeoPoint | null;
+  isDefault?: boolean;
+  notes?: string | null;
+}

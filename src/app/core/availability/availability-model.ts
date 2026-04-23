@@ -8,6 +8,7 @@ export type DayOfWeek =
   | 'sun';
 
 export type AvailabilityOverrideMode = 'available' | 'unavailable';
+export type AvailabilityServiceMode = 'in_shop' | 'on_site';
 
 export interface AvailabilityRule {
   id: string;
@@ -79,6 +80,21 @@ export interface AvailabilitySlotsResponse {
   data: AvailabilitySlot[];
 }
 
+export interface AvailabilityGeoPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface AvailabilityInlineAddress {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  geo?: AvailabilityGeoPoint | null;
+}
+
 export interface AvailabilitySlotsParams {
   from: string;
   to: string;
@@ -86,4 +102,7 @@ export interface AvailabilitySlotsParams {
   repairId?: string;
   assignedUserId?: string;
   slotMinutes?: number;
+  serviceMode?: AvailabilityServiceMode;
+  serviceAddressId?: string | null;
+  serviceAddress?: AvailabilityInlineAddress | null;
 }
