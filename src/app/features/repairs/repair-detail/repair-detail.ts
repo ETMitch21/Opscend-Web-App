@@ -24,6 +24,8 @@ import {
   ChevronDown,
   ChevronLeftIcon,
   Clock3,
+  Copy,
+  ExternalLink,
   Grip,
   LockKeyhole,
   LucideAngularModule,
@@ -32,6 +34,7 @@ import {
   MessageSquareText,
   Paperclip,
   PhoneIcon,
+  RefreshCw,
   Save,
   Shield,
   SmartphoneIcon,
@@ -69,6 +72,9 @@ interface ShopListResponse {
     settings?: {
       booking?: {
         enabled?: boolean;
+      };
+      customerExperience?: {
+        publicRepairTrackingEnabled?: boolean;
       };
     };
   }>;
@@ -175,6 +181,9 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly icons = {
     ArrowLeft,
     ArrowRight,
+    Copy,
+    ExternalLink,
+    RefreshCw,
     Paperclip,
     Save,
     Clock3,
@@ -195,6 +204,8 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly statusMenuOpen = signal(false);
   readonly unlockModalOpen = signal(false);
   readonly bookingEnabled = signal(false);
+  readonly publicRepairTrackingEnabled = signal(false);
+  readonly trackingActionSaving = signal(false);
 
   readonly repairId = signal<string | null>(null);
   readonly accessoriesList = signal<string[]>([]);
@@ -235,6 +246,23 @@ export class RepairDetail implements OnInit, OnDestroy {
 
   readonly hasOrder = computed(() => !!this.repair()?.orderId);
   readonly hasAppointment = computed(() => !!this.repair()?.appointment);
+
+  readonly publicTrackingUrl = computed(() => {
+    const token = this.repair()?.publicTrackingToken;
+    if (!token) return null;
+
+    return `${window.location.origin}/track/${encodeURIComponent(token)}`;
+  });
+
+  readonly canUsePublicTracking = computed(() => {
+    const repair = this.repair();
+
+    return (
+      this.publicRepairTrackingEnabled() &&
+      !!repair?.publicTrackingEnabled &&
+      !!repair?.publicTrackingToken
+    );
+  });
 
   readonly events = computed(() => {
     const events = [...this.store.selectedRepairEvents()];
@@ -437,7 +465,7 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     void this.loadShopCountry();
 
-    await this.loadBookingEnabled();
+    await this.loadShopFeatureSettings();
 
     this.subscription.add(
       this.schedulingModalService.confirmed.subscribe(
@@ -492,18 +520,23 @@ export class RepairDetail implements OnInit, OnDestroy {
     this.store.clearSelectedRepair();
   }
 
-  private async loadBookingEnabled(): Promise<void> {
+  private async loadShopFeatureSettings(): Promise<void> {
     try {
       const response = await firstValueFrom(
         this.http.get<ShopListResponse>(`${this.apiBase}/shops`)
       );
 
-      this.bookingEnabled.set(
-        response.data?.[0]?.settings?.booking?.enabled === true
+      const settings = response.data?.[0]?.settings;
+
+      this.bookingEnabled.set(settings?.booking?.enabled === true);
+
+      this.publicRepairTrackingEnabled.set(
+        settings?.customerExperience?.publicRepairTrackingEnabled === true
       );
     } catch (error) {
-      console.error('Failed to load booking setting.', error);
+      console.error('Failed to load shop feature settings.', error);
       this.bookingEnabled.set(false);
+      this.publicRepairTrackingEnabled.set(false);
     }
   }
 
@@ -578,6 +611,90 @@ export class RepairDetail implements OnInit, OnDestroy {
         this.error() ?? 'Unable to update repair.'
       );
     }
+  }
+
+  async togglePublicTrackingForRepair(enabled: boolean): Promise<void> {
+    const id = this.repairId();
+    if (!id) return;
+
+    this.trackingActionSaving.set(true);
+
+    try {
+      const updated = await this.store.updateRepairTrackingEnabled(id, enabled);
+
+      if (!updated) {
+        this.toast.error(
+          'Tracking update failed',
+          this.error() ?? 'Unable to update repair tracking.'
+        );
+        return;
+      }
+
+      this.toast.success(
+        enabled ? 'Tracking enabled' : 'Tracking disabled',
+        enabled
+          ? 'Customers can view this repair with the public tracking link.'
+          : 'The public tracking link no longer works for this repair.'
+      );
+    } finally {
+      this.trackingActionSaving.set(false);
+    }
+  }
+
+  async regeneratePublicTrackingLink(): Promise<void> {
+    const id = this.repairId();
+    if (!id) return;
+
+    this.trackingActionSaving.set(true);
+
+    try {
+      const updated = await this.store.regeneratePublicTrackingToken(id);
+
+      if (!updated) {
+        this.toast.error(
+          'Link failed',
+          this.error() ?? 'Unable to regenerate the public tracking link.'
+        );
+        return;
+      }
+
+      this.toast.success(
+        'Tracking link regenerated',
+        'The previous public tracking link no longer works.'
+      );
+    } finally {
+      this.trackingActionSaving.set(false);
+    }
+  }
+
+  async copyPublicTrackingLink(): Promise<void> {
+    const url = this.publicTrackingUrl();
+
+    if (!url || !this.canUsePublicTracking()) {
+      this.toast.error(
+        'Tracking link unavailable',
+        'Public tracking must be enabled for this shop and repair first.'
+      );
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      this.toast.success('Copied', 'Public tracking link copied to clipboard.');
+    } catch {
+      this.toast.error(
+        'Copy failed',
+        'Your browser blocked clipboard access. Open the link and copy it manually.'
+      );
+    }
+  }
+
+  openPublicTrackingLink(): void {
+    const url = this.publicTrackingUrl();
+
+    if (!url || !this.canUsePublicTracking()) return;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   openUnlockModal(): void {

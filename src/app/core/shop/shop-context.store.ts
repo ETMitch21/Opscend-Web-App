@@ -55,6 +55,13 @@ export class ShopContextService {
     return this.shopSubject.value?.settings.booking.enabled ?? false;
   }
 
+  get publicRepairTrackingEnabled(): boolean {
+    return (
+      this.shopSubject.value?.settings.customerExperience.publicRepairTrackingEnabled ??
+      false
+    );
+  }
+
   get timezone(): string | null {
     return this.shopSubject.value?.timezone ?? null;
   }

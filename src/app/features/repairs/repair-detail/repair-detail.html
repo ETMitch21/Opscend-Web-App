@@ -447,6 +447,123 @@
                 </div>
                 }
             </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <lucide-icon [name]="icons.Shield" class="h-5 w-5"></lucide-icon>
+                        </div>
+
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                                Customer Tracking
+                            </span>
+                            <div class="text-sm font-semibold text-gray-900">
+                                @if (publicRepairTrackingEnabled()) {
+                                Public repair page
+                                } @else {
+                                Tracking disabled
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <span class="shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold" [ngClass]="publicRepairTrackingEnabled()
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border-gray-200 bg-gray-50 text-gray-500'">
+                        {{ publicRepairTrackingEnabled() ? 'Shop On' : 'Shop Off' }}
+                    </span>
+                </div>
+
+                <div class="my-4 h-px bg-gray-100"></div>
+
+                @if (!publicRepairTrackingEnabled()) {
+                <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                    <p class="text-sm font-medium text-gray-800">
+                        Public tracking is off for this shop.
+                    </p>
+                    <p class="mt-1 text-xs leading-5 text-gray-500">
+                        Turn it on in shop settings before customers can view repair status pages.
+                    </p>
+                </div>
+                } @else {
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">This repair</p>
+                            <p class="mt-0.5 text-xs text-gray-500">
+                                Controls whether this specific repair link works.
+                            </p>
+                        </div>
+
+                        <button type="button"
+                            class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition"
+                            [disabled]="trackingActionSaving()"
+                            [ngClass]="repairValue.publicTrackingEnabled ? 'bg-brand' : 'bg-gray-200'"
+                            (click)="togglePublicTrackingForRepair(!repairValue.publicTrackingEnabled)">
+                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition"
+                                [ngClass]="repairValue.publicTrackingEnabled ? 'translate-x-6' : 'translate-x-1'">
+                            </span>
+                        </button>
+                    </div>
+
+                    @if (repairValue.publicTrackingEnabled && repairValue.publicTrackingToken) {
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <span class="text-xs font-medium text-gray-500">Tracking Link</span>
+                            <span
+                                class="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-100">
+                                Active
+                            </span>
+                        </div>
+
+                        <div class="truncate rounded-lg bg-white px-3 py-2 text-xs text-gray-600 ring-1 ring-gray-200">
+                            {{ publicTrackingUrl() }}
+                        </div>
+
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button type="button"
+                                class="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                                [disabled]="trackingActionSaving()" (click)="copyPublicTrackingLink()">
+                                <lucide-icon [name]="icons.Copy" class="h-3.5 w-3.5"></lucide-icon>
+                                Copy
+                            </button>
+
+                            <button type="button"
+                                class="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                                [disabled]="trackingActionSaving()" (click)="openPublicTrackingLink()">
+                                <lucide-icon [name]="icons.ExternalLink" class="h-3.5 w-3.5"></lucide-icon>
+                                Open
+                            </button>
+                        </div>
+                    </div>
+                    } @else {
+                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                        <p class="text-sm font-medium text-gray-800">
+                            Tracking is off for this repair.
+                        </p>
+                        <p class="mt-1 text-xs leading-5 text-gray-500">
+                            Enable it to create a customer-safe repair status page.
+                        </p>
+                    </div>
+                    }
+
+                    <button type="button"
+                        class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="trackingActionSaving() || !repairValue.publicTrackingEnabled"
+                        (click)="regeneratePublicTrackingLink()">
+                        <lucide-icon [name]="icons.RefreshCw" class="h-3.5 w-3.5"></lucide-icon>
+                        Regenerate tracking link
+                    </button>
+
+                    <p class="text-[11px] leading-5 text-gray-400">
+                        Regenerating the link immediately invalidates the old public tracking URL.
+                    </p>
+                </div>
+                }
+            </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center gap-3">
                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">

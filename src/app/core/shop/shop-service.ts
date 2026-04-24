@@ -46,6 +46,9 @@ export interface ShopSettings {
   booking: {
     enabled: boolean;
   };
+  customerExperience: {
+    publicRepairTrackingEnabled: boolean;
+  };
   onsite: {
     enabled: boolean;
     tripFeeEnabled: boolean;
@@ -188,6 +191,9 @@ export interface ShopUpdateBody {
     };
     booking?: {
       enabled?: boolean;
+    };
+    customerExperience?: {
+      publicRepairTrackingEnabled?: boolean;
     };
     onsite?: {
       enabled?: boolean;

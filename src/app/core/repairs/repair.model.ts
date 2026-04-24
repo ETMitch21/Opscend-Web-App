@@ -67,6 +67,9 @@ export interface Repair {
 
   status: RepairStatus;
 
+  publicTrackingToken: string | null;
+  publicTrackingEnabled: boolean;
+
   problemSummary: string;
   intakeNotes: string | null;
   conditionNotes: string | null;
@@ -143,6 +146,7 @@ export interface CreateRepairDto {
 
 export interface UpdateRepairDto {
   status?: RepairStatus;
+  publicTrackingEnabled?: boolean;
 
   problemSummary?: string;
   intakeNotes?: string | null;
@@ -232,6 +236,39 @@ export interface Order {
 
   items: OrderItem[];
   payments: OrderPayment[];
+}
+
+export interface PublicRepairTrackingTimelineItem {
+  key: RepairStatus;
+  label: string;
+  completed: boolean;
+  current: boolean;
+}
+
+export interface PublicRepairTrackingResponse {
+  repairId: string;
+  status: RepairStatus;
+  statusLabel: string;
+
+  problemSummary: string;
+
+  customerDevice: {
+    id: string;
+    displayName: string | null;
+    brand?: string | null;
+    model?: string | null;
+  } | null;
+
+  shop: {
+    name: string;
+    phone: string | null;
+    email: string | null;
+  };
+
+  timeline: PublicRepairTrackingTimelineItem[];
+
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AttachmentInitDto {

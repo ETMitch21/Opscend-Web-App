@@ -18,7 +18,8 @@ import {
   AttachmentInitResponse,
   AttachmentCompleteDto,
   AttachmentListResponse,
-  AttachmentDownloadResponse
+  AttachmentDownloadResponse,
+  PublicRepairTrackingResponse,
 } from './repair.model';
 import { AppConfigService } from '../app-config/app-config.service';
 
@@ -85,6 +86,23 @@ export class RepairsService {
 
   updateRepairStatus(id: string, status: RepairStatus): Observable<Repair> {
     return this.updateRepair(id, { status });
+  }
+
+    updateRepairTrackingEnabled(id: string, enabled: boolean): Observable<Repair> {
+    return this.updateRepair(id, { publicTrackingEnabled: enabled });
+  }
+
+  regeneratePublicTrackingToken(id: string): Observable<Repair> {
+    return this.http.post<Repair>(
+      `${this.baseUrl}/${id}/public-tracking/regenerate`,
+      {}
+    );
+  }
+
+  getPublicRepairTracking(token: string): Observable<PublicRepairTrackingResponse> {
+    return this.http.get<PublicRepairTrackingResponse>(
+      `${this.apiBase}/public/repairs/track/${encodeURIComponent(token)}`
+    );
   }
 
   assignRepair(id: string, assignedTo: string | null): Observable<Repair> {

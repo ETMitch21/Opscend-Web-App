@@ -52,6 +52,9 @@ interface ShopResponse {
     booking: {
       enabled: boolean;
     };
+    customerExperience: {
+      publicRepairTrackingEnabled: boolean;
+    };
     pos: {
       orders: {
         prefix: string | null;
@@ -182,6 +185,7 @@ export class ShopSettings implements OnInit {
   localeCountry = 'US';
 
   bookingEnabled = false;
+  publicRepairTrackingEnabled = false;
   orderPrefix = '';
   orderStartNumber: number | null = 1;
   orderPadding: number | null = 4;
@@ -266,6 +270,8 @@ export class ShopSettings implements OnInit {
       this.localeCountry = shop.locale?.country ?? 'US';
 
       this.bookingEnabled = !!shop.settings?.booking?.enabled;
+      this.publicRepairTrackingEnabled =
+        !!shop.settings?.customerExperience?.publicRepairTrackingEnabled;
       this.orderPrefix = shop.settings?.pos?.orders?.prefix ?? '';
       this.orderStartNumber = shop.settings?.pos?.orders?.startNumber ?? 1;
       this.orderPadding = shop.settings?.pos?.orders?.padding ?? 4;
@@ -445,6 +451,9 @@ export class ShopSettings implements OnInit {
           settings: {
             booking: {
               enabled: this.bookingEnabled,
+            },
+            customerExperience: {
+              publicRepairTrackingEnabled: this.publicRepairTrackingEnabled,
             },
             pos: {
               orders: {

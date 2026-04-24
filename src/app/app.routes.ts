@@ -21,8 +21,13 @@ import { SignupComponent } from './features/auth/signup-component/signup-compone
 import { AcceptInviteComponent } from './features/auth/accept-invite-component/accept-invite-component';
 import { Products } from './features/products/products';
 import { ProductDetail } from './features/products/product-detail/product-detail';
+import { RepairTracking } from './features/public/repair-tracking/repair-tracking';
 
 export const routes: Routes = [
+    {
+        path: 'track/:token',
+        component: RepairTracking
+    },
     { path: "signup", component: SignupComponent, canActivate: [PublicGuard] },
     { path: "accept-invite", component: AcceptInviteComponent, canActivate: [PublicGuard] },
     { path: "login", component: LoginComponent, canActivate: [PublicGuard] },

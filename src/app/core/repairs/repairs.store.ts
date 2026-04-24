@@ -2,17 +2,17 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { RepairsService } from './repairs-service';
 import type {
-  AttachmentListResponse,
-  CreateRepairDto,
-  CreateRepairNoteDto,
-  CreateRepairOrderDto,
-  Order,
-  Repair,
-  RepairAttachment,
-  RepairListParams,
-  RepairNote,
-  RepairStatus,
-  UpdateRepairDto,
+    AttachmentListResponse,
+    CreateRepairDto,
+    CreateRepairNoteDto,
+    CreateRepairOrderDto,
+    Order,
+    Repair,
+    RepairAttachment,
+    RepairListParams,
+    RepairNote,
+    RepairStatus,
+    UpdateRepairDto,
 } from './repair.model';
 
 @Injectable({
@@ -155,6 +155,31 @@ export class RepairsStore {
 
     async updateRepairStatus(id: string, status: RepairStatus): Promise<Repair | null> {
         return this.updateRepair(id, { status });
+    }
+
+    async updateRepairTrackingEnabled(id: string, enabled: boolean): Promise<Repair | null> {
+        return this.updateRepair(id, { publicTrackingEnabled: enabled });
+    }
+
+    async regeneratePublicTrackingToken(id: string): Promise<Repair | null> {
+        this._saving.set(true);
+        this._error.set(null);
+
+        try {
+            const repair = await firstValueFrom(
+                this.repairsService.regeneratePublicTrackingToken(id)
+            );
+
+            this._selectedRepair.set(repair);
+            this.upsertRepairInList(repair);
+
+            return repair;
+        } catch (error) {
+            this.handleError(error, 'Failed to regenerate public tracking link.');
+            return null;
+        } finally {
+            this._saving.set(false);
+        }
     }
 
     async assignRepair(id: string, assignedTo: string | null): Promise<Repair | null> {
