@@ -254,6 +254,12 @@ export class RepairDetail implements OnInit, OnDestroy {
     return `${window.location.origin}/track/${encodeURIComponent(token)}`;
   });
 
+  readonly preferredPublicTrackingUrl = computed(() => {
+    const repair = this.repair();
+
+    return repair?.publicShortUrl || this.publicTrackingUrl();
+  });
+
   readonly canUsePublicTracking = computed(() => {
     const repair = this.repair();
 
@@ -667,8 +673,43 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
   }
 
+  async generatePublicShortTrackingLink(): Promise<void> {
+    const id = this.repairId();
+
+    if (!id) return;
+
+    if (!this.canUsePublicTracking()) {
+      this.toast.error(
+        'Tracking link unavailable',
+        'Enable public tracking for this shop and repair first.'
+      );
+      return;
+    }
+
+    this.trackingActionSaving.set(true);
+
+    try {
+      const updated = await this.store.createPublicShortTrackingLink(id);
+
+      if (!updated?.publicShortUrl) {
+        this.toast.error(
+          'Short link failed',
+          this.error() ?? 'Unable to generate the short tracking link.'
+        );
+        return;
+      }
+
+      this.toast.success(
+        'Short link ready',
+        'The short tracking link is now available for this repair.'
+      );
+    } finally {
+      this.trackingActionSaving.set(false);
+    }
+  }
+
   async copyPublicTrackingLink(): Promise<void> {
-    const url = this.publicTrackingUrl();
+    const url = this.preferredPublicTrackingUrl();
 
     if (!url || !this.canUsePublicTracking()) {
       this.toast.error(
@@ -680,7 +721,12 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     try {
       await navigator.clipboard.writeText(url);
-      this.toast.success('Copied', 'Public tracking link copied to clipboard.');
+      this.toast.success(
+        'Copied',
+        this.repair()?.publicShortUrl
+          ? 'Short tracking link copied to clipboard.'
+          : 'Public tracking link copied to clipboard.'
+      );
     } catch {
       this.toast.error(
         'Copy failed',
@@ -690,7 +736,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   }
 
   openPublicTrackingLink(): void {
-    const url = this.publicTrackingUrl();
+    const url = this.preferredPublicTrackingUrl();
 
     if (!url || !this.canUsePublicTracking()) return;
 

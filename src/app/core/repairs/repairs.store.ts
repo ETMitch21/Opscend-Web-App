@@ -182,6 +182,41 @@ export class RepairsStore {
         }
     }
 
+    async createPublicShortTrackingLink(id: string): Promise<Repair | null> {
+        this._saving.set(true);
+        this._error.set(null);
+
+        try {
+            const response = await firstValueFrom(
+                this.repairsService.createPublicShortTrackingLink(id)
+            );
+
+            const current = this._selectedRepair();
+
+            if (!current || current.id !== id) {
+                await this.loadRepair(id);
+                return this._selectedRepair();
+            }
+
+            const updated: Repair = {
+                ...current,
+                publicShortUrl: response.publicShortUrl,
+                publicShortLinkId: response.publicShortLinkId,
+                publicShortCreatedAt: response.publicShortCreatedAt,
+            };
+
+            this._selectedRepair.set(updated);
+            this.upsertRepairInList(updated);
+
+            return updated;
+        } catch (error) {
+            this.handleError(error, 'Failed to generate short tracking link.');
+            return null;
+        } finally {
+            this._saving.set(false);
+        }
+    }
+
     async assignRepair(id: string, assignedTo: string | null): Promise<Repair | null> {
         return this.updateRepair(id, { assignedTo });
     }

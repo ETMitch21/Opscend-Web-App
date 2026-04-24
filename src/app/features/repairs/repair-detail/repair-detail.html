@@ -520,8 +520,20 @@
                         </div>
 
                         <div class="truncate rounded-lg bg-white px-3 py-2 text-xs text-gray-600 ring-1 ring-gray-200">
-                            {{ publicTrackingUrl() }}
+                            {{ preferredPublicTrackingUrl() }}
                         </div>
+
+                        @if (repairValue.publicShortUrl) {
+                        <div
+                            class="mt-2 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                            Short link active
+                        </div>
+                        } @else {
+                        <div
+                            class="mt-2 inline-flex items-center rounded-full bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-500 ring-1 ring-gray-200">
+                            Using full tracking link
+                        </div>
+                        }
 
                         <div class="mt-3 grid grid-cols-2 gap-2">
                             <button type="button"
@@ -550,16 +562,27 @@
                     </div>
                     }
 
-                    <button type="button"
-                        class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-                        [disabled]="trackingActionSaving() || !repairValue.publicTrackingEnabled"
-                        (click)="regeneratePublicTrackingLink()">
-                        <lucide-icon [name]="icons.RefreshCw" class="h-3.5 w-3.5"></lucide-icon>
-                        Regenerate tracking link
-                    </button>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button type="button"
+                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                            [disabled]="trackingActionSaving() || !repairValue.publicTrackingEnabled"
+                            (click)="generatePublicShortTrackingLink()">
+                            <lucide-icon [name]="icons.ExternalLink" class="h-3.5 w-3.5"></lucide-icon>
+                            {{ repairValue.publicShortUrl ? 'Refresh short link' : 'Generate short link' }}
+                        </button>
+
+                        <button type="button"
+                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                            [disabled]="trackingActionSaving() || !repairValue.publicTrackingEnabled"
+                            (click)="regeneratePublicTrackingLink()">
+                            <lucide-icon [name]="icons.RefreshCw" class="h-3.5 w-3.5"></lucide-icon>
+                            Regenerate tracking link
+                        </button>
+                    </div>
 
                     <p class="text-[11px] leading-5 text-gray-400">
-                        Regenerating the link immediately invalidates the old public tracking URL.
+                        Short links are optional. Regenerating the tracking link invalidates the old destination and
+                        clears the saved short link.
                     </p>
                 </div>
                 }

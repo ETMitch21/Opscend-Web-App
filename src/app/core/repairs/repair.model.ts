@@ -70,6 +70,10 @@ export interface Repair {
   publicTrackingToken: string | null;
   publicTrackingEnabled: boolean;
 
+  publicShortUrl: string | null;
+  publicShortLinkId: string | null;
+  publicShortCreatedAt: string | null;
+
   problemSummary: string;
   intakeNotes: string | null;
   conditionNotes: string | null;
@@ -269,6 +273,12 @@ export interface PublicRepairTrackingResponse {
 
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RepairPublicShortLinkResponse {
+  publicShortUrl: string;
+  publicShortLinkId: string | null;
+  publicShortCreatedAt: string;
 }
 
 export interface AttachmentInitDto {

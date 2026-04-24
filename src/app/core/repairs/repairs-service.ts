@@ -20,6 +20,7 @@ import {
   AttachmentListResponse,
   AttachmentDownloadResponse,
   PublicRepairTrackingResponse,
+  RepairPublicShortLinkResponse
 } from './repair.model';
 import { AppConfigService } from '../app-config/app-config.service';
 
@@ -88,13 +89,20 @@ export class RepairsService {
     return this.updateRepair(id, { status });
   }
 
-    updateRepairTrackingEnabled(id: string, enabled: boolean): Observable<Repair> {
+  updateRepairTrackingEnabled(id: string, enabled: boolean): Observable<Repair> {
     return this.updateRepair(id, { publicTrackingEnabled: enabled });
   }
 
   regeneratePublicTrackingToken(id: string): Observable<Repair> {
     return this.http.post<Repair>(
       `${this.baseUrl}/${id}/public-tracking/regenerate`,
+      {}
+    );
+  }
+
+  createPublicShortTrackingLink(id: string): Observable<RepairPublicShortLinkResponse> {
+    return this.http.post<RepairPublicShortLinkResponse>(
+      `${this.baseUrl}/${id}/public-tracking/short-link`,
       {}
     );
   }
