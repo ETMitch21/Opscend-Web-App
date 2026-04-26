@@ -453,6 +453,101 @@
                     <div class="flex min-w-0 items-center gap-3">
                         <div
                             class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <lucide-icon [name]="icons.MailIcon" class="h-5 w-5"></lucide-icon>
+                        </div>
+
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                                Repair Emails
+                            </span>
+                            <div class="text-sm font-semibold text-gray-900">
+                                Notification History
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="repairNotificationsLoading()" (click)="loadRepairNotifications()">
+                        Refresh
+                    </button>
+                </div>
+
+                <div class="my-4 h-px bg-gray-100"></div>
+
+                @if (repairNotificationsLoading()) {
+                <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+                    Loading email history...
+                </div>
+                } @else if (repairNotificationsError()) {
+                <div class="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-700">
+                    {{ repairNotificationsError() }}
+                </div>
+                } @else {
+                <div class="space-y-3">
+                    @for (notification of repairNotifications(); track notification.id) {
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="h-2 w-2 shrink-0 rounded-full"
+                                        [ngClass]="notificationStatusDotClasses(notification.status)">
+                                    </span>
+
+                                    <p class="truncate text-sm font-semibold text-gray-900">
+                                        {{ prettyNotificationEvent(notification.event) }}
+                                    </p>
+                                </div>
+
+                                @if (notification.subject) {
+                                <p class="mt-1 truncate text-xs text-gray-600">
+                                    {{ notification.subject }}
+                                </p>
+                                }
+
+                                <p class="mt-1 text-xs text-gray-400">
+                                    {{ formatDate(notification.createdAt) }}
+                                </p>
+                            </div>
+
+                            <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+                                [ngClass]="notificationStatusClasses(notification.status)">
+                                {{ prettyNotificationStatus(notification.status) }}
+                            </span>
+                        </div>
+
+                        @if (notification.recipientEmail) {
+                        <div class="mt-2 truncate text-xs text-gray-500">
+                            To: {{ notification.recipientEmail }}
+                        </div>
+                        }
+
+                        @if (notification.errorMessage) {
+                        <div
+                            class="mt-2 rounded-lg border border-amber-100 bg-white px-3 py-2 text-xs leading-5 text-amber-700">
+                            {{ notification.errorMessage }}
+                        </div>
+                        }
+                    </div>
+                    } @empty {
+                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                        <p class="text-sm font-medium text-gray-800">
+                            No emails yet.
+                        </p>
+                        <p class="mt-1 text-xs leading-5 text-gray-500">
+                            Automated repair emails will appear here once they are sent, skipped, or failed.
+                        </p>
+                    </div>
+                    }
+                </div>
+                }
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
                             <lucide-icon [name]="icons.Shield" class="h-5 w-5"></lucide-icon>
                         </div>
 

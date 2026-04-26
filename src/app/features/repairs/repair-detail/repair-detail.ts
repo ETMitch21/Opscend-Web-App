@@ -66,6 +66,12 @@ import { ManageDevicesModalService } from '../../../components/modals/manage-dev
 import { SchedulingPickerModalComponent } from '../../../components/modals/scheduling-picker-modal/scheduling-picker-modal';
 import { RepairOrderCard } from '../components/repair-order-card/repair-order-card';
 import { ShopContextService } from '../../../core/shop/shop-context.store';
+import { RepairNotificationService } from '../../../core/repair-notifications/repair-notification.service';
+import type {
+  NotificationDeliveryStatus,
+  RepairNotification,
+  RepairNotificationEvent,
+} from '../../../core/repair-notifications/repair-notification.types';
 
 interface ShopListResponse {
   data: Array<{
@@ -108,6 +114,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly manageDevicesModalService = inject(ManageDevicesModalService);
   private readonly customerDevicesStore = inject(CustomerDevicesStore);
   private readonly shopContext = inject(ShopContextService);
+  private readonly repairNotificationService = inject(RepairNotificationService);
 
   public shopCountry = 'US';
 
@@ -206,6 +213,10 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly bookingEnabled = signal(false);
   readonly publicRepairTrackingEnabled = signal(false);
   readonly trackingActionSaving = signal(false);
+
+  readonly repairNotifications = signal<RepairNotification[]>([]);
+  readonly repairNotificationsLoading = signal(false);
+  readonly repairNotificationsError = signal<string | null>(null);
 
   readonly repairId = signal<string | null>(null);
   readonly accessoriesList = signal<string[]>([]);
@@ -494,6 +505,8 @@ export class RepairDetail implements OnInit, OnDestroy {
       return;
     }
 
+    await this.loadRepairNotifications(id);
+
     const confirmed$ =
       (this.schedulingModalService as any).selectionConfirmed ??
       (this.schedulingModalService as any).confirmedSelection ??
@@ -543,6 +556,27 @@ export class RepairDetail implements OnInit, OnDestroy {
       console.error('Failed to load shop feature settings.', error);
       this.bookingEnabled.set(false);
       this.publicRepairTrackingEnabled.set(false);
+    }
+  }
+
+  async loadRepairNotifications(repairId = this.repairId()): Promise<void> {
+    if (!repairId) return;
+
+    this.repairNotificationsLoading.set(true);
+    this.repairNotificationsError.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.repairNotificationService.listForRepair(repairId)
+      );
+
+      this.repairNotifications.set(response.data ?? []);
+    } catch (error) {
+      console.error('Failed to load repair notifications.', error);
+      this.repairNotificationsError.set('Unable to load repair email history.');
+      this.repairNotifications.set([]);
+    } finally {
+      this.repairNotificationsLoading.set(false);
     }
   }
 
@@ -610,6 +644,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     const updated = await this.store.updateRepair(id, payload);
 
     if (updated) {
+      await this.loadRepairNotifications(id);
       this.toast.success('Repair updated', 'Changes saved successfully.');
     } else {
       this.toast.error(
@@ -978,6 +1013,8 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     const updated = await this.store.updateRepairStatus(id, status);
     if (updated) {
+      await this.loadRepairNotifications(id);
+
       this.toast.success(
         'Status updated',
         `Repair marked ${this.prettyStatus(status)}.`
@@ -1283,6 +1320,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
 
     await this.store.loadRepair(id);
+    await this.loadRepairNotifications(id);
 
     this.toast.success(
       repair.appointment ? 'Appointment rescheduled' : 'Appointment scheduled',
@@ -1300,6 +1338,74 @@ export class RepairDetail implements OnInit, OnDestroy {
   prettyStatus(status: string | null | undefined): string {
     if (!status) return 'Unknown';
     return status.replaceAll('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  prettyNotificationEvent(event: RepairNotificationEvent): string {
+    switch (event) {
+      case 'repair_created':
+        return 'Repair Created';
+      case 'repair_scheduled':
+        return 'Appointment Scheduled';
+      case 'repair_status_changed':
+        return 'Status Updated';
+      case 'repair_awaiting_approval':
+        return 'Awaiting Approval';
+      case 'repair_awaiting_parts':
+        return 'Awaiting Parts';
+      case 'repair_ready':
+        return 'Repair Ready';
+      case 'repair_completed':
+        return 'Repair Completed';
+      case 'repair_canceled':
+        return 'Repair Canceled';
+      default:
+        return this.prettyStatus(event);
+    }
+  }
+
+  prettyNotificationStatus(status: NotificationDeliveryStatus): string {
+    switch (status) {
+      case 'queued':
+        return 'Queued';
+      case 'sent':
+        return 'Sent';
+      case 'failed':
+        return 'Failed';
+      case 'skipped':
+        return 'Skipped';
+      default:
+        return this.prettyStatus(status);
+    }
+  }
+
+  notificationStatusClasses(status: NotificationDeliveryStatus): string {
+    switch (status) {
+      case 'sent':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'failed':
+        return 'border-rose-200 bg-rose-50 text-rose-700';
+      case 'skipped':
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+      case 'queued':
+        return 'border-blue-200 bg-blue-50 text-blue-700';
+      default:
+        return 'border-gray-200 bg-gray-50 text-gray-600';
+    }
+  }
+
+  notificationStatusDotClasses(status: NotificationDeliveryStatus): string {
+    switch (status) {
+      case 'sent':
+        return 'bg-emerald-500';
+      case 'failed':
+        return 'bg-rose-500';
+      case 'skipped':
+        return 'bg-amber-500';
+      case 'queued':
+        return 'bg-blue-500';
+      default:
+        return 'bg-gray-400';
+    }
   }
 
   formatDate(value: string | null | undefined): string {

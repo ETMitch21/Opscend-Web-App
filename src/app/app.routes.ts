@@ -22,6 +22,7 @@ import { AcceptInviteComponent } from './features/auth/accept-invite-component/a
 import { Products } from './features/products/products';
 import { ProductDetail } from './features/products/product-detail/product-detail';
 import { RepairTracking } from './features/public/repair-tracking/repair-tracking';
+import { RepairNotifications } from './features/settings/repair-notifications/repair-notifications';
 
 export const routes: Routes = [
     {
@@ -51,6 +52,10 @@ export const routes: Routes = [
                     {
                         path: 'availability',
                         component: ShopAvailability
+                    },
+                    {
+                        path: 'notifications',
+                        component: RepairNotifications
                     },
                     {
                         path: '',
