@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, firstValueFrom, Subscription } from 'rxjs';
 import {
   BookOpenIcon,
   CalendarClockIcon,
@@ -22,6 +23,11 @@ import {
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
 import { GlobalSearchResponse, SearchItem, SearchService } from '../../core/search/search-service';
+import { InternalNotificationService } from '../../core/internal-notifications/internal-notification.service';
+import type {
+  InternalNotification,
+  InternalNotificationEvent,
+} from '../../core/internal-notifications/internal-notification.types';
 
 type NavItem = {
   label: string;
@@ -56,10 +62,11 @@ type FlatSearchRow =
   templateUrl: './app-shell-component.html',
   styleUrl: './app-shell-component.scss',
 })
-export class AppShellComponent implements OnInit {
+export class AppShellComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private router = inject(Router);
   private searchService = inject(SearchService);
+  private internalNotificationService = inject(InternalNotificationService);
 
   readonly bookOpenIcon = BookOpenIcon;
   readonly MenuIcon = MenuIcon;
@@ -75,10 +82,20 @@ export class AppShellComponent implements OnInit {
   readonly calendarClockIcon = CalendarClockIcon;
   readonly bellIcon = BellIcon;
 
+  private readonly notificationPollMs = 15_000;
+  private routerEventsSubscription: Subscription | null = null;
+
   layoutDashboardIcon: LucideIconData = LayoutDashboard;
 
   public sidebarOpen = signal(false);
   public profileMenuOpen = signal(false);
+
+  public notificationMenuOpen = signal(false);
+  public notificationsLoading = signal(false);
+  public notifications = signal<InternalNotification[]>([]);
+  public unreadNotificationCount = signal(0);
+
+  private notificationRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   public searchQuery = signal('');
   public searchOpen = signal(false);
@@ -95,7 +112,7 @@ export class AppShellComponent implements OnInit {
 
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
-    { label: 'Products', route: '/products', icon: this.boxesIcon},
+    { label: 'Products', route: '/products', icon: this.boxesIcon },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
     { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon }
   ];
@@ -109,6 +126,36 @@ export class AppShellComponent implements OnInit {
     if (this.auth.getAccessToken() && !this.auth.getCurrentUser()) {
       await this.auth.loadMe();
     }
+
+    if (this.auth.getAccessToken()) {
+      await this.loadInternalNotifications();
+      this.startNotificationPolling();
+    }
+
+    this.routerEventsSubscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        if (this.auth.getAccessToken()) {
+          void this.refreshNotificationsInBackground();
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (this.notificationRefreshTimer) {
+      clearInterval(this.notificationRefreshTimer);
+      this.notificationRefreshTimer = null;
+    }
+
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
+
+    if (this.routerEventsSubscription) {
+      this.routerEventsSubscription.unsubscribe();
+      this.routerEventsSubscription = null;
+    }
   }
 
   openSidebar(): void {
@@ -121,6 +168,7 @@ export class AppShellComponent implements OnInit {
 
   toggleProfileMenu(event?: MouseEvent): void {
     event?.stopPropagation();
+    this.notificationMenuOpen.set(false);
     this.profileMenuOpen.update(open => !open);
   }
 
@@ -174,6 +222,160 @@ export class AppShellComponent implements OnInit {
         this.router.navigate(['/login']);
       }
     });
+  }
+
+  startNotificationPolling(): void {
+    if (this.notificationRefreshTimer) return;
+
+    this.notificationRefreshTimer = setInterval(() => {
+      void this.refreshNotificationsInBackground();
+    }, this.notificationPollMs);
+  }
+
+  async refreshNotificationsInBackground(): Promise<void> {
+    try {
+      const unreadResponse = await firstValueFrom(
+        this.internalNotificationService.getUnreadCount()
+      );
+
+      this.unreadNotificationCount.set(unreadResponse.unreadCount ?? 0);
+
+      if (this.notificationMenuOpen()) {
+        const notificationsResponse = await firstValueFrom(
+          this.internalNotificationService.listMine()
+        );
+
+        this.notifications.set(notificationsResponse.data ?? []);
+      }
+    } catch (error) {
+      console.error('Failed to refresh notifications in background.', error);
+    }
+  }
+
+  async loadInternalNotifications(): Promise<void> {
+    this.notificationsLoading.set(true);
+
+    try {
+      const [notificationsResponse, unreadResponse] = await Promise.all([
+        firstValueFrom(this.internalNotificationService.listMine()),
+        firstValueFrom(this.internalNotificationService.getUnreadCount()),
+      ]);
+
+      this.notifications.set(notificationsResponse.data ?? []);
+      this.unreadNotificationCount.set(unreadResponse.unreadCount ?? 0);
+    } catch (error) {
+      console.error('Failed to load internal notifications.', error);
+      this.notifications.set([]);
+      this.unreadNotificationCount.set(0);
+    } finally {
+      this.notificationsLoading.set(false);
+    }
+  }
+
+  async refreshUnreadNotificationCount(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.internalNotificationService.getUnreadCount()
+      );
+
+      this.unreadNotificationCount.set(response.unreadCount ?? 0);
+    } catch (error) {
+      console.error('Failed to refresh notification count.', error);
+    }
+  }
+
+  async toggleNotificationMenu(event?: MouseEvent): Promise<void> {
+    event?.stopPropagation();
+
+    const willOpen = !this.notificationMenuOpen();
+
+    this.notificationMenuOpen.set(willOpen);
+    this.profileMenuOpen.set(false);
+    this.closeSearchDropdown();
+
+    if (willOpen) {
+      await this.loadInternalNotifications();
+    }
+  }
+
+  closeNotificationMenu(): void {
+    this.notificationMenuOpen.set(false);
+  }
+
+  async markNotificationRead(notification: InternalNotification): Promise<void> {
+    if (notification.readAt) return;
+
+    try {
+      const updated = await firstValueFrom(
+        this.internalNotificationService.markRead(notification.id)
+      );
+
+      this.notifications.update((items) =>
+        items.map((item) => (item.id === updated.id ? updated : item))
+      );
+
+      this.unreadNotificationCount.update((count) => Math.max(0, count - 1));
+    } catch (error) {
+      console.error('Failed to mark notification read.', error);
+    }
+  }
+
+  async markAllNotificationsRead(): Promise<void> {
+    try {
+      await firstValueFrom(this.internalNotificationService.markAllRead());
+
+      const now = new Date().toISOString();
+
+      this.notifications.update((items) =>
+        items.map((item) => ({
+          ...item,
+          readAt: item.readAt ?? now,
+        }))
+      );
+
+      this.unreadNotificationCount.set(0);
+    } catch (error) {
+      console.error('Failed to mark all notifications read.', error);
+    }
+  }
+
+  async openNotification(notification: InternalNotification): Promise<void> {
+    await this.markNotificationRead(notification);
+    this.closeNotificationMenu();
+
+    if (notification.repairId) {
+      this.router.navigate(['/repairs/detail', notification.repairId]);
+    }
+  }
+
+  prettyInternalNotificationEvent(event: InternalNotificationEvent): string {
+    switch (event) {
+      case 'repair_assigned':
+        return 'Repair Assigned';
+      case 'repair_unassigned':
+        return 'Repair Unassigned';
+      case 'repair_reassigned':
+        return 'Repair Reassigned';
+      case 'appointment_scheduled':
+        return 'Appointment Scheduled';
+      case 'appointment_rescheduled':
+        return 'Appointment Rescheduled';
+      case 'appointment_canceled':
+        return 'Appointment Canceled';
+      default:
+        return event;
+    }
+  }
+
+  formatNotificationDate(value: string | null): string {
+    if (!value) return '';
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(new Date(value));
   }
 
   onSearchInput(event: Event): void {
@@ -484,6 +686,13 @@ export class AppShellComponent implements OnInit {
   @HostListener('document:click')
   onDocumentClick(): void {
     this.closeProfileMenu();
+    this.closeNotificationMenu();
     this.closeSearchDropdown();
+  }
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (document.visibilityState === 'visible') {
+      void this.refreshNotificationsInBackground();
+    }
   }
 }
