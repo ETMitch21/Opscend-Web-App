@@ -215,18 +215,23 @@ export class Products {
   }
 
   private matchesSearch(product: Product, search: string): boolean {
-    return [
-      product.id,
-      product.name,
-      product.sku ?? '',
-      product.status,
-      ...product.tags,
-      product.createdBy,
-    ]
-      .join(' ')
-      .toLowerCase()
-      .includes(search);
-  }
+  return [
+    product.id,
+    product.name,
+    product.sku,
+    product.status,
+    ...product.tags,
+    ...(product.supplierLinks ?? []).flatMap((link) => [
+      link.supplierName,
+      link.supplierProvider,
+      link.supplierSku,
+      link.supplierProductId,
+      link.supplierProductName,
+    ]),
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(search));
+}
 
   private async reloadForCurrentFilters(): Promise<void> {
     this.productsStore.setFilters({

@@ -256,7 +256,20 @@ export class ProductDetail {
 
       if (!status.connected) return;
 
-      const query = product.sku?.trim() || product.name.trim();
+      const mobileSentrixLink =
+        product.supplierLinks?.find(
+          (link) => link.supplierProvider === 'mobilesentrix' && link.isPreferred
+        ) ??
+        product.supplierLinks?.find(
+          (link) => link.supplierProvider === 'mobilesentrix'
+        ) ??
+        null;
+
+      const query =
+        mobileSentrixLink?.supplierSku?.trim() ||
+        product.sku?.trim() ||
+        product.name.trim();
+
       if (!query) return;
 
       const response = await firstValueFrom(
@@ -270,6 +283,12 @@ export class ProductDetail {
       const items = mapMobileSentrixItems(response.items);
 
       const match =
+        items.find(
+          (item) =>
+            !!mobileSentrixLink?.supplierSku &&
+            !!item.sku &&
+            item.sku === mobileSentrixLink.supplierSku
+        ) ??
         items.find((item) => !!product.sku && !!item.sku && item.sku === product.sku) ??
         items.find((item) => item.title.toLowerCase() === product.name.toLowerCase()) ??
         items[0] ??

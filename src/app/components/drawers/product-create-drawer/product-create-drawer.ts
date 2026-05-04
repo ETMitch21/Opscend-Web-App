@@ -159,7 +159,12 @@ export class ProductCreateDrawer {
 
     this.form.patchValue({
       name: result.title,
-      sku: result.sku ?? '',
+
+      // Important:
+      // Product.sku is now the shop/internal SKU only.
+      // MobileSentrix SKU will be sent through supplierLink on submit.
+      sku: '',
+
       costCents,
       priceCents,
     });
@@ -199,13 +204,37 @@ export class ProductCreateDrawer {
     if (this.form.invalid) return;
 
     const raw = this.form.getRawValue();
+    const selectedMobileSentrixItem = this.selectedSearchResult();
 
     const created = await this.productsStore.createProduct({
       name: raw.name.trim(),
+
+      // Internal/shop SKU only.
+      // If this product came from MobileSentrix, this should usually stay null.
       sku: raw.sku.trim() || null,
+
       priceCents: Number(raw.priceCents) || 0,
       costCents: raw.costCents > 0 ? Number(raw.costCents) : null,
       tags: this.parseTags(raw.tagsText),
+
+      ...(selectedMobileSentrixItem?.sku
+        ? {
+          supplierLink: {
+            provider: 'mobilesentrix',
+            supplierName: 'MobileSentrix',
+
+            supplierSku: selectedMobileSentrixItem.sku,
+            supplierProductId: selectedMobileSentrixItem.id ?? null,
+            supplierProductName: selectedMobileSentrixItem.title,
+            supplierUrl: selectedMobileSentrixItem.link ?? null,
+
+            lastKnownCostCents: selectedMobileSentrixItem.costCents ?? null,
+            lastKnownInStock: selectedMobileSentrixItem.inStock ?? null,
+
+            isPreferred: true,
+          },
+        }
+        : {}),
     });
 
     if (!created) return;
