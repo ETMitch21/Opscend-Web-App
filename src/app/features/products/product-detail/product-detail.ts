@@ -12,6 +12,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import {
   FormBuilder,
+  FormsModule,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
@@ -22,12 +23,14 @@ import { PatchProductPayload, ProductStatus } from '../../../core/products/produ
 import { MobileSentrixService } from '../../../core/mobilesentrix/mobilesentrix-service';
 import { mapMobileSentrixItems } from '../../../core/mobilesentrix/mobilesentrix-search-mapper';
 import { MobileSentrixSearchResult } from '../../../core/mobilesentrix/mobilesentrix-model';
+import { InventoryStore } from '../../../core/inventory/inventory.store';
+import { InventoryBalance, InventoryMovement } from '../../../core/inventory/inventory.model';
 import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, ChevronLeftIcon, LucideAngularModule } from 'lucide-angular';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, LucideAngularModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, DatePipe, LucideAngularModule, FormsModule, ReactiveFormsModule],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,11 +40,29 @@ export class ProductDetail {
   private readonly productsStore = inject(ProductsStore);
   private readonly fb = inject(FormBuilder);
   private readonly mobileSentrixService = inject(MobileSentrixService);
+  private readonly inventoryStore = inject(InventoryStore);
 
   readonly leftChevronIcon = ChevronLeftIcon;
   readonly arrowUpIcon = ArrowUpIcon;
   readonly arrowDownIcon = ArrowDownIcon;
   readonly arrowRightIcon = ArrowRightIcon;
+
+  readonly inventoryBalance = this.inventoryStore.selectedBalance;
+  readonly inventoryLoading = this.inventoryStore.selectedBalanceLoading;
+  readonly inventorySaving = this.inventoryStore.selectedBalanceSaving;
+  readonly inventoryError = this.inventoryStore.selectedBalanceError;
+  readonly inventoryMovements = this.inventoryStore.movements;
+  readonly inventoryMovementsLoading = this.inventoryStore.movementsLoading;
+
+  readonly adjustInventoryOpen = signal(false);
+  readonly reorderInventoryOpen = signal(false);
+
+  readonly adjustQuantity = signal<number | null>(null);
+  readonly adjustReason = signal('');
+  readonly adjustNotes = signal('');
+
+  readonly reorderPointQty = signal<number | null>(null);
+  readonly reorderQty = signal<number | null>(null);
 
   readonly product = this.productsStore.selectedProduct;
   readonly loading = this.productsStore.selectedProductLoading;
@@ -100,10 +121,117 @@ export class ProductDetail {
         this.sellingPriceDisplay = this.formatCentsToDisplay(product.price);
         this.costDisplay = this.formatCentsToDisplay(product.cost);
 
+        void this.loadInventory(product.id);
         void this.loadMobileSentrixSnapshot();
       },
       { allowSignalWrites: true }
     );
+  }
+
+  async loadInventory(id: string): Promise<void> {
+    await this.inventoryStore.loadProductBalance(id);
+    await this.inventoryStore.loadProductMovements(id, { limit: 5 });
+  }
+
+  inventoryTone(balance: InventoryBalance | null): 'out' | 'low' | 'healthy' | 'none' {
+    if (!balance) return 'none';
+    if (balance.onHandQty <= 0) return 'out';
+    if (balance.reorderPointQty != null && balance.onHandQty <= balance.reorderPointQty) {
+      return 'low';
+    }
+    return 'healthy';
+  }
+
+  inventoryLabel(balance: InventoryBalance | null): string {
+    const tone = this.inventoryTone(balance);
+
+    if (tone === 'out') return 'Out of Stock';
+    if (tone === 'low') return 'Low Stock';
+    if (tone === 'healthy') return 'Healthy';
+    return 'Not Tracked';
+  }
+
+  openAdjustInventory(): void {
+    this.adjustQuantity.set(null);
+    this.adjustReason.set('');
+    this.adjustNotes.set('');
+    this.adjustInventoryOpen.set(true);
+  }
+
+  closeAdjustInventory(): void {
+    this.adjustInventoryOpen.set(false);
+    this.adjustQuantity.set(null);
+    this.adjustReason.set('');
+    this.adjustNotes.set('');
+  }
+
+  async submitAdjustInventory(): Promise<void> {
+    const product = this.product();
+    const balance = this.inventoryBalance();
+    const quantityDelta = Number(this.adjustQuantity());
+
+    if (!product || !balance || !Number.isFinite(quantityDelta) || quantityDelta === 0) return;
+
+    const updated = await this.inventoryStore.adjustProductStock(product.id, {
+      locationId: balance.locationId,
+      quantityDelta,
+      reason: this.adjustReason().trim() || null,
+      notes: this.adjustNotes().trim() || null,
+    });
+
+    if (!updated) return;
+
+    await this.inventoryStore.loadProductMovements(product.id, { limit: 5 });
+    this.closeAdjustInventory();
+  }
+
+  openReorderInventory(): void {
+    const balance = this.inventoryBalance();
+
+    this.reorderPointQty.set(balance?.reorderPointQty ?? null);
+    this.reorderQty.set(balance?.reorderQty ?? null);
+    this.reorderInventoryOpen.set(true);
+  }
+
+  closeReorderInventory(): void {
+    this.reorderInventoryOpen.set(false);
+    this.reorderPointQty.set(null);
+    this.reorderQty.set(null);
+  }
+
+  async submitReorderInventory(): Promise<void> {
+    const product = this.product();
+    const balance = this.inventoryBalance();
+
+    if (!product || !balance) return;
+
+    const updated = await this.inventoryStore.updateProductBalance(product.id, {
+      locationId: balance.locationId,
+      reorderPointQty: this.normalizeNullableInventoryNumber(this.reorderPointQty()),
+      reorderQty: this.normalizeNullableInventoryNumber(this.reorderQty()),
+    });
+
+    if (!updated) return;
+
+    this.closeReorderInventory();
+  }
+
+  private normalizeNullableInventoryNumber(value: number | null): number | null {
+    if (value == null) return null;
+
+    const numberValue = Number(value);
+
+    if (!Number.isFinite(numberValue)) return null;
+    if (numberValue < 0) return null;
+
+    return Math.trunc(numberValue);
+  }
+
+  formatMovementType(type: string): string {
+    return type
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   async refresh(): Promise<void> {

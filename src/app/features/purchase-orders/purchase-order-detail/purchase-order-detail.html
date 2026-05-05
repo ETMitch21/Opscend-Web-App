@@ -1,0 +1,667 @@
+<div class="px-6 py-6">
+    @if (loading()) {
+    <div class="flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-16 shadow-sm">
+        <div class="text-sm text-gray-500">Loading purchase order...</div>
+    </div>
+    }
+
+    @else if (error()) {
+    <div
+        class="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
+        <p class="text-sm font-medium text-red-600">{{ error() }}</p>
+
+        <a [routerLink]="['/products', 'inventory', 'purchase-orders']"
+            class="mt-4 cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Back to Purchase Orders
+        </a>
+    </div>
+    }
+
+    @else if (order(); as po) {
+    <div class="mx-auto max-w-6xl space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col gap-6">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <button type="button" class="cursor-pointer text-sm font-medium hover:text-brand"
+                        [routerLink]="['/products', 'inventory', 'purchase-orders']">
+                        <lucide-icon [name]="leftChevronIcon"></lucide-icon>
+                    </button>
+
+                    <div>
+                        <h1 class="text-2xl font-semibold text-gray-900">
+                            {{ po.poNumber }}
+                        </h1>
+                        <p class="mt-1 text-sm text-gray-500">
+                            {{ po.supplier?.name || po.supplierNameSnapshot || 'No supplier selected' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-end gap-3">
+                    @if (canEditDraft()) {
+                    <button type="button"
+                        class="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        [disabled]="saving()" (click)="saveMeta()">
+                        {{ saving() ? 'Saving...' : 'Save' }}
+                    </button>
+                    }
+
+                    @if (canSubmit()) {
+                    <button type="button"
+                        class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                        [disabled]="saving()" (click)="submitOrder()">
+                        {{ saving() ? 'Submitting...' : 'Submit PO' }}
+                    </button>
+                    }
+
+                    @if (canReceive()) {
+                    <button type="button"
+                        class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                        [disabled]="saving()" (click)="openReceive()">
+                        Receive Items
+                    </button>
+                    }
+
+                    @if (canCancel()) {
+                    <button type="button"
+                        class="cursor-pointer rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        [disabled]="saving()" (click)="openCancel()">
+                        Cancel
+                    </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Chips -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+                    [class.bg-gray-100]="statusTone(po.status) === 'gray'"
+                    [class.text-gray-700]="statusTone(po.status) === 'gray'"
+                    [class.bg-blue-50]="statusTone(po.status) === 'blue'"
+                    [class.text-blue-700]="statusTone(po.status) === 'blue'"
+                    [class.bg-amber-50]="statusTone(po.status) === 'amber'"
+                    [class.text-amber-700]="statusTone(po.status) === 'amber'"
+                    [class.bg-emerald-50]="statusTone(po.status) === 'emerald'"
+                    [class.text-emerald-700]="statusTone(po.status) === 'emerald'"
+                    [class.bg-rose-50]="statusTone(po.status) === 'rose'"
+                    [class.text-rose-700]="statusTone(po.status) === 'rose'">
+                    {{ statusLabel(po.status) }}
+                </span>
+
+                <span
+                    class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
+                    Created {{ po.createdAt | date:'MMM d, y' }}
+                </span>
+
+                @if (po.submittedAt) {
+                <span
+                    class="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                    Submitted {{ po.submittedAt | date:'MMM d, y' }}
+                </span>
+                }
+
+                @if (po.receivedAt) {
+                <span
+                    class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                    Received {{ po.receivedAt | date:'MMM d, y' }}
+                </span>
+                }
+
+                @if (po.canceledAt) {
+                <span
+                    class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700">
+                    Canceled {{ po.canceledAt | date:'MMM d, y' }}
+                </span>
+                }
+            </div>
+        </div>
+
+        @if (error()) {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
+            {{ error() }}
+        </div>
+        }
+
+        <!-- Summary -->
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Subtotal</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-900">{{ formatMoney(po.subtotalCents) }}</p>
+                <p class="mt-1 text-sm text-gray-500">{{ po.items?.length || 0 }} item(s)</p>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Shipping</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-900">{{ formatMoney(po.shippingCents) }}</p>
+                <p class="mt-1 text-sm text-gray-500">Supplier shipping</p>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Tax</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-900">{{ formatMoney(po.taxCents) }}</p>
+                <p class="mt-1 text-sm text-gray-500">Estimated tax</p>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-900">{{ formatMoney(po.totalCents) }}</p>
+                <p class="mt-1 text-sm text-gray-500">Purchase order total</p>
+            </section>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.5fr_0.9fr]">
+            <!-- Left: Items -->
+            <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div class="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
+                    <div>
+                        <h2 class="text-base font-semibold text-gray-900">Items</h2>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Products being ordered from the supplier.
+                        </p>
+                    </div>
+
+                    @if (canEditDraft()) {
+                    <button type="button"
+                        class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                        [disabled]="saving()" (click)="openAddItem()">
+                        Add Item
+                    </button>
+                    }
+                </div>
+
+                @if (!(po.items?.length)) {
+                <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+                    <h3 class="text-base font-semibold text-gray-900">No items yet</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Add products before submitting this purchase order.
+                    </p>
+
+                    @if (canEditDraft()) {
+                    <button type="button"
+                        class="mt-5 cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft"
+                        (click)="openAddItem()">
+                        Add Item
+                    </button>
+                    }
+                </div>
+                } @else {
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50/80">
+                            <tr>
+                                <th
+                                    class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Product
+                                </th>
+                                <th
+                                    class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Qty
+                                </th>
+                                <th
+                                    class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Received
+                                </th>
+                                <th
+                                    class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Unit Cost
+                                </th>
+                                <th
+                                    class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Line Total
+                                </th>
+                                <th
+                                    class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    &nbsp;
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            @for (item of po.items; track trackByItemId($index, item)) {
+                            <tr class="transition hover:bg-gray-50/70">
+                                <td class="px-6 py-4 align-top">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="max-w-[280px] truncate text-sm font-semibold text-gray-900"
+                                            [title]="item.nameSnapshot">
+                                            {{ item.nameSnapshot }}
+                                        </div>
+
+                                        <div class="text-xs text-gray-500">
+                                            @if (item.supplierSkuSnapshot) {
+                                            Supplier SKU: {{ item.supplierSkuSnapshot }}
+                                            } @else if (item.skuSnapshot) {
+                                            SKU: {{ item.skuSnapshot }}
+                                            } @else {
+                                            {{ item.productId }}
+                                            }
+                                        </div>
+
+                                        @if (item.notes) {
+                                        <div class="mt-1 text-xs text-gray-400">
+                                            {{ item.notes }}
+                                        </div>
+                                        }
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4 align-top">
+                                    <span class="text-sm font-medium text-gray-900">{{ item.quantityOrdered }}</span>
+                                </td>
+
+                                <td class="px-6 py-4 align-top">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ item.quantityReceived }}
+                                    </div>
+                                    <div class="mt-1 text-xs text-gray-500">
+                                        {{ remainingQty(item) }} remaining
+                                    </div>
+                                </td>
+
+                                <td class="px-6 py-4 align-top">
+                                    <span class="text-sm text-gray-700">{{ formatMoney(item.unitCostCents) }}</span>
+                                </td>
+
+                                <td class="px-6 py-4 align-top">
+                                    <span class="text-sm font-semibold text-gray-900">{{ formatMoney(item.lineCostCents)
+                                        }}</span>
+                                </td>
+
+                                <td class="px-6 py-4 align-top text-right">
+                                    @if (canEditDraft()) {
+                                    <button type="button"
+                                        class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                        [disabled]="saving()" (click)="deleteItem(item)">
+                                        Remove
+                                    </button>
+                                    }
+                                </td>
+                            </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                }
+            </section>
+
+            <!-- Right: Details -->
+            <div class="space-y-6">
+                <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-base font-semibold text-gray-900">Purchase Details</h2>
+
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-gray-700">Supplier</label>
+
+                        @if (suppliersLoading()) {
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                            Loading suppliers...
+                        </div>
+                        } @else if (suppliersError()) {
+                        <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                            {{ suppliersError() }}
+                        </div>
+                        } @else {
+                        <select
+                            class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand disabled:bg-gray-50 disabled:text-gray-500"
+                            [disabled]="!canEditDraft()" [ngModel]="selectedSupplierId()"
+                            (ngModelChange)="selectedSupplierId.set($event || null)">
+                            <option [ngValue]="null">No supplier</option>
+
+                            @for (supplier of suppliers(); track supplier.id) {
+                            <option [value]="supplier.id">
+                                {{ supplier.name }} · {{ supplierProviderLabel(supplier.provider) }}
+                            </option>
+                            }
+                        </select>
+                        }
+                    </div>
+
+                    <div class="mt-5 space-y-4">
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-gray-700">Shipping</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                                <input type="text" inputmode="decimal"
+                                    class="w-full rounded-xl border border-gray-300 px-4 py-2.5 pl-7 text-sm focus:border-brand focus:ring-1 focus:ring-brand disabled:bg-gray-50 disabled:text-gray-500"
+                                    [disabled]="!canEditDraft()" [value]="shippingDisplay()"
+                                    (input)="onShippingChange($any($event.target).value)"
+                                    (blur)="normalizeShippingDisplay()" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-gray-700">Tax</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                                <input type="text" inputmode="decimal"
+                                    class="w-full rounded-xl border border-gray-300 px-4 py-2.5 pl-7 text-sm focus:border-brand focus:ring-1 focus:ring-brand disabled:bg-gray-50 disabled:text-gray-500"
+                                    [disabled]="!canEditDraft()" [value]="taxDisplay()"
+                                    (input)="onTaxChange($any($event.target).value)" (blur)="normalizeTaxDisplay()" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-gray-700">Notes</label>
+                            <textarea rows="4"
+                                class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand disabled:bg-gray-50 disabled:text-gray-500"
+                                [disabled]="!canEditDraft()" [ngModel]="notesDraft()"
+                                (ngModelChange)="notesDraft.set($event)">
+                </textarea>
+                        </div>
+
+                        @if (canEditDraft()) {
+                        <button type="button"
+                            class="w-full cursor-pointer rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            [disabled]="saving()" (click)="saveMeta()">
+                            {{ saving() ? 'Saving...' : 'Save Details' }}
+                        </button>
+                        }
+                    </div>
+                </section>
+
+                <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-base font-semibold text-gray-900">Workflow</h2>
+
+                    <div class="mt-5 space-y-4 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">Created</span>
+                            <span class="font-medium text-gray-900">{{ po.createdAt | date:'MMM d, y' }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">Submitted</span>
+                            <span class="font-medium text-gray-900">{{ po.submittedAt ? (po.submittedAt | date:'MMM d,
+                                y') : '—' }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">Received</span>
+                            <span class="font-medium text-gray-900">{{ po.receivedAt ? (po.receivedAt | date:'MMM d, y')
+                                : '—' }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">Canceled</span>
+                            <span class="font-medium text-gray-900">{{ po.canceledAt ? (po.canceledAt | date:'MMM d, y')
+                                : '—' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 space-y-2">
+                        @if (canSubmit()) {
+                        <button type="button"
+                            class="w-full cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                            [disabled]="saving()" (click)="submitOrder()">
+                            {{ saving() ? 'Submitting...' : 'Submit Purchase Order' }}
+                        </button>
+                        }
+
+                        @if (canReceive()) {
+                        <button type="button"
+                            class="w-full cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                            [disabled]="saving()" (click)="openReceive()">
+                            Receive Items
+                        </button>
+                        }
+
+                        @if (canCancel()) {
+                        <button type="button"
+                            class="w-full cursor-pointer rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            [disabled]="saving()" (click)="openCancel()">
+                            Cancel Purchase Order
+                        </button>
+                        }
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+<!-- Add Item Modal -->
+@if (addItemOpen()) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4">
+    <div class="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Add Item</h2>
+                <p class="mt-1 text-sm text-gray-500">Search your product catalog and add a product to this PO.</p>
+            </div>
+
+            <button type="button" class="cursor-pointer rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                (click)="closeAddItem()">
+                Close
+            </button>
+        </div>
+
+        <div class="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">Search Products</label>
+                <input type="text"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                    placeholder="Search by name, SKU, supplier SKU..." [ngModel]="productSearch()"
+                    (ngModelChange)="productSearch.set($event)" />
+
+                <div class="mt-3 max-h-72 overflow-y-auto rounded-2xl border border-gray-200">
+                    @if (productsLoading()) {
+                    <div class="px-4 py-6 text-center text-sm text-gray-500">
+                        Loading products...
+                    </div>
+                    } @else if (!filteredProducts().length) {
+                    <div class="px-4 py-6 text-center text-sm text-gray-500">
+                        No products found.
+                    </div>
+                    } @else {
+                    @for (product of filteredProducts(); track trackByProductId($index, product)) {
+                    <button type="button"
+                        class="block w-full cursor-pointer border-b border-gray-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-gray-50"
+                        [class.bg-brand-50]="selectedProductId() === product.id" (click)="selectProduct(product)">
+                        <div class="text-sm font-semibold text-gray-900">
+                            {{ product.name }}
+                        </div>
+
+                        <div class="mt-1 text-xs text-gray-500">
+                            @if (product.supplierLinks?.[0]?.supplierSku) {
+                            Supplier SKU: {{ product.supplierLinks?.[0]?.supplierSku }}
+                            } @else if (product.sku) {
+                            SKU: {{ product.sku }}
+                            } @else {
+                            {{ product.id }}
+                            }
+                        </div>
+                    </button>
+                    }
+                    }
+                </div>
+                @if (order()?.supplier; as supplier) {
+                <p class="mt-2 text-xs text-gray-500">
+                    Showing products linked to {{ supplier.name }}.
+                </p>
+                } @else {
+                <p class="mt-2 text-xs text-gray-500">
+                    No supplier selected, so all active products are shown.
+                </p>
+                }
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Selected Product</label>
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        @if (selectedProduct(); as product) {
+                        <p class="text-sm font-semibold text-gray-900">{{ product.name }}</p>
+                        <p class="mt-1 text-xs text-gray-500">
+                            {{ product.sku || product.id }}
+                        </p>
+                        } @else {
+                        <p class="text-sm text-gray-500">No product selected.</p>
+                        }
+                    </div>
+                </div>
+
+                @if (selectedProductSupplierLinks().length) {
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Supplier Link</label>
+                    <select
+                        class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                        [ngModel]="selectedProductSupplierId()" (ngModelChange)="selectedProductSupplierId.set($event)">
+                        @for (link of selectedProductSupplierLinks(); track link.id) {
+                        <option [value]="link.id">
+                            {{ link.supplierName || link.supplierProvider || 'Supplier' }} · {{ link.supplierSku }}
+                        </option>
+                        }
+                    </select>
+                </div>
+                }
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Quantity</label>
+                    <input type="number" min="1"
+                        class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                        [ngModel]="itemQty()" (ngModelChange)="itemQty.set($event)" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Unit Cost</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                        <input type="text" inputmode="decimal"
+                            class="w-full rounded-xl border border-gray-300 px-4 py-3 pl-7 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                            [ngModel]="itemUnitCostDisplay()" (ngModelChange)="itemUnitCostDisplay.set($event)" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">Notes</label>
+                    <textarea rows="3"
+                        class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                        [ngModel]="itemNotes()" (ngModelChange)="itemNotes.set($event)">
+            </textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                (click)="closeAddItem()">
+                Cancel
+            </button>
+
+            <button type="button"
+                class="cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving() || !selectedProduct() || !itemQty()" (click)="submitAddItem()">
+                {{ saving() ? 'Adding...' : 'Add Item' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Receive Modal -->
+@if (receiveOpen() && order(); as po) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Receive Items</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Receiving items will increase inventory on hand.
+                </p>
+            </div>
+
+            <button type="button" class="cursor-pointer rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                (click)="closeReceive()">
+                Close
+            </button>
+        </div>
+
+        <div class="mt-5 space-y-3">
+            @for (item of po.items ?? []; track trackByItemId($index, item)) {
+            @if (remainingQty(item) > 0) {
+            <div class="grid grid-cols-[1fr_120px] gap-3 rounded-2xl border border-gray-200 px-4 py-3">
+                <div>
+                    <p class="text-sm font-semibold text-gray-900">{{ item.nameSnapshot }}</p>
+                    <p class="mt-1 text-xs text-gray-500">
+                        Ordered {{ item.quantityOrdered }} · Received {{ item.quantityReceived }} · Remaining {{
+                        remainingQty(item) }}
+                    </p>
+                </div>
+
+                <input type="number" min="0" [max]="remainingQty(item)"
+                    class="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                    [ngModel]="receiveQtyFor(item)" (ngModelChange)="setReceiveQty(item.id, $event)" />
+            </div>
+            }
+            }
+        </div>
+
+        <div class="mt-5">
+            <label class="mb-2 block text-sm font-medium text-gray-700">Receiving Notes</label>
+            <textarea rows="3"
+                class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                [ngModel]="receiveNotes()" (ngModelChange)="receiveNotes.set($event)">
+        </textarea>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                (click)="closeReceive()">
+                Cancel
+            </button>
+
+            <button type="button"
+                class="cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving()" (click)="submitReceive()">
+                {{ saving() ? 'Receiving...' : 'Receive Items' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Cancel Modal -->
+@if (cancelOpen()) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4">
+    <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Cancel Purchase Order</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    This will cancel the purchase order. Received purchase orders cannot be canceled.
+                </p>
+            </div>
+
+            <button type="button" class="cursor-pointer rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                (click)="closeCancel()">
+                Close
+            </button>
+        </div>
+
+        <div class="mt-5">
+            <label class="mb-2 block text-sm font-medium text-gray-700">Reason</label>
+            <textarea rows="3"
+                class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                placeholder="Optional cancellation reason" [ngModel]="cancelReason()"
+                (ngModelChange)="cancelReason.set($event)">
+        </textarea>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                (click)="closeCancel()">
+                Never mind
+            </button>
+
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving()" (click)="submitCancel()">
+                {{ saving() ? 'Canceling...' : 'Cancel PO' }}
+            </button>
+        </div>
+    </div>
+</div>
+}

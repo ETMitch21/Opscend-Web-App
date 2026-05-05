@@ -23,6 +23,9 @@ import { Products } from './features/products/products';
 import { ProductDetail } from './features/products/product-detail/product-detail';
 import { RepairTracking } from './features/public/repair-tracking/repair-tracking';
 import { RepairNotifications } from './features/settings/repair-notifications/repair-notifications';
+import { Inventory } from './features/inventory/inventory';
+import { PurchaseOrders } from './features/purchase-orders/purchase-orders';
+import { PurchaseOrderDetail } from './features/purchase-orders/purchase-order-detail/purchase-order-detail';
 
 export const routes: Routes = [
     {
@@ -101,6 +104,23 @@ export const routes: Routes = [
             {
                 path: 'detail/:id',
                 component: ProductDetail
+            },
+            {
+                path: 'inventory',
+                component: Inventory
+            },
+            {
+                path: 'inventory/purchase-orders',
+                children: [
+                    {
+                        path: '',
+                        component: PurchaseOrders
+                    },
+                    {
+                        path: 'detail/:id',
+                        component: PurchaseOrderDetail
+                    }
+                ]
             },
             {
                 path: '',

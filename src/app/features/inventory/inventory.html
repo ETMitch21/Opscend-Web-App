@@ -1,0 +1,434 @@
+<div class="">
+    <!-- Top Header -->
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900">Inventory</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Track stock levels, reservations, reorder points, and supplier-ready products.
+            </p>
+        </div>
+
+        <button
+            class="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+            (click)="refresh()">
+            Refresh
+        </button>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid gap-4 px-6 pb-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">On Hand</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-900">{{ totals().onHand }}</p>
+            <p class="mt-1 text-sm text-gray-500">Total physical stock</p>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Available</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-900">{{ totals().available }}</p>
+            <p class="mt-1 text-sm text-gray-500">On hand minus reserved</p>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Reserved</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-900">{{ totals().reserved }}</p>
+            <p class="mt-1 text-sm text-gray-500">Allocated to work</p>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">On Order</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-900">{{ totals().onOrder }}</p>
+            <p class="mt-1 text-sm text-gray-500">Incoming purchase orders</p>
+        </section>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-6">
+        <nav class="flex space-x-6 text-sm font-medium text-gray-600">
+            <button (click)="setView('all')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'all'" [class.text-brand]="activeView() === 'all'"
+                [class.border-transparent]="activeView() !== 'all'"
+                [class.hover:text-gray-900]="activeView() !== 'all'">
+                All
+                <span class="ml-1 text-xs text-gray-400">{{ counts().all }}</span>
+            </button>
+
+            <button (click)="setView('available')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'available'" [class.text-brand]="activeView() === 'available'"
+                [class.border-transparent]="activeView() !== 'available'"
+                [class.hover:text-gray-900]="activeView() !== 'available'">
+                Available
+                <span class="ml-1 text-xs text-gray-400">{{ counts().available }}</span>
+            </button>
+
+            <button (click)="setView('low')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'low'" [class.text-brand]="activeView() === 'low'"
+                [class.border-transparent]="activeView() !== 'low'"
+                [class.hover:text-gray-900]="activeView() !== 'low'">
+                Low Stock
+                <span class="ml-1 text-xs text-gray-400">{{ counts().low }}</span>
+            </button>
+
+            <button (click)="setView('out')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'out'" [class.text-brand]="activeView() === 'out'"
+                [class.border-transparent]="activeView() !== 'out'"
+                [class.hover:text-gray-900]="activeView() !== 'out'">
+                Out of Stock
+                <span class="ml-1 text-xs text-gray-400">{{ counts().out }}</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Search -->
+    <div class="flex items-center justify-between gap-4 px-6 py-4">
+        <div class="relative w-80">
+            <input type="text" placeholder="Search inventory..."
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 pl-10 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                [value]="searchTerm()" (input)="setSearchTerm($any($event.target).value)" />
+
+            <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
+                stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+            </svg>
+        </div>
+    </div>
+</div>
+
+<div class="px-6 pb-6">
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        @if (loading()) {
+        <div class="flex items-center justify-center px-6 py-16">
+            <div class="text-sm text-gray-500">Loading inventory...</div>
+        </div>
+        }
+
+        @else if (error()) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <p class="text-sm font-medium text-red-600">{{ error() }}</p>
+            <button (click)="refresh()"
+                class="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+                Try Again
+            </button>
+        </div>
+        }
+
+        @else if (filteredBalances().length === 0) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
+                <lucide-icon [name]="packageIcon" [size]="22"></lucide-icon>
+            </div>
+            <h3 class="text-base font-semibold text-gray-900">No inventory found</h3>
+            <p class="mt-1 max-w-md text-sm text-gray-500">
+                Inventory appears here after stock is adjusted or purchase orders are received.
+            </p>
+        </div>
+        }
+
+        @else {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50/80">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Product
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Location
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Stock
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Available
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Reorder
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Status
+                        </th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            &nbsp;
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    @for (balance of filteredBalances(); track trackByBalanceId($index, balance)) {
+                    <tr class="transition hover:bg-gray-50/70">
+                        <!-- Product -->
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex flex-col gap-1">
+                                <div class="max-w-[320px] truncate text-sm font-semibold text-gray-900"
+                                    [title]="balance.product?.name || balance.productId">
+                                    {{ balance.product?.name || balance.productId }}
+                                </div>
+
+                                <div class="text-xs text-gray-500">
+                                    @if (balance.product?.sku) {
+                                    SKU: {{ balance.product?.sku }}
+                                    } @else {
+                                    {{ balance.productId }}
+                                    }
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Location -->
+                        <td class="px-6 py-4 align-top">
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ balance.location?.name || 'Unknown' }}
+                            </div>
+                            <div class="mt-1 text-xs text-gray-500">
+                                {{ balance.location?.type || '—' | titlecase }}
+                            </div>
+                        </td>
+
+                        <!-- Stock -->
+                        <td class="px-6 py-4 align-top">
+                            <div class="grid grid-cols-3 gap-2 text-sm">
+                                <div>
+                                    <div class="font-semibold text-gray-900">{{ balance.onHandQty }}</div>
+                                    <div class="text-xs text-gray-400">On hand</div>
+                                </div>
+
+                                <div>
+                                    <div class="font-semibold text-gray-900">{{ balance.reservedQty }}</div>
+                                    <div class="text-xs text-gray-400">Reserved</div>
+                                </div>
+
+                                <div>
+                                    <div class="font-semibold text-gray-900">{{ balance.onOrderQty }}</div>
+                                    <div class="text-xs text-gray-400">On order</div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Available -->
+                        <td class="px-6 py-4 align-top">
+                            <span class="text-sm font-semibold text-gray-900">
+                                {{ balance.availableQty }}
+                            </span>
+                        </td>
+
+                        <!-- Reorder -->
+                        <td class="px-6 py-4 align-top">
+                            <div class="text-sm text-gray-700">
+                                @if (balance.reorderPointQty !== null) {
+                                Point: {{ balance.reorderPointQty }}
+                                } @else {
+                                <span class="text-gray-400">No point set</span>
+                                }
+                            </div>
+
+                            <div class="mt-1 text-xs text-gray-500">
+                                @if (balance.reorderQty !== null) {
+                                Reorder qty: {{ balance.reorderQty }}
+                                } @else {
+                                —
+                                }
+                            </div>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-6 py-4 align-top">
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                [class.bg-rose-50]="inventoryTone(balance) === 'out'"
+                                [class.text-rose-700]="inventoryTone(balance) === 'out'"
+                                [class.bg-amber-50]="inventoryTone(balance) === 'low'"
+                                [class.text-amber-700]="inventoryTone(balance) === 'low'"
+                                [class.bg-emerald-50]="inventoryTone(balance) === 'healthy'"
+                                [class.text-emerald-700]="inventoryTone(balance) === 'healthy'">
+                                {{ inventoryLabel(balance) }}
+                            </span>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-6 py-4 align-top text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button type="button"
+                                    class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    (click)="openAdjust(balance)">
+                                    Adjust
+                                </button>
+
+                                <button type="button"
+                                    class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    (click)="openReorder(balance)">
+                                    Reorder
+                                </button>
+
+                                <button type="button"
+                                    class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    [routerLink]="['/products', 'detail', balance.productId]">
+                                    Product
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+            <p class="text-sm text-gray-500">
+                Showing {{ filteredBalances().length }} inventory record<span
+                    [class.hidden]="filteredBalances().length === 1">s</span>
+            </p>
+
+            @if (nextCursor()) {
+            <button (click)="loadMore()" [disabled]="loadingMore()"
+                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50">
+                {{ loadingMore() ? 'Loading...' : 'Load more' }}
+            </button>
+            }
+        </div>
+        }
+    </div>
+</div>
+
+<!-- Adjust stock modal -->
+@if (adjustOpen() && selectedBalance(); as balance) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4">
+    <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Adjust Stock</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ balance.product?.name || balance.productId }}
+                </p>
+            </div>
+
+            <button type="button" class="cursor-pointer rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                (click)="closeAdjust()">
+                Close
+            </button>
+        </div>
+
+        <div class="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-gray-50 p-4">
+            <div>
+                <p class="text-xs text-gray-500">On hand</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">{{ balance.onHandQty }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500">Reserved</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">{{ balance.reservedQty }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500">Available</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">{{ balance.availableQty }}</p>
+            </div>
+        </div>
+
+        <div class="mt-5 space-y-4">
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">
+                    Quantity Change
+                </label>
+                <input type="number"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                    placeholder="Example: 5 or -2" [ngModel]="adjustQuantity()"
+                    (ngModelChange)="adjustQuantity.set($event)" />
+                <p class="mt-1 text-xs text-gray-500">
+                    Use positive numbers to add stock and negative numbers to remove stock.
+                </p>
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">
+                    Reason
+                </label>
+                <input type="text"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                    placeholder="Cycle count, damaged part, correction..." [ngModel]="adjustReason()"
+                    (ngModelChange)="adjustReason.set($event)" />
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">
+                    Notes
+                </label>
+                <textarea rows="3"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                    [ngModel]="adjustNotes()" (ngModelChange)="adjustNotes.set($event)">
+          </textarea>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                (click)="closeAdjust()">
+                Cancel
+            </button>
+
+            <button type="button"
+                class="cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving() || !adjustQuantity()" (click)="submitAdjust()">
+                {{ saving() ? 'Saving...' : 'Save Adjustment' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Reorder modal -->
+@if (reorderOpen() && selectedBalance(); as balance) {
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4">
+    <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Reorder Settings</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ balance.product?.name || balance.productId }}
+                </p>
+            </div>
+
+            <button type="button" class="cursor-pointer rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+                (click)="closeReorder()">
+                Close
+            </button>
+        </div>
+
+        <div class="mt-5 space-y-4">
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">
+                    Reorder Point
+                </label>
+                <input type="number" min="0"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                    placeholder="Example: 2" [ngModel]="reorderPointQty()"
+                    (ngModelChange)="reorderPointQty.set($event)" />
+                <p class="mt-1 text-xs text-gray-500">
+                    Mark this item as low stock when on-hand quantity is at or below this number.
+                </p>
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700">
+                    Reorder Quantity
+                </label>
+                <input type="number" min="0"
+                    class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-brand focus:ring-1 focus:ring-brand"
+                    placeholder="Example: 5" [ngModel]="reorderQty()" (ngModelChange)="reorderQty.set($event)" />
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button"
+                class="cursor-pointer rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                (click)="closeReorder()">
+                Cancel
+            </button>
+
+            <button type="button"
+                class="cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="saving()" (click)="submitReorder()">
+                {{ saving() ? 'Saving...' : 'Save Settings' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
