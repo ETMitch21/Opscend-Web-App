@@ -18,7 +18,10 @@ import {
   BoxIcon,
   BlocksIcon,
   BellIcon,
-  XIcon
+  XIcon,
+  PackageIcon,
+  ShoppingCartIcon,
+  ChevronDownIcon,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -31,8 +34,13 @@ import type {
 
 type NavItem = {
   label: string;
-  route: string;
+  route?: string;
   icon: LucideIconData;
+  children?: {
+    label: string;
+    route: string;
+    icon: LucideIconData;
+  }[];
 };
 
 type SearchSection = {
@@ -81,6 +89,9 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly blocksIcon = BlocksIcon;
   readonly calendarClockIcon = CalendarClockIcon;
   readonly bellIcon = BellIcon;
+  readonly packageIcon = PackageIcon;
+  readonly shoppingCartIcon = ShoppingCartIcon;
+  readonly chevronDownIcon = ChevronDownIcon;
 
   private readonly notificationPollMs = 15_000;
   private routerEventsSubscription: Subscription | null = null;
@@ -88,6 +99,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   layoutDashboardIcon: LucideIconData = LayoutDashboard;
 
   public sidebarOpen = signal(false);
+  public productsMenuOpen = signal(true);
   public profileMenuOpen = signal(false);
 
   public notificationMenuOpen = signal(false);
@@ -112,9 +124,26 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
-    { label: 'Products', route: '/products', icon: this.boxesIcon },
+    {
+      label: 'Products',
+      icon: this.boxesIcon,
+      children: [
+        { label: 'All Products', route: '/products/overview', icon: this.boxesIcon },
+        {
+          label: 'Suppliers',
+          route: '/products/inventory/suppliers',
+          icon: this.blocksIcon,
+        },
+        { label: 'Inventory', route: '/products/inventory', icon: this.packageIcon },
+        {
+          label: 'Purchase Orders',
+          route: '/products/inventory/purchase-orders',
+          icon: this.shoppingCartIcon,
+        }
+      ],
+    },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
-    { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon }
+    { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
   ];
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -664,6 +693,46 @@ export class AppShellComponent implements OnInit, OnDestroy {
         return 'Appointment';
       default:
         return '';
+    }
+  }
+
+  toggleProductsMenu(): void {
+    this.productsMenuOpen.update((open) => !open);
+  }
+
+  isProductsSectionActive(): boolean {
+    const url = this.router.url.split('?')[0].split('#')[0];
+
+    return url === '/products' || url.startsWith('/products/');
+  }
+
+  isNavRouteActive(route: string | undefined): boolean {
+    if (!route) return false;
+
+    const url = this.router.url.split('?')[0].split('#')[0];
+
+    switch (route) {
+      case '/products/overview':
+        return (
+          url === '/products' ||
+          url === '/products/overview' ||
+          url.startsWith('/products/detail/')
+        );
+
+      case '/products/inventory':
+        return url === '/products/inventory';
+
+      case '/products/inventory/purchase-orders':
+        return (
+          url === '/products/inventory/purchase-orders' ||
+          url.startsWith('/products/inventory/purchase-orders/detail/')
+        );
+
+      case '/products/inventory/suppliers':
+        return url === '/products/inventory/suppliers';
+
+      default:
+        return url === route;
     }
   }
 

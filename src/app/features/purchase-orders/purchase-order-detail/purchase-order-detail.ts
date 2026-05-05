@@ -2,7 +2,7 @@ import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideAngularModule, ChevronLeftIcon } from 'lucide-angular';
+import { LucideAngularModule, ChevronLeftIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from 'lucide-angular';
 
 import { PurchaseOrderStore } from '../../../core/purchase-orders/purchase-orders.store';
 import {
@@ -27,6 +27,9 @@ export class PurchaseOrderDetail implements OnInit, OnDestroy {
   private readonly supplierStore = inject(SupplierStore);
 
   readonly leftChevronIcon = ChevronLeftIcon;
+  readonly moreHorizontalIcon = MoreHorizontalIcon;
+  readonly pencilIcon = PencilIcon;
+  readonly trashIcon = Trash2Icon;
 
   readonly suppliers = this.supplierStore.activeSuppliers;
   readonly suppliersLoading = this.supplierStore.suppliersLoading;
@@ -52,6 +55,16 @@ export class PurchaseOrderDetail implements OnInit, OnDestroy {
   readonly itemQty = signal<number | null>(1);
   readonly itemUnitCostDisplay = signal('');
   readonly itemNotes = signal('');
+
+  readonly editItemOpen = signal(false);
+  readonly selectedItem = signal<PurchaseOrderItem | null>(null);
+  readonly openItemActionMenuForItemId = signal<string | null>(null);
+  readonly itemActionMenuPosition = signal<{ top: number; right: number } | null>(null);
+
+  readonly editItemQty = signal<number | null>(null);
+  readonly editItemUnitCostDisplay = signal('');
+  readonly editItemNotes = signal('');
+  readonly editItemProductSupplierId = signal<string | null>(null);
 
   readonly receiveNotes = signal('');
   readonly receiveQuantities = signal<Record<string, number>>({});
@@ -103,6 +116,60 @@ export class PurchaseOrderDetail implements OnInit, OnDestroy {
     const product = this.selectedProduct();
     return product?.supplierLinks ?? [];
   });
+
+  readonly selectedItemProduct = computed(() => {
+    const item = this.selectedItem();
+    if (!item) return null;
+
+    return this.products().find((product) => product.id === item.productId) ?? null;
+  });
+
+  readonly selectedItemSupplierLinks = computed(() => {
+    const product = this.selectedItemProduct();
+    const orderSupplierId = this.order()?.supplierId ?? null;
+
+    const links = product?.supplierLinks ?? [];
+
+    if (!orderSupplierId) return links;
+
+    return links.filter((link) => link.supplierId === orderSupplierId);
+  });
+
+  toggleItemActionMenu(itemId: string, event: MouseEvent): void {
+    event.stopPropagation();
+
+    const current = this.openItemActionMenuForItemId();
+
+    if (current === itemId) {
+      this.closeItemActionMenu();
+      return;
+    }
+
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+
+    this.itemActionMenuPosition.set({
+      top: rect.bottom + 6,
+      right: window.innerWidth - rect.right,
+    });
+
+    this.openItemActionMenuForItemId.set(itemId);
+  }
+
+  closeItemActionMenu(): void {
+    this.openItemActionMenuForItemId.set(null);
+    this.itemActionMenuPosition.set(null);
+  }
+
+  openEditItemFromMenu(item: PurchaseOrderItem): void {
+    this.closeItemActionMenu();
+    this.openEditItem(item);
+  }
+
+  async deleteItemFromMenu(item: PurchaseOrderItem): Promise<void> {
+    this.closeItemActionMenu();
+    await this.deleteItem(item);
+  }
 
   readonly canEditDraft = computed(() => this.order()?.status === 'draft');
 
@@ -298,6 +365,46 @@ export class PurchaseOrderDetail implements OnInit, OnDestroy {
     await this.purchaseOrderStore.submitPurchaseOrder(order.id, {
       externalStatus: 'submitted',
     });
+  }
+
+  openEditItem(item: PurchaseOrderItem): void {
+    this.selectedItem.set(item);
+
+    this.editItemQty.set(item.quantityOrdered);
+    this.editItemUnitCostDisplay.set(this.formatCentsToDisplay(item.unitCostCents));
+    this.editItemNotes.set(item.notes ?? '');
+    this.editItemProductSupplierId.set(item.productSupplierId ?? null);
+
+    this.editItemOpen.set(true);
+  }
+
+  closeEditItem(): void {
+    this.editItemOpen.set(false);
+    this.selectedItem.set(null);
+
+    this.editItemQty.set(null);
+    this.editItemUnitCostDisplay.set('');
+    this.editItemNotes.set('');
+    this.editItemProductSupplierId.set(null);
+  }
+
+  async submitEditItem(): Promise<void> {
+    const order = this.order();
+    const item = this.selectedItem();
+    const quantityOrdered = Number(this.editItemQty());
+
+    if (!order || !item || !Number.isFinite(quantityOrdered) || quantityOrdered <= 0) return;
+
+    const updated = await this.purchaseOrderStore.updateItem(order.id, item.id, {
+      productSupplierId: this.editItemProductSupplierId(),
+      quantityOrdered: Math.trunc(quantityOrdered),
+      unitCostCents: this.parseMoneyToCents(this.editItemUnitCostDisplay()),
+      notes: this.editItemNotes().trim() || null,
+    });
+
+    if (!updated) return;
+
+    this.closeEditItem();
   }
 
   openReceive(): void {

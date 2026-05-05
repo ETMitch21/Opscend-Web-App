@@ -7,6 +7,8 @@ import {
   FileTextIcon,
   PlusIcon,
   RefreshCcwIcon,
+  MoreHorizontalIcon,
+  ExternalLinkIcon,
 } from 'lucide-angular';
 
 import { PurchaseOrderStore } from '../../core/purchase-orders/purchase-orders.store';
@@ -45,6 +47,8 @@ export class PurchaseOrders implements OnInit {
   readonly fileTextIcon = FileTextIcon;
   readonly plusIcon = PlusIcon;
   readonly refreshIcon = RefreshCcwIcon;
+  readonly moreHorizontalIcon = MoreHorizontalIcon;
+  readonly externalLinkIcon = ExternalLinkIcon;
 
   readonly activeView = signal<PurchaseOrderView>('open');
   readonly searchTerm = signal('');
@@ -52,6 +56,8 @@ export class PurchaseOrders implements OnInit {
   readonly createOpen = signal(false);
   readonly createPoNumber = signal('');
   readonly createNotes = signal('');
+  readonly openActionMenuForPurchaseOrderId = signal<string | null>(null);
+  readonly actionMenuPosition = signal<{ top: number; right: number } | null>(null);
 
   readonly loading = this.purchaseOrderStore.loading;
   readonly loadingMore = this.purchaseOrderStore.loadingMore;
@@ -113,6 +119,32 @@ export class PurchaseOrders implements OnInit {
         .reduce((sum, po) => sum + po.totalCents, 0),
     };
   });
+
+  toggleActionMenu(poId: string, event: MouseEvent): void {
+    event.stopPropagation();
+
+    const current = this.openActionMenuForPurchaseOrderId();
+
+    if (current === poId) {
+      this.closeActionMenu();
+      return;
+    }
+
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+
+    this.actionMenuPosition.set({
+      top: rect.bottom + 6,
+      right: window.innerWidth - rect.right,
+    });
+
+    this.openActionMenuForPurchaseOrderId.set(poId);
+  }
+
+  closeActionMenu(): void {
+    this.openActionMenuForPurchaseOrderId.set(null);
+    this.actionMenuPosition.set(null);
+  }
 
   async ngOnInit(): Promise<void> {
     await this.purchaseOrderStore.loadPurchaseOrders({ includeItems: true });

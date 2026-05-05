@@ -1,4 +1,4 @@
-<div class="">
+<div class="" (click)="closeActionMenu()">
     <!-- Top Header -->
     <div class="flex items-center justify-between px-6 pt-1 pb-4">
         <div>
@@ -283,11 +283,27 @@
 
                         <!-- Actions -->
                         <td class="px-6 py-4 align-top text-right">
-                            <button type="button"
-                                class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                [routerLink]="['detail', po.id]">
-                                View
-                            </button>
+                            <div class="relative flex items-center justify-end" (click)="$event.stopPropagation()">
+                                <button type="button"
+                                    class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition hover:bg-gray-50 hover:text-gray-900"
+                                    (click)="toggleActionMenu(po.id, $event)">
+                                    <lucide-icon [name]="moreHorizontalIcon" [size]="18"></lucide-icon>
+                                </button>
+
+                                @if (openActionMenuForPurchaseOrderId() === po.id) {
+                                <div class="fixed z-[9999] w-52 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-xl shadow-black/10 ring-1 ring-black/5"
+                                    [style.top.px]="actionMenuPosition()?.top"
+                                    [style.right.px]="actionMenuPosition()?.right">
+
+                                    <a class="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                                        [routerLink]="['detail', po.id]" (click)="closeActionMenu()">
+                                        <lucide-icon [name]="externalLinkIcon" [size]="16"
+                                            class="text-gray-400"></lucide-icon>
+                                        <span>View details</span>
+                                    </a>
+                                </div>
+                                }
+                            </div>
                         </td>
                     </tr>
                     }

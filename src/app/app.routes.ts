@@ -26,6 +26,7 @@ import { RepairNotifications } from './features/settings/repair-notifications/re
 import { Inventory } from './features/inventory/inventory';
 import { PurchaseOrders } from './features/purchase-orders/purchase-orders';
 import { PurchaseOrderDetail } from './features/purchase-orders/purchase-order-detail/purchase-order-detail';
+import { Suppliers } from './features/suppliers/suppliers';
 
 export const routes: Routes = [
     {
@@ -121,6 +122,10 @@ export const routes: Routes = [
                         component: PurchaseOrderDetail
                     }
                 ]
+            },
+            {
+                path: 'inventory/suppliers',
+                component: Suppliers
             },
             {
                 path: '',

@@ -29,7 +29,40 @@
 
             <nav class="flex flex-1 flex-col overflow-hidden p-4">
                 <div class="space-y-1 overflow-y-auto">
-                    @for (item of navItems; track item.route) {
+                    @for (item of navItems; track item.label) {
+                    @if (item.children?.length) {
+                    <div>
+                        <button type="button"
+                            class="flex w-full cursor-pointer items-center gap-3 rounded-app-md border border-transparent px-3 py-2.5 text-sm font-medium transition hover:bg-app-surface-muted hover:text-app-text"
+                            [ngClass]="isProductsSectionActive() ? 'bg-brand/8 text-app-text border-brand/20' : 'text-app-text-muted'"
+                            (click)="toggleProductsMenu()">
+                            <lucide-icon [size]="18" [img]="item.icon"></lucide-icon>
+
+                            <span class="min-w-0 flex-1 text-left">
+                                {{ item.label }}
+                            </span>
+
+                            <lucide-icon [size]="16" [img]="chevronDownIcon" class="transition-transform"
+                                [ngClass]="productsMenuOpen() ? 'rotate-180' : ''">
+                            </lucide-icon>
+                        </button>
+
+                        @if (productsMenuOpen()) {
+                        <div class="mt-1 space-y-1 pl-8">
+                            @for (child of item.children; track child.route) {
+                            <a [routerLink]="child.route"
+                                class="flex cursor-pointer items-center gap-2 rounded-app-md border px-3 py-2 text-sm font-medium transition hover:bg-app-surface-muted hover:text-app-text"
+                                [ngClass]="isNavRouteActive(child.route)
+        ? 'bg-brand/8 text-app-text border-brand/20'
+        : 'text-app-text-muted border-transparent'" (click)="closeSidebar()">
+                                <lucide-icon [size]="16" [img]="child.icon"></lucide-icon>
+                                <span>{{ child.label }}</span>
+                            </a>
+                            }
+                        </div>
+                        }
+                    </div>
+                    } @else {
                     <a [routerLink]="item.route" routerLinkActive="bg-brand/8 text-app-text border-brand/20"
                         [routerLinkActiveOptions]="{ exact: item.route === '/' }"
                         class="cursor-pointer flex items-center gap-3 rounded-app-md border border-transparent px-3 py-2.5 text-sm font-medium text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
@@ -37,6 +70,7 @@
                         <lucide-icon [size]="18" [img]="item.icon"></lucide-icon>
                         <span>{{ item.label }}</span>
                     </a>
+                    }
                     }
                 </div>
 

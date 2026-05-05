@@ -1,11 +1,22 @@
 import { CommonModule, TitleCasePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { LucideAngularModule, PackageIcon, AlertTriangleIcon, SlidersHorizontalIcon } from 'lucide-angular';
+import { RouterLink, Router } from '@angular/router';
+import {
+  LucideAngularModule,
+  PackageIcon,
+  AlertTriangleIcon,
+  SlidersHorizontalIcon,
+  MoreHorizontalIcon,
+  PlusCircleIcon,
+  SettingsIcon,
+  PackagePlusIcon,
+  ExternalLinkIcon,
+} from 'lucide-angular';
 
 import { InventoryStore } from '../../core/inventory/inventory.store';
 import { InventoryBalance } from '../../core/inventory/inventory.model';
+import { PurchaseOrderStore } from '../../core/purchase-orders/purchase-orders.store';
 
 type InventoryView = 'all' | 'low' | 'out' | 'available';
 
@@ -17,13 +28,23 @@ type InventoryView = 'all' | 'low' | 'out' | 'available';
 })
 export class Inventory implements OnInit {
   private readonly inventoryStore = inject(InventoryStore);
+  private readonly purchaseOrderStore = inject(PurchaseOrderStore);
+  private readonly router = inject(Router);
 
   readonly packageIcon = PackageIcon;
   readonly alertTriangleIcon = AlertTriangleIcon;
   readonly slidersIcon = SlidersHorizontalIcon;
+  readonly moreHorizontalIcon = MoreHorizontalIcon;
+  readonly plusCircleIcon = PlusCircleIcon;
+  readonly settingsIcon = SettingsIcon;
+  readonly packagePlusIcon = PackagePlusIcon;
+  readonly externalLinkIcon = ExternalLinkIcon;
 
   readonly activeView = signal<InventoryView>('all');
   readonly searchTerm = signal('');
+  readonly creatingPoForProductId = signal<string | null>(null);
+  readonly openActionMenuForBalanceId = signal<string | null>(null);
+  readonly actionMenuPosition = signal<{ top: number; right: number } | null>(null);
 
   readonly adjustOpen = signal(false);
   readonly reorderOpen = signal(false);
@@ -187,6 +208,51 @@ export class Inventory implements OnInit {
     this.reorderQty.set(null);
   }
 
+  toggleActionMenu(balanceId: string, event: MouseEvent): void {
+    event.stopPropagation();
+
+    const current = this.openActionMenuForBalanceId();
+
+    if (current === balanceId) {
+      this.closeActionMenu();
+      return;
+    }
+
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+
+    this.actionMenuPosition.set({
+      top: rect.bottom + 6,
+      right: window.innerWidth - rect.right,
+    });
+
+    this.openActionMenuForBalanceId.set(balanceId);
+  }
+
+  closeActionMenu(): void {
+    this.openActionMenuForBalanceId.set(null);
+    this.actionMenuPosition.set(null);
+  }
+
+  onPageScroll(): void {
+    this.closeActionMenu();
+  }
+
+  openAdjustFromMenu(balance: InventoryBalance): void {
+    this.closeActionMenu();
+    this.openAdjust(balance);
+  }
+
+  openReorderFromMenu(balance: InventoryBalance): void {
+    this.closeActionMenu();
+    this.openReorder(balance);
+  }
+
+  async createPurchaseOrderFromMenu(balance: InventoryBalance): Promise<void> {
+    this.closeActionMenu();
+    await this.createPurchaseOrderFromInventory(balance);
+  }
+
   async submitReorder(): Promise<void> {
     const balance = this.selectedBalance();
     if (!balance) return;
@@ -215,5 +281,42 @@ export class Inventory implements OnInit {
 
   trackByBalanceId(_: number, balance: InventoryBalance): string {
     return balance.id;
+  }
+
+  async createPurchaseOrderFromInventory(balance: InventoryBalance): Promise<void> {
+    if (!balance.product) return;
+
+    this.creatingPoForProductId.set(balance.productId);
+
+    try {
+      const quantityOrdered =
+        balance.reorderQty ??
+        balance.reorderPointQty ??
+        Math.max(1, balance.availableQty <= 0 ? 1 : balance.availableQty);
+
+      const unitCostCents = balance.product.costCents ?? 0;
+
+      const purchaseOrder = await this.purchaseOrderStore.createPurchaseOrder({
+        notes: `Created from low-stock inventory for ${balance.product.name}.`,
+      });
+
+      if (!purchaseOrder) return;
+
+      const updated = await this.purchaseOrderStore.addItem(purchaseOrder.id, {
+        productId: balance.productId,
+        productSupplierId: null,
+        quantityOrdered: Math.max(1, Math.trunc(quantityOrdered)),
+        unitCostCents,
+        notes: balance.location?.name
+          ? `Inventory location: ${balance.location.name}`
+          : null,
+      });
+
+      if (!updated) return;
+
+      await this.router.navigate(['/purchase-orders', purchaseOrder.id]);
+    } finally {
+      this.creatingPoForProductId.set(null);
+    }
   }
 }
