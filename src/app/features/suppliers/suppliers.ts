@@ -27,7 +27,7 @@ type SupplierView = 'active' | 'inactive' | 'archived' | 'all';
 @Component({
   selector: 'app-suppliers',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, TitleCasePipe, LucideAngularModule],
+  imports: [CommonModule, FormsModule, DatePipe, LucideAngularModule],
   templateUrl: './suppliers.html',
 })
 export class Suppliers implements OnInit {
