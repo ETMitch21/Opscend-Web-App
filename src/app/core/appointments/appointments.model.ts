@@ -8,7 +8,9 @@ export interface Appointment {
   id: string;
   shopId: string;
   repairId: string;
+  candidateType: 'internal' | 'contractor';
   assignedUserId: string | null;
+  contractorId: string | null;
   startAt: string;
   endAt: string;
   status: AppointmentStatus;
@@ -43,9 +45,12 @@ export interface AppointmentListParams {
 }
 
 export interface UpsertAppointmentDto {
-  assignedUserId?: string | null;
   startAt: string;
   endAt: string;
+
+  candidateType?: 'internal' | 'contractor' | null;
+  assignedUserId?: string | null;
+  contractorId?: string | null;
 }
 
 export interface AppointmentResponse {

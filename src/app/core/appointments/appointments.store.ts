@@ -90,30 +90,38 @@ export class AppointmentsStore {
     }
   }
 
-  async scheduleAppointment(
-    repairId: string,
-    startAt: string,
-    endAt: string,
-    assignedUserId?: string | null
-  ): Promise<Appointment | null> {
-    return this.upsertAppointment(repairId, {
-      startAt,
-      endAt,
-      assignedUserId,
+  async scheduleAppointment(input: {
+    repairId: string;
+    startAt: string;
+    endAt: string;
+    candidateType?: 'internal' | 'contractor' | null;
+    assignedUserId?: string | null;
+    contractorId?: string | null;
+  }): Promise<Appointment | null> {
+    return this.upsertAppointment(input.repairId, {
+      startAt: input.startAt,
+      endAt: input.endAt,
+      candidateType: input.candidateType ?? undefined,
+      assignedUserId:
+        input.candidateType === 'internal'
+          ? input.assignedUserId ?? undefined
+          : undefined,
+      contractorId:
+        input.candidateType === 'contractor'
+          ? input.contractorId ?? undefined
+          : undefined,
     });
   }
 
-  async rescheduleAppointment(
-    repairId: string,
-    startAt: string,
-    endAt: string,
-    assignedUserId?: string | null
-  ): Promise<Appointment | null> {
-    return this.upsertAppointment(repairId, {
-      startAt,
-      endAt,
-      assignedUserId,
-    });
+  async rescheduleAppointment(input: {
+    repairId: string;
+    startAt: string;
+    endAt: string;
+    candidateType?: 'internal' | 'contractor' | null;
+    assignedUserId?: string | null;
+    contractorId?: string | null;
+  }): Promise<Appointment | null> {
+    return this.scheduleAppointment(input);
   }
 
   async cancelAppointment(repairId: string): Promise<boolean> {

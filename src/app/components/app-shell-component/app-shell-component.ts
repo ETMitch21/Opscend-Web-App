@@ -22,6 +22,7 @@ import {
   PackageIcon,
   ShoppingCartIcon,
   ChevronDownIcon,
+  HandshakeIcon,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -92,6 +93,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly packageIcon = PackageIcon;
   readonly shoppingCartIcon = ShoppingCartIcon;
   readonly chevronDownIcon = ChevronDownIcon;
+  readonly handshakeIcon = HandshakeIcon;
 
   private readonly notificationPollMs = 15_000;
   private routerEventsSubscription: Subscription | null = null;
@@ -142,6 +144,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
         }
       ],
     },
+    { label: 'Contractors', route: '/contractors', icon: this.handshakeIcon },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
     { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
   ];

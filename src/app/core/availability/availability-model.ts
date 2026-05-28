@@ -74,6 +74,11 @@ export interface CreateAvailabilityOverrideDto {
 export interface AvailabilitySlot {
   startAt: string;
   endAt: string;
+  candidateType: "internal" | "contractor";
+  assignedUserId: string | null;
+  contractorId: string | null;
+  assignedTo?: string | null;
+  contractorName?: string | null;
 }
 
 export interface AvailabilitySlotsResponse {

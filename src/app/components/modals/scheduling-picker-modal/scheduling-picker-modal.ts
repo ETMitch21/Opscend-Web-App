@@ -17,6 +17,7 @@ import {
   SchedulingRequest,
   SchedulingSelection,
   CalendarDay,
+  SchedulingSlot
 } from '../../../core/scheduling/scheduling.types';
 import { UsersStore } from '../../../core/users/users-store';
 import { AvailabilityService } from '../../../core/availability/availability-service';
@@ -52,9 +53,11 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   readonly visibleMonth = signal(this.startOfMonth(new Date()));
   readonly lastRequestKey = signal<string | null>(null);
 
-  readonly unionSlots = signal<AvailabilitySlot[]>([]);
+  readonly unionSlots = signal<SchedulingSlot[]>([]);
   readonly slotUserMap = signal<Record<string, string[]>>({});
   readonly selectedAssignedUserId = signal<string | null>(null);
+  readonly selectedCandidateType = signal<"internal" | "contractor" | null>(null);
+  readonly selectedContractorId = signal<string | null>(null);
   readonly manuallySelectedAssignedUserId = signal<string | null>(null);
 
   readonly slots = this.availabilityStore.slots;
@@ -187,7 +190,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   });
 
   readonly slotsByDate = computed(() => {
-    const grouped: Record<string, { startAt: string; endAt: string }[]> = {};
+    const grouped: Record<string, SchedulingSlot[]> = {};
 
     for (const slot of this.displaySlots()) {
       const dateKey = this.toDateKey(slot.startAt);
@@ -448,6 +451,13 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.selectedCandidateType.set(slot?.candidateType ?? null);
+    this.selectedContractorId.set(slot?.contractorId ?? null);
+
+    if (slot?.assignedUserId) {
+      this.selectedAssignedUserId.set(slot.assignedUserId);
+    }
+
     const availableIds = this.availableUserIdsForSlot(slot.startAt, slot.endAt);
     const currentSelectedUserId = this.selectedAssignedUserId();
 
@@ -478,32 +488,69 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   }
 
   confirm(): void {
-    const slot = this.selectedSlot();
-    if (!slot) return;
+  const slot = this.selectedSlot();
+  if (!slot) return;
 
-    const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
-    const chosenAssignedUserId = requestAssignedUserId ?? this.selectedAssignedUserId() ?? null;
-    const chosenAssignedUserName =
-      chosenAssignedUserId
-        ? this.usersStore.getById(chosenAssignedUserId)?.name ?? null
-        : null;
+  const candidateType =
+    slot.candidateType ??
+    this.selectedCandidateType() ??
+    (slot.contractorId || this.selectedContractorId()
+      ? 'contractor'
+      : 'internal');
 
-    const selection: SchedulingSelection = {
-      startAt: slot.startAt,
-      endAt: slot.endAt,
-      assignedUserId: chosenAssignedUserId,
-      assignedTo: chosenAssignedUserName,
-    };
+  const contractorId =
+    candidateType === 'contractor'
+      ? slot.contractorId ?? this.selectedContractorId() ?? null
+      : null;
 
-    if (this.displayMode() === 'inline') {
-      this.confirmedSelection.set(selection);
-      this.inlineCollapsed.set(true);
-      this.selectionChange.emit(selection);
-      return;
-    }
+  const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
 
-    this.schedulingModalService.confirm(selection);
+  const assignedUserId =
+    candidateType === 'internal'
+      ? requestAssignedUserId ??
+        slot.assignedUserId ??
+        this.selectedAssignedUserId() ??
+        null
+      : null;
+
+  const internalUserName =
+    assignedUserId
+      ? this.usersStore.getById(assignedUserId)?.name ?? null
+      : null;
+
+  const contractorName =
+    candidateType === 'contractor'
+      ? slot.contractorName ??
+        slot.assignedTo ??
+        'Selected contractor'
+      : null;
+
+  const selection: SchedulingSelection = {
+    startAt: slot.startAt,
+    endAt: slot.endAt,
+
+    candidateType,
+
+    assignedUserId,
+    contractorId,
+
+    assignedTo:
+      candidateType === 'contractor'
+        ? contractorName
+        : internalUserName,
+
+    contractorName,
+  };
+
+  if (this.displayMode() === 'inline') {
+    this.confirmedSelection.set(selection);
+    this.inlineCollapsed.set(true);
+    this.selectionChange.emit(selection);
+    return;
   }
+
+  this.schedulingModalService.confirm(selection);
+}
 
   expandInlineEditor(): void {
     if (this.displayMode() !== 'inline') return;
@@ -630,95 +677,61 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   }
 
   private async loadUnionSlots(request: SchedulingRequest): Promise<void> {
-    if (!this.usersStore.loaded()) {
-      await this.usersStore.load();
-    }
+    try {
+      const response = await firstValueFrom(
+        this.availabilityService.listSlots({
+          from: request.from,
+          to: request.to,
+          durationMinutes: request.durationMinutes,
+          repairId: request.repairId,
+          slotMinutes: request.slotMinutes,
+          serviceMode: request.serviceMode,
+          serviceAddressId: request.serviceAddressId,
+          serviceAddress: request.serviceAddress,
+        })
+      );
 
-    let schedulableUsers = this.usersStore
-      .assignableUsers()
-      .filter((user) => user.status === 'active')
-      .slice(0, 8);
+      const slots = response?.data ?? [];
 
-    if (request.serviceMode === 'on_site' && !request.assignedUserId) {
-      const preferredUsers = schedulableUsers.filter((user) => user.role === 'Tech');
-      if (preferredUsers.length) {
-        schedulableUsers = preferredUsers.slice(0, 4);
-      }
-    }
-
-    if (!schedulableUsers.length) {
-      this.unionSlots.set([]);
-      this.slotUserMap.set({});
-      return;
-    }
-
-    const results = await Promise.all(
-      schedulableUsers.map(async (user) => {
-        try {
-          const response = await firstValueFrom(
-            this.availabilityService.listSlots({
-              from: request.from,
-              to: request.to,
-              durationMinutes: request.durationMinutes,
-              repairId: request.repairId,
-              assignedUserId: user.id,
-              slotMinutes: request.slotMinutes,
-              serviceMode: request.serviceMode,
-              serviceAddressId: request.serviceAddressId,
-              serviceAddress: request.serviceAddress,
-            })
-          );
-
-          return {
-            userId: user.id,
-            slots: response?.data ?? [],
-          };
-        } catch (error) {
-          console.error('Failed to load slots for user.', user.id, error);
-          return {
-            userId: user.id,
-            slots: [],
-          };
-        }
-      })
-    );
-
-    const merged = new Map<
-      string,
-      { startAt: string; endAt: string; userIds: Set<string> }
-    >();
-
-    for (const result of results) {
-      for (const slot of result.slots) {
-        const key = `${slot.startAt}__${slot.endAt}`;
-
-        if (!merged.has(key)) {
-          merged.set(key, {
+      this.unionSlots.set(
+        [...slots]
+          .map((slot: any): SchedulingSlot => ({
             startAt: slot.startAt,
             endAt: slot.endAt,
-            userIds: new Set<string>(),
-          });
+            candidateType: slot.candidateType,
+            assignedUserId: slot.assignedUserId ?? null,
+            contractorId: slot.contractorId ?? null,
+
+            assignedTo: slot.assignedTo ?? slot.providerName ?? slot.contractorName ?? null,
+            contractorName: slot.contractorName ?? slot.providerName ?? slot.assignedTo ?? null,
+          }))
+          .sort(
+            (a, b) =>
+              new Date(a.startAt).getTime() -
+              new Date(b.startAt).getTime()
+          )
+      );
+
+      const slotUserMap: Record<string, string[]> = {};
+
+      for (const slot of slots) {
+        const key = `${slot.startAt}__${slot.endAt}`;
+
+        if (!slotUserMap[key]) {
+          slotUserMap[key] = [];
         }
 
-        merged.get(key)!.userIds.add(result.userId);
+        if (slot.assignedUserId) {
+          slotUserMap[key].push(slot.assignedUserId);
+        }
       }
+
+      this.slotUserMap.set(slotUserMap);
+    } catch (error) {
+      console.error("Failed to load unified scheduling slots.", error);
+      this.unionSlots.set([]);
+      this.slotUserMap.set({});
     }
-
-    const unionSlots = Array.from(merged.values())
-      .map((item) => ({
-        startAt: item.startAt,
-        endAt: item.endAt,
-      }))
-      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
-
-    const slotUserMap: Record<string, string[]> = {};
-
-    for (const [key, value] of merged.entries()) {
-      slotUserMap[key] = Array.from(value.userIds);
-    }
-
-    this.unionSlots.set(unionSlots);
-    this.slotUserMap.set(slotUserMap);
   }
 
   selectedAssignedUserName(): string | null {
@@ -789,4 +802,26 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   private clearManualAssignmentSelection(): void {
     this.manuallySelectedAssignedUserId.set(null);
   }
+
+  selectedProviderName(): string | null {
+  const slot = this.selectedSlot();
+  if (!slot) return null;
+
+  const candidateType =
+    slot.candidateType ??
+    this.selectedCandidateType() ??
+    (slot.contractorId || this.selectedContractorId()
+      ? 'contractor'
+      : 'internal');
+
+  if (candidateType === 'contractor') {
+    return (
+      slot.contractorName ??
+      slot.assignedTo ??
+      'Selected contractor'
+    );
+  }
+
+  return this.selectedAssignedUserName();
+}
 }

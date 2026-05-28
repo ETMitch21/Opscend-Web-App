@@ -1,19 +1,44 @@
 export type RepairStatus =
   | 'intake'
   | 'scheduled'
+  | 'needs_reassignment'
+  | 'customer_verified'
   | 'diagnosing'
   | 'awaiting_approval'
   | 'awaiting_parts'
   | 'in_repair'
+  | 'documentation_pending'
   | 'qc'
   | 'ready'
   | 'picked_up'
   | 'canceled';
 
+export type RepairMessageRole =
+  | 'contractor'
+  | 'customer'
+  | 'admin'
+  | 'system';
+
+export type RepairMessageVisibility =
+  | 'customer_contractor'
+  | 'customer_shop'
+  | 'contractor_shop'
+  | 'internal';
+
 export type RepairNoteVisibility = 'internal' | 'customer';
 export type RepairEventType = 'status_change' | 'system' | string;
 export type RepairUnlockType = 'none' | 'pin' | 'pattern';
 export type RepairServiceMode = 'in_shop' | 'on_site';
+
+export type RepairDispatchType = 'internal' | 'contractor' | 'unassigned';
+
+export interface RepairContractorSummary {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  active?: boolean;
+}
 
 export interface RepairEvent {
   id: string;
@@ -48,8 +73,12 @@ export interface RepairAppointment {
   startAt: string;
   endAt?: string;
   endsAt?: string;
+
   technicianUserId?: string | null;
   assignedUserId?: string | null;
+  contractorId?: string | null;
+  candidateType?: 'internal' | 'contractor' | null;
+
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -86,6 +115,11 @@ export interface Repair {
   accessories: string[];
   assignedTo: string | null;
 
+  serviceId: string | null;
+  dispatchType: RepairDispatchType;
+  contractorId?: string | null;
+  contractor?: RepairContractorSummary | null;
+
   serviceMode: RepairServiceMode;
   serviceAddressId: string | null;
   serviceAddressLabel: string | null;
@@ -120,6 +154,7 @@ export interface RepairListParams {
   cursor?: string;
   status?: RepairStatus;
   serviceMode?: RepairServiceMode;
+  dispatchType?: RepairDispatchType;
   customerId?: string;
   customerDeviceId?: string;
   orderId?: string;
@@ -141,6 +176,10 @@ export interface CreateRepairDto {
 
   accessories?: string[];
   assignedTo?: string | null;
+
+  serviceId?: string | null;
+  dispatchType?: RepairDispatchType;
+  contractorId?: string | null;
 
   serviceMode?: RepairServiceMode;
   serviceAddressId?: string;
@@ -164,6 +203,10 @@ export interface UpdateRepairDto {
   accessories?: string[];
   assignedTo?: string | null;
   orderId?: string | null;
+
+  serviceId?: string | null;
+  dispatchType?: RepairDispatchType;
+  contractorId?: string | null;
 
   serviceMode?: RepairServiceMode;
   serviceAddressId?: string | null;
@@ -307,4 +350,53 @@ export interface AttachmentListResponse {
 export interface AttachmentDownloadResponse {
   downloadUrl: string;
   expiresInSeconds: number;
+}
+
+export interface RepairMessage {
+  id: string;
+
+  shopId: string;
+  repairId: string;
+
+  senderId: string | null;
+
+  role: RepairMessageRole;
+  visibility: RepairMessageVisibility;
+
+  message: string;
+
+  readByCustomerAt: string | null;
+  readByContractorAt: string | null;
+  readByShopAt: string | null;
+
+  hiddenAt: string | null;
+  hiddenByUserId: string | null;
+  hiddenReason: string | null;
+
+  createdAt: string;
+}
+
+export interface RepairMessagesListResponse {
+  messages: RepairMessage[];
+}
+
+export interface CreateRepairMessageBody {
+  message: string;
+  visibility?: RepairMessageVisibility;
+}
+
+export interface CreateRepairMessageResponse {
+  message: RepairMessage;
+}
+
+export interface RepairMessageUnreadCountResponse {
+  unreadCount: number;
+}
+
+export interface MarkRepairMessagesReadBody {
+  visibility?: RepairMessageVisibility;
+}
+
+export interface MarkRepairMessagesReadResponse {
+  updatedCount: number;
 }

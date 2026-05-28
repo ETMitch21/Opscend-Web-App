@@ -1393,12 +1393,20 @@ export class NewRepair implements OnInit {
           'Please confirm a serviceable on-site address before creating this repair.'
         );
       }
+
       return;
     }
 
     const schedulingSelection = this.selectedSchedulingSelection
-  ? { ...this.selectedSchedulingSelection }
-  : null;
+      ? { ...this.selectedSchedulingSelection }
+      : null;
+
+    const dispatchType =
+      schedulingSelection?.candidateType === 'contractor'
+        ? 'contractor'
+        : schedulingSelection?.candidateType === 'internal'
+          ? 'internal'
+          : 'unassigned';
 
     try {
       const customerId = await this.ensureCustomer();
@@ -1424,9 +1432,13 @@ export class NewRepair implements OnInit {
         customerId,
         customerDeviceId: deviceId,
         problemSummary: this.newRepairForm.controls.problemSummary.value.trim(),
+
         assignedTo: this.bookingEnabled()
-  ? schedulingSelection?.assignedTo ?? undefined
-  : undefined,
+          ? schedulingSelection?.assignedTo ?? undefined
+          : undefined,
+
+        dispatchType,
+
         serviceMode,
         serviceAddressId:
           serviceMode === 'on_site' ? serviceAddressId ?? undefined : undefined,
@@ -1482,22 +1494,31 @@ export class NewRepair implements OnInit {
       }
 
       if (this.bookingEnabled() && schedulingSelection) {
-  const scheduled = await this.appointmentsStore.scheduleAppointment(
-    repair.id,
-    schedulingSelection.startAt,
-    schedulingSelection.endAt,
-    schedulingSelection.assignedUserId ?? undefined
-  );
+        const scheduled = await this.appointmentsStore.scheduleAppointment({
+          repairId: repair.id,
+          startAt: schedulingSelection.startAt,
+          endAt: schedulingSelection.endAt,
+          candidateType: schedulingSelection.candidateType,
+          assignedUserId:
+            schedulingSelection.candidateType === 'internal'
+              ? schedulingSelection.assignedUserId ?? undefined
+              : undefined,
+          contractorId:
+            schedulingSelection.candidateType === 'contractor'
+              ? schedulingSelection.contractorId ?? undefined
+              : undefined,
+        });
 
-  if (!scheduled) {
-    console.error('Repair created, but appointment scheduling failed.');
-  }
-}
+        if (!scheduled) {
+          console.error('Repair created, but appointment scheduling failed.');
+        }
+      }
 
       this.toastService.success(
         'Repair Created Successfully',
         'This repair was created successfully.'
       );
+
       this.router.navigate(['/repairs']);
     } catch (error) {
       console.error('Failed to create repair flow.', error);

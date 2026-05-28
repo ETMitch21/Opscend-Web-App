@@ -44,7 +44,9 @@ export class AppointmentsService {
   ): Observable<AppointmentResponse> {
     const body = {
       ...payload,
+      candidateType: payload.candidateType ?? undefined,
       assignedUserId: payload.assignedUserId ?? undefined,
+      contractorId: payload.contractorId ?? undefined,
     };
 
     return this.http.put<AppointmentResponse>(

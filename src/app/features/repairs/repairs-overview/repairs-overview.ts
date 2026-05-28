@@ -9,6 +9,7 @@ import {
 import { CommonModule, DatePipe } from '@angular/common';
 import { RepairsService } from '../../../core/repairs/repairs-service';
 import {
+  RepairDispatchType,
   type Repair,
   type RepairListParams,
   type RepairStatus,
@@ -31,7 +32,7 @@ type RepairSortKey =
   | 'appointment'
   | 'customer'
   | 'device'
-  | 'technician'
+  | 'provider'
   | 'serviceMode';
 
 type SortDirection = 'asc' | 'desc';
@@ -61,6 +62,12 @@ export class RepairsOverview {
   readonly searchTerm = signal('');
   readonly selectedStatus = signal<RepairStatus | null>(null);
   readonly serviceMode = signal<'in_shop' | 'on_site' | null>(null);
+  readonly selectedDispatchType = signal<RepairDispatchType | null>(null);
+  readonly dispatchTypes: ReadonlyArray<RepairDispatchType> = [
+    'internal',
+    'contractor',
+    'unassigned'
+  ];
 
   readonly customerId = signal('');
   readonly customerDeviceId = signal('');
@@ -73,10 +80,13 @@ export class RepairsOverview {
   readonly statuses: ReadonlyArray<RepairStatus> = [
     'intake',
     'scheduled',
+    'needs_reassignment',
+    'customer_verified',
     'diagnosing',
     'awaiting_approval',
     'awaiting_parts',
     'in_repair',
+    'documentation_pending',
     'qc',
     'ready',
     'picked_up',
@@ -110,6 +120,7 @@ export class RepairsOverview {
     let list = [...this.repairs()];
     const activeView = this.activeView();
     const search = this.searchTerm().trim().toLowerCase();
+    const dispatchType = this.selectedDispatchType();
     const now = Date.now();
 
     switch (activeView) {
@@ -131,6 +142,10 @@ export class RepairsOverview {
       case 'all':
       default:
         break;
+    }
+
+    if (dispatchType) {
+      list = list.filter((repair) => repair.dispatchType === dispatchType);
     }
 
     if (search) {
@@ -238,6 +253,10 @@ export class RepairsOverview {
     } else {
       this.activeView.set('all');
     }
+  }
+
+  setDispatchType(dispatchType: RepairDispatchType | null): void {
+    this.selectedDispatchType.set(dispatchType);
   }
 
   setSearchTerm(value: string): void {
@@ -372,6 +391,10 @@ export class RepairsOverview {
       repair.serviceMode,
       repair.orderId ?? '',
       repair.customerId,
+      repair.dispatchType,
+      repair.contractor?.name ?? '',
+      repair.contractor?.email ?? '',
+      repair.contractor?.phone ?? '',
       repair.customerDeviceId,
       repair.assignedTo ?? '',
       repair.intakeNotes ?? '',
@@ -385,6 +408,7 @@ export class RepairsOverview {
       repair.appointment?.notes ?? '',
       repair.customer?.name ?? '',
       repair.customer?.phone ?? '',
+      repair.customer?.email ?? '',
     ]
       .join(' ')
       .toLowerCase()
@@ -420,7 +444,7 @@ export class RepairsOverview {
           this.getDeviceSortValue(b)
         );
 
-      case 'technician':
+      case 'provider':
         return this.compareStrings(
           a.assignedTo || '',
           b.assignedTo || ''
@@ -475,5 +499,18 @@ export class RepairsOverview {
     if (Number.isNaN(startAt)) return false;
 
     return startAt < now;
+  }
+
+  prettyDispatchType(dispatchType: string | null | undefined): string {
+    switch (dispatchType) {
+      case 'internal':
+        return 'Internal';
+      case 'contractor':
+        return 'Contractor';
+      case 'unassigned':
+        return 'Unassigned';
+      default:
+        return 'Unassigned';
+    }
   }
 }

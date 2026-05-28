@@ -33,6 +33,11 @@ export interface SchedulingRequest {
 export interface SchedulingSlot {
   startAt: string;
   endAt: string;
+  candidateType?: "internal" | "contractor";
+  assignedUserId?: string | null;
+  contractorId?: string | null;
+  assignedTo?: string | null;
+  contractorName?: string | null;
 }
 
 export interface SchedulingSelection {
@@ -40,6 +45,9 @@ export interface SchedulingSelection {
   endAt: string;
   assignedUserId?: string | null;
   assignedTo?: string | null;
+  candidateType?: "internal" | "contractor";
+  contractorId?: string | null;
+  contractorName?: string | null;
 }
 
 export interface SchedulingContext {

@@ -1,0 +1,372 @@
+<div class="">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900">Contractors</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Create contractor accounts, manage status, and assign service capabilities.
+            </p>
+        </div>
+
+        <button type="button"
+            class="cursor-pointer inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft"
+            (click)="openCreateModal()">
+            <lucide-icon [name]="circlePlusIcon" [size]="16"></lucide-icon>
+            Add Contractor
+        </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-6">
+        <nav class="flex space-x-6 text-sm font-medium text-gray-600">
+            <button type="button" (click)="setFilter('all')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeFilter() === 'all'" [class.text-brand]="activeFilter() === 'all'"
+                [class.border-transparent]="activeFilter() !== 'all'"
+                [class.hover:text-gray-900]="activeFilter() !== 'all'">
+                All
+                <span class="ml-1 text-xs text-gray-400">{{ counts().all }}</span>
+            </button>
+
+            <button type="button" (click)="setFilter('active')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeFilter() === 'active'" [class.text-brand]="activeFilter() === 'active'"
+                [class.border-transparent]="activeFilter() !== 'active'"
+                [class.hover:text-gray-900]="activeFilter() !== 'active'">
+                Active
+                <span class="ml-1 text-xs text-gray-400">{{ counts().active }}</span>
+            </button>
+
+            <button type="button" (click)="setFilter('inactive')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeFilter() === 'inactive'" [class.text-brand]="activeFilter() === 'inactive'"
+                [class.border-transparent]="activeFilter() !== 'inactive'"
+                [class.hover:text-gray-900]="activeFilter() !== 'inactive'">
+                Inactive
+                <span class="ml-1 text-xs text-gray-400">{{ counts().inactive }}</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Search -->
+    <div class="flex items-center justify-between gap-4 px-6 py-4">
+        <div class="relative w-96">
+            <input type="text" placeholder="Search contractors..."
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm outline-none transition focus:border-brand focus:ring-1 focus:ring-brand"
+                [value]="searchTerm()" (input)="setSearchTerm($any($event.target).value)" />
+        </div>
+
+        <button type="button"
+            class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+            (click)="refresh()">
+            Refresh
+        </button>
+    </div>
+</div>
+
+<div class="px-6 pb-6">
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        @if (contractorsStore.loading()) {
+        <div class="flex items-center justify-center gap-3 px-6 py-16">
+            <lucide-icon [name]="loaderIcon" [size]="18" class="animate-spin text-gray-400"></lucide-icon>
+            <span class="text-sm text-gray-500">Loading contractors...</span>
+        </div>
+        }
+
+        @else if (contractorsStore.error()) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <p class="text-sm font-medium text-red-600">{{ contractorsStore.error() }}</p>
+
+            <button type="button"
+                class="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                (click)="refresh()">
+                Try Again
+            </button>
+        </div>
+        }
+
+        @else if (filteredContractors().length === 0) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500">
+                <lucide-icon [name]="handshakeIcon" [size]="22"></lucide-icon>
+            </div>
+
+            <h3 class="mt-4 text-base font-semibold text-gray-900">No contractors found</h3>
+            <p class="mt-1 max-w-md text-sm text-gray-500">
+                Create a contractor account to assign jobs, manage availability, and give providers access to the contractor app.
+            </p>
+
+            <button type="button"
+                class="mt-5 cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft"
+                (click)="openCreateModal()">
+                Add Contractor
+            </button>
+        </div>
+        }
+
+        @else {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50/80">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Contractor
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Tier
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Services
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Status
+                        </th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    @for (contractor of filteredContractors(); track contractor.id) {
+                    <tr class="transition hover:bg-gray-50/70">
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold text-white">
+                                    {{ getContractorName(contractor).slice(0, 1).toUpperCase() }}
+                                </div>
+
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-gray-900">
+                                        {{ getContractorName(contractor) }}
+                                    </p>
+                                    <p class="mt-1 truncate text-xs text-gray-500">
+                                        {{ getContractorEmail(contractor) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 align-top">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                                [class]="tierPillClasses(contractor.tier)">
+                                {{ prettyTier(contractor.tier) }}
+                            </span>
+                        </td>
+
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-medium text-gray-900">
+                                    {{ getCapabilitySummary(contractor) }}
+                                </span>
+
+                                @if (contractor.capabilities.length) {
+                                <span class="line-clamp-1 text-xs text-gray-500">
+                                    @for (capability of contractor.capabilities; track capability.id) {
+                                    {{ capability.serviceName }}@if (!$last) {, }
+                                    }
+                                </span>
+                                }
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-4 align-top">
+                            @if (contractor.isActive) {
+                            <span
+                                class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                Active
+                            </span>
+                            } @else {
+                            <span
+                                class="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500">
+                                <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
+                                Inactive
+                            </span>
+                            }
+                        </td>
+
+                        <td class="px-6 py-4 align-top text-right">
+                            <button type="button"
+                                class="cursor-pointer rounded-lg border px-3 py-1.5 text-sm font-medium transition"
+                                [class.border-red-200]="contractor.isActive" [class.text-red-600]="contractor.isActive"
+                                [class.hover:bg-red-50]="contractor.isActive"
+                                [class.border-emerald-200]="!contractor.isActive"
+                                [class.text-emerald-700]="!contractor.isActive"
+                                [class.hover:bg-emerald-50]="!contractor.isActive"
+                                [disabled]="contractorsStore.saving()" (click)="toggleContractorStatus(contractor)">
+                                {{ contractor.isActive ? 'Deactivate' : 'Activate' }}
+                            </button>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (contractorsStore.hasMore()) {
+        <div class="flex justify-center border-t border-gray-200 px-6 py-4">
+            <button type="button"
+                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="contractorsStore.loading()" (click)="loadMore()">
+                Load More
+            </button>
+        </div>
+        }
+        }
+    </div>
+</div>
+
+@if (createModalOpen()) {
+<div class="fixed inset-0 z-[80] flex items-center justify-center px-4 py-6">
+    <button type="button" class="absolute inset-0 cursor-pointer bg-gray-900/40 backdrop-blur-sm"
+        aria-label="Close create contractor modal" (click)="closeCreateModal()">
+    </button>
+
+    <div
+        class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-gray-200 bg-white shadow-2xl">
+        <div class="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Add Contractor</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Create a contractor login and profile in one step.
+                </p>
+            </div>
+
+            <button type="button"
+                class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                (click)="closeCreateModal()">
+                <lucide-icon [name]="xIcon" [size]="18"></lucide-icon>
+            </button>
+        </div>
+
+        <form class="space-y-5 px-6 py-6" [formGroup]="createForm" (ngSubmit)="createContractor()">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label class="mb-2 block text-sm font-medium text-gray-700">
+                        Full Name
+                    </label>
+                    <input type="text" formControlName="name"
+                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                        placeholder="Alex Contractor" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">
+                        Email
+                    </label>
+                    <input type="email" formControlName="email"
+                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+                        placeholder="alex@example.com" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">
+                        Temporary Password
+                    </label>
+                    <input type="text" formControlName="password"
+                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700">
+                        Tier
+                    </label>
+
+                    <div class="relative">
+                        <select formControlName="tier"
+                            class="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 pr-9 text-sm outline-none transition focus:border-brand">
+                            @for (tier of tiers; track tier) {
+                            <option [value]="tier">{{ prettyTier(tier) }}</option>
+                            }
+                        </select>
+
+                        <lucide-icon [name]="chevronDownIcon" [size]="15"
+                            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        </lucide-icon>
+                    </div>
+                </div>
+
+                <div class="flex items-end">
+                    <label
+                        class="flex w-full cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        <span>
+                            <span class="block text-sm font-medium text-gray-800">Active</span>
+                            <span class="mt-0.5 block text-xs text-gray-500">Can receive contractor jobs</span>
+                        </span>
+
+                        <input type="checkbox" formControlName="isActive"
+                            class="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand" />
+                    </label>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">
+                            Service Capabilities
+                        </h3>
+                        <p class="mt-1 text-xs leading-5 text-gray-500">
+                            Select the services this contractor can perform.
+                        </p>
+                    </div>
+
+                    @if (loadingServices()) {
+                    <lucide-icon [name]="loaderIcon" [size]="16" class="animate-spin text-gray-400"></lucide-icon>
+                    }
+                </div>
+
+                <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                    @for (service of services(); track service.id) {
+                    <button type="button"
+                        class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-white px-3 py-3 text-left transition"
+                        [class.border-brand]="isServiceSelected(service.id)"
+                        [class.bg-brand/5]="isServiceSelected(service.id)"
+                        [class.border-gray-200]="!isServiceSelected(service.id)" (click)="toggleService(service.id)">
+                        <span class="min-w-0 truncate text-sm font-medium text-gray-800">
+                            {{ service.name }}
+                        </span>
+
+                        @if (isServiceSelected(service.id)) {
+                        <span
+                            class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand text-white">
+                            <lucide-icon [name]="checkIcon" [size]="13"></lucide-icon>
+                        </span>
+                        } @else {
+                        <span class="h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white"></span>
+                        }
+                    </button>
+                    }
+
+                    @if (!loadingServices() && services().length === 0) {
+                    <div
+                        class="sm:col-span-2 rounded-xl border border-dashed border-gray-200 bg-white p-4 text-sm text-gray-500">
+                        No services found. You can create the contractor now and add service capabilities later.
+                    </div>
+                    }
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                <p class="text-sm font-medium text-amber-900">Temporary password</p>
+                <p class="mt-1 text-xs leading-5 text-amber-700">
+                    Share this password securely with the contractor. They can use it to sign into the contractor app.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
+                <button type="button"
+                    class="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+                    (click)="closeCreateModal()">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                    class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
+                    [disabled]="createForm.invalid || contractorsStore.saving()">
+                    {{ contractorsStore.saving() ? 'Creating...' : 'Create Contractor' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+}

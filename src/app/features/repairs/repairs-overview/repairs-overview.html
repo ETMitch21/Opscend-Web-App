@@ -137,6 +137,25 @@
                 </lucide-icon>
             </div>
 
+            <!-- Dispatch dropdown -->
+            <div class="relative">
+                <select
+                    class="appearance-none rounded-full bg-gray-100 px-3 py-1.5 pr-8 text-sm text-gray-700 hover:bg-gray-200"
+                    (change)="setDispatchType($any($event.target).value || null)">
+                    <option value="">Any provider</option>
+
+                    @for (dispatchType of dispatchTypes; track dispatchType) {
+                    <option [value]="dispatchType">
+                        {{ prettyDispatchType(dispatchType) }}
+                    </option>
+                    }
+                </select>
+
+                <lucide-icon [size]="14" [name]="chevronDownIcon"
+                    class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                </lucide-icon>
+            </div>
+
         </div>
 
     </div>
@@ -250,12 +269,12 @@
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                             <button type="button"
                                 class="group inline-flex items-center gap-1 transition hover:text-gray-900"
-                                (click)="setSort('technician')">
-                                <span>Technician</span>
+                                (click)="setSort('provider')">
+                                <span>Provider</span>
                                 <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition"
-                                    [class.text-brand]="isSortedBy('technician')"
-                                    [class.text-gray-300]="!isSortedBy('technician')"
-                                    [style.transform]="getSortIconRotation('technician')">
+                                    [class.text-brand]="isSortedBy('provider')"
+                                    [class.text-gray-300]="!isSortedBy('provider')"
+                                    [style.transform]="getSortIconRotation('provider')">
                                 </lucide-icon>
                             </button>
                         </th>
@@ -315,19 +334,37 @@
                         <!-- Status -->
                         <td class="px-6 py-4 align-top">
                             <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
-                                [class.bg-amber-50]="repair.status === 'intake' || repair.status === 'awaiting_parts'"
-                                [class.text-amber-700]="repair.status === 'intake' || repair.status === 'awaiting_parts'"
-                                [class.bg-blue-50]="repair.status === 'diagnosing'"
-                                [class.text-blue-700]="repair.status === 'diagnosing'"
-                                [class.text-blue-700]="repair.status === 'scheduled'"
-                                [class.bg-blue-50]="repair.status === 'scheduled'"
+                                [class.bg-amber-50]="
+            repair.status === 'intake' ||
+            repair.status === 'awaiting_parts' ||
+            repair.status === 'documentation_pending'
+        " [class.text-amber-700]="
+            repair.status === 'intake' ||
+            repair.status === 'awaiting_parts' ||
+            repair.status === 'documentation_pending'
+        " [class.bg-blue-50]="
+            repair.status === 'scheduled' ||
+            repair.status === 'diagnosing'
+        " [class.text-blue-700]="
+            repair.status === 'scheduled' ||
+            repair.status === 'diagnosing'
+        " [class.bg-orange-50]="repair.status === 'needs_reassignment'"
+                                [class.text-orange-700]="repair.status === 'needs_reassignment'"
+                                [class.bg-teal-50]="repair.status === 'customer_verified'"
+                                [class.text-teal-700]="repair.status === 'customer_verified'"
+                                [class.bg-indigo-50]="repair.status === 'awaiting_approval'"
+                                [class.text-indigo-700]="repair.status === 'awaiting_approval'"
+                                [class.bg-cyan-50]="repair.status === 'in_repair'"
+                                [class.text-cyan-700]="repair.status === 'in_repair'"
+                                [class.bg-violet-50]="repair.status === 'qc'"
+                                [class.text-violet-700]="repair.status === 'qc'"
                                 [class.bg-purple-50]="repair.status === 'ready'"
                                 [class.text-purple-700]="repair.status === 'ready'"
                                 [class.bg-emerald-50]="repair.status === 'picked_up'"
                                 [class.text-emerald-700]="repair.status === 'picked_up'"
                                 [class.bg-rose-50]="repair.status === 'canceled'"
                                 [class.text-rose-700]="repair.status === 'canceled'">
-                                {{ repair.status.replaceAll('_', ' ') | titlecase}}
+                                {{ repair.status.replaceAll('_', ' ') | titlecase }}
                             </span>
                         </td>
 
@@ -406,12 +443,31 @@
                             }
                         </td>
 
-                        <!-- Assigned -->
+                        <!-- Provider -->
                         <td class="px-6 py-4 align-top">
                             @if (repair.assignedTo) {
-                            <span class="text-sm text-gray-900">{{ repair.assignedTo }}</span>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-medium text-gray-900">
+                                    {{ repair.assignedTo }}
+                                </span>
+
+                                <span class="w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold" [ngClass]="{
+                                        'bg-blue-50 text-blue-700': repair.dispatchType === 'internal',
+                                        'bg-orange-50 text-orange-700': repair.dispatchType === 'contractor',
+                                        'bg-gray-50 text-gray-500': repair.dispatchType === 'unassigned'
+                                    }">
+                                    {{ prettyDispatchType(repair.dispatchType) }}
+                                </span>
+                            </div>
                             } @else {
-                            <span class="text-sm text-gray-400">Unassigned</span>
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm text-gray-400">Unassigned</span>
+
+                                <span
+                                    class="w-fit rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                                    {{ prettyDispatchType(repair.dispatchType) }}
+                                </span>
+                            </div>
                             }
                         </td>
 

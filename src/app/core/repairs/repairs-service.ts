@@ -20,10 +20,15 @@ import {
   AttachmentListResponse,
   AttachmentDownloadResponse,
   PublicRepairTrackingResponse,
-  RepairPublicShortLinkResponse
+  RepairPublicShortLinkResponse,
+  CreateRepairMessageBody,
+  CreateRepairMessageResponse,
+  RepairMessagesListResponse,
+  RepairMessageUnreadCountResponse,
+  MarkRepairMessagesReadBody,
+  MarkRepairMessagesReadResponse,
 } from './repair.model';
 import { AppConfigService } from '../app-config/app-config.service';
-
 
 @Injectable({
   providedIn: 'root',
@@ -100,14 +105,18 @@ export class RepairsService {
     );
   }
 
-  createPublicShortTrackingLink(id: string): Observable<RepairPublicShortLinkResponse> {
+  createPublicShortTrackingLink(
+    id: string
+  ): Observable<RepairPublicShortLinkResponse> {
     return this.http.post<RepairPublicShortLinkResponse>(
       `${this.baseUrl}/${id}/public-tracking/short-link`,
       {}
     );
   }
 
-  getPublicRepairTracking(token: string): Observable<PublicRepairTrackingResponse> {
+  getPublicRepairTracking(
+    token: string
+  ): Observable<PublicRepairTrackingResponse> {
     return this.http.get<PublicRepairTrackingResponse>(
       `${this.apiBase}/public/repairs/track/${encodeURIComponent(token)}`
     );
@@ -121,12 +130,24 @@ export class RepairsService {
     return this.updateRepair(id, { orderId });
   }
 
-  createNote(repairId: string, payload: CreateRepairNoteDto): Observable<RepairNote> {
-    return this.http.post<RepairNote>(`${this.baseUrl}/${repairId}/notes`, payload);
+  createNote(
+    repairId: string,
+    payload: CreateRepairNoteDto
+  ): Observable<RepairNote> {
+    return this.http.post<RepairNote>(
+      `${this.baseUrl}/${repairId}/notes`,
+      payload
+    );
   }
 
-  createOrderFromRepair(repairId: string, payload: CreateRepairOrderDto): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/${repairId}/create-order`, payload);
+  createOrderFromRepair(
+    repairId: string,
+    payload: CreateRepairOrderDto
+  ): Observable<Order> {
+    return this.http.post<Order>(
+      `${this.baseUrl}/${repairId}/create-order`,
+      payload
+    );
   }
 
   initAttachmentUpload(
@@ -177,20 +198,92 @@ export class RepairsService {
       sizeBytes: file.size,
     }).pipe(
       switchMap((init) =>
-        this.http.put(init.uploadUrl, file, {
-          headers: file.type ? { 'Content-Type': file.type } : undefined,
-          responseType: 'text',
-        }).pipe(
-          switchMap(() =>
-            this.completeAttachmentUpload(repairId, {
-              storageKey: init.storageKey,
-              filename: file.name,
-              mimeType: file.type || null,
-              sizeBytes: file.size,
-            })
+        this.http
+          .put(init.uploadUrl, file, {
+            headers: file.type ? { 'Content-Type': file.type } : undefined,
+            responseType: 'text',
+          })
+          .pipe(
+            switchMap(() =>
+              this.completeAttachmentUpload(repairId, {
+                storageKey: init.storageKey,
+                filename: file.name,
+                mimeType: file.type || null,
+                sizeBytes: file.size,
+              })
+            )
           )
-        )
       )
+    );
+  }
+
+  listRepairMessages(repairId: string): Observable<RepairMessagesListResponse> {
+    return this.http.get<RepairMessagesListResponse>(
+      `${this.baseUrl}/${repairId}/messages`
+    );
+  }
+
+  createRepairMessage(
+    repairId: string,
+    body: CreateRepairMessageBody
+  ): Observable<CreateRepairMessageResponse> {
+    return this.http.post<CreateRepairMessageResponse>(
+      `${this.baseUrl}/${repairId}/messages`,
+      body
+    );
+  }
+
+  listPublicRepairMessages(
+    token: string
+  ): Observable<RepairMessagesListResponse> {
+    return this.http.get<RepairMessagesListResponse>(
+      `${this.apiBase}/public/repairs/${encodeURIComponent(token)}/messages`
+    );
+  }
+
+  createPublicRepairMessage(
+    token: string,
+    body: Pick<CreateRepairMessageBody, 'message'>
+  ): Observable<CreateRepairMessageResponse> {
+    return this.http.post<CreateRepairMessageResponse>(
+      `${this.apiBase}/public/repairs/${encodeURIComponent(token)}/messages`,
+      body
+    );
+  }
+
+  getRepairMessageUnreadCount(
+    repairId: string
+  ): Observable<RepairMessageUnreadCountResponse> {
+    return this.http.get<RepairMessageUnreadCountResponse>(
+      `${this.baseUrl}/${repairId}/messages/unread-count`
+    );
+  }
+
+  markRepairMessagesRead(
+    repairId: string,
+    body: MarkRepairMessagesReadBody = {}
+  ): Observable<MarkRepairMessagesReadResponse> {
+    return this.http.post<MarkRepairMessagesReadResponse>(
+      `${this.baseUrl}/${repairId}/messages/read`,
+      body
+    );
+  }
+
+  getPublicRepairMessageUnreadCount(
+    token: string
+  ): Observable<RepairMessageUnreadCountResponse> {
+    return this.http.get<RepairMessageUnreadCountResponse>(
+      `${this.apiBase}/public/repairs/${encodeURIComponent(token)}/messages/unread-count`
+    );
+  }
+
+  markPublicRepairMessagesRead(
+    token: string,
+    body: MarkRepairMessagesReadBody = {}
+  ): Observable<MarkRepairMessagesReadResponse> {
+    return this.http.post<MarkRepairMessagesReadResponse>(
+      `${this.apiBase}/public/repairs/${encodeURIComponent(token)}/messages/read`,
+      body
     );
   }
 }
