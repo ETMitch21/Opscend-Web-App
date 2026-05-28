@@ -49,12 +49,8 @@
             <span class="rounded-full border border-gray-200 bg-white px-3 py-1 font-medium text-gray-700">
                 {{ repairValue.id }}
             </span>
-            <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="{
-              'bg-blue-50 text-blue-700': repairValue.status === 'intake',
-              'bg-amber-50 text-amber-700': repairValue.status === 'diagnosing' || repairValue.status === 'awaiting_parts' || repairValue.status === 'scheduled',
-              'bg-emerald-50 text-emerald-700': repairValue.status === 'ready' || repairValue.status === 'picked_up',
-              'bg-rose-50 text-rose-700': repairValue.status === 'canceled'
-            }">
+            <span class="rounded-full px-3 py-1 text-xs font-semibold"
+                [ngClass]="statusPillClasses(repairValue.status)">
                 {{ prettyStatus(repairValue.status) }}
             </span>
             @if (repairValue.orderId) {
@@ -94,7 +90,7 @@
                             <div>
                                 <div class="mb-3 flex items-center justify-between">
                                     <label class="block text-sm font-medium text-gray-700">
-                                        Assigned Tech
+                                        Assigned Provider
                                     </label>
 
                                     @if (!assignPanelOpen()) {
@@ -163,7 +159,7 @@
                                     <div class="mb-3">
                                         <input type="text" [value]="assignSearch()"
                                             (input)="assignSearch.set($any($event.target).value)"
-                                            placeholder="Search staff by name, email, or role"
+                                            placeholder="Search providers by name, email, or role"
                                             class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/10" />
                                     </div>
 
@@ -182,7 +178,7 @@
                                                     Unassign
                                                 </div>
                                                 <div class="text-xs text-gray-500">
-                                                    Remove the current assigned technician
+                                                    Remove the current Assigned provider
                                                 </div>
                                             </div>
                                         </button>
@@ -683,6 +679,85 @@
                 }
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon>
+                        </div>
+
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                                Provider
+                            </span>
+                            <div class="text-sm font-semibold text-gray-900">
+                                @if (repairValue.assignedTo) {
+                                {{ repairValue.assignedTo }}
+                                } @else {
+                                Unassigned
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        [ngClass]="dispatchPillClasses(repairValue.dispatchType)">
+                        {{ prettyDispatchType(repairValue.dispatchType) }}
+                    </span>
+                </div>
+
+                <div class="my-4 h-px bg-gray-100"></div>
+
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Provider Type</span>
+                        <span class="font-medium text-gray-900">
+                            {{ prettyDispatchType(repairValue.dispatchType) }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Assigned To</span>
+                        <span class="font-medium text-gray-900">
+                            {{ repairValue.assignedTo || 'Unassigned' }}
+                        </span>
+                    </div>
+
+                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor?.email) {
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Email</span>
+                        <span class="truncate font-medium text-gray-900">
+                            {{ repairValue.contractor?.email }}
+                        </span>
+                    </div>
+                    }
+
+                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor?.phone) {
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Phone</span>
+                        <span class="font-medium text-gray-900">
+                            {{ repairValue.contractor?.phone | phone }}
+                        </span>
+                    </div>
+                    }
+
+                    @if (repairValue.dispatchType === 'contractor') {
+                    <div
+                        class="mt-3 rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 text-xs leading-5 text-orange-700">
+                        This repair is assigned to a contractor. Confirm customer verification and documentation before
+                        closing the job.
+                    </div>
+                    }
+
+                    @if (repairValue.dispatchType === 'unassigned') {
+                    <div
+                        class="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500">
+                        No provider has been assigned yet.
+                    </div>
+                    }
+                </div>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center gap-3">
                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">
                         <lucide-icon [name]="icons.ArrowRight" class="h-5 w-5"></lucide-icon>
@@ -904,12 +979,12 @@
                         <span class="text-xs font-medium text-gray-500">
                             Scheduled
                         </span>
+                        }
                         <button type="button"
                             class="cursor-pointer text-sm font-medium text-brand transition hover:text-brand-soft"
                             (click)="openRescheduleModal()">
-                            Reschedule
+                            {{ repairValue.appointment ? 'Reschedule' : 'Schedule' }}
                         </button>
-                        }
                     </div>
                 </div>
 
