@@ -126,7 +126,7 @@
 
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @for (contractor of filteredContractors(); track contractor.id) {
-                    <tr class="transition hover:bg-gray-50/70">
+                    <tr class="cursor-pointer transition hover:bg-gray-50/70" (click)="openContractorDrawer(contractor)">
                         <td class="px-6 py-4 align-top">
                             <div class="flex items-center gap-3">
                                 <div
@@ -192,7 +192,7 @@
                                 [class.border-emerald-200]="!contractor.isActive"
                                 [class.text-emerald-700]="!contractor.isActive"
                                 [class.hover:bg-emerald-50]="!contractor.isActive"
-                                [disabled]="contractorsStore.saving()" (click)="toggleContractorStatus(contractor)">
+                                [disabled]="contractorsStore.saving()" (click)="$event.stopPropagation(); toggleContractorStatus(contractor)">
                                 {{ contractor.isActive ? 'Deactivate' : 'Activate' }}
                             </button>
                         </td>
@@ -214,6 +214,214 @@
         }
     </div>
 </div>
+
+
+@if (drawerOpen() && selectedContractor(); as contractor) {
+<div class="fixed inset-0 z-[70]">
+    <button type="button" class="absolute inset-0 cursor-pointer bg-gray-900/35 backdrop-blur-[2px]"
+        aria-label="Close contractor details" (click)="closeContractorDrawer()">
+    </button>
+
+    <aside
+        class="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-gray-200 bg-white shadow-2xl">
+        <div class="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+            <div class="min-w-0">
+                <p class="text-xs font-semibold uppercase tracking-wide text-brand">Contractor Profile</p>
+                <h2 class="mt-1 truncate text-xl font-semibold text-gray-900">
+                    {{ getContractorName(contractor) }}
+                </h2>
+                <p class="mt-1 truncate text-sm text-gray-500">
+                    {{ getContractorEmail(contractor) }}
+                </p>
+            </div>
+
+            <button type="button"
+                class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                (click)="closeContractorDrawer()">
+                <lucide-icon [name]="xIcon" [size]="18"></lucide-icon>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 py-5">
+            <div class="grid gap-3 sm:grid-cols-3">
+                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Status</p>
+                    <div class="mt-3">
+                        @if (contractor.isActive) {
+                        <span
+                            class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                            Active
+                        </span>
+                        } @else {
+                        <span
+                            class="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500 ring-1 ring-gray-200">
+                            <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
+                            Inactive
+                        </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Tier</p>
+                    <div class="mt-3">
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                            [class]="tierPillClasses(contractor.tier)">
+                            {{ prettyTier(contractor.tier) }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Standing</p>
+                    <div class="mt-3">
+                        @if (contractorsStore.metricsLoading()) {
+                        <span class="inline-flex items-center gap-2 text-xs font-semibold text-gray-500">
+                            <lucide-icon [name]="loaderIcon" [size]="14" class="animate-spin"></lucide-icon>
+                            Loading
+                        </span>
+                        } @else if (contractorsStore.selectedMetrics(); as metrics) {
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                            [class]="standingPillClasses(metrics.standing)">
+                            {{ prettyStanding(metrics.standing) }}
+                        </span>
+                        } @else {
+                        <span class="text-xs font-semibold text-gray-400">Unavailable</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (contractorsStore.metricsLoading()) {
+            <div class="mt-5 flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-6 py-10">
+                <lucide-icon [name]="loaderIcon" [size]="18" class="animate-spin text-gray-400"></lucide-icon>
+                <span class="text-sm text-gray-500">Loading contractor metrics...</span>
+            </div>
+            } @else if (contractorsStore.selectedMetrics(); as metrics) {
+            <div class="mt-5 rounded-2xl border border-gray-200 bg-white p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">Performance & Accountability</h3>
+                        <p class="mt-1 text-xs leading-5 text-gray-500">
+                            These numbers are based on contractor assignment history, not general repair status.
+                        </p>
+                    </div>
+
+                    <span class="inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold"
+                        [class]="standingPillClasses(metrics.standing)">
+                        {{ prettyStanding(metrics.standing) }}
+                    </span>
+                </div>
+
+                <div class="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Accepted</p>
+                        <p class="mt-1 text-2xl font-semibold text-gray-900">{{ metrics.acceptedJobs }}</p>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Completed</p>
+                        <p class="mt-1 text-2xl font-semibold text-gray-900">{{ metrics.completedJobs }}</p>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Declined</p>
+                        <p class="mt-1 text-2xl font-semibold text-gray-900">{{ metrics.declinedJobs }}</p>
+                    </div>
+
+                    <div class="rounded-xl border border-red-100 bg-red-50 p-4">
+                        <p class="text-xs font-medium text-red-600">Canceled</p>
+                        <p class="mt-1 text-2xl font-semibold text-red-700">{{ metrics.canceledJobs }}</p>
+                    </div>
+
+                    <div class="rounded-xl border border-red-100 bg-red-50 p-4">
+                        <p class="text-xs font-medium text-red-600">Cancel Rate</p>
+                        <p class="mt-1 text-2xl font-semibold text-red-700">{{ formatRate(metrics.cancellationRate) }}</p>
+                    </div>
+
+                    <div class="rounded-xl border border-amber-100 bg-amber-50 p-4">
+                        <p class="text-xs font-medium text-amber-700">No-Shows</p>
+                        <p class="mt-1 text-2xl font-semibold text-amber-800">{{ metrics.noShows }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 rounded-2xl border border-gray-200 bg-white p-5">
+                <h3 class="text-sm font-semibold text-gray-900">Payout Summary</h3>
+
+                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Pending</p>
+                        <p class="mt-1 text-lg font-semibold text-gray-900">
+                            {{ formatMoney(metrics.pendingPayoutCents) }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Approved</p>
+                        <p class="mt-1 text-lg font-semibold text-gray-900">
+                            {{ formatMoney(metrics.approvedPayoutCents) }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Paid</p>
+                        <p class="mt-1 text-lg font-semibold text-gray-900">
+                            {{ formatMoney(metrics.paidPayoutCents) }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            } @else {
+            <div class="mt-5 rounded-2xl border border-red-100 bg-red-50 p-5">
+                <p class="text-sm font-semibold text-red-700">Metrics unavailable</p>
+                <p class="mt-1 text-sm text-red-600">
+                    Contractor metrics could not be loaded. Refresh the page or try again later.
+                </p>
+            </div>
+            }
+
+            <div class="mt-5 rounded-2xl border border-gray-200 bg-white p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">Service Capabilities</h3>
+                        <p class="mt-1 text-xs leading-5 text-gray-500">
+                            Services this contractor can be assigned to perform.
+                        </p>
+                    </div>
+
+                    <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                        {{ contractor.capabilities.length }}
+                    </span>
+                </div>
+
+                <div class="mt-4 flex flex-wrap gap-2">
+                    @if (contractor.capabilities.length) {
+                    @for (capability of contractor.capabilities; track capability.id) {
+                    <span class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
+                        {{ capability.serviceName }}
+                    </span>
+                    }
+                    } @else {
+                    <p class="text-sm text-gray-500">No service capabilities assigned yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-100 px-6 py-4">
+            <button type="button" class="w-full cursor-pointer rounded-xl border px-4 py-3 text-sm font-semibold transition"
+                [class.border-red-200]="contractor.isActive" [class.text-red-600]="contractor.isActive"
+                [class.hover:bg-red-50]="contractor.isActive" [class.border-emerald-200]="!contractor.isActive"
+                [class.text-emerald-700]="!contractor.isActive" [class.hover:bg-emerald-50]="!contractor.isActive"
+                [disabled]="contractorsStore.saving()" (click)="toggleContractorStatus(contractor)">
+                {{ contractor.isActive ? 'Deactivate Contractor' : 'Activate Contractor' }}
+            </button>
+        </div>
+    </aside>
+</div>
+}
 
 @if (createModalOpen()) {
 <div class="fixed inset-0 z-[80] flex items-center justify-center px-4 py-6">

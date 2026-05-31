@@ -93,13 +93,11 @@
                                         Assigned Provider
                                     </label>
 
-                                    @if (!assignPanelOpen()) {
                                     <button type="button"
                                         class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5 hover:text-brand-soft"
                                         (click)="openAssignModal()">
-                                        {{ assignedTech() ? 'Change' : 'Assign' }}
+                                        {{ repairValue.appointment ? 'Reschedule / Reassign' : 'Schedule / Assign' }}
                                     </button>
-                                    }
                                 </div>
 
                                 @if (assignedTech(); as tech) {
@@ -147,103 +145,17 @@
                                                 Unassigned
                                             </p>
                                             <p class="text-sm text-gray-500">
-                                                No service provider is assigned yet.
+                                                Use scheduling to choose an available provider.
                                             </p>
                                         </div>
                                     </div>
                                 </button>
                                 }
 
-                                @if (assignPanelOpen()) {
-                                <div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                                    <div class="mb-3">
-                                        <input type="text" [value]="assignSearch()"
-                                            (input)="assignSearch.set($any($event.target).value)"
-                                            placeholder="Search providers by name, email, or role"
-                                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/10" />
-                                    </div>
-
-                                    <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
-                                        @if (assignedTech()) {
-                                        <button type="button"
-                                            class="flex w-full items-center gap-3 rounded-xl border border-transparent bg-white px-3 py-3 text-left transition hover:border-red-100 hover:bg-red-50"
-                                            (click)="clearAssignedUser()">
-                                            <div
-                                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
-                                                <lucide-icon [name]="icons.UserRoundX" class="h-5 w-5"></lucide-icon>
-                                            </div>
-
-                                            <div class="min-w-0 flex-1">
-                                                <div class="text-sm font-semibold text-gray-900">
-                                                    Unassign
-                                                </div>
-                                                <div class="text-xs text-gray-500">
-                                                    Remove the current Assigned provider
-                                                </div>
-                                            </div>
-                                        </button>
-                                        }
-
-                                        @for (user of filteredAssignableUsers(); track user.id) {
-                                        <button type="button"
-                                            class="flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition"
-                                            [class.border-brand]="repairForm.controls.assignedTo.value === user.name"
-                                            [class.bg-brand/5]="repairForm.controls.assignedTo.value === user.name"
-                                            [class.border-gray-200]="repairForm.controls.assignedTo.value !== user.name"
-                                            [class.bg-white]="repairForm.controls.assignedTo.value !== user.name"
-                                            (click)="selectAssignedUser(user)">
-                                            <div
-                                                class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm font-semibold text-gray-700">
-                                                <span>{{ getInitials(user.name) }}</span>
-                                            </div>
-
-                                            <div class="min-w-0 flex-1">
-                                                <div class="truncate text-sm font-semibold text-gray-900">
-                                                    {{ user.name }}
-                                                </div>
-
-                                                <div
-                                                    class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
-                                                    @if (user.email) {
-                                                    <span class="truncate">{{ user.email }}</span>
-                                                    }
-                                                    @if (user.role) {
-                                                    <span
-                                                        class="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600 border border-gray-200">
-                                                        {{ user.role }}
-                                                    </span>
-                                                    }
-                                                </div>
-                                            </div>
-
-                                            @if (repairForm.controls.assignedTo.value === user.name) {
-                                            <div class="text-xs font-semibold text-brand">
-                                                Selected
-                                            </div>
-                                            }
-                                        </button>
-                                        }
-
-                                        @if (!filteredAssignableUsers().length) {
-                                        <div
-                                            class="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-6 text-center">
-                                            <p class="text-sm font-semibold text-gray-700">No matching users</p>
-                                            <p class="mt-1 text-sm text-gray-500">
-                                                Try another name, email, or role.
-                                            </p>
-                                        </div>
-                                        }
-                                    </div>
-
-                                    <div class="mt-3 flex justify-end">
-                                        <button type="button"
-                                            class="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-white hover:text-gray-900"
-                                            (click)="closeAssignPanel()">
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                                }
+                                <p class="mt-2 text-xs leading-5 text-gray-400">
+                                    Provider changes are handled through scheduling so availability, contractor
+                                    assignment, and appointment timing stay in sync.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -340,6 +252,111 @@
                     <div class="rounded-xl border border-dashed border-gray-200 p-5 text-sm text-gray-500">
                         No notes yet.
                     </div>
+                    }
+                </div>
+            </div>
+
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <lucide-icon [name]="icons.MessageSquareText" class="h-4 w-4 text-gray-500"></lucide-icon>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base font-semibold text-gray-900">Messages</h2>
+
+                                @if (repairMessageUnreadCount() > 0) {
+                                <span
+                                    class="rounded-full bg-brand px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
+                                    {{ repairMessageUnreadCount() }} unread
+                                </span>
+                                }
+                            </div>
+
+                            <p class="mt-1 text-sm text-gray-500">
+                                Repair-scoped communication for customers, contractors, and the shop.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="repairMessagesLoading()" (click)="loadRepairMessages()">
+                        Refresh
+                    </button>
+                </div>
+
+                <form class="mt-5 space-y-3" [formGroup]="messageForm">
+                    <div class="grid gap-3 sm:grid-cols-[220px_1fr_auto]">
+                        <select formControlName="visibility"
+                            class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand">
+                            <option value="customer_shop">Customer ↔ Shop</option>
+                            <option value="customer_contractor">Customer ↔ Contractor</option>
+                            <option value="contractor_shop">Contractor ↔ Shop</option>
+                            <option value="internal">Internal</option>
+                        </select>
+
+                        <input type="text" formControlName="message" placeholder="Send a repair message..."
+                            class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:border-brand" />
+
+                        <button type="button"
+                            class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+                            [disabled]="repairMessageSaving() || messageForm.invalid" (click)="sendRepairMessage()">
+                            <lucide-icon [name]="icons.Send" class="h-4 w-4"></lucide-icon>
+                            Send
+                        </button>
+                    </div>
+
+                    <p class="text-xs leading-5 text-gray-400">
+                        Customer and contractor conversations stay inside Opscend. Direct phone numbers and emails are
+                        not shared here by default.
+                    </p>
+                </form>
+
+                <div class="mt-6 space-y-3">
+                    @if (repairMessagesLoading()) {
+                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">
+                        Loading messages...
+                    </div>
+                    } @else if (repairMessagesError()) {
+                    <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 text-sm text-rose-700">
+                        {{ repairMessagesError() }}
+                    </div>
+                    } @else {
+                    @for (message of repairMessages(); track message.id) {
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold"
+                                    [ngClass]="messageRoleClasses(message.role)">
+                                    {{ prettyMessageRole(message.role) }}
+                                </span>
+
+                                <span class="rounded-full border px-2.5 py-1 text-xs font-semibold"
+                                    [ngClass]="messageVisibilityClasses(message.visibility)">
+                                    {{ prettyMessageVisibility(message.visibility) }}
+                                </span>
+                            </div>
+
+                            <span class="text-xs text-gray-500">{{ formatDate(message.createdAt) }}</span>
+                        </div>
+
+                        <p class="whitespace-pre-wrap text-sm leading-6 text-gray-700">{{ message.message }}</p>
+
+                        @if (messageReadReceipt(message); as receipt) {
+                        <div class="mt-3 text-right text-[11px] font-medium text-gray-400">
+                            {{ receipt }}
+                        </div>
+                        }
+                    </div>
+                    } @empty {
+                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5">
+                        <p class="text-sm font-medium text-gray-800">No messages yet.</p>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Send the first repair-scoped message from this card.
+                        </p>
+                    </div>
+                    }
                     }
                 </div>
             </div>
@@ -757,6 +774,215 @@
                     }
                 </div>
             </div>
+            @if (repairValue.dispatchType === 'contractor' || contractorSubmissionAvailable()) {
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <lucide-icon [name]="icons.Paperclip" class="h-5 w-5"></lucide-icon>
+                        </div>
+
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                                Contractor Submission
+                            </span>
+                            <div class="text-sm font-semibold text-gray-900">
+                                Work documentation
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (contractorSubmissionAvailable()) {
+                    <span
+                        class="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                        Submitted
+                    </span>
+                    } @else {
+                    <span
+                        class="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-500">
+                        Pending
+                    </span>
+                    }
+                </div>
+
+                <div class="my-4 h-px bg-gray-100"></div>
+
+                <div class="mb-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Payout</p>
+
+                            @if (contractorPayoutsLoading()) {
+                            <p class="mt-1 text-sm font-semibold text-gray-900">Loading payout...</p>
+                            } @else if (activeContractorPayout(); as payout) {
+                            <p class="mt-1 text-sm font-semibold text-gray-900">
+                                {{ formatMoney(payout.totalCents) }}
+                            </p>
+                            <p class="mt-1 text-xs leading-5 text-gray-500">
+                                Created {{ formatDate(payout.createdAt) }}
+                            </p>
+                            } @else {
+                            <p class="mt-1 text-sm font-semibold text-gray-900">No payout yet</p>
+                            <p class="mt-1 text-xs leading-5 text-gray-500">
+                                A payout will appear after the contractor submits the completed repair.
+                            </p>
+                            }
+                        </div>
+
+                        @if (activeContractorPayout(); as payout) {
+                        <span class="shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                            [ngClass]="payoutStatusClasses(payout.status)">
+                            {{ prettyPayoutStatus(payout.status) }}
+                        </span>
+                        } @else {
+                        <span
+                            class="shrink-0 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-500">
+                            Not Created
+                        </span>
+                        }
+                    </div>
+
+                    @if (activeContractorPayout(); as payout) {
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-xs leading-5 text-gray-500">
+                            Review the contractor submission, move the repair to picked up, then approve the payout.
+                        </p>
+
+                        <button type="button"
+                            class="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
+                            (click)="openContractorPayouts()">
+                            View payout
+                        </button>
+                    </div>
+                    }
+
+                    @if (contractorPayoutsError()) {
+                    <div class="mt-3 rounded-xl border border-amber-100 bg-white px-3 py-2 text-xs leading-5 text-amber-700">
+                        {{ contractorPayoutsError() }}
+                    </div>
+                    }
+                </div>
+
+                @if (contractorDocumentation(); as documentation) {
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 gap-2 text-sm">
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="text-gray-400">IMEI</span>
+                            <span class="truncate font-medium text-gray-900">
+                                {{ documentationValue(documentation.imei) }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="text-gray-400">Device Model</span>
+                            <span class="truncate font-medium text-gray-900">
+                                {{ documentationValue(documentation.deviceModel) }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="text-gray-400">Battery Health</span>
+                            <span class="font-medium text-gray-900">
+                                {{ formatBatteryHealth(documentation.batteryHealth) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div class="rounded-xl border px-3 py-2 text-xs font-semibold"
+                            [ngClass]="signatureStatusClasses(documentation.preSignatureUrl)">
+                            Pre signature: {{ signatureStatus(documentation.preSignatureUrl) }}
+                        </div>
+
+                        <div class="rounded-xl border px-3 py-2 text-xs font-semibold"
+                            [ngClass]="signatureStatusClasses(documentation.postSignatureUrl)">
+                            Post signature: {{ signatureStatus(documentation.postSignatureUrl) }}
+                        </div>
+                    </div>
+
+                    @if (documentation.notes) {
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Completion Notes</p>
+                        <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-700">
+                            {{ documentation.notes }}
+                        </p>
+                    </div>
+                    }
+                </div>
+                } @else {
+                <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
+                    <p class="text-sm font-medium text-gray-800">No contractor documentation yet.</p>
+                    <p class="mt-1 text-xs leading-5 text-gray-500">
+                        Photos, signatures, and completion notes will appear here after the contractor submits them.
+                    </p>
+                </div>
+                }
+
+                <div class="mt-5 space-y-4">
+                    <div>
+                        <div class="mb-2 flex items-center justify-between gap-3">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Pre-repair Photos</p>
+                            <span class="text-xs font-medium text-gray-400">{{ preRepairPhotos().length }}</span>
+                        </div>
+
+                        <div class="space-y-2">
+                            @for (photo of preRepairPhotos(); track photo.id) {
+                            <div
+                                class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium text-gray-900">{{ photo.filename }}</p>
+                                    <p class="mt-0.5 text-xs text-gray-500">{{ formatDate(photo.createdAt) }}</p>
+                                </div>
+
+                                <button type="button"
+                                    class="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
+                                    (click)="downloadAttachment(photo)">
+                                    View
+                                </button>
+                            </div>
+                            } @empty {
+                            <div
+                                class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
+                                No pre-repair photos submitted.
+                            </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="mb-2 flex items-center justify-between gap-3">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Post-repair Photos
+                            </p>
+                            <span class="text-xs font-medium text-gray-400">{{ postRepairPhotos().length }}</span>
+                        </div>
+
+                        <div class="space-y-2">
+                            @for (photo of postRepairPhotos(); track photo.id) {
+                            <div
+                                class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium text-gray-900">{{ photo.filename }}</p>
+                                    <p class="mt-0.5 text-xs text-gray-500">{{ formatDate(photo.createdAt) }}</p>
+                                </div>
+
+                                <button type="button"
+                                    class="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
+                                    (click)="downloadAttachment(photo)">
+                                    View
+                                </button>
+                            </div>
+                            } @empty {
+                            <div
+                                class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
+                                No post-repair photos submitted.
+                            </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="flex items-center gap-3">
                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">

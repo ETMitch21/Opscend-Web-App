@@ -15,6 +15,7 @@ import {
   UsersIcon,
   UserIcon,
   WrenchIcon,
+  WalletCardsIcon,
   BoxIcon,
   BlocksIcon,
   BellIcon,
@@ -94,6 +95,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly shoppingCartIcon = ShoppingCartIcon;
   readonly chevronDownIcon = ChevronDownIcon;
   readonly handshakeIcon = HandshakeIcon;
+  readonly walletCardsIcon = WalletCardsIcon
 
   private readonly notificationPollMs = 15_000;
   private routerEventsSubscription: Subscription | null = null;
@@ -144,7 +146,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
         }
       ],
     },
-    { label: 'Contractors', route: '/contractors', icon: this.handshakeIcon },
+    { 
+      label: 'Contractors',
+      icon: this.handshakeIcon,
+      children: [
+        { label: 'All Contractors', route: '/contractors', icon: this.handshakeIcon },
+        { label: 'Payouts', route: '/contractor-payouts', icon: this.walletCardsIcon },
+      ]
+    },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
     { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
   ];
@@ -394,6 +403,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
         return 'Appointment Rescheduled';
       case 'appointment_canceled':
         return 'Appointment Canceled';
+      case 'contractor_assignment_declined':
+        return 'Contractor Declined Repair';
+
+      case 'contractor_assignment_canceled':
+        return 'Contractor Canceled Repair';
       default:
         return event;
     }

@@ -58,15 +58,42 @@ export interface RepairNote {
   createdBy: string;
 }
 
+export type RepairAttachmentType =
+  | 'pre_repair_photo'
+  | 'post_repair_photo'
+  | 'other';
+
 export interface RepairAttachment {
   id: string;
   storageKey: string;
   filename: string;
   mimeType: string | null;
   sizeBytes: number | null;
+  type?: RepairAttachmentType;
   createdAt: string;
   createdBy: string;
 }
+
+export interface RepairDocumentation {
+  id: string;
+  repairId: string;
+
+  imei: string | null;
+  deviceModel: string | null;
+  batteryHealth: number | null;
+
+  preChecklist: unknown | null;
+  postChecklist: unknown | null;
+
+  preSignatureUrl: string | null;
+  postSignatureUrl: string | null;
+
+  notes: string | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 export interface RepairAppointment {
   id: string;
@@ -141,6 +168,7 @@ export interface Repair {
   events: RepairEvent[];
   notes: RepairNote[];
   attachments: RepairAttachment[];
+  documentation?: RepairDocumentation | null;
   appointment: RepairAppointment | null;
 }
 

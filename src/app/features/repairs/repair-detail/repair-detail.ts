@@ -36,6 +36,7 @@ import {
   PhoneIcon,
   RefreshCw,
   Save,
+  Send,
   Shield,
   SmartphoneIcon,
   UserRound,
@@ -75,6 +76,8 @@ import type {
   RepairNotificationEvent,
 } from '../../../core/repair-notifications/repair-notification.types';
 import { RepairsService } from '../../../core/repairs/repairs-service';
+import { ContractorPayoutsService } from '../../../core/contractor-payout/contractor-payouts.service';
+import type { ContractorPayout } from '../../../core/contractor-payout/contractor-payout.model'; 
 
 interface ShopListResponse {
   data: Array<{
@@ -119,6 +122,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly shopContext = inject(ShopContextService);
   private readonly repairNotificationService = inject(RepairNotificationService);
   private readonly repairsService = inject(RepairsService);
+  private readonly contractorPayoutsService = inject(ContractorPayoutsService);
 
   public shopCountry = 'US';
 
@@ -197,6 +201,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     RefreshCw,
     Paperclip,
     Save,
+    Send,
     Clock3,
     MessageSquareText,
     ChevronDown,
@@ -227,6 +232,10 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly repairMessagesError = signal<string | null>(null);
   readonly repairMessageSaving = signal(false);
   readonly repairMessageUnreadCount = signal(0);
+
+  readonly contractorPayouts = signal<ContractorPayout[]>([]);
+  readonly contractorPayoutsLoading = signal(false);
+  readonly contractorPayoutsError = signal<string | null>(null);
 
   readonly repairId = signal<string | null>(null);
   readonly accessoriesList = signal<string[]>([]);
@@ -267,6 +276,58 @@ export class RepairDetail implements OnInit, OnDestroy {
 
   readonly notes = this.store.selectedRepairNotes;
   readonly attachments = this.store.selectedRepairAttachments;
+
+
+  readonly contractorDocumentation = computed(() => this.repair()?.documentation ?? null);
+
+  readonly preRepairPhotos = computed(() =>
+    this.attachments().filter((attachment) => this.isPreRepairPhoto(attachment))
+  );
+
+  readonly postRepairPhotos = computed(() =>
+    this.attachments().filter((attachment) => this.isPostRepairPhoto(attachment))
+  );
+
+  readonly contractorSubmissionAvailable = computed(() => {
+    const documentation = this.contractorDocumentation();
+
+    return (
+      !!documentation ||
+      this.preRepairPhotos().length > 0 ||
+      this.postRepairPhotos().length > 0
+    );
+  });
+
+  readonly activeContractorPayout = computed(() => {
+    const payouts = this.contractorPayouts();
+    if (!payouts.length) return null;
+
+    const statusRank: Record<string, number> = {
+      pending: 0,
+      approved: 1,
+      paid: 2,
+      disputed: 3,
+    };
+
+    return [...payouts].sort((a, b) => {
+      const aRank = statusRank[a.status] ?? 99;
+      const bRank = statusRank[b.status] ?? 99;
+
+      if (aRank !== bRank) return aRank - bRank;
+
+      return (
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    })[0] ?? null;
+  });
+
+  readonly contractorPayoutStatusText = computed(() => {
+    const payout = this.activeContractorPayout();
+
+    if (!payout) return 'No payout yet';
+
+    return `${this.formatMoney(payout.totalCents)} • ${this.prettyPayoutStatus(payout.status)}`;
+  });
 
   readonly hasOrder = computed(() => !!this.repair()?.orderId);
   readonly hasAppointment = computed(() => !!this.repair()?.appointment);
@@ -525,6 +586,7 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     await this.loadRepairNotifications(id);
     await this.loadRepairMessages(id);
+    await this.loadRepairPayouts(id);
 
     const confirmed$ =
       (this.schedulingModalService as any).selectionConfirmed ??
@@ -635,6 +697,27 @@ export class RepairDetail implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Failed to load repair message unread count.', error);
       this.repairMessageUnreadCount.set(0);
+    }
+  }
+
+  async loadRepairPayouts(repairId = this.repairId()): Promise<void> {
+    if (!repairId) return;
+
+    this.contractorPayoutsLoading.set(true);
+    this.contractorPayoutsError.set(null);
+
+    try {
+      const payouts = await firstValueFrom(this.contractorPayoutsService.list());
+
+      this.contractorPayouts.set(
+        (payouts ?? []).filter((payout) => payout.repairId === repairId)
+      );
+    } catch (error) {
+      console.error('Failed to load contractor payout status.', error);
+      this.contractorPayoutsError.set('Unable to load contractor payout status.');
+      this.contractorPayouts.set([]);
+    } finally {
+      this.contractorPayoutsLoading.set(false);
     }
   }
 
@@ -752,7 +835,8 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     if (updated) {
       await this.loadRepairNotifications(id);
-    await this.loadRepairMessages(id);
+      await this.loadRepairMessages(id);
+      await this.loadRepairPayouts(id);
       this.toast.success('Repair updated', 'Changes saved successfully.');
     } else {
       this.toast.error(
@@ -1122,7 +1206,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     const updated = await this.store.updateRepairStatus(id, status);
     if (updated) {
       await this.loadRepairNotifications(id);
-    await this.loadRepairMessages(id);
+      await this.loadRepairMessages(id);
 
       this.toast.success(
         'Status updated',
@@ -1210,10 +1294,87 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
   }
 
+
+  private isPreRepairPhoto(attachment: RepairAttachment): boolean {
+    if (attachment.type === 'pre_repair_photo') return true;
+
+    const filename = attachment.filename?.toLowerCase() ?? '';
+    return filename.includes('pre') && this.isImageAttachment(attachment);
+  }
+
+  private isPostRepairPhoto(attachment: RepairAttachment): boolean {
+    if (attachment.type === 'post_repair_photo') return true;
+
+    const filename = attachment.filename?.toLowerCase() ?? '';
+    return (filename.includes('post') || filename.includes('complete')) && this.isImageAttachment(attachment);
+  }
+
+  isImageAttachment(attachment: RepairAttachment): boolean {
+    return (attachment.mimeType ?? '').toLowerCase().startsWith('image/');
+  }
+
+  formatBatteryHealth(value: number | null | undefined): string {
+    if (value == null || Number.isNaN(Number(value))) return 'Not provided';
+    return `${Number(value)}%`;
+  }
+
+  documentationValue(value: string | number | null | undefined): string {
+    if (value == null || value === '') return 'Not provided';
+    return String(value);
+  }
+
+  signatureStatus(value: string | null | undefined): string {
+    return value ? 'Captured' : 'Missing';
+  }
+
+  signatureStatusClasses(value: string | null | undefined): string {
+    return value
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : 'border-gray-200 bg-gray-50 text-gray-500';
+  }
+
   openAssignModal(): void {
-    this.assignPanelOpen.set(true);
-    this.assignSearch.set('');
-    this.assigningUserName.set(null);
+    const repair = this.repair();
+
+    if (!repair) return;
+
+    if (!this.bookingEnabled()) {
+      this.toast.error(
+        'Scheduling disabled',
+        'Provider assignment should be managed through scheduling, but booking is currently disabled.'
+      );
+      return;
+    }
+
+    if (repair.status === 'picked_up' || repair.status === 'canceled') {
+      this.toast.error(
+        'Assignment locked',
+        'This repair is closed and can no longer be reassigned.'
+      );
+      return;
+    }
+
+    if (repair.dispatchType === 'contractor') {
+      this.toast.error(
+        'Use reschedule',
+        'Contractor assignment is tied to availability and appointment time. Choose a new appointment slot to reassign this repair.'
+      );
+
+      this.openRescheduleModal();
+      return;
+    }
+
+    if (repair.appointment) {
+      this.toast.error(
+        'Use reschedule',
+        'Provider changes must respect availability. Choose an available appointment slot to change the provider.'
+      );
+
+      this.openRescheduleModal();
+      return;
+    }
+
+    this.openRescheduleModal();
   }
 
   closeAssignPanel(): void {
@@ -1349,21 +1510,46 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     if (!repair || !repairId) return null;
 
-    const assignedUserId = this.isSchedulableUserId(
-      repair.appointment?.technicianUserId
-    )
-      ? repair.appointment?.technicianUserId ?? undefined
+    const appointmentAssignedUserId =
+      repair.appointment?.assignedUserId ??
+      repair.appointment?.technicianUserId ??
+      null;
+
+    const assignedUserId = this.isSchedulableUserId(appointmentAssignedUserId)
+      ? appointmentAssignedUserId
       : undefined;
 
+    const serviceAddress =
+      repair.serviceMode === 'on_site' &&
+        repair.serviceAddressLine1 &&
+        repair.serviceAddressCity &&
+        repair.serviceAddressState &&
+        repair.serviceAddressPostalCode
+        ? {
+          line1: repair.serviceAddressLine1,
+          line2: repair.serviceAddressLine2,
+          city: repair.serviceAddressCity,
+          state: repair.serviceAddressState,
+          postalCode: repair.serviceAddressPostalCode,
+          country: repair.serviceAddressCountry ?? 'US',
+          geo: null,
+        }
+        : null;
+
     return {
-      title: repair.appointment ? 'Reschedule Appointment' : 'Schedule Appointment',
-      subtitle: 'Choose an available appointment time.',
+      title: repair.appointment ? 'Reschedule / Reassign Appointment' : 'Schedule / Assign Appointment',
+      subtitle: repair.appointment
+        ? 'Choose an available time and provider for this repair.'
+        : 'Choose an available appointment time.',
       from: this.schedulerFromIso(),
       to: this.schedulerToIso(),
       durationMinutes: this.selectedDurationMinutes(),
       repairId,
       assignedUserId,
       slotMinutes: 15,
+      serviceMode: repair.serviceMode,
+      serviceAddressId: repair.serviceAddressId ?? null,
+      serviceAddress,
     };
   }
 
@@ -1447,6 +1633,8 @@ export class RepairDetail implements OnInit, OnDestroy {
     await this.store.loadRepair(id);
     await this.loadRepairNotifications(id);
     await this.loadRepairMessages(id);
+    await this.loadRepairPayouts(id);
+    await this.loadRepairPayouts(id);
 
     this.toast.success(
       repair.appointment ? 'Appointment rescheduled' : 'Appointment scheduled',
@@ -1459,6 +1647,44 @@ export class RepairDetail implements OnInit, OnDestroy {
   editAssignedDevice(customerId: string, customerDevice: CustomerDevice): void {
     this.customerDevicesStore.setSelected(customerDevice);
     this.manageDevicesModalService.open(customerId);
+  }
+
+  prettyPayoutStatus(status: string | null | undefined): string {
+    switch (status) {
+      case 'pending':
+        return 'Pending Review';
+      case 'approved':
+        return 'Approved';
+      case 'paid':
+        return 'Paid';
+      case 'disputed':
+        return 'Disputed';
+      default:
+        return 'No Payout';
+    }
+  }
+
+  payoutStatusClasses(status: string | null | undefined): string {
+    switch (status) {
+      case 'pending':
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+      case 'approved':
+        return 'border-blue-200 bg-blue-50 text-blue-700';
+      case 'paid':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'disputed':
+        return 'border-rose-200 bg-rose-50 text-rose-700';
+      default:
+        return 'border-gray-200 bg-gray-50 text-gray-500';
+    }
+  }
+
+  openContractorPayouts(): void {
+    const payout = this.activeContractorPayout();
+
+    void this.router.navigate(['/contractor-payouts'], {
+      queryParams: payout?.repairId ? { repairId: payout.repairId } : undefined,
+    });
   }
 
   prettyStatus(status: string | null | undefined): string {

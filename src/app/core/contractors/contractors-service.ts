@@ -7,6 +7,7 @@ import {
     AddContractorCapabilityRequest,
     ContractorListQuery,
     ContractorListResponse,
+    ContractorMetrics,
     ContractorProfile,
     CreateContractorWithUserRequest,
     UpdateContractorRequest,
@@ -101,5 +102,9 @@ export class ContractorsService {
         return this.http.delete<ContractorProfile>(
             `${this.baseUrl}/${contractorId}/capabilities/${serviceId}`
         );
+    }
+
+    getMetrics(id: string): Observable<ContractorMetrics> {
+        return this.http.get<ContractorMetrics>(`${this.baseUrl}/${id}/metrics`);
     }
 }

@@ -62,3 +62,28 @@ export interface UpdateContractorRequest {
 export interface AddContractorCapabilityRequest {
   serviceId: string;
 }
+
+export type ContractorStanding =
+  | 'good'
+  | 'warning'
+  | 'probation'
+  | 'review';
+
+export interface ContractorMetrics {
+  contractorId: string;
+
+  acceptedJobs: number;
+  completedJobs: number;
+  declinedJobs: number;
+  canceledJobs: number;
+  noShows: number;
+
+  cancellationRate: number;
+  noShowRate: number;
+
+  pendingPayoutCents: number;
+  approvedPayoutCents: number;
+  paidPayoutCents: number;
+
+  standing: ContractorStanding;
+}

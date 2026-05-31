@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import {
     AddContractorCapabilityRequest,
     ContractorListQuery,
+    ContractorMetrics,
     ContractorProfile,
     CreateContractorWithUserRequest,
     UpdateContractorRequest,
@@ -23,6 +24,12 @@ export class ContractorsStore {
     private readonly _error = signal<string | null>(null);
     private readonly _nextCursor = signal<string | null>(null);
     private readonly _loaded = signal(false);
+
+    private readonly _selectedMetrics = signal<ContractorMetrics | null>(null);
+    private readonly _metricsLoading = signal(false);
+
+    readonly selectedMetrics = this._selectedMetrics.asReadonly();
+    readonly metricsLoading = this._metricsLoading.asReadonly();
 
     readonly items = this._items.asReadonly();
     readonly selected = this._selected.asReadonly();
@@ -238,6 +245,7 @@ export class ContractorsStore {
 
     clearSelected(): void {
         this._selected.set(null);
+        this._selectedMetrics.set(null);
     }
 
     clearError(): void {
@@ -256,5 +264,25 @@ export class ContractorsStore {
             copy[index] = contractor;
             return copy;
         });
+    }
+
+    async getMetrics(id: string): Promise<ContractorMetrics | null> {
+        this._metricsLoading.set(true);
+        this._error.set(null);
+
+        try {
+            const metrics = await firstValueFrom(
+                this.contractorsService.getMetrics(id)
+            );
+
+            this._selectedMetrics.set(metrics);
+
+            return metrics;
+        } catch (err: any) {
+            this._error.set(err?.error?.error ?? 'Failed to load contractor metrics.');
+            return null;
+        } finally {
+            this._metricsLoading.set(false);
+        }
     }
 }

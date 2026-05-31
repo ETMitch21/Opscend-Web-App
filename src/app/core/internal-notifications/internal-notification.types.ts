@@ -1,4 +1,6 @@
 export type InternalNotificationEvent =
+    | 'contractor_assignment_declined'
+    | 'contractor_assignment_canceled'
     | 'repair_assigned'
     | 'repair_unassigned'
     | 'repair_reassigned'

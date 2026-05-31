@@ -1,26 +1,27 @@
-<div
-    class="min-h-screen bg-[radial-gradient(circle_at_top,_#f8fafc_0,_#f9fafb_42%,_#ffffff_100%)] px-4 py-8 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-[#f5f5f7] px-4 py-6 text-gray-950 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-3xl">
         @if (loading()) {
-        <div class="rounded-[2rem] border border-gray-200 bg-white p-8 shadow-sm">
+        <div
+            class="rounded-[2rem] bg-white/80 p-8 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-black/5 backdrop-blur">
             <div class="flex items-center gap-4">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500">
                     <lucide-icon [name]="icons.Clock3" class="h-5 w-5"></lucide-icon>
                 </div>
 
                 <div>
-                    <p class="text-sm font-semibold text-gray-900">Loading repair status...</p>
-                    <p class="mt-1 text-sm text-gray-500">Checking the latest public tracking details.</p>
+                    <p class="text-sm font-semibold text-gray-950">Loading repair status...</p>
+                    <p class="mt-1 text-sm text-gray-500">Checking the latest repair details.</p>
                 </div>
             </div>
         </div>
         } @else if (error()) {
-        <div class="rounded-[2rem] border border-gray-200 bg-white p-8 text-center shadow-sm">
-            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-500">
+        <div
+            class="rounded-[2rem] bg-white/85 p-8 text-center shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-black/5 backdrop-blur">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-500">
                 <lucide-icon [name]="icons.SearchX" class="h-6 w-6"></lucide-icon>
             </div>
 
-            <h1 class="mt-5 text-xl font-semibold text-gray-950">
+            <h1 class="mt-5 text-xl font-semibold tracking-tight text-gray-950">
                 Tracking page not found
             </h1>
 
@@ -29,154 +30,322 @@
             </p>
         </div>
         } @else if (tracking(); as trackingValue) {
-        <div class="mb-5 flex items-center justify-between gap-4">
-            <div>
-                <p class="text-sm font-medium text-gray-500">
+        <div class="mb-5 flex items-center justify-between gap-4 px-1">
+            <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-gray-500">
                     {{ trackingValue.shop.name }}
                 </p>
-                <h1 class="mt-1 text-2xl font-semibold tracking-tight text-gray-950">
+                <h1 class="mt-1 text-[1.7rem] font-semibold tracking-[-0.035em] text-gray-950">
                     Repair Status
                 </h1>
             </div>
 
             <div
-                class="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm">
+                class="shrink-0 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-gray-500 shadow-sm ring-1 ring-black/5 backdrop-blur">
                 Public Tracking
             </div>
         </div>
 
-        <div class="overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
-            <div class="border-b border-gray-100 p-6 sm:p-7">
+        <div
+            class="sticky top-3 z-20 mb-5 rounded-full bg-white/75 p-1 shadow-[0_12px_34px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl">
+            <div class="grid grid-cols-2 gap-1">
+                <button type="button" class="cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold transition"
+                    [ngClass]="activeTab() === 'details'
+                        ? 'bg-gray-950 text-white shadow-sm'
+                        : 'text-gray-500 hover:bg-gray-100/80 hover:text-gray-950'" (click)="selectTab('details')">
+                    Details
+                </button>
+
+                <button type="button" class="cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold transition"
+                    [ngClass]="activeTab() === 'messages'
+                        ? 'bg-gray-950 text-white shadow-sm'
+                        : 'text-gray-500 hover:bg-gray-100/80 hover:text-gray-950'" (click)="selectTab('messages')">
+                    <span class="inline-flex items-center justify-center gap-2">
+                        Messages
+                        @if (messageUnreadCount() > 0) {
+                        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [ngClass]="activeTab() === 'messages'
+                                ? 'bg-white text-gray-950'
+                                : 'bg-brand text-white'">
+                            {{ messageUnreadCount() > 9 ? '9+' : messageUnreadCount() }}
+                        </span>
+                        }
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        @if (activeTab() === 'details') {
+        <div class="space-y-5">
+            <section
+                class="overflow-hidden rounded-[2rem] bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur">
+                <div class="p-6 sm:p-7">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.35rem] bg-gray-950 text-white shadow-sm">
+                            <lucide-icon [name]="icons.Smartphone" class="h-6 w-6"></lucide-icon>
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+                                Device
+                            </p>
+
+                            <h2 class="mt-1 truncate text-2xl font-semibold tracking-[-0.03em] text-gray-950">
+                                {{ deviceName() }}
+                            </h2>
+
+                            <p class="mt-2 text-sm leading-6 text-gray-500">
+                                {{ trackingValue.problemSummary }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-[2rem] p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-black/5 sm:p-6"
+                [ngClass]="publicStatusCardClass(currentPublicStatus().tone)">
                 <div class="flex items-start gap-4">
-                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gray-950 text-white">
-                        <lucide-icon [name]="icons.Smartphone" class="h-6 w-6"></lucide-icon>
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/90 shadow-sm"
+                        [ngClass]="publicStatusIconClass(currentPublicStatus().tone)">
+                        @if (currentPublicStatus().tone === 'canceled') {
+                        <lucide-icon [name]="icons.XCircle" class="h-5 w-5"></lucide-icon>
+                        } @else if (currentPublicStatus().tone === 'completed' || currentPublicStatus().tone ===
+                        'ready') {
+                        <lucide-icon [name]="icons.PackageCheck" class="h-5 w-5"></lucide-icon>
+                        } @else if (currentPublicStatus().tone === 'waiting') {
+                        <lucide-icon [name]="icons.Clock3" class="h-5 w-5"></lucide-icon>
+                        } @else {
+                        <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
+                        }
                     </div>
 
-                    <div class="min-w-0 flex-1">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                            Device
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500/80">
+                            {{ currentPublicStatus().eyebrow }}
                         </p>
-
-                        <h2 class="mt-1 truncate text-xl font-semibold text-gray-950">
-                            {{ deviceName() }}
-                        </h2>
-
-                        <p class="mt-2 text-sm leading-6 text-gray-500">
-                            {{ trackingValue.problemSummary }}
+                        <h3 class="mt-1 text-xl font-semibold tracking-[-0.025em] text-gray-950">
+                            {{ currentPublicStatus().label }}
+                        </h3>
+                        <p class="mt-2 text-sm leading-6 text-gray-600">
+                            {{ currentPublicStatus().description }}
                         </p>
                     </div>
                 </div>
+            </section>
 
-                <div class="mt-6 rounded-2xl border p-4" [ngClass]="{
-            'border-emerald-200 bg-emerald-50': isCompleted(),
-            'border-rose-200 bg-rose-50': isCanceled(),
-            'border-brand/20 bg-brand/5': !isCompleted() && !isCanceled()
-          }">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
-                            [ngClass]="{
-                'text-emerald-600': isCompleted(),
-                'text-rose-600': isCanceled(),
-                'text-brand': !isCompleted() && !isCanceled()
-              }">
-                            @if (isCanceled()) {
-                            <lucide-icon [name]="icons.XCircle" class="h-5 w-5"></lucide-icon>
-                            } @else if (isCompleted()) {
-                            <lucide-icon [name]="icons.PackageCheck" class="h-5 w-5"></lucide-icon>
-                            } @else {
-                            <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
+            <section
+                class="rounded-[2rem] bg-white/85 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-black/5 backdrop-blur sm:p-6">
+                <div class="mb-5 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-semibold tracking-[-0.025em] text-gray-950">Repair Progress</h3>
+                        <p class="mt-1 text-sm leading-6 text-gray-500">
+                            {{ timelineProgressLabel() }}
+                        </p>
+                        <p class="mt-0.5 text-xs text-gray-400">
+                            Updated {{ trackingValue.updatedAt | date:'mediumDate' }}
+                        </p>
+                    </div>
+
+                    <button type="button"
+                        class="cursor-pointer shrink-0 rounded-full bg-gray-100 px-3.5 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-200/70 hover:text-gray-950"
+                        (click)="toggleTimelineExpanded()">
+                        {{ showFullTimeline() ? 'Show current' : 'Show all' }}
+                    </button>
+                </div>
+
+                @if (!showFullTimeline()) {
+                <div class="rounded-[1.5rem] bg-gray-50/90 p-4 ring-1 ring-black/5">
+                    <p class="text-sm font-semibold text-gray-950">{{ currentPublicStatus().label }}</p>
+                    <p class="mt-1 text-sm leading-6 text-gray-500">{{ currentPublicStatus().description }}</p>
+                </div>
+                } @else {
+                <div class="overflow-x-auto pb-1">
+                    <div class="flex min-w-full gap-3">
+                        @for (step of publicTrackerSteps(); track step.key) {
+                        <div class="min-w-[180px] flex-1 rounded-[1.5rem] p-4 transition ring-1 ring-black/5"
+                            [ngClass]="trackerStepCardClass(step)">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                                    [ngClass]="trackerStepIconClass(step)">
+                                    @if (step.state === 'completed') {
+                                    <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                                    } @else {
+                                    <div class="h-2 w-2 rounded-full bg-current"></div>
+                                    }
+                                </div>
+
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold" [ngClass]="trackerStepTextClass(step)">
+                                        {{ step.label }}
+                                    </p>
+
+                                    <p class="mt-1 text-xs leading-5" [ngClass]="trackerStepTextClass(step)">
+                                        {{ step.description }}
+                                    </p>
+
+                                    @if (step.state === 'current') {
+                                    <p class="mt-2 text-xs font-semibold text-brand">
+                                        Current
+                                    </p>
+                                    } @else if (step.state === 'completed') {
+                                    <p class="mt-2 text-xs font-medium text-emerald-700">
+                                        Complete
+                                    </p>
+                                    } @else {
+                                    <p class="mt-2 text-xs font-medium text-gray-400">
+                                        Upcoming
+                                    </p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+            </section>
+
+            <section class="rounded-[2rem] bg-white/65 p-5 shadow-sm ring-1 ring-black/5 backdrop-blur">
+                <div class="flex items-start gap-3">
+                    <div
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                        <lucide-icon [name]="icons.ShieldCheck" class="h-4 w-4"></lucide-icon>
+                    </div>
+
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-gray-950">
+                            Questions about this repair?
+                        </p>
+
+                        <p class="mt-1 text-sm leading-6 text-gray-500">
+                            Contact {{ trackingValue.shop.name }}
+                            @if (trackingValue.shop.phone) {
+                            at <a class="font-medium text-brand hover:text-brand-soft"
+                                [href]="'tel:' + trackingValue.shop.phone">
+                                {{ trackingValue.shop.phone | phone }}
+                            </a>
                             }
+                            @if (trackingValue.shop.email) {
+                            <span>
+                                or
+                                <a class="font-medium text-gray-950 underline decoration-gray-300 underline-offset-4 hover:decoration-gray-950"
+                                    [href]="'mailto:' + trackingValue.shop.email">
+                                    {{ trackingValue.shop.email }}
+                                </a>
+                            </span>
+                            }. You may also use the messages tab above.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </div>
+        } @else {
+        <section
+            class="overflow-hidden rounded-[2rem] bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur">
+            <div class="p-6 sm:p-7">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-start gap-3">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <lucide-icon [name]="icons.MessageCircle" class="h-5 w-5"></lucide-icon>
                         </div>
 
                         <div>
-                            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Current Status
-                            </p>
-                            <p class="text-base font-semibold text-gray-950">
-                                {{ formatStatus(trackingValue.statusLabel) }}
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="text-xl font-semibold tracking-[-0.025em] text-gray-950">Messages</h3>
+
+                                @if (messageUnreadCount() > 0) {
+                                <span
+                                    class="rounded-full bg-brand px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
+                                    {{ messageUnreadCount() }} unread
+                                </span>
+                                }
+                            </div>
+
+                            <p class="mt-1 text-sm leading-6 text-gray-500">
+                                Secure repair messages with {{ trackingValue.shop.name }}.
                             </p>
                         </div>
                     </div>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-full bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-200/70 hover:text-gray-950 disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="messagesLoading()" (click)="loadMessages()">
+                        <span class="inline-flex items-center gap-1.5">
+                            <lucide-icon [name]="icons.RefreshCw" class="h-3.5 w-3.5"></lucide-icon>
+                            Refresh
+                        </span>
+                    </button>
                 </div>
             </div>
 
-            <div class="p-6 sm:p-7">
-                <div class="mb-5 flex items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-base font-semibold text-gray-950">Timeline</h3>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Follow the repair as it moves through each step.
-                        </p>
-                    </div>
-
-                    <div class="hidden rounded-full bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-500 sm:block">
-                        Updated {{ trackingValue.updatedAt | date:'mediumDate' }}
-                    </div>
+            <div class="border-t border-gray-100 bg-[#f5f5f7]/80 p-4 sm:p-5">
+                @if (messagesError()) {
+                <div class="mb-4 rounded-[1.25rem] bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">
+                    {{ messagesError() }}
                 </div>
+                }
 
-                <div class="space-y-0">
-                    @for (item of trackingValue.timeline; track item.key; let last = $last) {
-                    <div class="relative flex gap-4 pb-6 last:pb-0">
-                        @if (!last) {
-                        <div class="absolute left-4 top-9 h-full w-px bg-gray-200"></div>
+                @if (messagesLoading()) {
+                <div class="rounded-[1.5rem] bg-white/70 p-5 text-sm text-gray-500 ring-1 ring-black/5">
+                    Loading messages...
+                </div>
+                } @else {
+                <div #messagesScroll class="max-h-[520px] scroll-smooth space-y-3 overflow-y-auto px-1 pb-1">
+                    @for (message of messages(); track message.id) {
+                    <div class="max-w-[84%] rounded-[1.35rem] px-4 py-3 shadow-sm"
+                        [ngClass]="publicMessageBubbleClass(message)">
+                        <div class="mb-1 flex items-center justify-between gap-3">
+                            <span class="text-xs font-semibold">
+                                {{ publicMessageSenderLabel(message) }}
+                            </span>
+
+                            <span class="shrink-0 text-[11px]" [ngClass]="publicMessageMetaClass(message)">
+                                {{ message.createdAt | date:'short' }}
+                            </span>
+                        </div>
+
+                        <p class="whitespace-pre-wrap text-sm leading-6">{{ message.message }}</p>
+
+                        @if (publicMessageReadReceipt(message); as receipt) {
+                        <div class="mt-2 text-right text-[11px] font-medium"
+                            [ngClass]="publicMessageMetaClass(message)">
+                            {{ receipt }}
+                        </div>
                         }
-
-                        <div class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                            [ngClass]="timelineDotClass(item)">
-                            @if (item.completed) {
-                            <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
-                            } @else {
-                            <div class="h-2 w-2 rounded-full bg-current"></div>
-                            }
-                        </div>
-
-                        <div class="min-w-0 pt-1">
-                            <p class="text-sm font-semibold" [ngClass]="timelineTextClass(item)">
-                                {{ item.label }}
-                            </p>
-
-                            @if (item.current) {
-                            <p class="mt-1 text-xs font-medium text-brand">
-                                Current step
-                            </p>
-                            }
-                        </div>
+                    </div>
+                    } @empty {
+                    <div class="rounded-[1.5rem] bg-white/70 p-5 ring-1 ring-black/5">
+                        <p class="text-sm font-semibold text-gray-900">No messages yet.</p>
+                        <p class="mt-1 text-sm leading-6 text-gray-500">
+                            Send a message below if you have a question or need to share an update.
+                        </p>
                     </div>
                     }
                 </div>
+                }
+
+                <form class="mt-4 rounded-[1.75rem] bg-white p-2 shadow-sm ring-1 ring-black/5"
+                    [formGroup]="messageForm" (ngSubmit)="sendMessage()">
+                    <textarea rows="2" formControlName="message" placeholder="Type your message..."
+                        class="w-full resize-none rounded-[1.35rem] border-0 bg-transparent px-3 py-2 text-sm leading-6 text-gray-950 outline-none placeholder:text-gray-400 focus:ring-0"></textarea>
+
+                    <div class="flex items-center justify-between gap-3 border-t border-gray-100 px-2 py-2">
+                        <p class="text-xs leading-5 text-gray-400">
+                            Messages stay inside your repair record.
+                        </p>
+
+                        <button type="submit"
+                            class="cursor-pointer inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-gray-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                            [disabled]="messageForm.invalid || messageSaving()">
+                            <lucide-icon [name]="icons.Send" class="h-4 w-4"></lucide-icon>
+                            {{ messageSaving() ? 'Sending' : 'Send' }}
+                        </button>
+                    </div>
+                </form>
             </div>
-        </div>
-
-        <div class="mt-5 rounded-2xl border border-gray-200 bg-white/80 p-5 shadow-sm">
-            <div class="flex items-start gap-3">
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600">
-                    <lucide-icon [name]="icons.ShieldCheck" class="h-4 w-4"></lucide-icon>
-                </div>
-
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-900">
-                        Questions about this repair?
-                    </p>
-
-                    <p class="mt-1 text-sm leading-6 text-gray-500">
-                        Contact {{ trackingValue.shop.name }}
-                        @if (trackingValue.shop.phone) {
-                        at <a class="font-medium text-brand hover:text-brand-soft"
-                            [href]="'tel:' + trackingValue.shop.phone">{{ trackingValue.shop.phone }}</a>
-                        }
-                        @if (trackingValue.shop.email) {
-                        <span>
-                            or
-                            <a class="font-medium text-brand hover:text-brand-soft"
-                                [href]="'mailto:' + trackingValue.shop.email">
-                                {{ trackingValue.shop.email }}
-                            </a>
-                        </span>
-                        }.
-                    </p>
-                </div>
-            </div>
-        </div>
+        </section>
+        }
         }
     </div>
 </div>

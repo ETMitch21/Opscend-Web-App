@@ -17,6 +17,8 @@ import { LucideAngularModule } from 'lucide-angular';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
 
 type RepairNotificationEvent =
+  | 'repair_verification_code_created'
+  | 'repair_message_received'
   | 'repair_created'
   | 'repair_scheduled'
   | 'repair_status_changed'
@@ -97,6 +99,7 @@ export class RepairNotifications implements OnInit {
     '{{repairNumber}}',
     '{{repairStatusLabel}}',
     '{{shopName}}',
+    '{{verificationCode}}'
   ];
 
   readonly enabledTemplateCount = computed(() =>
@@ -285,6 +288,10 @@ export class RepairNotifications implements OnInit {
 
   prettyEvent(event: RepairNotificationEvent): string {
     switch (event) {
+      case 'repair_verification_code_created':
+        return 'Repair Verification Code Created';
+      case 'repair_message_received':
+        return 'Repair Message Received';
       case 'repair_created':
         return 'Repair Created';
       case 'repair_scheduled':
@@ -308,6 +315,10 @@ export class RepairNotifications implements OnInit {
 
   eventDescription(event: RepairNotificationEvent): string {
     switch (event) {
+      case 'repair_verification_code_created':
+        return 'Sent when a contractor accepts a repair.';
+      case 'repair_message_received':
+        return 'Sent when a message is received for the repair.';
       case 'repair_created':
         return 'Sent when a new repair is created.';
       case 'repair_scheduled':
@@ -333,6 +344,7 @@ export class RepairNotifications implements OnInit {
     templates: RepairNotificationTemplate[]
   ): RepairNotificationTemplate[] {
     const order: RepairNotificationEvent[] = [
+      'repair_message_received',
       'repair_created',
       'repair_scheduled',
       'repair_status_changed',

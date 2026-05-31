@@ -69,6 +69,9 @@ export class Contractors {
     readonly loaderIcon = Loader2Icon;
 
     readonly createModalOpen = signal(false);
+    readonly drawerOpen = signal(false);
+    readonly selectedContractor = signal<ContractorProfile | null>(null);
+
     readonly services = signal<ServiceOption[]>([]);
     readonly loadingServices = signal(false);
     readonly selectedServiceIds = signal<Set<string>>(new Set());
@@ -165,6 +168,26 @@ export class Contractors {
             isActive: true,
         });
         this.selectedServiceIds.set(new Set());
+    }
+
+    async openContractorDrawer(contractor: ContractorProfile): Promise<void> {
+        this.selectedContractor.set(contractor);
+        this.drawerOpen.set(true);
+
+        const metrics = await this.contractorsStore.getMetrics(contractor.id);
+
+        if (!metrics) {
+            this.toast.error(
+                'Metrics not loaded',
+                this.contractorsStore.error() ?? 'Unable to load contractor metrics.'
+            );
+        }
+    }
+
+    closeContractorDrawer(): void {
+        this.drawerOpen.set(false);
+        this.selectedContractor.set(null);
+        this.contractorsStore.clearSelected();
     }
 
     async createContractor(): Promise<void> {
@@ -276,6 +299,45 @@ export class Contractors {
             default:
                 return 'Starter';
         }
+    }
+
+    prettyStanding(standing: string | null | undefined): string {
+        switch (standing) {
+            case 'warning':
+                return 'Warning';
+            case 'probation':
+                return 'Probation';
+            case 'review':
+                return 'Review Needed';
+            case 'good':
+            default:
+                return 'Good Standing';
+        }
+    }
+
+    standingPillClasses(standing: string | null | undefined): string {
+        switch (standing) {
+            case 'review':
+                return 'bg-red-50 text-red-700 ring-red-100';
+            case 'probation':
+                return 'bg-orange-50 text-orange-700 ring-orange-100';
+            case 'warning':
+                return 'bg-amber-50 text-amber-700 ring-amber-100';
+            case 'good':
+            default:
+                return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+        }
+    }
+
+    formatRate(value: number | null | undefined): string {
+        return `${Math.round((value ?? 0) * 100)}%`;
+    }
+
+    formatMoney(cents: number | null | undefined): string {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+        }).format((cents ?? 0) / 100);
     }
 
     tierPillClasses(tier: ContractorTier | string): string {

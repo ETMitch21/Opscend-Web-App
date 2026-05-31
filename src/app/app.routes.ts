@@ -28,6 +28,7 @@ import { PurchaseOrders } from './features/purchase-orders/purchase-orders';
 import { PurchaseOrderDetail } from './features/purchase-orders/purchase-order-detail/purchase-order-detail';
 import { Suppliers } from './features/suppliers/suppliers';
 import { Contractors } from './features/contractors/contractors';
+import { ContractorPayouts } from './features/contractor-payouts/contractor-payouts';
 
 export const routes: Routes = [
     {
@@ -185,6 +186,11 @@ export const routes: Routes = [
     {
         path: 'contractors',
         component: Contractors,
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'contractor-payouts',
+        component: ContractorPayouts,
         canActivate: [AuthGuard]
     },
     { path: "", redirectTo: "dashboard", pathMatch: "full" }

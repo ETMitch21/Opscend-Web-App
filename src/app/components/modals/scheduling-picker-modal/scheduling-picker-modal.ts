@@ -129,12 +129,6 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   });
 
   readonly displaySlots = computed(() => {
-    const request = this.activeRequest();
-
-    if (request?.assignedUserId) {
-      return this.availabilityStore.slots();
-    }
-
     return this.unionSlots();
   });
 
@@ -167,10 +161,27 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
     const slot = this.selectedSlot();
     if (!slot) return false;
 
-    const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
-    if (requestAssignedUserId) return true;
+    const candidateType =
+      slot.candidateType ??
+      this.selectedCandidateType() ??
+      (slot.contractorId || this.selectedContractorId()
+        ? 'contractor'
+        : 'internal');
 
-    return !!this.selectedAssignedUserId();
+    if (candidateType === 'contractor') {
+      return !!(slot.contractorId ?? this.selectedContractorId());
+    }
+
+    const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
+
+    if (requestAssignedUserId) {
+      return true;
+    }
+
+    return !!(
+      slot.assignedUserId ??
+      this.selectedAssignedUserId()
+    );
   });
 
   readonly title = computed(() => {
@@ -366,25 +377,8 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
 
     await this.loadAppointmentWorkload(request);
 
-    if (request.assignedUserId) {
-      this.unionSlots.set([]);
-      this.slotUserMap.set({});
-
-      await this.availabilityStore.loadSlots({
-        from: request.from,
-        to: request.to,
-        durationMinutes: request.durationMinutes,
-        repairId: request.repairId,
-        assignedUserId: request.assignedUserId,
-        slotMinutes: request.slotMinutes,
-        serviceMode: request.serviceMode,
-        serviceAddressId: request.serviceAddressId,
-        serviceAddress: request.serviceAddress,
-      });
-    } else {
-      await this.loadUnionSlots(request);
-      this.availabilityStore.clearSlots();
-    }
+    await this.loadUnionSlots(request);
+    this.availabilityStore.clearSlots();
 
     const availableDates = this.availableDates().map((item) => item.date);
 
@@ -400,6 +394,26 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
     }
 
     this.selectedStartAt.set(null);
+  }
+
+  private async reloadVisibleMonthForActiveRequest(): Promise<void> {
+    const request = this.activeRequest();
+
+    if (!request) return;
+
+    const monthRequest = this.buildMonthBoundRequest(
+      request,
+      this.visibleMonth()
+    );
+
+    const requestKey = this.buildRequestKey(monthRequest);
+
+    if (this.lastRequestKey() === requestKey) {
+      return;
+    }
+
+    await this.loadSlots(monthRequest, false);
+    this.lastRequestKey.set(requestKey);
   }
 
   buildMonthBoundRequest(
@@ -488,69 +502,69 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   }
 
   confirm(): void {
-  const slot = this.selectedSlot();
-  if (!slot) return;
+    const slot = this.selectedSlot();
+    if (!slot) return;
 
-  const candidateType =
-    slot.candidateType ??
-    this.selectedCandidateType() ??
-    (slot.contractorId || this.selectedContractorId()
-      ? 'contractor'
-      : 'internal');
+    const candidateType =
+      slot.candidateType ??
+      this.selectedCandidateType() ??
+      (slot.contractorId || this.selectedContractorId()
+        ? 'contractor'
+        : 'internal');
 
-  const contractorId =
-    candidateType === 'contractor'
-      ? slot.contractorId ?? this.selectedContractorId() ?? null
-      : null;
+    const contractorId =
+      candidateType === 'contractor'
+        ? slot.contractorId ?? this.selectedContractorId() ?? null
+        : null;
 
-  const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
+    const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
 
-  const assignedUserId =
-    candidateType === 'internal'
-      ? requestAssignedUserId ??
+    const assignedUserId =
+      candidateType === 'internal'
+        ? requestAssignedUserId ??
         slot.assignedUserId ??
         this.selectedAssignedUserId() ??
         null
-      : null;
+        : null;
 
-  const internalUserName =
-    assignedUserId
-      ? this.usersStore.getById(assignedUserId)?.name ?? null
-      : null;
+    const internalUserName =
+      assignedUserId
+        ? this.usersStore.getById(assignedUserId)?.name ?? null
+        : null;
 
-  const contractorName =
-    candidateType === 'contractor'
-      ? slot.contractorName ??
+    const contractorName =
+      candidateType === 'contractor'
+        ? slot.contractorName ??
         slot.assignedTo ??
         'Selected contractor'
-      : null;
+        : null;
 
-  const selection: SchedulingSelection = {
-    startAt: slot.startAt,
-    endAt: slot.endAt,
+    const selection: SchedulingSelection = {
+      startAt: slot.startAt,
+      endAt: slot.endAt,
 
-    candidateType,
+      candidateType,
 
-    assignedUserId,
-    contractorId,
+      assignedUserId,
+      contractorId,
 
-    assignedTo:
-      candidateType === 'contractor'
-        ? contractorName
-        : internalUserName,
+      assignedTo:
+        candidateType === 'contractor'
+          ? contractorName
+          : internalUserName,
 
-    contractorName,
-  };
+      contractorName,
+    };
 
-  if (this.displayMode() === 'inline') {
-    this.confirmedSelection.set(selection);
-    this.inlineCollapsed.set(true);
-    this.selectionChange.emit(selection);
-    return;
+    if (this.displayMode() === 'inline') {
+      this.confirmedSelection.set(selection);
+      this.inlineCollapsed.set(true);
+      this.selectionChange.emit(selection);
+      return;
+    }
+
+    this.schedulingModalService.confirm(selection);
   }
-
-  this.schedulingModalService.confirm(selection);
-}
 
   expandInlineEditor(): void {
     if (this.displayMode() !== 'inline') return;
@@ -566,15 +580,25 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   previousMonth(): void {
     const current = this.visibleMonth();
     const previous = new Date(current);
+
     previous.setMonth(previous.getMonth() - 1);
     this.visibleMonth.set(this.startOfMonth(previous));
+
+    if (this.displayMode() === 'modal') {
+      void this.reloadVisibleMonthForActiveRequest();
+    }
   }
 
   nextMonth(): void {
     const current = this.visibleMonth();
     const next = new Date(current);
+
     next.setMonth(next.getMonth() + 1);
     this.visibleMonth.set(this.startOfMonth(next));
+
+    if (this.displayMode() === 'modal') {
+      void this.reloadVisibleMonthForActiveRequest();
+    }
   }
 
   selectAssignedUser(userId: string | null): void {
@@ -590,8 +614,14 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
     return this.selectedAssignedUserId() === userId;
   }
 
-  trackBySlot(_: number, slot: { startAt: string }): string {
-    return slot.startAt;
+  trackBySlot(_: number, slot: SchedulingSlot): string {
+    return [
+      slot.startAt,
+      slot.endAt,
+      slot.candidateType ?? 'internal',
+      slot.assignedUserId ?? '',
+      slot.contractorId ?? '',
+    ].join('__');
   }
 
   formatDateLabel(value: string): string {
@@ -684,6 +714,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
           to: request.to,
           durationMinutes: request.durationMinutes,
           repairId: request.repairId,
+          assignedUserId: request.assignedUserId ?? undefined,
           slotMinutes: request.slotMinutes,
           serviceMode: request.serviceMode,
           serviceAddressId: request.serviceAddressId,
@@ -691,26 +722,26 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
         })
       );
 
-      const slots = response?.data ?? [];
+      const rawSlots = Array.isArray(response)
+        ? response
+        : response?.data ?? [];
 
-      this.unionSlots.set(
-        [...slots]
-          .map((slot: any): SchedulingSlot => ({
-            startAt: slot.startAt,
-            endAt: slot.endAt,
-            candidateType: slot.candidateType,
-            assignedUserId: slot.assignedUserId ?? null,
-            contractorId: slot.contractorId ?? null,
+      const slots = rawSlots
+        .map((slot: any): SchedulingSlot => ({
+          startAt: slot.startAt,
+          endAt: slot.endAt,
+          candidateType: slot.candidateType ?? 'internal',
+          assignedUserId: slot.assignedUserId ?? null,
+          contractorId: slot.contractorId ?? null,
+          assignedTo: slot.assignedTo ?? slot.providerName ?? slot.contractorName ?? null,
+          contractorName: slot.contractorName ?? slot.providerName ?? slot.assignedTo ?? null,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        );
 
-            assignedTo: slot.assignedTo ?? slot.providerName ?? slot.contractorName ?? null,
-            contractorName: slot.contractorName ?? slot.providerName ?? slot.assignedTo ?? null,
-          }))
-          .sort(
-            (a, b) =>
-              new Date(a.startAt).getTime() -
-              new Date(b.startAt).getTime()
-          )
-      );
+      this.unionSlots.set(slots);
 
       const slotUserMap: Record<string, string[]> = {};
 
@@ -728,7 +759,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
 
       this.slotUserMap.set(slotUserMap);
     } catch (error) {
-      console.error("Failed to load unified scheduling slots.", error);
+      console.error('Failed to load unified scheduling slots.', error);
       this.unionSlots.set([]);
       this.slotUserMap.set({});
     }
@@ -804,24 +835,24 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   }
 
   selectedProviderName(): string | null {
-  const slot = this.selectedSlot();
-  if (!slot) return null;
+    const slot = this.selectedSlot();
+    if (!slot) return null;
 
-  const candidateType =
-    slot.candidateType ??
-    this.selectedCandidateType() ??
-    (slot.contractorId || this.selectedContractorId()
-      ? 'contractor'
-      : 'internal');
+    const candidateType =
+      slot.candidateType ??
+      this.selectedCandidateType() ??
+      (slot.contractorId || this.selectedContractorId()
+        ? 'contractor'
+        : 'internal');
 
-  if (candidateType === 'contractor') {
-    return (
-      slot.contractorName ??
-      slot.assignedTo ??
-      'Selected contractor'
-    );
+    if (candidateType === 'contractor') {
+      return (
+        slot.contractorName ??
+        slot.assignedTo ??
+        'Selected contractor'
+      );
+    }
+
+    return this.selectedAssignedUserName();
   }
-
-  return this.selectedAssignedUserName();
-}
 }

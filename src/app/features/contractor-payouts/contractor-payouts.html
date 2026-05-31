@@ -1,0 +1,269 @@
+<div class="px-6 pt-1 pb-6">
+  <div class="flex flex-wrap items-start justify-between gap-4 pb-5">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-brand">
+        Contractor Program
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold text-gray-900">
+        Contractor Payouts
+      </h1>
+      <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500">
+        Review pending contractor payouts, confirm the repair documentation, approve payouts, and mark them paid after payment is sent.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+      [disabled]="payoutsStore.loading()"
+      (click)="load()">
+      Refresh
+    </button>
+  </div>
+
+  <div class="grid gap-4 md:grid-cols-3">
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Pending</p>
+          <p class="mt-1 text-2xl font-semibold text-gray-900">
+            {{ formatMoney(payoutsStore.pendingTotalCents()) }}
+          </p>
+        </div>
+
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+          <lucide-icon [name]="clockIcon" [size]="20"></lucide-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Approved</p>
+          <p class="mt-1 text-2xl font-semibold text-gray-900">
+            {{ formatMoney(payoutsStore.approvedTotalCents()) }}
+          </p>
+        </div>
+
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <lucide-icon [name]="checkIcon" [size]="20"></lucide-icon>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Paid</p>
+          <p class="mt-1 text-2xl font-semibold text-gray-900">
+            {{ formatMoney(payoutsStore.paidTotalCents()) }}
+          </p>
+        </div>
+
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+          <lucide-icon [name]="dollarIcon" [size]="20"></lucide-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 px-5 py-4">
+      <nav class="flex gap-5 text-sm font-medium">
+        <button
+          type="button"
+          class="cursor-pointer border-b-2 pb-3 transition"
+          [class]="filterButtonClasses('pending')"
+          (click)="setFilter('pending')">
+          Pending
+          <span class="ml-1 text-xs text-gray-400">{{ payoutsStore.counts().pending }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer border-b-2 pb-3 transition"
+          [class]="filterButtonClasses('approved')"
+          (click)="setFilter('approved')">
+          Approved
+          <span class="ml-1 text-xs text-gray-400">{{ payoutsStore.counts().approved }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer border-b-2 pb-3 transition"
+          [class]="filterButtonClasses('paid')"
+          (click)="setFilter('paid')">
+          Paid
+          <span class="ml-1 text-xs text-gray-400">{{ payoutsStore.counts().paid }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer border-b-2 pb-3 transition"
+          [class]="filterButtonClasses('all')"
+          (click)="setFilter('all')">
+          All
+          <span class="ml-1 text-xs text-gray-400">{{ payoutsStore.counts().all }}</span>
+        </button>
+      </nav>
+
+      <p class="text-xs leading-5 text-gray-400">
+        Approve only after reviewing the Contractor Submission card on the repair.
+      </p>
+    </div>
+
+    @if (payoutsStore.loading()) {
+    <div class="flex items-center justify-center gap-3 px-6 py-16">
+      <lucide-icon [name]="loaderIcon" [size]="18" class="animate-spin text-gray-400"></lucide-icon>
+      <span class="text-sm text-gray-500">Loading contractor payouts...</span>
+    </div>
+    } @else if (payoutsStore.error()) {
+    <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <p class="text-sm font-medium text-red-600">{{ payoutsStore.error() }}</p>
+
+      <button
+        type="button"
+        class="mt-4 cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+        (click)="load()">
+        Try Again
+      </button>
+    </div>
+    } @else if (filteredPayouts().length === 0) {
+    <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500">
+        <lucide-icon [name]="dollarIcon" [size]="22"></lucide-icon>
+      </div>
+
+      <h3 class="mt-4 text-base font-semibold text-gray-900">No payouts here</h3>
+      <p class="mt-1 max-w-md text-sm text-gray-500">
+        Completed contractor repairs will create pending payouts automatically.
+      </p>
+    </div>
+    } @else {
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50/80">
+          <tr>
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Contractor
+            </th>
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Repair
+            </th>
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Amount
+            </th>
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Status
+            </th>
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Created
+            </th>
+            <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y divide-gray-200 bg-white">
+          @for (payout of filteredPayouts(); track payout.id) {
+          <tr class="transition hover:bg-gray-50/70">
+            <td class="px-6 py-4 align-top">
+              <p class="text-sm font-semibold text-gray-900">
+                {{ contractorLabel(payout) }}
+              </p>
+              <p class="mt-1 max-w-[260px] truncate text-xs text-gray-500">
+                {{ contractorSubtext(payout) }}
+              </p>
+            </td>
+
+            <td class="px-6 py-4 align-top">
+              @if (payout.repairId) {
+              <a
+                [routerLink]="['/repairs/detail', payout.repairId]"
+                class="group inline-flex max-w-[360px] items-start gap-2 text-left">
+                <span>
+                  <span class="line-clamp-2 text-sm font-medium text-gray-900 group-hover:text-brand">
+                    {{ repairLabel(payout) }}
+                  </span>
+
+                  @if (payout.repairStatus) {
+                  <span class="mt-1 block text-xs capitalize text-gray-500">
+                    {{ payout.repairStatus.replaceAll('_', ' ') }}
+                  </span>
+                  }
+                </span>
+
+                <lucide-icon [name]="externalLinkIcon" [size]="14" class="mt-0.5 shrink-0 text-gray-300 group-hover:text-brand"></lucide-icon>
+              </a>
+              } @else {
+              <span class="text-sm text-gray-400">No repair linked</span>
+              }
+            </td>
+
+            <td class="px-6 py-4 align-top">
+              <p class="text-sm font-semibold text-gray-900">
+                {{ formatMoney(payout.totalCents) }}
+              </p>
+
+              @if (payout.note) {
+              <p class="mt-1 max-w-[260px] truncate text-xs text-gray-500">
+                {{ payout.note }}
+              </p>
+              }
+            </td>
+
+            <td class="px-6 py-4 align-top">
+              <span
+                class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold"
+                [class]="statusPillClasses(payout.status)">
+                {{ prettyStatus(payout.status) }}
+              </span>
+            </td>
+
+            <td class="px-6 py-4 align-top">
+              <p class="text-sm text-gray-600">
+                {{ formatDate(payout.createdAt) }}
+              </p>
+            </td>
+
+            <td class="px-6 py-4 align-top text-right">
+              <div class="flex justify-end gap-2">
+                @if (payout.repairId) {
+                <a
+                  [routerLink]="['/repairs/detail', payout.repairId]"
+                  class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand">
+                  Review
+                </a>
+                }
+
+                @if (payout.status === 'pending') {
+                <button
+                  type="button"
+                  class="cursor-pointer rounded-lg border border-blue-200 px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  [disabled]="payoutsStore.saving()"
+                  (click)="approvePayout(payout)">
+                  Approve
+                </button>
+                }
+
+                @if (payout.status === 'approved') {
+                <button
+                  type="button"
+                  class="cursor-pointer rounded-lg border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  [disabled]="payoutsStore.saving()"
+                  (click)="markPaid(payout)">
+                  Mark Paid
+                </button>
+                }
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </div>
+</div>
