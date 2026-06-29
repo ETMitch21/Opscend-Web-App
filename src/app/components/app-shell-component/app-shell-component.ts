@@ -19,11 +19,13 @@ import {
   BoxIcon,
   BlocksIcon,
   BellIcon,
+  CalendarCog,
   XIcon,
   PackageIcon,
   ShoppingCartIcon,
   ChevronDownIcon,
   HandshakeIcon,
+  MessageSquareQuote,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -95,7 +97,9 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly shoppingCartIcon = ShoppingCartIcon;
   readonly chevronDownIcon = ChevronDownIcon;
   readonly handshakeIcon = HandshakeIcon;
+  readonly messageSquareQuoteIcon = MessageSquareQuote;
   readonly walletCardsIcon = WalletCardsIcon
+  readonly calendarCogIcon = CalendarCog
 
   private readonly notificationPollMs = 15_000;
   private routerEventsSubscription: Subscription | null = null;
@@ -146,7 +150,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
         }
       ],
     },
-    { 
+    {
       label: 'Contractors',
       icon: this.handshakeIcon,
       children: [
@@ -155,6 +159,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       ]
     },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
+    { label: 'Quotes', route: '/quote-requests', icon: this.messageSquareQuoteIcon },
     { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
   ];
 
@@ -220,6 +225,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
   goToShopNotifications(): void {
     this.closeProfileMenu();
     this.router.navigate(['/settings/shop/notifications']);
+  }
+
+  goToShopBookings(): void {
+    this.closeProfileMenu();
+    this.router.navigate(['/settings/shop/shop-bookings']);
   }
 
   goToMyAvailability(): void {

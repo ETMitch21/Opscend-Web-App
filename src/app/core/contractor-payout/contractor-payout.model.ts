@@ -1,12 +1,14 @@
 export type ContractorPayoutStatus =
   | 'pending'
+  | 'held'
   | 'approved'
+  | 'processing'
   | 'paid'
-  | 'disputed';
+  | 'failed'
+  | 'disputed'
+  | 'canceled';
 
-export type ContractorPayoutEntryType =
-  | 'repair'
-  | 'adjustment';
+export type ContractorPayoutEntryType = 'repair' | 'adjustment';
 
 export interface ContractorPayout {
   id: string;
@@ -27,11 +29,30 @@ export interface ContractorPayout {
   partsCents: number | null;
   totalCents: number;
 
+  currency: string;
+
   status: ContractorPayoutStatus;
 
   note: string | null;
 
+  approvedAt: string | null;
+  approvedBy: string | null;
+
+  processingAt: string | null;
+  paidAt: string | null;
+  failedAt: string | null;
+  failureReason: string | null;
+
+  stripeShopDebitPaymentId: string | null;
+  stripeShopDebitAccountId: string | null;
+  stripeShopDebitAmountCents: number | null;
+  stripeShopDebitFeeCents: number | null;
+
+  stripeTransferId: string | null;
+  stripePayoutId: string | null;
+
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface ContractorPayoutListQuery {
@@ -40,4 +61,13 @@ export interface ContractorPayoutListQuery {
 
 export interface UpdateContractorPayoutStatusRequest {
   status: ContractorPayoutStatus;
+}
+
+export interface ContractorPayoutBalance {
+  stripeConnectedAccountId: string;
+  availableCents: number;
+  pendingCents: number;
+  currency: string;
+  available: unknown[];
+  pending: unknown[];
 }

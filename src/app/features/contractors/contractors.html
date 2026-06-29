@@ -90,7 +90,8 @@
 
             <h3 class="mt-4 text-base font-semibold text-gray-900">No contractors found</h3>
             <p class="mt-1 max-w-md text-sm text-gray-500">
-                Create a contractor account to assign jobs, manage availability, and give providers access to the contractor app.
+                Create a contractor account to assign jobs, manage availability, and give providers access to the
+                contractor app.
             </p>
 
             <button type="button"
@@ -126,7 +127,8 @@
 
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @for (contractor of filteredContractors(); track contractor.id) {
-                    <tr class="cursor-pointer transition hover:bg-gray-50/70" (click)="openContractorDrawer(contractor)">
+                    <tr class="cursor-pointer transition hover:bg-gray-50/70"
+                        (click)="openContractorDrawer(contractor)">
                         <td class="px-6 py-4 align-top">
                             <div class="flex items-center gap-3">
                                 <div
@@ -192,7 +194,8 @@
                                 [class.border-emerald-200]="!contractor.isActive"
                                 [class.text-emerald-700]="!contractor.isActive"
                                 [class.hover:bg-emerald-50]="!contractor.isActive"
-                                [disabled]="contractorsStore.saving()" (click)="$event.stopPropagation(); toggleContractorStatus(contractor)">
+                                [disabled]="contractorsStore.saving()"
+                                (click)="$event.stopPropagation(); toggleContractorStatus(contractor)">
                                 {{ contractor.isActive ? 'Deactivate' : 'Activate' }}
                             </button>
                         </td>
@@ -293,8 +296,113 @@
                 </div>
             </div>
 
+            @if (contractorsStore.onboardingLoading()) {
+            <div
+                class="mt-5 flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-6 py-10">
+                <lucide-icon [name]="loaderIcon" [size]="18" class="animate-spin text-gray-400"></lucide-icon>
+                <span class="text-sm text-gray-500">Loading onboarding status...</span>
+            </div>
+            } @else if (contractorsStore.selectedOnboarding(); as onboarding) {
+            <div class="mt-5 rounded-2xl border border-gray-200 bg-white p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">Onboarding & Activation</h3>
+                        <p class="mt-1 text-xs leading-5 text-gray-500">
+                            Contractors cannot accept jobs until onboarding is complete and they are activated.
+                        </p>
+                    </div>
+
+                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                        [class]="onboardingPillClasses(onboarding.status)">
+                        {{ prettyContractorStatus(onboarding.status) }}
+                    </span>
+                </div>
+
+                <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Agreement</p>
+                        <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                            [class]="onboardingPillClasses(onboarding.agreementStatus)">
+                            {{ prettyAgreementStatus(onboarding.agreementStatus) }}
+                        </span>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Background</p>
+                        <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                            [class]="onboardingPillClasses(onboarding.backgroundStatus)">
+                            {{ prettyBackgroundStatus(onboarding.backgroundStatus) }}
+                        </span>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Payouts</p>
+                        <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                            [class]="onboardingPillClasses(onboarding.payoutStatus)">
+                            {{ prettyPayoutStatus(onboarding.payoutStatus) }}
+                        </span>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <p class="text-xs font-medium text-gray-500">Job Access</p>
+                        <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                            [class]="onboarding.availableForJobs ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : 'bg-gray-50 text-gray-600 ring-gray-200'">
+                            {{ onboarding.availableForJobs ? 'Available' : 'Blocked' }}
+                        </span>
+                    </div>
+                </div>
+
+                @if (onboarding.blockers.length) {
+                <div class="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                    <p class="text-sm font-semibold text-amber-900">Activation blockers</p>
+
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-amber-800">
+                        @for (blocker of onboarding.blockers; track blocker) {
+                        <li>{{ blocker }}</li>
+                        }
+                    </ul>
+                </div>
+                } @else {
+                <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                    <p class="text-sm font-semibold text-emerald-800">Ready to activate</p>
+                    <p class="mt-1 text-xs leading-5 text-emerald-700">
+                        This contractor has completed the required onboarding steps.
+                    </p>
+                </div>
+                }
+
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button type="button"
+                        class="cursor-pointer rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="contractorsStore.saving()" (click)="markOnboardingInProgress(contractor)">
+                        Mark Onboarding
+                    </button>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="contractorsStore.saving()" (click)="markAgreementAccepted(contractor)">
+                        Agreement Accepted
+                    </button>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="contractorsStore.saving()" (click)="markBackgroundClear(contractor)">
+                        Background Clear
+                    </button>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="contractorsStore.saving() || !onboarding.canActivate"
+                        (click)="toggleContractorStatus(contractor)">
+                        Activate Contractor
+                    </button>
+                </div>
+            </div>
+            }
+
             @if (contractorsStore.metricsLoading()) {
-            <div class="mt-5 flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-6 py-10">
+            <div
+                class="mt-5 flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-6 py-10">
                 <lucide-icon [name]="loaderIcon" [size]="18" class="animate-spin text-gray-400"></lucide-icon>
                 <span class="text-sm text-gray-500">Loading contractor metrics...</span>
             </div>
@@ -308,7 +416,8 @@
                         </p>
                     </div>
 
-                    <span class="inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold"
+                    <span
+                        class="inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold"
                         [class]="standingPillClasses(metrics.standing)">
                         {{ prettyStanding(metrics.standing) }}
                     </span>
@@ -337,7 +446,8 @@
 
                     <div class="rounded-xl border border-red-100 bg-red-50 p-4">
                         <p class="text-xs font-medium text-red-600">Cancel Rate</p>
-                        <p class="mt-1 text-2xl font-semibold text-red-700">{{ formatRate(metrics.cancellationRate) }}</p>
+                        <p class="mt-1 text-2xl font-semibold text-red-700">{{ formatRate(metrics.cancellationRate) }}
+                        </p>
                     </div>
 
                     <div class="rounded-xl border border-amber-100 bg-amber-50 p-4">
@@ -399,7 +509,8 @@
                 <div class="mt-4 flex flex-wrap gap-2">
                     @if (contractor.capabilities.length) {
                     @for (capability of contractor.capabilities; track capability.id) {
-                    <span class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
+                    <span
+                        class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
                         {{ capability.serviceName }}
                     </span>
                     }
@@ -411,7 +522,8 @@
         </div>
 
         <div class="border-t border-gray-100 px-6 py-4">
-            <button type="button" class="w-full cursor-pointer rounded-xl border px-4 py-3 text-sm font-semibold transition"
+            <button type="button"
+                class="w-full cursor-pointer rounded-xl border px-4 py-3 text-sm font-semibold transition"
                 [class.border-red-200]="contractor.isActive" [class.text-red-600]="contractor.isActive"
                 [class.hover:bg-red-50]="contractor.isActive" [class.border-emerald-200]="!contractor.isActive"
                 [class.text-emerald-700]="!contractor.isActive" [class.hover:bg-emerald-50]="!contractor.isActive"
@@ -497,8 +609,9 @@
                     <label
                         class="flex w-full cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
                         <span>
-                            <span class="block text-sm font-medium text-gray-800">Active</span>
-                            <span class="mt-0.5 block text-xs text-gray-500">Can receive contractor jobs</span>
+                            <span class="block text-sm font-medium text-gray-800">Activate immediately</span>
+                            <span class="mt-0.5 block text-xs text-gray-500">Usually leave off until onboarding is
+                                complete</span>
                         </span>
 
                         <input type="checkbox" formControlName="isActive"

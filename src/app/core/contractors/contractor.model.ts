@@ -31,6 +31,17 @@ export interface ContractorProfile {
 
   capabilities: ContractorCapability[];
 
+  availableForJobs: boolean;
+
+status: ContractorStatus;
+agreementStatus: ContractorAgreementStatus;
+backgroundStatus: ContractorBackgroundStatus;
+payoutStatus: ContractorPayoutStatus;
+
+approvedAt: string | null;
+suspendedAt: string | null;
+suspensionReason: string | null;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -51,6 +62,7 @@ export interface CreateContractorWithUserRequest {
   password: string;
   tier: ContractorTier;
   isActive: boolean;
+  availableForJobs: boolean;
   serviceIds: string[];
 }
 
@@ -86,4 +98,63 @@ export interface ContractorMetrics {
   paidPayoutCents: number;
 
   standing: ContractorStanding;
+}
+
+export type ContractorStatus =
+  | 'invited'
+  | 'onboarding'
+  | 'active'
+  | 'suspended'
+  | 'rejected'
+  | 'offboarded';
+
+export type ContractorAgreementStatus =
+  | 'not_required'
+  | 'pending'
+  | 'accepted'
+  | 'expired';
+
+export type ContractorBackgroundStatus =
+  | 'not_required'
+  | 'pending'
+  | 'clear'
+  | 'review'
+  | 'failed'
+  | 'expired';
+
+export type ContractorPayoutStatus =
+  | 'not_started'
+  | 'onboarding_required'
+  | 'pending_verification'
+  | 'enabled'
+  | 'restricted'
+  | 'disabled';
+
+export interface ContractorOnboarding {
+  contractorId: string;
+
+  isActive: boolean;
+  availableForJobs: boolean;
+
+  status: ContractorStatus;
+  agreementStatus: ContractorAgreementStatus;
+  backgroundStatus: ContractorBackgroundStatus;
+  payoutStatus: ContractorPayoutStatus;
+
+  approvedAt: string | null;
+  suspendedAt: string | null;
+  suspensionReason: string | null;
+
+  blockers: string[];
+  canActivate: boolean;
+}
+
+export interface UpdateContractorOnboardingStatusRequest {
+  status?: ContractorStatus;
+  agreementStatus?: ContractorAgreementStatus;
+  backgroundStatus?: ContractorBackgroundStatus;
+  payoutStatus?: ContractorPayoutStatus;
+  isActive?: boolean;
+  availableForJobs?: boolean;
+  suspensionReason?: string | null;
 }

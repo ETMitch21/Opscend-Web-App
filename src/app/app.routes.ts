@@ -29,11 +29,18 @@ import { PurchaseOrderDetail } from './features/purchase-orders/purchase-order-d
 import { Suppliers } from './features/suppliers/suppliers';
 import { Contractors } from './features/contractors/contractors';
 import { ContractorPayouts } from './features/contractor-payouts/contractor-payouts';
+import { ShopBookingsComponent } from './features/settings/shop-bookings/shop-bookings';
+import { PublicBooking } from './features/public/public-booking/public-booking';
+import { QuoteRequestsOverview } from './features/bookings/quote-requests/quote-requests-overview';
 
 export const routes: Routes = [
     {
         path: 'track/:token',
         component: RepairTracking
+    },
+    {
+        path: 'book/:shopSlug',
+        component: PublicBooking
     },
     { path: "signup", component: SignupComponent, canActivate: [PublicGuard] },
     { path: "accept-invite", component: AcceptInviteComponent, canActivate: [PublicGuard] },
@@ -62,6 +69,10 @@ export const routes: Routes = [
                     {
                         path: 'notifications',
                         component: RepairNotifications
+                    },
+                    {
+                        path: 'shop-bookings',
+                        component: ShopBookingsComponent
                     },
                     {
                         path: '',
@@ -135,6 +146,11 @@ export const routes: Routes = [
                 pathMatch: 'full'
             }
         ]
+    },
+    {
+        path: 'quote-requests',
+        component: QuoteRequestsOverview,
+        canActivate: [AuthGuard]
     },
     {
         path: 'repairs',

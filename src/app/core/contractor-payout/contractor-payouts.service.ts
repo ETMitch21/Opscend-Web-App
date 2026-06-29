@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { AppConfigService } from '../app-config/app-config.service';
 import {
   ContractorPayout,
+  ContractorPayoutBalance,
   ContractorPayoutListQuery,
   UpdateContractorPayoutStatusRequest,
 } from './contractor-payout.model';
@@ -31,6 +32,10 @@ export class ContractorPayoutsService {
     return this.http.get<ContractorPayout[]>(this.baseUrl, { params });
   }
 
+  getBalance(): Observable<ContractorPayoutBalance> {
+    return this.http.get<ContractorPayoutBalance>(`${this.baseUrl}/balance`);
+  }
+
   updateStatus(
     payoutId: string,
     payload: UpdateContractorPayoutStatusRequest
@@ -38,6 +43,13 @@ export class ContractorPayoutsService {
     return this.http.patch<ContractorPayout>(
       `${this.baseUrl}/${payoutId}/status`,
       payload
+    );
+  }
+
+  process(payoutId: string): Observable<ContractorPayout> {
+    return this.http.post<ContractorPayout>(
+      `${this.baseUrl}/${payoutId}/process`,
+      {}
     );
   }
 }

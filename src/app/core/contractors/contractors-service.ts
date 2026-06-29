@@ -8,8 +8,10 @@ import {
     ContractorListQuery,
     ContractorListResponse,
     ContractorMetrics,
+    ContractorOnboarding,
     ContractorProfile,
     CreateContractorWithUserRequest,
+    UpdateContractorOnboardingStatusRequest,
     UpdateContractorRequest,
 } from './contractor.model';
 
@@ -106,5 +108,21 @@ export class ContractorsService {
 
     getMetrics(id: string): Observable<ContractorMetrics> {
         return this.http.get<ContractorMetrics>(`${this.baseUrl}/${id}/metrics`);
+    }
+
+    getOnboarding(id: string): Observable<ContractorOnboarding> {
+        return this.http.get<ContractorOnboarding>(
+            `${this.baseUrl}/${id}/onboarding`
+        );
+    }
+
+    updateOnboarding(
+        id: string,
+        payload: UpdateContractorOnboardingStatusRequest
+    ): Observable<ContractorOnboarding> {
+        return this.http.patch<ContractorOnboarding>(
+            `${this.baseUrl}/${id}/onboarding/status`,
+            payload
+        );
     }
 }

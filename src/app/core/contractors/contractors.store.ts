@@ -5,8 +5,10 @@ import {
     AddContractorCapabilityRequest,
     ContractorListQuery,
     ContractorMetrics,
+    ContractorOnboarding,
     ContractorProfile,
     CreateContractorWithUserRequest,
+    UpdateContractorOnboardingStatusRequest,
     UpdateContractorRequest,
 } from './contractor.model';
 import { ContractorsService } from './contractors-service';
@@ -27,6 +29,12 @@ export class ContractorsStore {
 
     private readonly _selectedMetrics = signal<ContractorMetrics | null>(null);
     private readonly _metricsLoading = signal(false);
+
+    private readonly _selectedOnboarding = signal<ContractorOnboarding | null>(null);
+    private readonly _onboardingLoading = signal(false);
+
+    readonly selectedOnboarding = this._selectedOnboarding.asReadonly();
+    readonly onboardingLoading = this._onboardingLoading.asReadonly();
 
     readonly selectedMetrics = this._selectedMetrics.asReadonly();
     readonly metricsLoading = this._metricsLoading.asReadonly();
@@ -158,7 +166,11 @@ export class ContractorsStore {
 
             return updated;
         } catch (err: any) {
-            this._error.set(err?.error?.error ?? 'Failed to activate contractor.');
+            this._error.set(
+                err?.error?.message ??
+                err?.error?.error ??
+                'Failed to activate contractor.'
+            );
             return null;
         } finally {
             this._saving.set(false);
@@ -246,6 +258,7 @@ export class ContractorsStore {
     clearSelected(): void {
         this._selected.set(null);
         this._selectedMetrics.set(null);
+        this._selectedOnboarding.set(null);
     }
 
     clearError(): void {
@@ -283,6 +296,57 @@ export class ContractorsStore {
             return null;
         } finally {
             this._metricsLoading.set(false);
+        }
+    }
+
+    async getOnboarding(id: string): Promise<ContractorOnboarding | null> {
+        this._onboardingLoading.set(true);
+        this._error.set(null);
+
+        try {
+            const onboarding = await firstValueFrom(
+                this.contractorsService.getOnboarding(id)
+            );
+
+            this._selectedOnboarding.set(onboarding);
+
+            return onboarding;
+        } catch (err: any) {
+            this._error.set(
+                err?.error?.message ??
+                err?.error?.error ??
+                'Failed to load contractor onboarding.'
+            );
+            return null;
+        } finally {
+            this._onboardingLoading.set(false);
+        }
+    }
+
+    async updateOnboarding(
+        id: string,
+        payload: UpdateContractorOnboardingStatusRequest
+    ): Promise<ContractorOnboarding | null> {
+        this._saving.set(true);
+        this._error.set(null);
+
+        try {
+            const onboarding = await firstValueFrom(
+                this.contractorsService.updateOnboarding(id, payload)
+            );
+
+            this._selectedOnboarding.set(onboarding);
+
+            return onboarding;
+        } catch (err: any) {
+            this._error.set(
+                err?.error?.message ??
+                err?.error?.error ??
+                'Failed to update contractor onboarding.'
+            );
+            return null;
+        } finally {
+            this._saving.set(false);
         }
     }
 }

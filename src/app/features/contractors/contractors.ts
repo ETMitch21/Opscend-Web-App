@@ -28,9 +28,13 @@ import { AppConfigService } from '../../core/app-config/app-config.service';
 import { ToastService } from '../../core/toast/toast-service';
 import { ContractorsStore } from '../../core/contractors/contractors.store';
 import {
+    ContractorAgreementStatus,
+    ContractorBackgroundStatus,
     ContractorProfile,
+    ContractorStatus,
     ContractorTier,
 } from '../../core/contractors/contractor.model';
+import { ContractorPayoutStatus } from '../../core/contractor-payout/contractor-payout.model';
 
 interface ServiceOption {
     id: string;
@@ -92,7 +96,7 @@ export class Contractors {
         tier: this.fb.nonNullable.control<ContractorTier>('starter', {
             validators: [Validators.required],
         }),
-        isActive: [true],
+        isActive: [false],
     });
 
     readonly filteredContractors = computed(() => {
@@ -151,7 +155,7 @@ export class Contractors {
             email: '',
             password: this.generateTemporaryPassword(),
             tier: 'starter',
-            isActive: true,
+            isActive: false,
         });
 
         this.selectedServiceIds.set(new Set());
@@ -165,7 +169,7 @@ export class Contractors {
             email: '',
             password: '',
             tier: 'starter',
-            isActive: true,
+            isActive: false,
         });
         this.selectedServiceIds.set(new Set());
     }
@@ -174,12 +178,22 @@ export class Contractors {
         this.selectedContractor.set(contractor);
         this.drawerOpen.set(true);
 
-        const metrics = await this.contractorsStore.getMetrics(contractor.id);
+        const [metrics, onboarding] = await Promise.all([
+            this.contractorsStore.getMetrics(contractor.id),
+            this.contractorsStore.getOnboarding(contractor.id),
+        ]);
 
         if (!metrics) {
             this.toast.error(
                 'Metrics not loaded',
                 this.contractorsStore.error() ?? 'Unable to load contractor metrics.'
+            );
+        }
+
+        if (!onboarding) {
+            this.toast.error(
+                'Onboarding not loaded',
+                this.contractorsStore.error() ?? 'Unable to load contractor onboarding.'
             );
         }
     }
@@ -205,6 +219,7 @@ export class Contractors {
             tier: value.tier,
             isActive: value.isActive,
             serviceIds: [...this.selectedServiceIds()],
+            availableForJobs: false,
         });
 
         if (!contractor) {
@@ -224,22 +239,43 @@ export class Contractors {
     }
 
     async toggleContractorStatus(contractor: ContractorProfile): Promise<void> {
-        const updated = contractor.isActive
-            ? await this.contractorsStore.deactivate(contractor.id)
-            : await this.contractorsStore.activate(contractor.id);
+        if (contractor.isActive) {
+            const updated = await this.contractorsStore.deactivate(contractor.id);
+
+            if (!updated) {
+                this.toast.error(
+                    'Contractor not updated',
+                    this.contractorsStore.error() ?? 'Something went wrong.'
+                );
+                return;
+            }
+
+            this.toast.success(
+                'Contractor deactivated',
+                `${updated.user.name} is now inactive.`
+            );
+
+            await this.contractorsStore.getOnboarding(contractor.id);
+            return;
+        }
+
+        const updated = await this.contractorsStore.activate(contractor.id);
 
         if (!updated) {
             this.toast.error(
-                'Contractor not updated',
-                this.contractorsStore.error() ?? 'Something went wrong.'
+                'Activation blocked',
+                this.contractorsStore.error() ?? 'Contractor cannot be activated yet.'
             );
+            await this.contractorsStore.getOnboarding(contractor.id);
             return;
         }
 
         this.toast.success(
-            updated.isActive ? 'Contractor activated' : 'Contractor deactivated',
-            `${updated.user.name} is now ${updated.isActive ? 'active' : 'inactive'}.`
+            'Contractor activated',
+            `${updated.user.name} is now active.`
         );
+
+        await this.contractorsStore.getOnboarding(contractor.id);
     }
 
     async refresh(): Promise<void> {
@@ -248,6 +284,153 @@ export class Contractors {
 
     async loadMore(): Promise<void> {
         await this.contractorsStore.loadMore();
+    }
+
+    async markAgreementAccepted(contractor: ContractorProfile): Promise<void> {
+        const onboarding = await this.contractorsStore.updateOnboarding(contractor.id, {
+            agreementStatus: 'accepted',
+        });
+
+        if (!onboarding) {
+            this.toast.error(
+                'Agreement not updated',
+                this.contractorsStore.error() ?? 'Unable to update agreement status.'
+            );
+            return;
+        }
+
+        this.toast.success('Agreement accepted', 'Contractor agreement marked accepted.');
+    }
+
+    async markBackgroundClear(contractor: ContractorProfile): Promise<void> {
+        const onboarding = await this.contractorsStore.updateOnboarding(contractor.id, {
+            backgroundStatus: 'clear',
+        });
+
+        if (!onboarding) {
+            this.toast.error(
+                'Background not updated',
+                this.contractorsStore.error() ?? 'Unable to update background status.'
+            );
+            return;
+        }
+
+        this.toast.success('Background cleared', 'Background status marked clear.');
+    }
+
+    async markOnboardingInProgress(contractor: ContractorProfile): Promise<void> {
+        const onboarding = await this.contractorsStore.updateOnboarding(contractor.id, {
+            status: 'onboarding',
+            isActive: false,
+            availableForJobs: false,
+        });
+
+        if (!onboarding) {
+            this.toast.error(
+                'Onboarding not updated',
+                this.contractorsStore.error() ?? 'Unable to update onboarding status.'
+            );
+            return;
+        }
+
+        this.toast.success('Onboarding updated', 'Contractor moved to onboarding.');
+    }
+
+    prettyContractorStatus(status: ContractorStatus | string | null | undefined): string {
+        switch (status) {
+            case 'invited':
+                return 'Invited';
+            case 'onboarding':
+                return 'Onboarding';
+            case 'active':
+                return 'Active';
+            case 'suspended':
+                return 'Suspended';
+            case 'rejected':
+                return 'Rejected';
+            case 'offboarded':
+                return 'Offboarded';
+            default:
+                return 'Unknown';
+        }
+    }
+
+    prettyAgreementStatus(status: ContractorAgreementStatus | string | null | undefined): string {
+        switch (status) {
+            case 'not_required':
+                return 'Not Required';
+            case 'pending':
+                return 'Pending';
+            case 'accepted':
+                return 'Accepted';
+            case 'expired':
+                return 'Expired';
+            default:
+                return 'Unknown';
+        }
+    }
+
+    prettyBackgroundStatus(status: ContractorBackgroundStatus | string | null | undefined): string {
+        switch (status) {
+            case 'not_required':
+                return 'Not Required';
+            case 'pending':
+                return 'Pending';
+            case 'clear':
+                return 'Clear';
+            case 'review':
+                return 'Review';
+            case 'failed':
+                return 'Failed';
+            case 'expired':
+                return 'Expired';
+            default:
+                return 'Unknown';
+        }
+    }
+
+    prettyPayoutStatus(status: ContractorPayoutStatus | string | null | undefined): string {
+        switch (status) {
+            case 'not_started':
+                return 'Not Started';
+            case 'onboarding_required':
+                return 'Onboarding Required';
+            case 'pending_verification':
+                return 'Pending Verification';
+            case 'enabled':
+                return 'Enabled';
+            case 'restricted':
+                return 'Restricted';
+            case 'disabled':
+                return 'Disabled';
+            default:
+                return 'Unknown';
+        }
+    }
+
+    onboardingPillClasses(value: string | null | undefined): string {
+        switch (value) {
+            case 'active':
+            case 'accepted':
+            case 'clear':
+            case 'enabled':
+                return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+            case 'pending':
+            case 'onboarding':
+            case 'pending_verification':
+            case 'onboarding_required':
+            case 'invited':
+                return 'bg-amber-50 text-amber-700 ring-amber-100';
+            case 'suspended':
+            case 'rejected':
+            case 'failed':
+            case 'restricted':
+            case 'disabled':
+            case 'expired':
+                return 'bg-red-50 text-red-700 ring-red-100';
+            default:
+                return 'bg-gray-50 text-gray-600 ring-gray-200';
+        }
     }
 
     toggleService(serviceId: string): void {

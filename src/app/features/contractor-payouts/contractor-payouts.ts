@@ -14,6 +14,7 @@ import {
   ExternalLinkIcon,
   Loader2Icon,
   LucideAngularModule,
+  WalletCardsIcon,
 } from 'lucide-angular';
 
 import { ToastService } from '../../core/toast/toast-service';
@@ -23,7 +24,22 @@ import {
   ContractorPayoutStatus,
 } from '../../core/contractor-payout/contractor-payout.model';
 
-type PayoutFilter = 'pending' | 'approved' | 'paid' | 'all';
+type PayoutFilter =
+  | 'pending'
+  | 'approved'
+  | 'processing'
+  | 'paid'
+  | 'failed'
+  | 'all';
+
+type ActivityTone = 'done' | 'active' | 'error' | 'muted';
+
+type PayoutActivityEvent = {
+  label: string;
+  value: string;
+  detail: string | null;
+  tone: ActivityTone;
+};
 
 @Component({
   selector: 'app-contractor-payouts',
@@ -43,8 +59,9 @@ export class ContractorPayouts {
   readonly checkIcon = CheckCircle2Icon;
   readonly externalLinkIcon = ExternalLinkIcon;
   readonly loaderIcon = Loader2Icon;
+  readonly walletIcon = WalletCardsIcon;
 
-  readonly activeFilter = signal<PayoutFilter>('pending');
+  readonly activeFilter = signal<PayoutFilter>('all');
 
   readonly filteredPayouts = computed(() => {
     const filter = this.activeFilter();
@@ -77,7 +94,7 @@ export class ContractorPayouts {
   }
 
   async approvePayout(payout: ContractorPayout): Promise<void> {
-    if (payout.status !== 'pending') return;
+    if (payout.status !== 'pending' && payout.status !== 'failed') return;
 
     const updated = await this.payoutsStore.updateStatus(payout.id, 'approved');
 
@@ -91,26 +108,26 @@ export class ContractorPayouts {
 
     this.toast.success(
       'Payout approved',
-      `${this.formatMoney(updated.totalCents)} is ready to be paid.`
+      `${this.formatMoney(updated.totalCents)} is ready to process.`
     );
   }
 
-  async markPaid(payout: ContractorPayout): Promise<void> {
+  async processPayout(payout: ContractorPayout): Promise<void> {
     if (payout.status !== 'approved') return;
 
-    const updated = await this.payoutsStore.updateStatus(payout.id, 'paid');
+    const updated = await this.payoutsStore.process(payout.id);
 
     if (!updated) {
       this.toast.error(
-        'Payout not marked paid',
-        this.payoutsStore.error() ?? 'Unable to mark this payout paid.'
+        'Payout not processed',
+        this.payoutsStore.error() ?? 'Unable to process this payout.'
       );
       return;
     }
 
     this.toast.success(
-      'Payout marked paid',
-      `${this.formatMoney(updated.totalCents)} has been marked paid.`
+      'Payout processed',
+      `${this.formatMoney(updated.totalCents)} was sent through Stripe.`
     );
   }
 
@@ -132,16 +149,159 @@ export class ContractorPayouts {
     return payout.repairSummary || `Repair ${payout.repairId}`;
   }
 
+  shopDebitLabel(payout: ContractorPayout): string {
+    if (!payout.stripeShopDebitAmountCents) return '—';
+
+    const fee = payout.stripeShopDebitFeeCents ?? 0;
+
+    return `${this.formatMoney(payout.stripeShopDebitAmountCents)} shop debit · ${this.formatMoney(fee)} fee`;
+  }
+
+  activityLog(payout: ContractorPayout): PayoutActivityEvent[] {
+    const events: PayoutActivityEvent[] = [
+      {
+        label: 'Created',
+        value: this.formatDate(payout.createdAt),
+        detail: 'Payout ledger entry created.',
+        tone: 'done',
+      },
+    ];
+
+    if (payout.approvedAt) {
+      events.push({
+        label: 'Approved',
+        value: this.formatDate(payout.approvedAt),
+        detail: payout.approvedBy
+          ? `Approved by ${payout.approvedBy}`
+          : 'Approved for Stripe processing.',
+        tone: 'done',
+      });
+    } else {
+      events.push({
+        label: 'Approval',
+        value: 'Waiting',
+        detail: 'Admin review is still pending.',
+        tone: payout.status === 'pending' ? 'active' : 'muted',
+      });
+    }
+
+    if (payout.processingAt) {
+      events.push({
+        label: 'Processing',
+        value: this.formatDate(payout.processingAt),
+        detail: 'Stripe payout processing started.',
+        tone: payout.status === 'processing' ? 'active' : 'done',
+      });
+    }
+
+    if (payout.stripeShopDebitPaymentId) {
+      events.push({
+        label: 'Shop debit',
+        value: this.formatMoney(payout.stripeShopDebitAmountCents ?? 0),
+        detail: `Fee: ${this.formatMoney(
+          payout.stripeShopDebitFeeCents ?? 0
+        )} · ${this.shortStripeId(payout.stripeShopDebitPaymentId)}`,
+        tone: 'done',
+      });
+    }
+
+    if (payout.stripeTransferId) {
+      events.push({
+        label: 'Contractor transfer',
+        value: this.formatMoney(payout.totalCents),
+        detail: this.shortStripeId(payout.stripeTransferId),
+        tone: 'done',
+      });
+    }
+
+    if (payout.paidAt) {
+      events.push({
+        label: 'Paid',
+        value: this.formatDate(payout.paidAt),
+        detail: 'Contractor payout completed successfully.',
+        tone: 'done',
+      });
+    }
+
+    if (payout.failedAt) {
+      events.push({
+        label: 'Failed',
+        value: this.formatDate(payout.failedAt),
+        detail: payout.failureReason || 'Stripe processing failed.',
+        tone: 'error',
+      });
+    }
+
+    if (
+      payout.status === 'approved' &&
+      !payout.processingAt &&
+      !payout.stripeTransferId
+    ) {
+      events.push({
+        label: 'Next step',
+        value: 'Process payout',
+        detail: 'Ready to debit the shop and transfer funds to the contractor.',
+        tone: 'active',
+      });
+    }
+
+    return events;
+  }
+
+  activityDotClasses(tone: ActivityTone): string {
+    switch (tone) {
+      case 'done':
+        return 'bg-emerald-500';
+      case 'active':
+        return 'bg-blue-500';
+      case 'error':
+        return 'bg-red-500';
+      case 'muted':
+      default:
+        return 'bg-gray-300';
+    }
+  }
+
+  activityCardClasses(tone: ActivityTone): string {
+    switch (tone) {
+      case 'done':
+        return 'border-emerald-100 bg-emerald-50/50';
+      case 'active':
+        return 'border-blue-100 bg-blue-50/50';
+      case 'error':
+        return 'border-red-100 bg-red-50/70';
+      case 'muted':
+      default:
+        return 'border-gray-100 bg-gray-50/70';
+    }
+  }
+
+  shortStripeId(value: string | null | undefined): string {
+    if (!value) return '—';
+
+    if (value.length <= 16) return value;
+
+    return `${value.slice(0, 10)}…${value.slice(-6)}`;
+  }
+
   prettyStatus(status: ContractorPayoutStatus): string {
     switch (status) {
       case 'pending':
         return 'Pending';
+      case 'held':
+        return 'Held';
       case 'approved':
         return 'Approved';
+      case 'processing':
+        return 'Processing';
       case 'paid':
         return 'Paid';
+      case 'failed':
+        return 'Failed';
       case 'disputed':
         return 'Disputed';
+      case 'canceled':
+        return 'Canceled';
       default:
         return status;
     }
@@ -153,10 +313,17 @@ export class ContractorPayouts {
         return 'border-amber-200 bg-amber-50 text-amber-700';
       case 'approved':
         return 'border-blue-200 bg-blue-50 text-blue-700';
+      case 'processing':
+        return 'border-purple-200 bg-purple-50 text-purple-700';
       case 'paid':
         return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'failed':
       case 'disputed':
         return 'border-red-200 bg-red-50 text-red-700';
+      case 'held':
+        return 'border-orange-200 bg-orange-50 text-orange-700';
+      case 'canceled':
+        return 'border-gray-200 bg-gray-50 text-gray-600';
       default:
         return 'border-gray-200 bg-gray-50 text-gray-600';
     }
