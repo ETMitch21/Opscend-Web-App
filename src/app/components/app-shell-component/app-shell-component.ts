@@ -21,6 +21,7 @@ import {
   BellIcon,
   CalendarCog,
   XIcon,
+  ToolboxIcon,
   PackageIcon,
   ShoppingCartIcon,
   ChevronDownIcon,
@@ -35,11 +36,13 @@ import type {
   InternalNotification,
   InternalNotificationEvent,
 } from '../../core/internal-notifications/internal-notification.types';
+import { BookingAdminService } from '../../core/booking/service';
 
 type NavItem = {
   label: string;
   route?: string;
   icon: LucideIconData;
+  badgeCount?: () => number;
   children?: {
     label: string;
     route: string;
@@ -79,6 +82,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private searchService = inject(SearchService);
   private internalNotificationService = inject(InternalNotificationService);
+  private bookingAdminService = inject(BookingAdminService);
 
   readonly bookOpenIcon = BookOpenIcon;
   readonly MenuIcon = MenuIcon;
@@ -98,16 +102,21 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly chevronDownIcon = ChevronDownIcon;
   readonly handshakeIcon = HandshakeIcon;
   readonly messageSquareQuoteIcon = MessageSquareQuote;
-  readonly walletCardsIcon = WalletCardsIcon
-  readonly calendarCogIcon = CalendarCog
+  readonly walletCardsIcon = WalletCardsIcon;
+  readonly calendarCogIcon = CalendarCog;
+  readonly toolboxIcon = ToolboxIcon;
 
   private readonly notificationPollMs = 15_000;
   private routerEventsSubscription: Subscription | null = null;
 
   layoutDashboardIcon: LucideIconData = LayoutDashboard;
 
+  public newQuoteRequestCount = signal(0);
   public sidebarOpen = signal(false);
-  public productsMenuOpen = signal(true);
+  public openNavSections = signal<Record<string, boolean>>({
+    Products: true,
+    Contractors: true,
+  });
   public profileMenuOpen = signal(false);
 
   public notificationMenuOpen = signal(false);
@@ -132,6 +141,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
+    { label: 'Services', route: '/services', icon: this.toolboxIcon },
     {
       label: 'Products',
       icon: this.boxesIcon,
@@ -159,7 +169,12 @@ export class AppShellComponent implements OnInit, OnDestroy {
       ]
     },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
-    { label: 'Quotes', route: '/quote-requests', icon: this.messageSquareQuoteIcon },
+    { 
+      label: 'Quotes', 
+      route: '/quote-requests', 
+      icon: this.messageSquareQuoteIcon,
+      badgeCount: () => this.newQuoteRequestCount()
+    },
     { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
   ];
 
@@ -174,7 +189,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }
 
     if (this.auth.getAccessToken()) {
-      await this.loadInternalNotifications();
+      await Promise.all([
+        this.loadInternalNotifications(),
+        this.refreshNewQuoteRequestCount(),
+      ]);
       this.startNotificationPolling();
     }
 
@@ -183,6 +201,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         if (this.auth.getAccessToken()) {
           void this.refreshNotificationsInBackground();
+          void this.refreshNewQuoteRequestCount();
         }
       });
   }
@@ -211,6 +230,23 @@ export class AppShellComponent implements OnInit, OnDestroy {
   closeSidebar(): void {
     this.sidebarOpen.set(false);
   }
+
+  async refreshNewQuoteRequestCount(): Promise<void> {
+  try {
+    const response = await firstValueFrom(
+      this.bookingAdminService.listQuoteRequests({ limit: 100 })
+    );
+
+    const count = (response.data ?? []).filter(
+      (request) => request.requestStatus === 'new'
+    ).length;
+
+    this.newQuoteRequestCount.set(count);
+  } catch (error) {
+    console.error('Failed to refresh quote request count.', error);
+    this.newQuoteRequestCount.set(0);
+  }
+}
 
   toggleProfileMenu(event?: MouseEvent): void {
     event?.stopPropagation();
@@ -723,14 +759,21 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleProductsMenu(): void {
-    this.productsMenuOpen.update((open) => !open);
+  toggleNavSection(label: string): void {
+    this.openNavSections.update((sections) => ({
+      ...sections,
+      [label]: !sections[label],
+    }));
   }
 
-  isProductsSectionActive(): boolean {
-    const url = this.router.url.split('?')[0].split('#')[0];
+  isNavSectionOpen(label: string): boolean {
+    return !!this.openNavSections()[label];
+  }
 
-    return url === '/products' || url.startsWith('/products/');
+  isNavSectionActive(item: NavItem): boolean {
+    if (!item.children?.length) return false;
+
+    return item.children.some((child) => this.isNavRouteActive(child.route));
   }
 
   isNavRouteActive(route: string | undefined): boolean {
@@ -789,6 +832,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   onVisibilityChange(): void {
     if (document.visibilityState === 'visible') {
       void this.refreshNotificationsInBackground();
+      void this.refreshNewQuoteRequestCount();
     }
   }
 }

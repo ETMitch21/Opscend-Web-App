@@ -34,8 +34,8 @@
                     <div>
                         <button type="button"
                             class="flex w-full cursor-pointer items-center gap-3 rounded-app-md border border-transparent px-3 py-2.5 text-sm font-medium transition hover:bg-app-surface-muted hover:text-app-text"
-                            [ngClass]="isProductsSectionActive() ? 'bg-brand/8 text-app-text border-brand/20' : 'text-app-text-muted'"
-                            (click)="toggleProductsMenu()">
+                            [ngClass]="isNavSectionActive(item) ? 'bg-brand/8 text-app-text border-brand/20' : 'text-app-text-muted'"
+                            (click)="toggleNavSection(item.label)">
                             <lucide-icon [size]="18" [img]="item.icon"></lucide-icon>
 
                             <span class="min-w-0 flex-1 text-left">
@@ -43,32 +43,45 @@
                             </span>
 
                             <lucide-icon [size]="16" [img]="chevronDownIcon" class="transition-transform"
-                                [ngClass]="productsMenuOpen() ? 'rotate-180' : ''">
+                                [ngClass]="isNavSectionOpen(item.label) ? 'rotate-180' : ''">
                             </lucide-icon>
                         </button>
 
-                        @if (productsMenuOpen()) {
+                        @if (isNavSectionOpen(item.label)) {
                         <div class="mt-1 space-y-1 pl-8">
                             @for (child of item.children; track child.route) {
                             <a [routerLink]="child.route"
                                 class="flex cursor-pointer items-center gap-2 rounded-app-md border px-3 py-2 text-sm font-medium transition hover:bg-app-surface-muted hover:text-app-text"
                                 [ngClass]="isNavRouteActive(child.route)
-        ? 'bg-brand/8 text-app-text border-brand/20'
-        : 'text-app-text-muted border-transparent'" (click)="closeSidebar()">
+            ? 'bg-brand/8 text-app-text border-brand/20'
+            : 'text-app-text-muted border-transparent'" (click)="closeSidebar()">
                                 <lucide-icon [size]="16" [img]="child.icon"></lucide-icon>
                                 <span>{{ child.label }}</span>
                             </a>
                             }
                         </div>
                         }
+
+
                     </div>
                     } @else {
                     <a [routerLink]="item.route" routerLinkActive="bg-brand/8 text-app-text border-brand/20"
                         [routerLinkActiveOptions]="{ exact: item.route === '/' }"
                         class="cursor-pointer flex items-center gap-3 rounded-app-md border border-transparent px-3 py-2.5 text-sm font-medium text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
                         (click)="closeSidebar()">
+
                         <lucide-icon [size]="18" [img]="item.icon"></lucide-icon>
-                        <span>{{ item.label }}</span>
+
+                        <span class="min-w-0 flex-1">
+                            {{ item.label }}
+                        </span>
+
+                        @if (item.badgeCount && item.badgeCount() > 0) {
+                        <span
+                            class="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-bold leading-none text-white">
+                            {{ item.badgeCount() > 99 ? '99+' : item.badgeCount() }}
+                        </span>
+                        }
                     </a>
                     }
                     }

@@ -32,6 +32,7 @@ import { ContractorPayouts } from './features/contractor-payouts/contractor-payo
 import { ShopBookingsComponent } from './features/settings/shop-bookings/shop-bookings';
 import { PublicBooking } from './features/public/public-booking/public-booking';
 import { QuoteRequestsOverview } from './features/bookings/quote-requests/quote-requests-overview';
+import { Services } from './features/services/services.component';
 
 export const routes: Routes = [
     {
@@ -106,6 +107,11 @@ export const routes: Routes = [
                 ),
             }
         ],
+        canActivate: [AuthGuard]
+    },
+    {
+        path: 'services',
+        component: Services,
         canActivate: [AuthGuard]
     },
     {

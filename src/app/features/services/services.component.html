@@ -1,0 +1,412 @@
+<div class="">
+    <!-- Top Header -->
+    <div class="flex items-center justify-between px-6 pt-1 pb-4">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900">Services</h1>
+            <p class="mt-1 text-sm text-gray-500">
+                Manage labor, repair offerings, pricing, duration, and service tags.
+            </p>
+        </div>
+
+        <button
+            class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft"
+            (click)="openCreateDrawer()">
+            Create Service
+        </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-6">
+        <nav class="flex space-x-6 text-sm font-medium text-gray-600">
+            <button (click)="setView('all')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'all'" [class.text-brand]="activeView() === 'all'"
+                [class.border-transparent]="activeView() !== 'all'"
+                [class.hover:text-gray-900]="activeView() !== 'all'">
+                All Services
+                <span class="ml-1 text-xs text-gray-400">{{ counts().all }}</span>
+            </button>
+
+            <button (click)="setView('active')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'active'" [class.text-brand]="activeView() === 'active'"
+                [class.border-transparent]="activeView() !== 'active'"
+                [class.hover:text-gray-900]="activeView() !== 'active'">
+                Active
+                <span class="ml-1 text-xs text-gray-400">{{ counts().active }}</span>
+            </button>
+
+            <button (click)="setView('inactive')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'inactive'" [class.text-brand]="activeView() === 'inactive'"
+                [class.border-transparent]="activeView() !== 'inactive'"
+                [class.hover:text-gray-900]="activeView() !== 'inactive'">
+                Inactive
+                <span class="ml-1 text-xs text-gray-400">{{ counts().inactive }}</span>
+            </button>
+
+            <button (click)="setView('archived')" class="cursor-pointer border-b-2 pb-3 transition"
+                [class.border-brand]="activeView() === 'archived'" [class.text-brand]="activeView() === 'archived'"
+                [class.border-transparent]="activeView() !== 'archived'"
+                [class.hover:text-gray-900]="activeView() !== 'archived'">
+                Archived
+                <span class="ml-1 text-xs text-gray-400">{{ counts().archived }}</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Search + Filters -->
+    <div class="flex items-center justify-between gap-4 px-6 py-4">
+        <div class="relative w-80">
+            <input type="text" placeholder="Search services..."
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 pl-10 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                [value]="searchTerm()" (input)="setSearchTerm($any($event.target).value)" />
+
+            <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
+                stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+            </svg>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <input type="text" placeholder="Filter tag..."
+                class="w-44 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                [value]="selectedTag()" (input)="setTag($any($event.target).value)" />
+
+            @if (searchTerm() || selectedTag()) {
+            <button (click)="clearFilters()"
+                class="cursor-pointer rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Clear
+            </button>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="px-6 pb-6">
+    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <!-- Loading state -->
+        @if (loading()) {
+        <div class="flex items-center justify-center px-6 py-16">
+            <div class="text-sm text-gray-500">Loading services...</div>
+        </div>
+        }
+
+        <!-- Error state -->
+        @else if (error()) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <p class="text-sm font-medium text-red-600">{{ error() }}</p>
+            <button (click)="refresh()"
+                class="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
+                Try Again
+            </button>
+        </div>
+        }
+
+        <!-- Empty state -->
+        @else if (filteredServices().length === 0) {
+        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+            <h3 class="text-base font-semibold text-gray-900">No services found</h3>
+            <p class="mt-1 text-sm text-gray-500">
+                Try adjusting your filters or create a new service.
+            </p>
+        </div>
+        }
+
+        <!-- Table -->
+        @else {
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50/80">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Service
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Status
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Price
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Duration
+                        </th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Tags
+                        </th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            &nbsp;
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    @for (service of filteredServices(); track trackByServiceId($index, service)) {
+                    <tr class="transition hover:bg-gray-50/70">
+                        <!-- Service -->
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex flex-col gap-1">
+                                <div class="max-w-[320px] truncate text-sm font-semibold text-gray-900"
+                                    [title]="service.name">
+                                    {{ service.name }}
+                                </div>
+
+                                <div class="text-xs text-gray-500">
+                                    @if (service.code) {
+                                    Code: {{ service.code }}
+                                    } @else {
+                                    {{ service.id }}
+                                    }
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-6 py-4 align-top">
+                            @if (service.deletedAt) {
+                            <span
+                                class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
+                                Archived
+                            </span>
+                            } @else {
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                                [class.bg-emerald-50]="service.status === 'active'"
+                                [class.text-emerald-700]="service.status === 'active'"
+                                [class.bg-gray-100]="service.status === 'inactive'"
+                                [class.text-gray-700]="service.status === 'inactive'">
+                                {{ service.status | titlecase }}
+                            </span>
+                            }
+                        </td>
+
+                        <!-- Price -->
+                        <td class="px-6 py-4 align-top">
+                            <span class="text-sm font-medium text-gray-900">
+                                {{ formatMoney(service.price) }}
+                            </span>
+                        </td>
+
+                        <!-- Duration -->
+                        <td class="px-6 py-4 align-top">
+                            <span class="text-sm text-gray-700">
+                                {{ formatDuration(service.duration) }}
+                            </span>
+                        </td>
+
+                        <!-- Tags -->
+                        <td class="px-6 py-4 align-top">
+                            @if (service.tags.length) {
+                            <div class="max-w-[260px] text-sm text-gray-600" [title]="service.tags.join(', ')">
+                                <span class="font-medium text-gray-700">
+                                    {{ service.tags[0] }}
+                                </span>
+
+                                @if (service.tags.length > 1) {
+                                <span class="text-gray-400">
+                                    · {{ service.tags[1] }}
+                                </span>
+                                }
+
+                                @if (service.tags.length > 2) {
+                                <span class="text-gray-400">
+                                    · +{{ service.tags.length - 2 }}
+                                </span>
+                                }
+                            </div>
+                            } @else {
+                            <span class="text-sm text-gray-400">—</span>
+                            }
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-6 py-4 align-top text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                @if (!service.deletedAt) {
+                                <button
+                                    class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    (click)="openEditDrawer(service)">
+                                    Edit
+                                </button>
+                                }
+
+                                @if (service.deletedAt) {
+                                <button
+                                    class="cursor-pointer rounded-lg border border-emerald-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+                                    (click)="restoreService(service.id)">
+                                    Restore
+                                </button>
+                                } @else {
+                                <button
+                                    class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50"
+                                    (click)="archiveService(service.id)">
+                                    Archive
+                                </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer / pagination -->
+        <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+            <p class="text-sm text-gray-500">
+                Showing {{ filteredServices().length }} service<span
+                    [class.hidden]="filteredServices().length === 1">s</span>
+            </p>
+
+            @if (nextCursor()) {
+            <button (click)="loadMore()" [disabled]="loadingMore()"
+                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50">
+                {{ loadingMore() ? 'Loading...' : 'Load more' }}
+            </button>
+            }
+        </div>
+        }
+    </div>
+</div>
+
+@if (drawerOpen()) {
+<div class="fixed inset-0 z-50">
+    <button class="absolute inset-0 cursor-default bg-gray-900/40" type="button" aria-label="Close service drawer"
+        (click)="closeDrawer()"></button>
+
+    <aside
+        class="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl">
+        <!-- Drawer header -->
+        <div class="border-b border-gray-200 px-6 py-5">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-brand">
+                        {{ drawerMode() === 'create' ? 'New service' : 'Edit service' }}
+                    </p>
+                    <h2 class="mt-1 text-xl font-semibold text-gray-900">
+                        {{ drawerMode() === 'create' ? 'Create Service' : form().name || 'Edit Service' }}
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Set the service name, price, default duration, and searchable tags.
+                    </p>
+                </div>
+
+                <button type="button"
+                    class="cursor-pointer rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                    (click)="closeDrawer()">
+                    <span class="sr-only">Close</span>
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Drawer body -->
+        <div class="flex-1 overflow-y-auto px-6 py-6">
+            @if (drawerError()) {
+            <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {{ drawerError() }}
+            </div>
+            }
+
+            <div class="space-y-5">
+                <label class="block">
+                    <span class="text-sm font-medium text-gray-700">Service name</span>
+                    <input type="text"
+                        class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                        placeholder="Screen Replacement" [value]="form().name"
+                        (input)="updateForm('name', $any($event.target).value)" />
+                </label>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label class="block">
+                        <span class="text-sm font-medium text-gray-700">Service code</span>
+                        <input type="text"
+                            class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                            placeholder="SCREEN" [value]="form().code"
+                            (input)="updateForm('code', $any($event.target).value)" />
+                        <span class="mt-1 block text-xs text-gray-400">
+                            Optional. Letters, numbers, dashes, or underscores.
+                        </span>
+                    </label>
+
+                    @if (drawerMode() === 'edit') {
+                    <label class="block">
+                        <span class="text-sm font-medium text-gray-700">Status</span>
+                        <select
+                            class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                            [value]="form().status" (change)="updateForm('status', $any($event.target).value)">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </label>
+                    } @else {
+                    <div class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                        <p class="text-sm font-medium text-emerald-800">Created as active</p>
+                        <p class="mt-1 text-xs text-emerald-700">
+                            You can make it inactive later from the edit drawer.
+                        </p>
+                    </div>
+                    }
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label class="block">
+                        <span class="text-sm font-medium text-gray-700">Price</span>
+                        <div class="relative mt-1">
+                            <span class="absolute left-3 top-2 text-sm text-gray-400">$</span>
+                            <input type="text" inputmode="decimal"
+                                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pl-7 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                                placeholder="129.00" [value]="form().price"
+                                (input)="updateForm('price', $any($event.target).value)" />
+                        </div>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-sm font-medium text-gray-700">Default duration</span>
+                        <div class="relative mt-1">
+                            <input type="number" min="1" step="1" inputmode="numeric"
+                                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-14 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                                placeholder="60" [value]="form().duration"
+                                (input)="updateForm('duration', $any($event.target).value)" />
+                            <span class="absolute right-3 top-2 text-sm text-gray-400">mins</span>
+                        </div>
+                        <span class="mt-1 block text-xs text-gray-400">
+                            Leave blank if duration varies.
+                        </span>
+                    </label>
+                </div>
+
+                <label class="block">
+                    <span class="text-sm font-medium text-gray-700">Tags</span>
+                    <textarea rows="4"
+                        class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+                        placeholder="iphone, screen, repair" [value]="form().tags"
+                        (input)="updateForm('tags', $any($event.target).value)"></textarea>
+                    <span class="mt-1 block text-xs text-gray-400">
+                        Separate tags with commas or new lines. Tags are saved lowercase.
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Drawer footer -->
+        <div class="flex items-center justify-between gap-3 border-t border-gray-200 px-6 py-4">
+            <button type="button"
+                class="cursor-pointer rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                (click)="closeDrawer()" [disabled]="saving()">
+                Cancel
+            </button>
+
+            <button type="button"
+                class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                (click)="saveService()" [disabled]="saving() || !formValid()">
+                @if (saving()) {
+                Saving...
+                } @else {
+                {{ drawerMode() === 'create' ? 'Create Service' : 'Save Changes' }}
+                }
+            </button>
+        </div>
+    </aside>
+</div>
+}

@@ -1,508 +1,801 @@
-<div class="mt-4 mx-auto max-w-1/2">
-    <!-- Top Header -->
-    <div class="flex items-center justify-between px-6 pt-1 pb-4">
-        <div class="flex justify-between items-center gap-2">
+<div class="mx-auto mt-4 max-w-6xl px-4 pb-10">
+    <div class="mb-5 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
             <button type="button" class="cursor-pointer text-sm font-medium hover:text-brand"
                 [routerLink]="['/repairs']">
                 <lucide-icon [name]="leftChevronIcon"></lucide-icon>
             </button>
-            <h1 class="text-2xl font-semibold text-gray-900">
-                New Repair
-            </h1>
+
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900">Create Repair</h1>
+            </div>
         </div>
 
-        <button
-            class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-soft transition disabled:opacity-80 disabled:cursor-not-allowed"
-            [disabled]="!canCreateRepair()" (click)="createRepair()">
-            Create Repair
+        <button type="button"
+            class="cursor-pointer rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+            [disabled]="currentStep() === 'review' ? !canCreateRepair() : creatingRepair" (click)="onPrimaryAction()">
+            {{ primaryButtonLabel() }}
         </button>
     </div>
 
-    <form [formGroup]="newRepairForm">
-        <div class="" [ngClass]="!newCustomer ? 'flex items-center justify-between gap-4 px-6 py-4' : ''">
-            <div class="w-full" (click)="$event.stopPropagation()">
-                <div class="relative w-full">
-                    @if (!selectedCustomer && !newCustomer) {
-                    <input type="text" id="customer" placeholder=" " formControlName="customerSearchControl"
-                        (focus)="onCustomerFocus()" autocomplete="off" [readonly]="!!selectedCustomer"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        [class.pr-28]="!selectedCustomer" [class.cursor-default]="!!selectedCustomer"
-                        [class.bg-gray-50]="!!selectedCustomer" />
-
-                    <label for="customer"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Customer<sup class="text-danger text-xs">*</sup>
-                    </label>
-                    }
-
-                    @if (!selectedCustomer && !newCustomer) {
-                    <button type="button"
-                        class="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-brand hover:opacity-80"
-                        (click)="startNewCustomer()">
-                        Add New
+    <form [formGroup]="newRepairForm" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div class="space-y-5">
+            <div class="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="grid gap-2 sm:grid-cols-5">
+                    @for (step of steps; track step.key; let index = $index) {
+                    <button type="button" class="cursor-pointer rounded-2xl border px-3 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-45"
+                        [disabled]="isStepDisabled(step.key)" [ngClass]="currentStep() === step.key
+                            ? 'border-brand bg-brand/5 shadow-sm'
+                            : isStepComplete(step.key)
+                                ? 'border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50'
+                                : 'border-gray-200 bg-white hover:bg-gray-50'" (click)="goToStep(step.key)">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold text-gray-900">{{ step.label }}</span>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">{{ step.eyebrow }}</p>
                     </button>
                     }
+                </div>
+            </div>
 
-                    @if (showCustomerResults && !selectedCustomer && !newCustomer) {
-                    <div
-                        class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-                        @if (searchingCustomers) {
-                        <div class="px-4 py-3 text-sm text-gray-500">
-                            Searching customers...
-                        </div>
-                        } @else if (customerResults.length > 0) {
-                        @for (customer of customerResults; track customer.id) {
-                        <button type="button"
-                            class="flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
-                            (click)="selectCustomer(customer); $event.stopPropagation()">
-                            <span class="text-sm font-medium text-gray-900">
-                                {{ customer.name || 'Unnamed Customer' }}
-                            </span>
-                            <span class="text-xs text-gray-500">
-                                {{ customer.email || 'No email' }} · {{ customer.phone || 'No phone' | phone }}
-                            </span>
+            <div class="rounded-3xl border border-gray-200 bg-white shadow-sm">
+                @if (currentStep() === 'customer') {
+                <section class="p-6">
+                    <div class="mb-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-brand">Step 1</p>
+                        <h2 class="mt-1 text-xl font-semibold text-gray-900">Choose the customer</h2>
+                        <p class="mt-1 text-sm text-gray-500">Search an existing customer or create a new one.</p>
+                    </div>
+
+                    @if (!newCustomer) {
+                    <div class="relative" (click)="$event.stopPropagation()">
+                        <input type="text" id="customer" placeholder=" " formControlName="customerSearchControl"
+                            (focus)="onCustomerFocus()" autocomplete="off" [readonly]="!!selectedCustomer"
+                            class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            [class.pr-28]="!selectedCustomer" [class.cursor-default]="!!selectedCustomer" [class.bg-gray-50]="!!selectedCustomer" />
+
+                        <label for="customer"
+                            class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                            Customer<sup class="text-danger text-xs">*</sup>
+                        </label>
+
+                        @if (!selectedCustomer) {
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-semibold text-brand hover:opacity-80"
+                            (click)="startNewCustomer(); $event.stopPropagation()">
+                            Add New
                         </button>
                         }
-                        } @else if (customerSearchControl.value.trim().length >= 2) {
-                        <div class="px-4 py-3 text-sm text-gray-500">
-                            No matching customers found.
-                        </div>
-                        }
-                    </div>
-                    }
-                </div>
 
-                @if (selectedCustomer) {
-                <div class="mt-3 rounded-xl border border-gray-300 bg-white px-4 py-3">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-gray-900">
-                                {{ selectedCustomer.name || 'Unnamed Customer' }}
-                            </p>
-                            <p class="truncate text-xs text-gray-500">
-                                {{ selectedCustomer.email || 'No email' }} · {{ selectedCustomer.phone || 'No phone' |
-                                phone }}
-                            </p>
-                        </div>
-
-                        <button type="button"
-                            class="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                            (click)="clearSelectedCustomer()">
-                            Clear
-                        </button>
-                    </div>
-                </div>
-                }
-            </div>
-        </div>
-
-        @if (newCustomer) {
-        <div class="mx-6 my-2 rounded-xl border border-dashed border-gray-300 bg-gray-50/50">
-            <div class="flex items-center justify-between px-4 pt-3 pb-1">
-                <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    New Customer Details
-                </span>
-
-                <button type="button" class="cursor-pointer text-xs text-gray-400 hover:text-gray-600"
-                    (click)="cancelNewCustomer()">
-                    Cancel
-                </button>
-            </div>
-
-            <div class="flex items-center justify-between gap-4 px-4 py-3">
-                <div class="relative w-full">
-                    <input type="text" id="name" placeholder=" " formControlName="name"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="name"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Full name<sup class="text-danger text-xs">*</sup>
-                    </label>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between gap-4 px-4 py-3">
-                <div class="relative w-full">
-                    <input type="email" id="email" placeholder=" " formControlName="email"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="email"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Email address<sup class="text-danger text-xs">*</sup>
-                    </label>
-                </div>
-
-                <div class="relative w-full">
-                    <input type="tel" id="phone" placeholder=" " formControlName="phone"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="phone"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Phone number<sup class="text-danger text-xs">*</sup>
-                    </label>
-                </div>
-            </div>
-        </div>
-        }
-
-        <div class="" [ngClass]="!newDevice ? 'flex items-center justify-between gap-4 px-6 py-4' : ''">
-            <div class="w-full" (click)="$event.stopPropagation()">
-                <div class="relative w-full">
-                    @if (!selectedDevice && !newDevice) {
-                    <input type="text" id="device" placeholder=" " formControlName="deviceSearchControl"
-                        (focus)="onDeviceFocus()" autocomplete="off"
-                        [readonly]="!!selectedDevice || !canSearchDevices()"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                        [class.pr-28]="!selectedDevice && canSearchDevices()"
-                        [class.cursor-default]="!!selectedDevice || !canSearchDevices()"
-                        [class.bg-gray-50]="!!selectedDevice || !canSearchDevices()" />
-
-                    <label for="device"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Device<sup class="text-danger text-xs">*</sup>
-                    </label>
-                    }
-
-                    @if (!selectedDevice && !newDevice && canSearchDevices()) {
-                    <button type="button"
-                        class="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-brand hover:opacity-80"
-                        (click)="startNewDevice()">
-                        Add New
-                    </button>
-                    }
-
-                    @if (!selectedDevice && !newDevice && !canSearchDevices()) {
-                    <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-gray-400">
-                        Select customer first
-                    </div>
-                    }
-
-                    @if (showDeviceResults && !selectedDevice && !newDevice) {
-                    <div
-                        class="absolute z-40 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-                        @if (searchingDevices) {
-                        <div class="px-4 py-3 text-sm text-gray-500">
-                            Searching devices...
-                        </div>
-                        } @else if (deviceResults.length > 0) {
-                        @for (device of deviceResults; track device.id) {
-                        <button type="button"
-                            class="flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
-                            (click)="selectDevice(device); $event.stopPropagation()">
-                            <span class="text-sm font-medium text-gray-900">
-                                {{ getDeviceDisplay(device) }}
-                            </span>
-                            <span class="text-xs text-gray-500">
-                                {{ getDeviceSecondary(device) || 'No IMEI or serial on file' }}
-                            </span>
-                        </button>
-                        }
-                        } @else if (deviceSearchControl.value.trim().length >= 2) {
-                        <div class="px-4 py-3 text-sm text-gray-500">
-                            No matching devices found.
-                        </div>
-                        }
-                    </div>
-                    }
-                </div>
-
-                @if (selectedDevice) {
-                <div class="mt-3 rounded-xl border border-gray-300 bg-white px-4 py-3">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-gray-900">
-                                {{ getDeviceDisplay(selectedDevice) }}
-                            </p>
-                            <p class="truncate text-xs text-gray-500">
-                                {{ getDeviceSecondary(selectedDevice) || 'No IMEI or serial on file' }}
-                            </p>
-                        </div>
-
-                        <button type="button"
-                            class="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-                            (click)="clearSelectedDevice()">
-                            Clear
-                        </button>
-                    </div>
-                </div>
-                }
-            </div>
-        </div>
-
-        @if (newDevice) {
-        <div class="mx-6 my-2 rounded-xl border border-dashed border-gray-300 bg-gray-50/50">
-            <div class="flex items-center justify-between px-4 pt-3 pb-1">
-                <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    New Device Details
-                </span>
-
-                <button type="button" class="cursor-pointer text-xs text-gray-400 hover:text-gray-600"
-                    (click)="cancelNewDevice()">
-                    Cancel
-                </button>
-            </div>
-
-            <div class="flex items-center justify-between gap-4 px-4 py-3">
-                <div class="relative w-full">
-                    <input type="text" id="nickname" placeholder=" " formControlName="nickname"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="nickname"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Nickname
-                    </label>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between gap-4 px-4 py-3">
-                <div class="relative w-full">
-                    <input type="text" id="brand" placeholder=" " formControlName="brand"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="brand"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Brand<sup class="text-danger text-xs">*</sup>
-                    </label>
-                </div>
-
-                <div class="relative w-full">
-                    <input type="text" id="model" placeholder=" " formControlName="model"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="model"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Model<sup class="text-danger text-xs">*</sup>
-                    </label>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between gap-4 px-4 py-3">
-                <div class="relative w-full">
-                    <input type="text" id="imei" placeholder=" " formControlName="imei"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="imei"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        IMEI
-                    </label>
-                </div>
-
-                <div class="relative w-full">
-                    <input type="text" id="serial" placeholder=" " formControlName="serial"
-                        class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                    <label for="serial"
-                        class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                        Serial Number
-                    </label>
-                </div>
-            </div>
-        </div>
-        }
-
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <textarea id="problemSummary" rows="4" placeholder=" " formControlName="problemSummary"
-                    class="peer w-full px-4 pt-6 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"></textarea>
-                <label for="problemSummary"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Problem Summary
-                </label>
-                <div class="flex justify-between mt-1 me-2 text-xs text-gray-400">
-                    <span></span>
-                    <span>{{ newRepairForm.controls['problemSummary'].value.length }} / 500</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="px-6 py-1">
-            <div class="relative w-full">
-                <input type="number" id="quotedPriceDollars" placeholder=" " formControlName="quotedPriceDollars"
-                    min="0" step="0.01"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="quotedPriceDollars"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Quoted Price
-                </label>
-            </div>
-
-            <p class="mt-2 ps-1 text-xs text-gray-500">
-                Optional. This becomes the default repair service line item on the linked order.
-            </p>
-        </div>
-
-        @if (onsiteEnabled()) {
-        <div class="border-t border-gray-200 my-2 mx-8"></div>
-
-        <div class="px-6 py-4">
-            <div class="rounded-2xl border border-gray-200 bg-white p-5">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-semibold text-gray-900">Service Location</h2>
-                        <p class="mt-1 text-sm text-gray-500">Choose whether this repair is in-shop or on-site.</p>
-                    </div>
-                </div>
-
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                    <button type="button" class="cursor-pointer rounded-2xl border px-4 py-4 text-left transition"
-                        [ngClass]="newRepairForm.controls.serviceMode.value === 'in_shop'
-                          ? 'border-brand bg-brand/5 shadow-sm'
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'"
-                        (click)="onServiceModeChange('in_shop')">
-                        <div class="text-sm font-semibold text-gray-900">In-Shop</div>
-                        <div class="mt-1 text-xs text-gray-500">Customer brings the device in.</div>
-                    </button>
-
-                    <button type="button" class="cursor-pointer rounded-2xl border px-4 py-4 text-left transition"
-                        [ngClass]="newRepairForm.controls.serviceMode.value === 'on_site'
-                          ? 'border-brand bg-brand/5 shadow-sm'
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'"
-                        (click)="onServiceModeChange('on_site')">
-                        <div class="text-sm font-semibold text-gray-900">On-Site</div>
-                        <div class="mt-1 text-xs text-gray-500">You travel to the customer.</div>
-                    </button>
-                </div>
-
-                @if (newRepairForm.controls.serviceMode.value === 'on_site') {
-                <div class="mt-5 grid gap-4">
-                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                        <p class="text-sm font-medium text-amber-900">On-site repair</p>
-                        <p class="mt-1 text-xs text-amber-700">
-                            @if (onsiteTripFeeEnabled() && onsiteDefaultTripFeeCents() != null) {
-                            This repair will automatically include a trip fee of
-                            {{ onsiteDefaultTripFeeCents()! / 100 | currency:'USD':'symbol':'1.2-2' }}.
-                            } @else {
-                            This repair will be completed on-site at the customer address below.
-                            }
-                        </p>
-                    </div>
-
-                    @if (!creatingInlineAddress) {
-                    <div>
-                        <div class="mb-2 flex items-center justify-between gap-3">
-                            <label class="block text-sm font-medium text-gray-700">Service Address</label>
-
-                            <button type="button"
-                                class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                (click)="startInlineAddress()">
-                                Add New Address
+                        @if (showCustomerResults && !selectedCustomer) {
+                        <div class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                            @if (searchingCustomers) {
+                            <div class="px-4 py-3 text-sm text-gray-500">Searching customers...</div>
+                            } @else if (customerResults.length > 0) {
+                            @for (customer of customerResults; track customer.id) {
+                            <button type="button" class="flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
+                                (click)="selectCustomer(customer); $event.stopPropagation()">
+                                <span class="text-sm font-medium text-gray-900">{{ customer.name || 'Unnamed Customer' }}</span>
+                                <span class="text-xs text-gray-500">{{ customer.email || 'No email' }} · {{ customer.phone || 'No phone' | phone }}</span>
                             </button>
-                        </div>
-
-                        <select formControlName="serviceAddressId"
-                            (change)="onServiceAddressSelectionChange()"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand"
-                            [class.border-red-300]="newRepairForm.controls.serviceAddressId.invalid && newRepairForm.controls.serviceAddressId.touched">
-                            <option [ngValue]="null">Select an address</option>
-
-                            @for (address of customerAddresses; track address.id) {
-                            <option [value]="address.id">
-                                {{ formatAddressLabel(address) }} — {{ formatAddressSummary(address) }}
-                            </option>
                             }
-                        </select>
-
-                        @if (loadingCustomerAddresses) {
-                        <p class="mt-2 text-xs text-gray-500">Loading customer addresses...</p>
-                        } @else if (!customerAddresses.length) {
-                        <p class="mt-2 text-xs text-gray-500">
-                            No saved addresses yet. Add one below.
-                        </p>
+                            } @else if (customerSearchControl.value.trim().length >= 2) {
+                            <div class="px-4 py-3 text-sm text-gray-500">No matching customers found.</div>
+                            }
+                        </div>
                         }
                     </div>
                     }
 
-                    @if (creatingInlineAddress) {
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                        <div class="mb-4 flex items-center justify-between gap-3">
-                            <div>
-                                <div class="text-sm font-medium text-gray-900">New Service Address</div>
-                                <div class="mt-1 text-xs text-gray-500">This address will be saved to the customer.
-                                </div>
+                    @if (selectedCustomer) {
+                    <div class="mt-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-gray-900">{{ selectedCustomer.name || 'Unnamed Customer' }}</p>
+                                <p class="truncate text-xs text-gray-500">{{ selectedCustomer.email || 'No email' }} · {{ selectedCustomer.phone || 'No phone' | phone }}</p>
                             </div>
-
-                            @if (customerAddresses.length) {
-                            <button type="button"
-                                class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                (click)="cancelInlineAddress()">
-                                Cancel
+                            <button type="button" class="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                                (click)="clearSelectedCustomer()">
+                                Clear
                             </button>
-                            }
+                        </div>
+                    </div>
+                    }
+
+                    @if (newCustomer) {
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-4">
+                        <div class="mb-4 flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">New Customer Details</p>
+                                <p class="mt-1 text-xs text-gray-500">This customer will be created when the repair is created.</p>
+                            </div>
+                            <button type="button" class="cursor-pointer text-xs text-gray-400 hover:text-gray-600" (click)="cancelNewCustomer()">Cancel</button>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="sm:col-span-2">
-                                <input type="text" formControlName="addressLabel"
-                                    placeholder="Label (Home, Work, Office)"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                            <div class="relative sm:col-span-2">
+                                <input type="text" id="name" placeholder=" " formControlName="name"
+                                    class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    [class.border-red-300]="newRepairForm.controls.name.invalid && newRepairForm.controls.name.touched" />
+                                <label for="name" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                    Full name<sup class="text-danger text-xs">*</sup>
+                                </label>
+                                @if (newRepairForm.controls.name.invalid && newRepairForm.controls.name.touched) {
+                                <p class="mt-1 text-xs text-red-600">Customer name is required.</p>
+                                }
                             </div>
 
-                            <div class="sm:col-span-2">
-                                <input type="text" formControlName="addressLine1" placeholder="Address line 1"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                            <div class="relative">
+                                <input type="email" id="email" placeholder=" " formControlName="email"
+                                    class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    [class.border-red-300]="newRepairForm.controls.email.invalid && newRepairForm.controls.email.touched" />
+                                <label for="email" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                    Email address<sup class="text-danger text-xs">*</sup>
+                                </label>
+                                @if (newRepairForm.controls.email.invalid && newRepairForm.controls.email.touched) {
+                                <p class="mt-1 text-xs text-red-600">A valid email is required.</p>
+                                }
                             </div>
 
-                            <div class="sm:col-span-2">
-                                <input type="text" formControlName="addressLine2" placeholder="Address line 2"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
-                            </div>
-
-                            <div>
-                                <input type="text" formControlName="addressCity" placeholder="City"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
-                            </div>
-
-                            <div>
-                                <select formControlName="addressState"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand">
-                                    <option value="">State</option>
-                                    @for (state of states; track state.value) {
-                                    <option [value]="state.value">
-                                        {{ state.label }}
-                                    </option>
-                                    }
-                                </select>
-                            </div>
-
-                            <div>
-                                <input type="text" formControlName="addressPostalCode" placeholder="Postal Code"
-                                    (blur)="onInlineAddressPostalBlur()"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
-                            </div>
-
-                            <div>
-                                <input type="text" [value]="shopCountry" disabled
-                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none" />
-                            </div>
-
-                            <div class="sm:col-span-2">
-                                <textarea rows="3" formControlName="addressNotes" placeholder="Notes"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand resize-none"></textarea>
+                            <div class="relative">
+                                <input type="tel" id="phone" placeholder=" " formControlName="phone"
+                                    class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    [class.border-red-300]="newRepairForm.controls.phone.invalid && newRepairForm.controls.phone.touched" />
+                                <label for="phone" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                    Phone number<sup class="text-danger text-xs">*</sup>
+                                </label>
+                                @if (newRepairForm.controls.phone.invalid && newRepairForm.controls.phone.touched) {
+                                <p class="mt-1 text-xs text-red-600">Phone number is required.</p>
+                                }
                             </div>
                         </div>
                     </div>
                     }
-
-                    @if (serviceAreaCheckInFlight) {
-                    <p class="text-xs text-gray-500">Checking service area...</p>
-                    } @else if (serviceAreaStatus && serviceAreaStatus.allowed) {
-                    <p class="text-xs font-medium text-emerald-600">This address is inside your service area.</p>
-                    } @else if (serviceAreaStatus && !serviceAreaStatus.allowed) {
-                    <p class="text-xs font-medium text-red-600">This address is not currently serviceable.</p>
-                    }
-                </div>
+                </section>
                 }
+
+                @if (currentStep() === 'device') {
+                <section class="p-6">
+                    <div class="mb-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-brand">Step 2</p>
+                        <h2 class="mt-1 text-xl font-semibold text-gray-900">Select the device</h2>
+                        <p class="mt-1 text-sm text-gray-500">Use a saved customer device or add a new one from the TechSpecs library.</p>
+                    </div>
+
+                    @if (!selectedDevice && !newDevice) {
+                    <div class="relative" (click)="$event.stopPropagation()">
+                        <input type="text" id="device" placeholder=" " formControlName="deviceSearchControl" (focus)="onDeviceFocus()" autocomplete="off"
+                            [readonly]="!canSearchDevices()" class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            [class.pr-28]="canSearchDevices()" [class.cursor-default]="!canSearchDevices()" [class.bg-gray-50]="!canSearchDevices()" />
+                        <label for="device" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                            Saved Device<sup class="text-danger text-xs">*</sup>
+                        </label>
+
+                        @if (canSearchDevices()) {
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-xs font-semibold text-brand hover:opacity-80"
+                            (click)="startNewDevice(); $event.stopPropagation()">
+                            Add New
+                        </button>
+                        } @else {
+                        <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-gray-400">Select customer first</div>
+                        }
+
+                        @if (showDeviceResults) {
+                        <div class="absolute z-40 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                            @if (searchingDevices) {
+                            <div class="px-4 py-3 text-sm text-gray-500">Searching devices...</div>
+                            } @else if (deviceResults.length > 0) {
+                            @for (device of deviceResults; track device.id) {
+                            <button type="button" class="flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
+                                (click)="selectDevice(device); $event.stopPropagation()">
+                                <span class="text-sm font-medium text-gray-900">{{ getDeviceDisplay(device) }}</span>
+                                <span class="text-xs text-gray-500">{{ getDeviceSecondary(device) || 'No IMEI or serial on file' }}</span>
+                            </button>
+                            }
+                            } @else if (deviceSearchControl.value.trim().length >= 2) {
+                            <div class="px-4 py-3 text-sm text-gray-500">No matching devices found. Add a new TechSpecs device instead.</div>
+                            }
+                        </div>
+                        }
+                    </div>
+                    }
+
+                    @if (selectedDevice) {
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-gray-900">{{ getDeviceDisplay(selectedDevice) }}</p>
+                                <p class="truncate text-xs text-gray-500">{{ getDeviceSecondary(selectedDevice) || 'No IMEI or serial on file' }}</p>
+                            </div>
+                            <button type="button" class="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                                (click)="clearSelectedDevice()">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    }
+
+                    @if (newDevice) {
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-4">
+                        <div class="mb-4 flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">New Device Details</p>
+                                <p class="mt-1 text-xs text-gray-500">Select an exact TechSpecs brand and model. The model ID is saved as the customer device catalog reference.</p>
+                            </div>
+                            <button type="button" class="cursor-pointer text-xs text-gray-400 hover:text-gray-600" (click)="cancelNewDevice()">Cancel</button>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="relative" (click)="$event.stopPropagation()">
+                                <input type="text" id="techSpecsBrand" placeholder=" " formControlName="techSpecsBrandSearchControl" (focus)="onTechSpecsBrandFocus()" autocomplete="off"
+                                    class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    [class.pr-20]="selectedTechSpecsBrand" [class.border-red-300]="newRepairForm.controls.techSpecsBrandSearchControl.invalid && newRepairForm.controls.techSpecsBrandSearchControl.touched" />
+                                <label for="techSpecsBrand" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                    Brand<sup class="text-danger text-xs">*</sup>
+                                </label>
+
+                                @if (selectedTechSpecsBrand) {
+                                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    (click)="clearTechSpecsBrand(); $event.stopPropagation()">
+                                    Clear
+                                </button>
+                                }
+
+                                @if (showTechSpecsBrandResults) {
+                                <div class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                                    @if (searchingTechSpecsBrands || loadingDeviceCatalogCategory) {
+                                    <div class="px-4 py-3 text-sm text-gray-500">Loading TechSpecs brands...</div>
+                                    } @else if (techSpecsBrandResults.length > 0) {
+                                    @for (brand of techSpecsBrandResults; track brand.id) {
+                                    <button type="button" class="flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
+                                        (click)="selectTechSpecsBrand(brand); $event.stopPropagation()">
+                                        <span class="text-sm font-medium text-gray-900">{{ brand.name }}</span>
+                                        <span class="text-xs text-gray-500">TechSpecs brand</span>
+                                    </button>
+                                    }
+                                    } @else if (techSpecsBrandSearchControl.value.trim().length === 0) {
+                                    <div class="px-4 py-3 text-sm text-gray-500">Start typing a brand. Popular matches like Apple, Samsung, Google, and Motorola will appear first.</div>
+                                    } @else if (techSpecsBrandSearchControl.value.trim().length > 0 && techSpecsBrandSearchControl.value.trim().length < 2) {
+                                    <div class="px-4 py-3 text-sm text-gray-500">Type at least 2 characters to search brands.</div>
+                                    } @else {
+                                    <div class="px-4 py-3 text-sm text-gray-500">No matching TechSpecs brands found. Try a shorter brand name.</div>
+                                    }
+                                </div>
+                                }
+                            </div>
+
+                            <div class="relative" (click)="$event.stopPropagation()">
+                                <input type="text" id="techSpecsModel" placeholder=" " formControlName="techSpecsModelSearchControl" (focus)="onTechSpecsModelFocus()" autocomplete="off"
+                                    [readonly]="!selectedTechSpecsBrand" class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    [class.bg-gray-50]="!selectedTechSpecsBrand" [class.cursor-default]="!selectedTechSpecsBrand" [class.pr-20]="selectedTechSpecsModel"
+                                    [class.border-red-300]="newRepairForm.controls.techSpecsModelSearchControl.invalid && newRepairForm.controls.techSpecsModelSearchControl.touched" />
+                                <label for="techSpecsModel" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                    Model<sup class="text-danger text-xs">*</sup>
+                                </label>
+
+                                @if (!selectedTechSpecsBrand) {
+                                <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-gray-400">Select brand first</div>
+                                }
+
+                                @if (selectedTechSpecsModel) {
+                                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                    (click)="clearTechSpecsModel(); $event.stopPropagation()">
+                                    Clear
+                                </button>
+                                }
+
+                                @if (showTechSpecsModelResults && selectedTechSpecsBrand) {
+                                <div class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                                    @if (searchingTechSpecsModels || loadingDeviceCatalogCategory) {
+                                    <div class="px-4 py-3 text-sm text-gray-500">Loading TechSpecs models...</div>
+                                    } @else if (techSpecsModelResults.length > 0) {
+                                    @for (model of techSpecsModelResults; track model.id) {
+                                    <button type="button" class="flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
+                                        (click)="selectTechSpecsModel(model); $event.stopPropagation()">
+                                        <span class="text-sm font-medium text-gray-900">{{ model.name }}</span>
+                                        <span class="text-xs text-gray-500">{{ selectedTechSpecsBrand.name }}</span>
+                                    </button>
+                                    }
+                                    } @else if (techSpecsModelSearchControl.value.trim().length === 0) {
+                                    <div class="px-4 py-3 text-sm text-gray-500">Start typing a model, like iPhone 15 Pro, Galaxy S24 Ultra, or Pixel 8 Pro.</div>
+                                    } @else if (techSpecsModelSearchControl.value.trim().length > 0 && techSpecsModelSearchControl.value.trim().length < 2) {
+                                    <div class="px-4 py-3 text-sm text-gray-500">Type at least 2 characters to search models.</div>
+                                    } @else {
+                                    <div class="px-4 py-3 text-sm text-gray-500">No matching TechSpecs models found. Try a shorter model search.</div>
+                                    }
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        @if (selectedTechSpecsModel) {
+                        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                            <p class="text-sm font-semibold text-emerald-900">Device matched</p>
+                            <p class="mt-1 text-xs text-emerald-700">{{ newRepairForm.controls.nickname.value }} will be saved with catalogRef {{ newRepairForm.controls.catalogRef.value }}.</p>
+                        </div>
+                        }
+
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            <div class="relative sm:col-span-2">
+                                <input type="text" id="nickname" placeholder=" " formControlName="nickname"
+                                    class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    [class.border-red-300]="newRepairForm.controls.nickname.invalid && newRepairForm.controls.nickname.touched" />
+                                <label for="nickname" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                    Device nickname<sup class="text-danger text-xs">*</sup>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500">Auto-filled from TechSpecs. You can customize this for the customer.</p>
+                            </div>
+
+                            <div class="relative">
+                                <input type="text" id="imei" placeholder=" " formControlName="imei" class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                                <label for="imei" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">IMEI</label>
+                            </div>
+
+                            <div class="relative">
+                                <input type="text" id="serial" placeholder=" " formControlName="serial" class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                                <label for="serial" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">Serial Number</label>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </section>
+                }
+
+                @if (currentStep() === 'repair') {
+                <section class="p-6">
+                    <div class="mb-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-brand">Step 3</p>
+                        <h2 class="mt-1 text-xl font-semibold text-gray-900">Services & parts</h2>
+                        <p class="mt-1 text-sm text-gray-500">Choose the repair need, select the service, then check inventory and MobileSentrix before confirming the quote.</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-gray-900">Repair need</h3>
+                                    <p class="mt-1 text-xs text-gray-500">Start with the main issue the customer needs solved.</p>
+                                </div>
+                            </div>
+
+                            <div class="-mx-1 overflow-x-auto px-1 pb-3">
+                                <div class="flex min-w-max gap-3">
+                                    @for (need of repairNeeds; track need.key) {
+                                    <button type="button" class="w-64 shrink-0 cursor-pointer rounded-2xl border px-4 py-4 text-left transition" [ngClass]="newRepairForm.controls.repairNeedKey.value === need.key
+                                        ? 'border-brand bg-brand/5 shadow-sm'
+                                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'" (click)="selectRepairNeed(need)">
+                                        <div class="text-sm font-semibold text-gray-900">{{ need.shortLabel }}</div>
+                                        <div class="mt-1 line-clamp-2 text-xs text-gray-500">{{ need.description }}</div>
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (newRepairForm.controls.repairNeedKey.invalid && newRepairForm.controls.repairNeedKey.touched) {
+                            <p class="mt-2 text-xs text-red-600">Select a repair need.</p>
+                            }
+                        </div>
+
+                        @if (selectedRepairNeed()) {
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
+                            <div class="mb-3">
+                                <h3 class="text-sm font-semibold text-gray-900">Recommended service</h3>
+                                <p class="mt-1 text-xs text-gray-500">Pick the service/labor item that best matches this repair.</p>
+                            </div>
+
+                            <div class="grid gap-3">
+                                @for (service of repairServicesForSelectedNeed(); track service.key) {
+                                <button type="button" class="cursor-pointer rounded-2xl border bg-white px-4 py-4 text-left transition" [ngClass]="newRepairForm.controls.repairServiceKey.value === service.key
+                                    ? 'border-brand bg-brand/5 shadow-sm'
+                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'" (click)="selectRepairService(service)">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div>
+                                            <div class="text-sm font-semibold text-gray-900">{{ service.label }}</div>
+                                            <div class="mt-1 text-xs text-gray-500">{{ service.description }}</div>
+                                        </div>
+                                        <div class="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+                                            Labor {{ formatCents(service.defaultLaborCents) }}
+                                        </div>
+                                    </div>
+                                </button>
+                                }
+                            </div>
+
+                            @if (newRepairForm.controls.repairServiceKey.invalid && newRepairForm.controls.repairServiceKey.touched) {
+                            <p class="mt-2 text-xs text-red-600">Select a repair service.</p>
+                            }
+                        </div>
+                        }
+
+                        @if (selectedRepairService()) {
+                        <div class="rounded-2xl border border-gray-200 bg-white p-4">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-gray-900">Parts & inventory</h3>
+                                    <p class="mt-1 text-xs text-gray-500">Optional. Check inventory or MobileSentrix only when you need part confirmation.</p>
+                                </div>
+
+                                <button type="button" class="cursor-pointer rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                    (click)="togglePartsPanel()">
+                                    @if (showPartsPanel) {
+                                    Hide parts
+                                    } @else {
+                                    Check parts
+                                    }
+                                </button>
+                            </div>
+
+                            @if (selectedPart) {
+                            <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                                <p class="text-sm font-semibold text-emerald-900">Selected part source</p>
+                                <p class="mt-1 text-xs text-emerald-700">{{ selectedPartSummary() }}</p>
+                            </div>
+                            }
+
+                            @if (!selectedPart && !showPartsPanel) {
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <button type="button" class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="useNoPartNeeded()">
+                                    No part needed
+                                </button>
+                                <button type="button" class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="decidePartLater()">
+                                    Decide later
+                                </button>
+                            </div>
+                            }
+
+                            @if (showPartsPanel) {
+                            <div class="mt-5 space-y-4 border-t border-gray-100 pt-4">
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="useNoPartNeeded()">
+                                        No part needed
+                                    </button>
+                                    <button type="button" class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="decidePartLater()">
+                                        Decide later
+                                    </button>
+                                </div>
+
+                                <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                    <div class="relative">
+                                        <input type="text" id="partSearchControl" placeholder=" " formControlName="partSearchControl"
+                                            class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                                        <label for="partSearchControl" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                            Part search
+                                        </label>
+                                    </div>
+
+                                    <button type="button" class="cursor-pointer rounded-2xl bg-gray-900 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        [disabled]="!canSearchParts() || searchingInventoryParts || searchingMobileSentrixParts" (click)="searchPartsNow()">
+                                        @if (searchingInventoryParts || searchingMobileSentrixParts) {
+                                        Searching...
+                                        } @else {
+                                        Search Parts
+                                        }
+                                    </button>
+                                </div>
+
+                                @if (partLookupStarted || searchingInventoryParts || searchingMobileSentrixParts) {
+                                <div class="grid gap-4 xl:grid-cols-2">
+                                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                                        <div class="mb-3">
+                                            <p class="text-sm font-semibold text-gray-900">Existing inventory</p>
+                                            <p class="mt-1 text-xs text-gray-500">Active products that look relevant to this device/service.</p>
+                                        </div>
+
+                                        @if (searchingInventoryParts) {
+                                        <p class="text-sm text-gray-500">Checking inventory...</p>
+                                        } @else if (inventoryLookupFailed) {
+                                        <p class="text-sm text-red-600">Inventory lookup failed. You can still create the repair and decide later.</p>
+                                        } @else if (inventoryPartResults.length > 0) {
+                                        <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                                            @for (part of inventoryPartResults; track part.id) {
+                                            <button type="button" class="w-full cursor-pointer rounded-xl border bg-white px-3 py-3 text-left transition" [ngClass]="newRepairForm.controls.selectedInventoryProductId.value === part.id
+                                                ? 'border-brand bg-brand/5'
+                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'" (click)="selectInventoryPart(part)">
+                                                <div class="text-sm font-semibold text-gray-900">{{ part.name }}</div>
+                                                <div class="mt-1 text-xs text-gray-500">
+                                                    SKU {{ part.sku || '—' }} · Price {{ formatCents(part.priceCents) }} · Cost {{ formatCents(part.costCents) }}
+                                                </div>
+                                            </button>
+                                            }
+                                        </div>
+                                        } @else {
+                                        <p class="text-sm text-gray-500">No matching inventory items found.</p>
+                                        }
+                                    </div>
+
+                                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                                        <div class="mb-3">
+                                            <p class="text-sm font-semibold text-gray-900">MobileSentrix</p>
+                                            <p class="mt-1 text-xs text-gray-500">Supplier results based on the device and selected service.</p>
+                                        </div>
+
+                                        @if (searchingMobileSentrixParts) {
+                                        <p class="text-sm text-gray-500">Searching MobileSentrix...</p>
+                                        } @else if (mobileSentrixLookupFailed) {
+                                        <p class="text-sm text-red-600">MobileSentrix lookup failed. You can still create the repair and decide later.</p>
+                                        } @else if (mobileSentrixPartResults.length > 0) {
+                                        <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                                            @for (part of mobileSentrixPartResults; track part.id) {
+                                            <button type="button" class="w-full cursor-pointer rounded-xl border bg-white px-3 py-3 text-left transition" [ngClass]="newRepairForm.controls.selectedSupplierPartId.value === part.id
+                                                ? 'border-brand bg-brand/5'
+                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'" (click)="selectMobileSentrixPart(part)">
+                                                <div class="text-sm font-semibold text-gray-900">{{ part.title }}</div>
+                                                <div class="mt-1 text-xs text-gray-500">
+                                                    SKU {{ part.sku || '—' }} · Cost {{ formatCents(part.costCents) }} · {{ part.inStock ? 'In stock' : 'Out of stock' }}
+                                                </div>
+                                            </button>
+                                            }
+                                        </div>
+                                        } @else {
+                                        <p class="text-sm text-gray-500">No matching MobileSentrix parts found.</p>
+                                        }
+                                    </div>
+                                </div>
+                                } @else {
+                                <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p class="text-sm font-medium text-gray-900">Parts search is optional</p>
+                                    <p class="mt-1 text-xs text-gray-500">Run a search when you want to verify inventory or supplier availability before creating the repair.</p>
+                                </div>
+                                }
+                            </div>
+                            }
+                        </div>
+                        }
+
+                        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+                            <div class="relative">
+                                <textarea id="customerNotes" rows="4" placeholder=" " formControlName="customerNotes"
+                                    class="peer w-full resize-none rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-6 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    [class.border-red-300]="newRepairForm.controls.customerNotes.invalid && newRepairForm.controls.customerNotes.touched"></textarea>
+                                <label for="customerNotes" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
+                                    Customer notes
+                                </label>
+                                <div class="mt-1 flex justify-between text-xs text-gray-400">
+                                    <span>Optional context from the customer.</span>
+                                    <span>{{ newRepairForm.controls.customerNotes.value.length }} / 500</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="relative">
+                                    <input type="number" id="quotedPriceDollars" placeholder=" " formControlName="quotedPriceDollars" min="0" step="0.01"
+                                        class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        [class.border-red-300]="newRepairForm.controls.quotedPriceDollars.invalid && newRepairForm.controls.quotedPriceDollars.touched" />
+                                    <label for="quotedPriceDollars" class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">Final quoted price</label>
+                                </div>
+                                <p class="mt-2 ps-1 text-xs text-gray-500">This becomes the repair service line item on the linked order.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                }
+
+                @if (currentStep() === 'service') {
+                <section class="p-6">
+                    <div class="mb-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-brand">Step 4</p>
+                        <h2 class="mt-1 text-xl font-semibold text-gray-900">Service and scheduling</h2>
+                        <p class="mt-1 text-sm text-gray-500">Choose in-shop or on-site, then select an appointment time if booking is enabled.</p>
+                    </div>
+
+                    @if (onsiteEnabled()) {
+                    <div class="rounded-2xl border border-gray-200 bg-white p-5">
+                        <h3 class="text-base font-semibold text-gray-900">Service Location</h3>
+                        <p class="mt-1 text-sm text-gray-500">Choose whether this repair is in-shop or on-site.</p>
+
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                            <button type="button" class="cursor-pointer rounded-2xl border px-4 py-4 text-left transition" [ngClass]="newRepairForm.controls.serviceMode.value === 'in_shop'
+                                ? 'border-brand bg-brand/5 shadow-sm'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'" (click)="onServiceModeChange('in_shop')">
+                                <div class="text-sm font-semibold text-gray-900">In-Shop</div>
+                                <div class="mt-1 text-xs text-gray-500">Customer brings the device in.</div>
+                            </button>
+
+                            <button type="button" class="cursor-pointer rounded-2xl border px-4 py-4 text-left transition" [ngClass]="newRepairForm.controls.serviceMode.value === 'on_site'
+                                ? 'border-brand bg-brand/5 shadow-sm'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'" (click)="onServiceModeChange('on_site')">
+                                <div class="text-sm font-semibold text-gray-900">On-Site</div>
+                                <div class="mt-1 text-xs text-gray-500">You travel to the customer.</div>
+                            </button>
+                        </div>
+                    </div>
+                    }
+
+                    @if (newRepairForm.controls.serviceMode.value === 'on_site') {
+                    <div class="mt-5 grid gap-4">
+                        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                            <p class="text-sm font-medium text-amber-900">On-site repair</p>
+                            <p class="mt-1 text-xs text-amber-700">
+                                @if (onsiteTripFeeEnabled() && onsiteDefaultTripFeeCents() != null) {
+                                This repair will automatically include a trip fee of {{ onsiteDefaultTripFeeCents()! / 100 | currency:'USD':'symbol':'1.2-2' }}.
+                                } @else {
+                                This repair will be completed on-site at the customer address below.
+                                }
+                            </p>
+                        </div>
+
+                        @if (!creatingInlineAddress) {
+                        <div>
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                                <label class="block text-sm font-medium text-gray-700">Service Address</label>
+                                <button type="button" class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50" (click)="startInlineAddress()">Add New Address</button>
+                            </div>
+
+                            <select formControlName="serviceAddressId" (change)="onServiceAddressSelectionChange()"
+                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand"
+                                [class.border-red-300]="newRepairForm.controls.serviceAddressId.invalid && newRepairForm.controls.serviceAddressId.touched">
+                                <option [ngValue]="null">Select an address</option>
+                                @for (address of customerAddresses; track address.id) {
+                                <option [value]="address.id">{{ formatAddressLabel(address) }} — {{ formatAddressSummary(address) }}</option>
+                                }
+                            </select>
+
+                            @if (loadingCustomerAddresses) {
+                            <p class="mt-2 text-xs text-gray-500">Loading customer addresses...</p>
+                            } @else if (!customerAddresses.length) {
+                            <p class="mt-2 text-xs text-gray-500">No saved addresses yet. Add one below.</p>
+                            }
+                        </div>
+                        }
+
+                        @if (creatingInlineAddress) {
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <div class="mb-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">New Service Address</div>
+                                    <div class="mt-1 text-xs text-gray-500">This address will be saved to the customer.</div>
+                                </div>
+                                @if (customerAddresses.length) {
+                                <button type="button" class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50" (click)="cancelInlineAddress()">Cancel</button>
+                                }
+                            </div>
+
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div class="sm:col-span-2">
+                                    <input type="text" formControlName="addressLabel" placeholder="Label (Home, Work, Office)" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <input type="text" formControlName="addressLine1" placeholder="Address line 1" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <input type="text" formControlName="addressLine2" placeholder="Address line 2" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                                </div>
+                                <div>
+                                    <input type="text" formControlName="addressCity" placeholder="City" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                                </div>
+                                <div>
+                                    <select formControlName="addressState" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand">
+                                        <option value="">State</option>
+                                        @for (state of states; track state.value) {
+                                        <option [value]="state.value">{{ state.label }}</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div>
+                                    <input type="text" formControlName="addressPostalCode" placeholder="Postal Code" (blur)="onInlineAddressPostalBlur()" class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                                </div>
+                                <div>
+                                    <input type="text" [value]="shopCountry" disabled class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none" />
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <textarea rows="3" formControlName="addressNotes" placeholder="Notes" class="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        }
+
+                        @if (serviceAreaCheckInFlight) {
+                        <p class="text-xs text-gray-500">Checking service area...</p>
+                        } @else if (serviceAreaStatus && serviceAreaStatus.allowed) {
+                        <p class="text-xs font-medium text-emerald-600">This address is inside your service area.</p>
+                        } @else if (serviceAreaStatus && !serviceAreaStatus.allowed) {
+                        <p class="text-xs font-medium text-red-600">This address is not currently serviceable.</p>
+                        }
+                    </div>
+                    }
+
+                    @if (bookingEnabled() && newRepairForm.controls.serviceMode.value === 'on_site' && !hasValidOnsiteAddress()) {
+                    <div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        <p class="text-xs text-gray-500">Confirm a valid on-site service address to view available appointment times.</p>
+                    </div>
+                    }
+
+                    @if (shouldShowSchedulingPicker()) {
+                    <div class="mt-5 rounded-2xl border border-gray-200 bg-white p-4">
+                        <app-scheduling-picker displayMode="inline" [inlineRequest]="schedulingRequest()" (selectionChange)="onSchedulingSelectionChange($event)" />
+                    </div>
+                    } @else if (!bookingEnabled()) {
+                    <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                        <p class="text-sm font-medium text-gray-900">Scheduling disabled</p>
+                        <p class="mt-1 text-xs text-gray-500">This repair can be created without an appointment.</p>
+                    </div>
+                    }
+                </section>
+                }
+
+                @if (currentStep() === 'review') {
+                <section class="p-6">
+                    <div class="mb-6">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-brand">Step 5</p>
+                        <h2 class="mt-1 text-xl font-semibold text-gray-900">Review and create</h2>
+                        <p class="mt-1 text-sm text-gray-500">Confirm everything before creating the repair, order, and appointment.</p>
+                    </div>
+
+                    <div class="grid gap-4">
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-900">{{ customerSummary() }}</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ customerSecondarySummary() }}</p>
+                        </div>
+
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Device</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-900">{{ deviceSummary() }}</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ deviceSecondarySummary() }}</p>
+                        </div>
+
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Repair</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-900">{{ repairSummary() }}</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ repairSecondarySummary() }}</p>
+                            <p class="mt-1 text-xs text-gray-500">Quoted price: {{ quotedPriceSummary() }}</p>
+                        </div>
+
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Service</p>
+                            <p class="mt-1 text-sm font-semibold text-gray-900">{{ serviceSummary() }}</p>
+                            <p class="mt-1 text-xs text-gray-500">{{ serviceSecondarySummary() }}</p>
+                            <p class="mt-1 text-xs text-gray-500">Trip fee: {{ tripFeeSummary() }}</p>
+                        </div>
+                    </div>
+                </section>
+                }
+
+                <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+                    <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        [disabled]="currentStepIndex() === 0 || creatingRepair" (click)="goBack()">
+                        Back
+                    </button>
+
+                    <button type="button" class="cursor-pointer rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+                        [disabled]="currentStep() === 'review' ? !canCreateRepair() : creatingRepair" (click)="onPrimaryAction()">
+                        {{ primaryButtonLabel() }}
+                    </button>
+                </div>
             </div>
         </div>
-        }
 
-        @if (bookingEnabled() && newRepairForm.controls.serviceMode.value === 'on_site' && !hasValidOnsiteAddress()) {
-        <div class="px-6 py-2">
-            <p class="text-xs text-gray-500">
-                Confirm a valid on-site service address to view available appointment times.
-            </p>
-        </div>
-        }
+        <aside class="lg:sticky lg:top-4 lg:self-start">
+            <div class="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Live Summary</p>
+                <h2 class="mt-1 text-lg font-semibold text-gray-900">Repair draft</h2>
 
-        @if (shouldShowSchedulingPicker()) {
-        <div class="border-t border-gray-200 my-2 mx-8"></div>
+                <div class="mt-5 space-y-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Customer</p>
+                        <p class="mt-1 truncate text-sm font-semibold text-gray-900">{{ customerSummary() }}</p>
+                        <p class="truncate text-xs text-gray-500">{{ customerSecondarySummary() }}</p>
+                    </div>
 
-        <div class="px-6 py-4">
-            <app-scheduling-picker displayMode="inline" [inlineRequest]="schedulingRequest()"
-                (selectionChange)="onSchedulingSelectionChange($event)" />
-        </div>
-        }
+                    <div class="border-t border-gray-100 pt-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Device</p>
+                        <p class="mt-1 truncate text-sm font-semibold text-gray-900">{{ deviceSummary() }}</p>
+                        <p class="truncate text-xs text-gray-500">{{ deviceSecondarySummary() }}</p>
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Repair</p>
+                        <p class="mt-1 line-clamp-3 text-sm font-semibold text-gray-900">{{ repairSummary() }}</p>
+                        <p class="text-xs text-gray-500">{{ repairSecondarySummary() }}</p>
+                        <p class="text-xs text-gray-500">Quote: {{ quotedPriceSummary() }}</p>
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Service</p>
+                        <p class="mt-1 text-sm font-semibold text-gray-900">{{ serviceSummary() }}</p>
+                        <p class="text-xs text-gray-500">{{ serviceSecondarySummary() }}</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </form>
 </div>

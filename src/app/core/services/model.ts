@@ -23,6 +23,9 @@ export interface Service {
   createdAt: string;
   createdBy: string;
   updatedAt: string;
+
+  deletedAt?: string | null;
+  deletedBy?: string | null;
 }
 
 export interface ServiceListResponse {
