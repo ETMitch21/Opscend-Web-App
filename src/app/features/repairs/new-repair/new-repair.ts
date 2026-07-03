@@ -879,6 +879,10 @@ export class NewRepair implements OnInit {
     if (this.isStepDisabled(step)) return;
     this.closeDropdowns();
     this.currentStep.set(step);
+
+    if (step === 'device') {
+      this.prepareDeviceStep();
+    }
   }
 
   goBack(): void {
@@ -903,6 +907,10 @@ export class NewRepair implements OnInit {
 
     this.closeDropdowns();
     this.currentStep.set(next);
+
+    if (next === 'device') {
+      this.prepareDeviceStep();
+    }
   }
 
   primaryButtonLabel(): string {
@@ -1717,8 +1725,58 @@ export class NewRepair implements OnInit {
     this.updateDeviceValidators();
   }
 
+  private prepareDeviceStep(): void {
+    if (!this.isCustomerStepValid()) return;
+    if (this.selectedDevice || this.newDevice) return;
+
+    if (this.newCustomer) {
+      this.startNewDevice();
+      return;
+    }
+
+    const customerId = this.selectedCustomer?.id;
+    if (!customerId) return;
+
+    this.searchingDevices = true;
+    this.showDeviceResults = false;
+    this.deviceResults = [];
+
+    this.customerDevicesStore
+      .search(customerId, '')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (devices) => {
+          if (this.currentStep() !== 'device') return;
+
+          this.searchingDevices = false;
+
+          if (!devices.length) {
+            this.startNewDevice();
+            return;
+          }
+
+          this.deviceResults = devices;
+          this.showDeviceResults = true;
+        },
+        error: () => {
+          if (this.currentStep() !== 'device') return;
+
+          this.searchingDevices = false;
+          this.deviceResults = [];
+          this.showDeviceResults = false;
+
+          this.toastService.error(
+            'Device lookup failed',
+            'We could not check this customer’s saved devices. Add a new device instead.'
+          );
+
+          this.startNewDevice();
+        },
+      });
+  }
+
   canSearchDevices(): boolean {
-    return !!this.selectedCustomer;
+    return !!this.selectedCustomer || this.isCustomerStepValid();
   }
 
   getDeviceDisplay(device: CustomerDevice): string {

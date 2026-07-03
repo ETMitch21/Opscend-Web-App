@@ -220,7 +220,7 @@ export class NewCustomer implements OnInit {
           postalCode: this.addressForm.controls.postalCode.value.trim(),
           country: this.addressForm.controls.country.value.trim().toUpperCase(),
           geo: this.addressForm.controls.geo.value,
-          notes: this.addressForm.controls.notes.value.trim() || null,
+          notes: this.addressForm.controls.notes.value.trim() || '',
           isDefault: this.addressForm.controls.isDefault.value,
         });
       }
