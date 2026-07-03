@@ -744,7 +744,7 @@
                     <div class="flex items-center justify-between gap-4">
                         <span class="text-gray-400">Email</span>
                         <span class="truncate font-medium text-gray-900">
-                            {{ repairValue.contractor.email }}
+                            {{ repairValue.contractor?.email }}
                         </span>
                     </div>
                     }
@@ -753,7 +753,7 @@
                     <div class="flex items-center justify-between gap-4">
                         <span class="text-gray-400">Phone</span>
                         <span class="font-medium text-gray-900">
-                            {{ repairValue.contractor.phone | phone }}
+                            {{ repairValue.contractor?.phone | phone }}
                         </span>
                     </div>
                     }
