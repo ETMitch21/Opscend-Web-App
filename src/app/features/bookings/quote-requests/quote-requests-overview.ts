@@ -5,8 +5,7 @@ import {
   inject,
   signal,
 } from "@angular/core";
-import { CommonModule, DatePipe, TitleCasePipe } from "@angular/common";
-import { RouterLink } from "@angular/router";
+import { CommonModule, DatePipe } from "@angular/common";
 import {
   Building2,
   CheckCircle2,
@@ -36,9 +35,7 @@ type SortDirection = "asc" | "desc";
     CommonModule,
     DatePipe,
     LucideAngularModule,
-    PhonePipe,
-    RouterLink,
-    TitleCasePipe,
+    PhonePipe
   ],
   templateUrl: "./quote-requests-overview.html",
   styleUrl: "./quote-requests-overview.scss",
