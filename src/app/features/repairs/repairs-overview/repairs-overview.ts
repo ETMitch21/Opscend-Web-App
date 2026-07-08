@@ -58,7 +58,7 @@ export class RepairsOverview {
   readonly error = signal<string | null>(null);
   readonly nextCursor = signal<string | null>(null);
 
-  readonly activeView = signal<RepairViewFilter>('all');
+  readonly activeView = signal<RepairViewFilter>('open');
   readonly searchTerm = signal('');
   readonly selectedStatus = signal<RepairStatus | null>(null);
   readonly serviceMode = signal<'in_shop' | 'on_site' | null>(null);
@@ -300,7 +300,7 @@ export class RepairsOverview {
   }
 
   clearFilters(): void {
-    this.activeView.set('all');
+    this.activeView.set('open');
     this.selectedStatus.set(null);
     this.serviceMode.set(null);
     this.searchTerm.set('');
