@@ -205,14 +205,21 @@ export class NewRepair implements OnInit {
     string,
     Record<string, string[]>
   > = {
-      US: {
-        smartphones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
-        'cell phones': ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
-        phones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
-        tablets: ['Apple', 'Samsung', 'Microsoft', 'Lenovo', 'Amazon'],
-        laptops: ['Apple', 'Dell', 'HP', 'Lenovo', 'Microsoft', 'Acer', 'Asus'],
-      },
-    };
+    US: {
+      smartphones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
+      'cell phones': [
+        'Apple',
+        'Samsung',
+        'Google',
+        'Motorola',
+        'OnePlus',
+        'LG',
+      ],
+      phones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
+      tablets: ['Apple', 'Samsung', 'Microsoft', 'Lenovo', 'Amazon'],
+      laptops: ['Apple', 'Dell', 'HP', 'Lenovo', 'Microsoft', 'Acer', 'Asus'],
+    },
+  };
 
   private readonly defaultPopularBrandsByCategory: Record<string, string[]> = {
     smartphones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus'],
@@ -264,12 +271,12 @@ export class NewRepair implements OnInit {
     label: string;
     eyebrow: string;
   }> = [
-      { key: 'customer', label: 'Customer', eyebrow: 'Who is this for?' },
-      { key: 'device', label: 'Device', eyebrow: 'What are we fixing?' },
-      { key: 'repair', label: 'Repair', eyebrow: 'What is wrong?' },
-      { key: 'service', label: 'Service', eyebrow: 'Where and when?' },
-      { key: 'review', label: 'Review', eyebrow: 'Confirm details' },
-    ];
+    { key: 'customer', label: 'Customer', eyebrow: 'Who is this for?' },
+    { key: 'device', label: 'Device', eyebrow: 'What are we fixing?' },
+    { key: 'repair', label: 'Repair', eyebrow: 'What is wrong?' },
+    { key: 'service', label: 'Service', eyebrow: 'Where and when?' },
+    { key: 'review', label: 'Review', eyebrow: 'Confirm details' },
+  ];
 
   public readonly currentStep = signal<RepairWizardStep>('customer');
   public readonly bookingEnabled = signal(false);
@@ -301,17 +308,78 @@ export class NewRepair implements OnInit {
   public searchingTechSpecsModels = false;
 
   public readonly repairNeeds: RepairNeedOption[] = [
-    { key: 'screen_damage', shortLabel: 'Screen', label: 'Screen damage', description: 'Cracked glass, display lines, black screen, or touch issues.' },
-    { key: 'battery_issue', shortLabel: 'Battery', label: 'Battery issue', description: 'Poor battery life, swelling, charging cycles, or random shutdowns.' },
-    { key: 'charging_issue', shortLabel: 'Charging', label: 'Charging issue', description: 'Won’t charge, loose port, slow charging, or cable detection issues.' },
-    { key: 'camera_issue', shortLabel: 'Camera', label: 'Camera issue', description: 'Blurry camera, broken lens, camera app failure, or focus problems.' },
-    { key: 'back_glass_damage', shortLabel: 'Back glass', label: 'Back glass damage', description: 'Cracked back housing or rear glass damage.' },
-    { key: 'speaker_audio', shortLabel: 'Audio', label: 'Speaker / audio issue', description: 'Speaker, microphone, receiver, or audio quality issue.' },
-    { key: 'button_issue', shortLabel: 'Buttons', label: 'Button issue', description: 'Power, volume, mute, home, or side button issue.' },
-    { key: 'water_damage', shortLabel: 'Water damage', label: 'Water damage', description: 'Liquid exposure, corrosion, or intermittent behavior after moisture.' },
-    { key: 'no_power', shortLabel: 'No power', label: 'No power', description: 'Device will not power on or appears completely dead.' },
-    { key: 'software_diagnostics', shortLabel: 'Software', label: 'Software / diagnostics', description: 'Software issue, setup help, diagnostics, or unknown behavior.' },
-    { key: 'other', shortLabel: 'Other', label: 'Other repair need', description: 'Something else not listed here.' },
+    {
+      key: 'screen_damage',
+      shortLabel: 'Screen',
+      label: 'Screen damage',
+      description:
+        'Cracked glass, display lines, black screen, or touch issues.',
+    },
+    {
+      key: 'battery_issue',
+      shortLabel: 'Battery',
+      label: 'Battery issue',
+      description:
+        'Poor battery life, swelling, charging cycles, or random shutdowns.',
+    },
+    {
+      key: 'charging_issue',
+      shortLabel: 'Charging',
+      label: 'Charging issue',
+      description:
+        'Won’t charge, loose port, slow charging, or cable detection issues.',
+    },
+    {
+      key: 'camera_issue',
+      shortLabel: 'Camera',
+      label: 'Camera issue',
+      description:
+        'Blurry camera, broken lens, camera app failure, or focus problems.',
+    },
+    {
+      key: 'back_glass_damage',
+      shortLabel: 'Back glass',
+      label: 'Back glass damage',
+      description: 'Cracked back housing or rear glass damage.',
+    },
+    {
+      key: 'speaker_audio',
+      shortLabel: 'Audio',
+      label: 'Speaker / audio issue',
+      description: 'Speaker, microphone, receiver, or audio quality issue.',
+    },
+    {
+      key: 'button_issue',
+      shortLabel: 'Buttons',
+      label: 'Button issue',
+      description: 'Power, volume, mute, home, or side button issue.',
+    },
+    {
+      key: 'water_damage',
+      shortLabel: 'Water damage',
+      label: 'Water damage',
+      description:
+        'Liquid exposure, corrosion, or intermittent behavior after moisture.',
+    },
+    {
+      key: 'no_power',
+      shortLabel: 'No power',
+      label: 'No power',
+      description: 'Device will not power on or appears completely dead.',
+    },
+    {
+      key: 'software_diagnostics',
+      shortLabel: 'Software',
+      label: 'Software / diagnostics',
+      description:
+        'Software issue, setup help, diagnostics, or unknown behavior.',
+    },
+    {
+      key: 'other',
+      shortLabel: 'Other',
+      label: 'Other repair need',
+      description: 'Something else not listed here.',
+    },
   ];
 
   public repairServices: RepairServiceOption[] = [];
@@ -505,19 +573,27 @@ export class NewRepair implements OnInit {
               this.showCustomerResults = false;
               this.toastService.error(
                 'Customer search failed',
-                'We could not search customers right now.'
+                'We could not search customers right now.',
               );
               return of([]);
-            })
-          )
+            }),
+          ),
         ),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((results) => {
         this.customerResults = results;
         this.showCustomerResults = true;
         this.searchingCustomers = false;
       });
+
+    this.newRepairForm.controls.email.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateCustomerValidators());
+
+    this.newRepairForm.controls.phone.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateCustomerValidators());
 
     this.deviceSearchControl.valueChanges
       .pipe(
@@ -553,13 +629,13 @@ export class NewRepair implements OnInit {
               this.showDeviceResults = false;
               this.toastService.error(
                 'Device search failed',
-                'We could not search this customer’s devices right now.'
+                'We could not search this customer’s devices right now.',
               );
               return of([]);
-            })
-          )
+            }),
+          ),
         ),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((results) => {
         this.deviceResults = results;
@@ -587,7 +663,7 @@ export class NewRepair implements OnInit {
                 model: '',
                 nickname: '',
               },
-              { emitEvent: false }
+              { emitEvent: false },
             );
           }
 
@@ -609,7 +685,7 @@ export class NewRepair implements OnInit {
 
           const preferredMatches = this.getPreferredCatalogBrandOptions()
             .filter((brand) =>
-              this.normalizeCatalogKey(brand.name).includes(searchKey)
+              this.normalizeCatalogKey(brand.name).includes(searchKey),
             )
             .map((brand) => brand.name);
 
@@ -639,20 +715,20 @@ export class NewRepair implements OnInit {
                     this.showTechSpecsBrandResults = true;
                     this.toastService.error(
                       'Brand lookup failed',
-                      'We could not search TechSpecs brands right now.'
+                      'We could not search TechSpecs brands right now.',
                     );
                     return of({ items: [] });
-                  })
+                  }),
                 );
-            })
+            }),
           );
         }),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((response) => {
         this.techSpecsBrandResults = this.unwrapBrandPage(
           response,
-          this.techSpecsBrandSearchControl.value
+          this.techSpecsBrandSearchControl.value,
         );
         this.showTechSpecsBrandResults = true;
         this.searchingTechSpecsBrands = false;
@@ -671,9 +747,11 @@ export class NewRepair implements OnInit {
               {
                 catalogRef: null,
                 model: '',
-                nickname: this.selectedTechSpecsBrand?.name ?? '',
+                nickname: this.buildDefaultDeviceNickname(
+                  this.selectedTechSpecsBrand?.name ?? '',
+                ),
               },
-              { emitEvent: false }
+              { emitEvent: false },
             );
           }
 
@@ -709,7 +787,7 @@ export class NewRepair implements OnInit {
                   {
                     page: 0,
                     size: this.deviceCatalogPageSize,
-                  }
+                  },
                 )
                 .pipe(
                   catchError(() => {
@@ -718,15 +796,15 @@ export class NewRepair implements OnInit {
                     this.showTechSpecsModelResults = true;
                     this.toastService.error(
                       'Model lookup failed',
-                      'We could not search TechSpecs models right now.'
+                      'We could not search TechSpecs models right now.',
                     );
                     return of({ items: [] });
-                  })
+                  }),
                 );
-            })
-          )
+            }),
+          ),
         ),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((response) => {
         this.techSpecsModelResults = this.unwrapModelPage(response);
@@ -802,7 +880,8 @@ export class NewRepair implements OnInit {
       };
     }
 
-    const selectedAddressId = this.newRepairForm.controls.serviceAddressId.value;
+    const selectedAddressId =
+      this.newRepairForm.controls.serviceAddressId.value;
     if (!selectedAddressId) return null;
 
     return {
@@ -839,6 +918,10 @@ export class NewRepair implements OnInit {
   readonly canCreateRepair = (): boolean => {
     if (this.creatingRepair) return false;
     if (!this.newRepairForm.valid) return false;
+    if (!this.isCustomerStepValid()) return false;
+    if (!this.isDeviceStepValid()) return false;
+    if (!this.isRepairStepValid()) return false;
+    if (!this.isServiceStepValid()) return false;
     if (!this.isOnSiteMode()) return true;
     return this.hasValidOnsiteAddress() && !this.serviceAreaCheckInFlight;
   };
@@ -930,7 +1013,12 @@ export class NewRepair implements OnInit {
 
   customerSummary(): string {
     if (this.selectedCustomer) {
-      return this.selectedCustomer.name ?? this.selectedCustomer.email ?? this.selectedCustomer.phone ?? 'Selected customer';
+      return (
+        this.selectedCustomer.name ??
+        this.selectedCustomer.email ??
+        this.selectedCustomer.phone ??
+        'Selected customer'
+      );
     }
 
     if (this.newCustomer) {
@@ -942,18 +1030,22 @@ export class NewRepair implements OnInit {
 
   customerSecondarySummary(): string {
     if (this.selectedCustomer) {
-      return [this.selectedCustomer.email, this.selectedCustomer.phone]
-        .filter(Boolean)
-        .join(' · ') || 'No contact details';
+      return (
+        [this.selectedCustomer.email, this.selectedCustomer.phone]
+          .filter(Boolean)
+          .join(' · ') || 'No contact details'
+      );
     }
 
     if (this.newCustomer) {
-      return [
-        this.newRepairForm.controls.email.value.trim(),
-        this.newRepairForm.controls.phone.value.trim(),
-      ]
-        .filter(Boolean)
-        .join(' · ') || 'Contact details required';
+      return (
+        [
+          this.newRepairForm.controls.email.value.trim(),
+          this.newRepairForm.controls.phone.value.trim(),
+        ]
+          .filter(Boolean)
+          .join(' · ') || 'Contact details required'
+      );
     }
 
     return 'Choose or create a customer';
@@ -980,7 +1072,9 @@ export class NewRepair implements OnInit {
 
   deviceSecondarySummary(): string {
     if (this.selectedDevice) {
-      return this.getDeviceSecondary(this.selectedDevice) || 'Saved customer device';
+      return (
+        this.getDeviceSecondary(this.selectedDevice) || 'Saved customer device'
+      );
     }
 
     if (this.newDevice) {
@@ -1004,7 +1098,10 @@ export class NewRepair implements OnInit {
   repairSecondarySummary(): string {
     const part = this.selectedPartSummary();
     const notes = this.newRepairForm.controls.customerNotes.value.trim();
-    return [part, notes].filter(Boolean).join(' · ') || 'No parts or notes selected yet';
+    return (
+      [part, notes].filter(Boolean).join(' · ') ||
+      'No parts or notes selected yet'
+    );
   }
 
   quotedPriceSummary(): string {
@@ -1029,7 +1126,7 @@ export class NewRepair implements OnInit {
     }
 
     return `${this.formatDateTime(this.selectedSchedulingSelection.startAt)} – ${this.formatTime(
-      this.selectedSchedulingSelection.endAt
+      this.selectedSchedulingSelection.endAt,
     )}`;
   }
 
@@ -1045,13 +1142,14 @@ export class NewRepair implements OnInit {
     return 'None';
   }
 
-
   private async loadRepairServices(): Promise<void> {
     this.loadingRepairServices = true;
     this.repairServicesLookupFailed = false;
 
     try {
-      const services = await firstValueFrom(this.servicesService.listActive(150));
+      const services = await firstValueFrom(
+        this.servicesService.listActive(150),
+      );
       this.activeShopServices = services;
       this.repairServices = this.mapServicesToRepairOptions(services);
     } catch {
@@ -1060,14 +1158,16 @@ export class NewRepair implements OnInit {
       this.repairServicesLookupFailed = true;
       this.toastService.error(
         'Services could not be loaded',
-        'The active service catalog could not be loaded. Refresh and try again.'
+        'The active service catalog could not be loaded. Refresh and try again.',
       );
     } finally {
       this.loadingRepairServices = false;
     }
   }
 
-  private mapServicesToRepairOptions(services: Service[]): RepairServiceOption[] {
+  private mapServicesToRepairOptions(
+    services: Service[],
+  ): RepairServiceOption[] {
     return services
       .filter((service) => service.status === 'active')
       .flatMap((service) => {
@@ -1092,11 +1192,11 @@ export class NewRepair implements OnInit {
   }
 
   private inferRepairNeedKeys(service: Service): string[] {
-    const haystack = this.normalizeServiceText([
-      service.name,
-      service.code,
-      ...(service.tags ?? []),
-    ].filter(Boolean).join(' '));
+    const haystack = this.normalizeServiceText(
+      [service.name, service.code, ...(service.tags ?? [])]
+        .filter(Boolean)
+        .join(' '),
+    );
 
     const matches: string[] = [];
 
@@ -1116,7 +1216,11 @@ export class NewRepair implements OnInit {
       add('battery_issue');
     }
 
-    if (/\b(charge|charging|charger|port|dock connector|lightning|usb c|usb-c)\b/.test(haystack)) {
+    if (
+      /\b(charge|charging|charger|port|dock connector|lightning|usb c|usb-c)\b/.test(
+        haystack,
+      )
+    ) {
       add('charging_issue');
     }
 
@@ -1124,11 +1228,19 @@ export class NewRepair implements OnInit {
       add('camera_issue');
     }
 
-    if (/\b(speaker|microphone|mic|receiver|earpiece|audio|sound)\b/.test(haystack)) {
+    if (
+      /\b(speaker|microphone|mic|receiver|earpiece|audio|sound)\b/.test(
+        haystack,
+      )
+    ) {
       add('speaker_audio');
     }
 
-    if (/\b(button|power button|volume|mute|home button|side button)\b/.test(haystack)) {
+    if (
+      /\b(button|power button|volume|mute|home button|side button)\b/.test(
+        haystack,
+      )
+    ) {
       add('button_issue');
     }
 
@@ -1136,11 +1248,19 @@ export class NewRepair implements OnInit {
       add('water_damage');
     }
 
-    if (/\b(no power|dead|won'?t power|does not power|logic board|board)\b/.test(haystack)) {
+    if (
+      /\b(no power|dead|won'?t power|does not power|logic board|board)\b/.test(
+        haystack,
+      )
+    ) {
       add('no_power');
     }
 
-    if (/\b(software|diagnostic|diagnostics|setup|restore|data|transfer|troubleshoot)\b/.test(haystack)) {
+    if (
+      /\b(software|diagnostic|diagnostics|setup|restore|data|transfer|troubleshoot)\b/.test(
+        haystack,
+      )
+    ) {
       add('software_diagnostics');
     }
 
@@ -1233,7 +1353,9 @@ export class NewRepair implements OnInit {
   repairServicesForSelectedNeed(): RepairServiceOption[] {
     const need = this.selectedRepairNeed();
     if (!need) return [];
-    return this.repairServices.filter((service) => service.needKey === need.key);
+    return this.repairServices.filter(
+      (service) => service.needKey === need.key,
+    );
   }
 
   selectRepairNeed(need: RepairNeedOption): void {
@@ -1251,7 +1373,7 @@ export class NewRepair implements OnInit {
 
     if (this.newRepairForm.controls.quotedPriceDollars.value == null) {
       this.newRepairForm.controls.quotedPriceDollars.setValue(
-        Number((service.defaultLaborCents / 100).toFixed(2))
+        Number((service.defaultLaborCents / 100).toFixed(2)),
       );
     }
 
@@ -1276,7 +1398,7 @@ export class NewRepair implements OnInit {
     if (!this.canSearchParts()) {
       this.toastService.error(
         'Parts search not ready',
-        'Select a repair service and device before searching parts.'
+        'Select a repair service and device before searching parts.',
       );
       return;
     }
@@ -1286,7 +1408,7 @@ export class NewRepair implements OnInit {
     if (!query) {
       this.toastService.error(
         'Search term required',
-        'Enter a part search term before checking inventory or MobileSentrix.'
+        'Enter a part search term before checking inventory or MobileSentrix.',
       );
       return;
     }
@@ -1301,10 +1423,13 @@ export class NewRepair implements OnInit {
     this.searchingMobileSentrixParts = true;
 
     const inventoryPromise = firstValueFrom(
-      this.productsService.list({ status: 'active', limit: 50 })
+      this.productsService.list({ status: 'active', limit: 50 }),
     )
       .then((response) => {
-        this.inventoryPartResults = this.filterInventoryParts(response.data ?? [], query);
+        this.inventoryPartResults = this.filterInventoryParts(
+          response.data ?? [],
+          query,
+        );
       })
       .catch(() => {
         this.inventoryLookupFailed = true;
@@ -1319,10 +1444,12 @@ export class NewRepair implements OnInit {
         q: query,
         maxResults: 20,
         startIndex: 0,
-      })
+      }),
     )
       .then((response) => {
-        this.mobileSentrixPartResults = mapMobileSentrixItems(response.items ?? []);
+        this.mobileSentrixPartResults = mapMobileSentrixItems(
+          response.items ?? [],
+        );
       })
       .catch(() => {
         this.mobileSentrixLookupFailed = true;
@@ -1484,7 +1611,7 @@ export class NewRepair implements OnInit {
         email: '',
         phone: '',
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.clearSelectedDevice(false);
@@ -1508,7 +1635,7 @@ export class NewRepair implements OnInit {
         customerId: null,
         customerSearchControl: '',
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.clearSelectedDevice(false);
@@ -1574,7 +1701,7 @@ export class NewRepair implements OnInit {
         deviceId: device.id,
         deviceSearchControl: this.getDeviceDisplay(device),
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.updateDeviceValidators();
@@ -1584,7 +1711,7 @@ export class NewRepair implements OnInit {
     if (!this.selectedCustomer && !this.newCustomer) {
       this.toastService.error(
         'Customer required',
-        'Select or create a customer before adding a device.'
+        'Select or create a customer before adding a device.',
       );
       return;
     }
@@ -1608,7 +1735,7 @@ export class NewRepair implements OnInit {
         imei: '',
         serial: '',
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.updateDeviceValidators();
@@ -1652,7 +1779,7 @@ export class NewRepair implements OnInit {
         imei: '',
         serial: '',
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     if (updateValidators) this.updateDeviceValidators();
@@ -1673,9 +1800,9 @@ export class NewRepair implements OnInit {
         techSpecsModelSearchControl: '',
         brand: brand.name,
         model: '',
-        nickname: brand.name,
+        nickname: this.buildDefaultDeviceNickname(brand.name),
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.updateDeviceValidators();
@@ -1691,6 +1818,7 @@ export class NewRepair implements OnInit {
     const brandName = this.selectedTechSpecsBrand.name;
     const modelName = model.name;
     const displayName = `${brandName} ${modelName}`.trim();
+    const nickname = this.buildDefaultDeviceNickname(modelName || displayName);
 
     this.selectedTechSpecsModel = model;
     this.techSpecsModelResults = [];
@@ -1702,9 +1830,9 @@ export class NewRepair implements OnInit {
         techSpecsModelSearchControl: model.name,
         brand: brandName,
         model: modelName,
-        nickname: displayName,
+        nickname,
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.updateDeviceValidators();
@@ -1719,7 +1847,9 @@ export class NewRepair implements OnInit {
       catalogRef: null,
       techSpecsModelSearchControl: '',
       model: '',
-      nickname: this.selectedTechSpecsBrand?.name ?? '',
+      nickname: this.buildDefaultDeviceNickname(
+        this.selectedTechSpecsBrand?.name ?? '',
+      ),
     });
 
     this.updateDeviceValidators();
@@ -1767,7 +1897,7 @@ export class NewRepair implements OnInit {
 
           this.toastService.error(
             'Device lookup failed',
-            'We could not check this customer’s saved devices. Add a new device instead.'
+            'We could not check this customer’s saved devices. Add a new device instead.',
           );
 
           this.startNewDevice();
@@ -1777,6 +1907,39 @@ export class NewRepair implements OnInit {
 
   canSearchDevices(): boolean {
     return !!this.selectedCustomer || this.isCustomerStepValid();
+  }
+
+  private buildDefaultDeviceNickname(deviceName: string): string {
+    const normalizedDeviceName = deviceName.trim();
+    if (!normalizedDeviceName) return '';
+
+    const firstName = this.customerFirstNameForDeviceNickname();
+    if (!firstName) return normalizedDeviceName;
+
+    return `${this.toPossessive(firstName)} ${normalizedDeviceName}`.trim();
+  }
+
+  private customerFirstNameForDeviceNickname(): string {
+    const customerName =
+      this.selectedCustomer?.name?.trim() ||
+      this.newRepairForm.controls.name.value.trim();
+
+    if (!customerName) return '';
+
+    return customerName
+      .split(/\s+/)[0]
+      .replace(/[.,;:!?]+$/g, '')
+      .trim();
+  }
+
+  private toPossessive(name: string): string {
+    const cleanedName = name
+      .trim()
+      .replace(/[’']s$/i, '')
+      .replace(/[’']$/g, '');
+    if (!cleanedName) return '';
+
+    return /s$/i.test(cleanedName) ? `${cleanedName}'` : `${cleanedName}'s`;
   }
 
   getDeviceDisplay(device: CustomerDevice): string {
@@ -1927,8 +2090,8 @@ export class NewRepair implements OnInit {
       const response = await firstValueFrom(
         this.http.post<ServiceAreaCheckResponse>(
           `${this.apiBase}/shops/${this.shopId}/settings/onsite/service-area/check`,
-          payload
-        )
+          payload,
+        ),
       );
 
       this.serviceAreaStatus = response;
@@ -1948,7 +2111,7 @@ export class NewRepair implements OnInit {
       if (showToast) {
         this.toastService.error(
           'Service area check failed',
-          'We could not verify that address right now.'
+          'We could not verify that address right now.',
         );
       }
     } finally {
@@ -1963,12 +2126,12 @@ export class NewRepair implements OnInit {
       if (this.isOnSiteMode() && !this.hasValidOnsiteAddress()) {
         this.toastService.error(
           'Valid on-site address required',
-          'Confirm a serviceable on-site address before creating this repair.'
+          'Confirm a serviceable on-site address before creating this repair.',
         );
       } else {
         this.toastService.error(
           'Repair not ready',
-          'Review the required fields before creating this repair.'
+          'Review the required fields before creating this repair.',
         );
       }
 
@@ -1993,7 +2156,7 @@ export class NewRepair implements OnInit {
       if (!customerId) {
         this.toastService.error(
           'Customer could not be saved',
-          'Check the customer details and try again.'
+          'Check the customer details and try again.',
         );
         return;
       }
@@ -2002,7 +2165,7 @@ export class NewRepair implements OnInit {
       if (!deviceId) {
         this.toastService.error(
           'Device could not be saved',
-          'Select a TechSpecs device model and try again.'
+          'Select a TechSpecs device model and try again.',
         );
         return;
       }
@@ -2019,7 +2182,7 @@ export class NewRepair implements OnInit {
       if (serviceMode === 'on_site' && !serviceAddressId) {
         this.toastService.error(
           'Service address could not be saved',
-          'Check the service address and try again.'
+          'Check the service address and try again.',
         );
         return;
       }
@@ -2029,13 +2192,16 @@ export class NewRepair implements OnInit {
         customerDeviceId: deviceId,
         problemSummary: this.buildProblemSummary(),
         assignedTo: this.bookingEnabled()
-          ? schedulingSelection?.assignedTo ?? undefined
+          ? (schedulingSelection?.assignedTo ?? undefined)
           : undefined,
         dispatchType,
         serviceMode,
         serviceAddressId:
-          serviceMode === 'on_site' ? serviceAddressId ?? undefined : undefined,
-        tripFeeApplied: serviceMode === 'on_site' && this.onsiteTripFeeEnabled(),
+          serviceMode === 'on_site'
+            ? (serviceAddressId ?? undefined)
+            : undefined,
+        tripFeeApplied:
+          serviceMode === 'on_site' && this.onsiteTripFeeEnabled(),
         tripFeeCents:
           serviceMode === 'on_site' && this.onsiteTripFeeEnabled()
             ? this.onsiteDefaultTripFeeCents()
@@ -2045,7 +2211,7 @@ export class NewRepair implements OnInit {
       if (!repair?.id) {
         this.toastService.error(
           'Repair could not be created',
-          'The customer and device were saved, but the repair could not be created.'
+          'The customer and device were saved, but the repair could not be created.',
         );
         return;
       }
@@ -2077,17 +2243,20 @@ export class NewRepair implements OnInit {
             candidateType: schedulingSelection.candidateType,
             assignedUserId:
               schedulingSelection.candidateType === 'internal'
-                ? schedulingSelection.assignedUserId ?? undefined
+                ? (schedulingSelection.assignedUserId ?? undefined)
                 : undefined,
             contractorId:
               schedulingSelection.candidateType === 'contractor'
-                ? schedulingSelection.contractorId ?? undefined
+                ? (schedulingSelection.contractorId ?? undefined)
                 : undefined,
           });
 
           appointmentScheduled = !!scheduled;
         } catch (error) {
-          console.error('Repair created, but appointment scheduling failed.', error);
+          console.error(
+            'Repair created, but appointment scheduling failed.',
+            error,
+          );
           appointmentScheduled = false;
         }
       }
@@ -2095,22 +2264,22 @@ export class NewRepair implements OnInit {
       if (orderCreated && appointmentScheduled) {
         this.toastService.success(
           'Repair created',
-          'The repair, order, and appointment were created successfully.'
+          'The repair, order, and appointment were created successfully.',
         );
       } else if (!orderCreated && !appointmentScheduled) {
         this.toastService.error(
           'Repair created with follow-up needed',
-          'The repair exists, but the order and appointment need to be finished from the repair page.'
+          'The repair exists, but the order and appointment need to be finished from the repair page.',
         );
       } else if (!orderCreated) {
         this.toastService.error(
           'Repair created without order',
-          'Finish the order from the repair page.'
+          'Finish the order from the repair page.',
         );
       } else {
         this.toastService.error(
           'Repair created without appointment',
-          'Finish scheduling from the repair page.'
+          'Finish scheduling from the repair page.',
         );
       }
 
@@ -2119,14 +2288,16 @@ export class NewRepair implements OnInit {
       console.error('Failed to create repair flow.', error);
       this.toastService.error(
         'Repair creation failed',
-        'Something went wrong while creating this repair.'
+        'Something went wrong while creating this repair.',
       );
     } finally {
       this.creatingRepair = false;
     }
   }
 
-  private async loadDeviceCatalogCategory(showErrorToast = false): Promise<void> {
+  private async loadDeviceCatalogCategory(
+    showErrorToast = false,
+  ): Promise<void> {
     if (this.deviceCatalogCategory) {
       return;
     }
@@ -2141,7 +2312,7 @@ export class NewRepair implements OnInit {
       this.techSpecsService.listCategories({
         page: 0,
         size: this.deviceCatalogPageSize,
-      })
+      }),
     )
       .then((page) => {
         const categories = this.unwrapStringPage(page);
@@ -2149,8 +2320,8 @@ export class NewRepair implements OnInit {
         this.deviceCatalogCategory =
           this.preferredDeviceCatalogCategories.find((preferred) =>
             categories.some(
-              (category) => category.toLowerCase() === preferred.toLowerCase()
-            )
+              (category) => category.toLowerCase() === preferred.toLowerCase(),
+            ),
           ) ??
           categories.find((category) => /phone|mobile|cell/i.test(category)) ??
           categories[0] ??
@@ -2162,7 +2333,7 @@ export class NewRepair implements OnInit {
         if (showErrorToast) {
           this.toastService.error(
             'Device catalog unavailable',
-            'TechSpecs categories could not be loaded. Device lookup may not work until this is fixed.'
+            'TechSpecs categories could not be loaded. Device lookup may not work until this is fixed.',
           );
         }
       })
@@ -2188,7 +2359,8 @@ export class NewRepair implements OnInit {
     const category = this.deviceCatalogCategory ?? 'Smartphones';
 
     const brands = this.uniqueStrings(this.unwrapStringPage(response)).filter(
-      (brand) => !searchKey || this.normalizeCatalogKey(brand).includes(searchKey)
+      (brand) =>
+        !searchKey || this.normalizeCatalogKey(brand).includes(searchKey),
     );
 
     return this.sortCatalogBrands({
@@ -2205,14 +2377,11 @@ export class NewRepair implements OnInit {
 
     const countryPopular =
       this.popularBrandsByCountryCategory[country]?.[categoryKey] ?? [];
-    const defaultPopular = this.defaultPopularBrandsByCategory[categoryKey] ?? [];
-    const fallbackPopular = this.defaultPopularBrandsByCategory['smartphones'] ?? [
-      'Apple',
-      'Samsung',
-      'Google',
-      'Motorola',
-      'OnePlus',
-    ];
+    const defaultPopular =
+      this.defaultPopularBrandsByCategory[categoryKey] ?? [];
+    const fallbackPopular = this.defaultPopularBrandsByCategory[
+      'smartphones'
+    ] ?? ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus'];
 
     const brands = countryPopular.length
       ? countryPopular
@@ -2242,7 +2411,9 @@ export class NewRepair implements OnInit {
   }
 
   private normalizeCountryCode(value: unknown): string {
-    const normalized = String(value ?? '').trim().toUpperCase();
+    const normalized = String(value ?? '')
+      .trim()
+      .toUpperCase();
 
     if (!normalized) return 'US';
     if (normalized === 'USA' || normalized === 'UNITED STATES') return 'US';
@@ -2300,12 +2471,14 @@ export class NewRepair implements OnInit {
     const countryPopular =
       this.popularBrandsByCountryCategory[country]?.[categoryKey] ?? [];
 
-    const defaultPopular = this.defaultPopularBrandsByCategory[categoryKey] ?? [];
+    const defaultPopular =
+      this.defaultPopularBrandsByCategory[categoryKey] ?? [];
     const popular = countryPopular.length ? countryPopular : defaultPopular;
 
     const index = popular.findIndex(
       (brand) =>
-        this.normalizeCatalogKey(brand) === this.normalizeCatalogKey(opts.brand)
+        this.normalizeCatalogKey(brand) ===
+        this.normalizeCatalogKey(opts.brand),
     );
 
     return index === -1 ? 9999 : index;
@@ -2344,7 +2517,7 @@ export class NewRepair implements OnInit {
     const haystack = this.normalizeCatalogKey(opts.value);
 
     return blocklist.some((term) =>
-      haystack.includes(this.normalizeCatalogKey(term))
+      haystack.includes(this.normalizeCatalogKey(term)),
     );
   }
 
@@ -2360,8 +2533,14 @@ export class NewRepair implements OnInit {
     const brandKey = this.normalizeCatalogKey(opts.brand);
     let model = String(opts.model ?? '').trim();
 
-    if (brandKey && this.normalizeCatalogKey(model).startsWith(`${brandKey} `)) {
-      const brandRegex = new RegExp(`^${this.escapeRegExp(opts.brand)}\\s+`, 'i');
+    if (
+      brandKey &&
+      this.normalizeCatalogKey(model).startsWith(`${brandKey} `)
+    ) {
+      const brandRegex = new RegExp(
+        `^${this.escapeRegExp(opts.brand)}\\s+`,
+        'i',
+      );
       model = model.replace(brandRegex, '').trim();
     }
 
@@ -2379,11 +2558,11 @@ export class NewRepair implements OnInit {
     model = model
       .replace(
         /\b(Global|International|China|Chinese|India|Indian|Japan|Japanese|Korea|Korean|Hong Kong|Taiwan|Russia|Europe|European|Middle East|Latin America|Brazil|Mexico|Canada|USA|US|United States)\b/gi,
-        ''
+        '',
       )
       .replace(
         /\b(Dual SIM|Dual-SIM|DualSim|Single SIM|eSIM|CDMA|GSM|Unlocked|Carrier|Verizon|AT&T|T-Mobile|Sprint)\b/gi,
-        ''
+        '',
       );
 
     model = model.replace(/\b5G\b/gi, '');
@@ -2410,8 +2589,8 @@ export class NewRepair implements OnInit {
           brand: opts.brand,
           model: opts.model,
           country: opts.country,
-        })
-      )
+        }),
+      ),
     );
   }
 
@@ -2428,7 +2607,7 @@ export class NewRepair implements OnInit {
     if (pixelMatch) return 8_000 + Number(pixelMatch[1]);
 
     const ipadGenMatch = normalized.match(
-      /\bipad\b.*\b(\d{1,2})(st|nd|rd|th)?\s+gen/
+      /\bipad\b.*\b(\d{1,2})(st|nd|rd|th)?\s+gen/,
     );
     if (ipadGenMatch) return 7_000 + Number(ipadGenMatch[1]);
 
@@ -2501,7 +2680,8 @@ export class NewRepair implements OnInit {
 
       if (
         !existing ||
-        String(candidate.model ?? '').length < String(existing.model ?? '').length
+        String(candidate.model ?? '').length <
+          String(existing.model ?? '').length
       ) {
         byKey.set(key, candidate);
       }
@@ -2513,7 +2693,7 @@ export class NewRepair implements OnInit {
       const searchKey = this.normalizeCatalogKey(opts.search);
 
       out = out.filter((model) =>
-        this.normalizeCatalogKey(model.model).includes(searchKey)
+        this.normalizeCatalogKey(model.model).includes(searchKey),
       );
     }
 
@@ -2558,11 +2738,21 @@ export class NewRepair implements OnInit {
       return (
         this.newRepairForm.controls.name.valid &&
         this.newRepairForm.controls.email.valid &&
-        this.newRepairForm.controls.phone.valid
+        this.newRepairForm.controls.phone.valid &&
+        this.hasNewCustomerContactValue()
       );
     }
 
-    return !!this.selectedCustomer && !!this.newRepairForm.controls.customerId.value;
+    return (
+      !!this.selectedCustomer && !!this.newRepairForm.controls.customerId.value
+    );
+  }
+
+  hasNewCustomerContactValue(): boolean {
+    return (
+      !!this.newRepairForm.controls.email.value.trim() ||
+      !!this.newRepairForm.controls.phone.value.trim()
+    );
   }
 
   private isDeviceStepValid(): boolean {
@@ -2575,7 +2765,9 @@ export class NewRepair implements OnInit {
       );
     }
 
-    return !!this.selectedDevice && !!this.newRepairForm.controls.deviceId.value;
+    return (
+      !!this.selectedDevice && !!this.newRepairForm.controls.deviceId.value
+    );
   }
 
   private isRepairStepValid(): boolean {
@@ -2636,39 +2828,39 @@ export class NewRepair implements OnInit {
       case 'customer':
         this.toastService.error(
           'Customer required',
-          'Select an existing customer or complete the new customer details.'
+          'Select an existing customer or complete the new customer details.',
         );
         break;
       case 'device':
         this.toastService.error(
           'Device required',
-          'Select a saved device or choose an exact model from TechSpecs.'
+          'Select a saved device or choose an exact model from TechSpecs.',
         );
         break;
       case 'repair':
         this.toastService.error(
           'Repair details required',
-          'Select a repair need and recommended service before continuing.'
+          'Select a repair need and recommended service before continuing.',
         );
         break;
       case 'service':
         this.toastService.error(
           'Service details required',
-          'Confirm the service location and appointment details.'
+          'Confirm the service location and appointment details.',
         );
         break;
       case 'review':
         this.toastService.error(
           'Repair not ready',
-          'Review the required fields before creating this repair.'
+          'Review the required fields before creating this repair.',
         );
         break;
     }
   }
 
-
   private buildPartSearchQuery(): string {
-    const typedQuery = this.newRepairForm.controls.partSearchControl.value.trim();
+    const typedQuery =
+      this.newRepairForm.controls.partSearchControl.value.trim();
     if (typedQuery) return typedQuery;
 
     const service = this.selectedRepairService();
@@ -2680,9 +2872,18 @@ export class NewRepair implements OnInit {
 
   private filterInventoryParts(products: Product[], query: string): any[] {
     const queryTokens = this.tokenizePartSearch(query);
-    const serviceTokens = this.selectedRepairService()?.searchTerms.flatMap((term) => this.tokenizePartSearch(term)) ?? [];
+    const serviceTokens =
+      this.selectedRepairService()?.searchTerms.flatMap((term) =>
+        this.tokenizePartSearch(term),
+      ) ?? [];
     const deviceTokens = this.tokenizePartSearch(this.deviceSummary());
-    const requiredTokens = Array.from(new Set([...serviceTokens, ...deviceTokens].filter((token) => token.length >= 3)));
+    const requiredTokens = Array.from(
+      new Set(
+        [...serviceTokens, ...deviceTokens].filter(
+          (token) => token.length >= 3,
+        ),
+      ),
+    );
 
     return products
       .map((product) => ({
@@ -2696,17 +2897,25 @@ export class NewRepair implements OnInit {
       .slice(0, 8);
   }
 
-  private scoreInventoryProduct(product: Product, queryTokens: string[], requiredTokens: string[]): number {
-    const haystack = this.normalizePartSearchText([
-      product.name,
-      product.sku,
-      ...(product.tags ?? []),
-      ...(product.supplierLinks ?? []).flatMap((link) => [
-        link.supplierSku,
-        link.supplierProductName,
-        link.supplierName,
-      ]),
-    ].filter(Boolean).join(' '));
+  private scoreInventoryProduct(
+    product: Product,
+    queryTokens: string[],
+    requiredTokens: string[],
+  ): number {
+    const haystack = this.normalizePartSearchText(
+      [
+        product.name,
+        product.sku,
+        ...(product.tags ?? []),
+        ...(product.supplierLinks ?? []).flatMap((link) => [
+          link.supplierSku,
+          link.supplierProductName,
+          link.supplierName,
+        ]),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
 
     let score = 0;
 
@@ -2765,9 +2974,12 @@ export class NewRepair implements OnInit {
   }
 
   private updateProblemSummaryFromStructuredFields(): void {
-    this.newRepairForm.controls.problemSummary.setValue(this.buildProblemSummary(), {
-      emitEvent: false,
-    });
+    this.newRepairForm.controls.problemSummary.setValue(
+      this.buildProblemSummary(),
+      {
+        emitEvent: false,
+      },
+    );
   }
 
   private buildProblemSummary(): string {
@@ -2797,11 +3009,21 @@ export class NewRepair implements OnInit {
     const emailControl = this.newRepairForm.controls.email;
     const phoneControl = this.newRepairForm.controls.phone;
     const searchControl = this.newRepairForm.controls.customerSearchControl;
+    const emailValue = emailControl.value.trim();
+    const phoneValue = phoneControl.value.trim();
+    const hasContact = !!emailValue || !!phoneValue;
 
     if (this.newCustomer) {
-      nameControl.setValidators([Validators.required, Validators.maxLength(120)]);
-      emailControl.setValidators([Validators.required, Validators.email]);
-      phoneControl.setValidators([Validators.required]);
+      nameControl.setValidators([
+        Validators.required,
+        Validators.maxLength(120),
+      ]);
+      emailControl.setValidators(
+        hasContact
+          ? [Validators.email]
+          : [Validators.required, Validators.email],
+      );
+      phoneControl.setValidators(hasContact ? [] : [Validators.required]);
       searchControl.clearValidators();
     } else {
       nameControl.clearValidators();
@@ -2818,8 +3040,10 @@ export class NewRepair implements OnInit {
 
   private updateDeviceValidators(): void {
     const catalogRefControl = this.newRepairForm.controls.catalogRef;
-    const brandSearchControl = this.newRepairForm.controls.techSpecsBrandSearchControl;
-    const modelSearchControl = this.newRepairForm.controls.techSpecsModelSearchControl;
+    const brandSearchControl =
+      this.newRepairForm.controls.techSpecsBrandSearchControl;
+    const modelSearchControl =
+      this.newRepairForm.controls.techSpecsModelSearchControl;
     const nicknameControl = this.newRepairForm.controls.nickname;
     const brandControl = this.newRepairForm.controls.brand;
     const modelControl = this.newRepairForm.controls.model;
@@ -2829,7 +3053,10 @@ export class NewRepair implements OnInit {
       catalogRefControl.setValidators([Validators.required]);
       brandSearchControl.setValidators([Validators.required]);
       modelSearchControl.setValidators([Validators.required]);
-      nicknameControl.setValidators([Validators.required, Validators.maxLength(120)]);
+      nicknameControl.setValidators([
+        Validators.required,
+        Validators.maxLength(120),
+      ]);
       brandControl.setValidators([Validators.required]);
       modelControl.setValidators([Validators.required]);
       searchControl.clearValidators();
@@ -2871,11 +3098,13 @@ export class NewRepair implements OnInit {
 
   private updateServiceValidators(): void {
     const serviceModeControl = this.newRepairForm.controls.serviceMode;
-    const serviceAddressIdControl = this.newRepairForm.controls.serviceAddressId;
+    const serviceAddressIdControl =
+      this.newRepairForm.controls.serviceAddressId;
     const addressLine1Control = this.newRepairForm.controls.addressLine1;
     const addressCityControl = this.newRepairForm.controls.addressCity;
     const addressStateControl = this.newRepairForm.controls.addressState;
-    const addressPostalCodeControl = this.newRepairForm.controls.addressPostalCode;
+    const addressPostalCodeControl =
+      this.newRepairForm.controls.addressPostalCode;
     const addressCountryControl = this.newRepairForm.controls.addressCountry;
 
     if (!this.onsiteEnabled()) {
@@ -2961,7 +3190,7 @@ export class NewRepair implements OnInit {
         addressCountry: this.shopCountry,
         addressNotes: '',
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
   }
 
@@ -3011,7 +3240,7 @@ export class NewRepair implements OnInit {
           createdCustomer.phone ??
           '',
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.newRepairForm.controls.customerNotes.valueChanges
@@ -3056,7 +3285,7 @@ export class NewRepair implements OnInit {
         deviceId: createdDevice.id,
         deviceSearchControl: this.getDeviceDisplay(createdDevice),
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
 
     this.updateDeviceValidators();
@@ -3064,7 +3293,9 @@ export class NewRepair implements OnInit {
     return createdDevice.id;
   }
 
-  private async ensureServiceAddress(customerId: string): Promise<string | null> {
+  private async ensureServiceAddress(
+    customerId: string,
+  ): Promise<string | null> {
     if (!this.onsiteEnabled() || !this.isOnSiteMode()) return null;
 
     if (!this.creatingInlineAddress) {
@@ -3078,7 +3309,7 @@ export class NewRepair implements OnInit {
       city: this.newRepairForm.controls.addressCity.value.trim(),
       state: this.newRepairForm.controls.addressState.value.trim(),
       postalCode: this.normalizePostalCode(
-        this.newRepairForm.controls.addressPostalCode.value
+        this.newRepairForm.controls.addressPostalCode.value,
       ),
       country: this.newRepairForm.controls.addressCountry.value
         .trim()
@@ -3107,7 +3338,7 @@ export class NewRepair implements OnInit {
     this.updateServiceValidators();
     this.serviceAreaStatus = { allowed: true, reason: 'ok' };
     this.serviceAreaCheckedAddressKey = this.getServiceAreaAddressKey(
-      this.buildSelectedAddressServiceAreaPayload()
+      this.buildSelectedAddressServiceAreaPayload(),
     );
 
     return created.id;
@@ -3117,7 +3348,8 @@ export class NewRepair implements OnInit {
     this.loadingCustomerAddresses = true;
 
     try {
-      this.customerAddresses = await this.customersStore.loadAddresses(customerId);
+      this.customerAddresses =
+        await this.customersStore.loadAddresses(customerId);
 
       const currentId = this.newRepairForm.controls.serviceAddressId.value;
       const stillExists =
@@ -3130,14 +3362,18 @@ export class NewRepair implements OnInit {
           null;
 
         this.newRepairForm.patchValue({
-          serviceAddressId:
-            this.isOnSiteMode() ? defaultAddress?.id ?? null : null,
+          serviceAddressId: this.isOnSiteMode()
+            ? (defaultAddress?.id ?? null)
+            : null,
         });
       }
 
       this.clearServiceAreaStatus(false);
 
-      if (this.isOnSiteMode() && this.newRepairForm.controls.serviceAddressId.value) {
+      if (
+        this.isOnSiteMode() &&
+        this.newRepairForm.controls.serviceAddressId.value
+      ) {
         await this.validateServiceArea(false);
       }
     } finally {
@@ -3157,7 +3393,7 @@ export class NewRepair implements OnInit {
   private async loadBookingEnabled(): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.get<ShopListResponse>(`${this.apiBase}/shops`)
+        this.http.get<ShopListResponse>(`${this.apiBase}/shops`),
       );
 
       const shop = response.data?.[0] ?? null;
@@ -3172,7 +3408,7 @@ export class NewRepair implements OnInit {
       this.onsiteEnabled.set(settings?.onsite?.enabled === true);
       this.onsiteTripFeeEnabled.set(settings?.onsite?.tripFeeEnabled === true);
       this.onsiteDefaultTripFeeCents.set(
-        settings?.onsite?.defaultTripFeeCents ?? null
+        settings?.onsite?.defaultTripFeeCents ?? null,
       );
     } catch (error) {
       console.error('Failed to load booking/on-site settings.', error);
@@ -3193,18 +3429,21 @@ export class NewRepair implements OnInit {
 
       this.shopId = shopWithId?.id ?? this.shopId;
       this.shopCountry =
-        shop?.address?.country || shop?.locale?.country || this.shopCountry || 'US';
+        shop?.address?.country ||
+        shop?.locale?.country ||
+        this.shopCountry ||
+        'US';
 
       this.newRepairForm.patchValue(
         { addressCountry: this.shopCountry },
-        { emitEvent: false }
+        { emitEvent: false },
       );
     } catch (error) {
       console.error('Failed to load shop context.', error);
 
       this.newRepairForm.patchValue(
         { addressCountry: this.shopCountry },
-        { emitEvent: false }
+        { emitEvent: false },
       );
     }
   }
@@ -3221,7 +3460,7 @@ export class NewRepair implements OnInit {
     };
 
     const quotedPriceCents = this.dollarsToCents(
-      this.newRepairForm.controls.quotedPriceDollars.value
+      this.newRepairForm.controls.quotedPriceDollars.value,
     );
 
     const items: RepairOrderItem[] = [
@@ -3278,7 +3517,7 @@ export class NewRepair implements OnInit {
       city: this.newRepairForm.controls.addressCity.value.trim(),
       state: this.newRepairForm.controls.addressState.value.trim(),
       postalCode: this.normalizePostalCode(
-        this.newRepairForm.controls.addressPostalCode.value
+        this.newRepairForm.controls.addressPostalCode.value,
       ),
       country: this.newRepairForm.controls.addressCountry.value
         .trim()
@@ -3289,7 +3528,9 @@ export class NewRepair implements OnInit {
   private getSelectedAddressForCheck(): CustomerAddress | null {
     const serviceAddressId = this.newRepairForm.controls.serviceAddressId.value;
     if (!serviceAddressId) return null;
-    return this.customerAddresses.find((x) => x.id === serviceAddressId) ?? null;
+    return (
+      this.customerAddresses.find((x) => x.id === serviceAddressId) ?? null
+    );
   }
 
   private buildSelectedAddressServiceAreaPayload() {
@@ -3312,7 +3553,7 @@ export class NewRepair implements OnInit {
     const city = this.newRepairForm.controls.addressCity.value.trim();
     const state = this.newRepairForm.controls.addressState.value.trim();
     const postalCode = this.normalizePostalCode(
-      this.newRepairForm.controls.addressPostalCode.value
+      this.newRepairForm.controls.addressPostalCode.value,
     );
     const country = this.newRepairForm.controls.addressCountry.value
       .trim()
@@ -3339,7 +3580,7 @@ export class NewRepair implements OnInit {
       state?: string;
       postalCode?: string;
       country?: string;
-    } | null
+    } | null,
   ): string | null {
     if (!payload) return null;
 
@@ -3373,37 +3614,37 @@ export class NewRepair implements OnInit {
       case 'ok':
         this.toastService.success(
           'Address confirmed',
-          'This on-site address is inside your service area.'
+          'This on-site address is inside your service area.',
         );
         return;
       case 'onsite_disabled':
         this.toastService.error(
           'On-site repairs disabled',
-          'On-site service is not enabled for this shop.'
+          'On-site service is not enabled for this shop.',
         );
         return;
       case 'service_address_required':
         this.toastService.error(
           'Address incomplete',
-          'Enter a complete service address before continuing.'
+          'Enter a complete service address before continuing.',
         );
         return;
       case 'outside_service_area':
         this.toastService.error(
           'Outside service area',
-          'That address is outside your current on-site service area.'
+          'That address is outside your current on-site service area.',
         );
         return;
       case 'address_not_resolved':
         this.toastService.error(
           'Address not found',
-          'We could not verify that address. Please review it and try again.'
+          'We could not verify that address. Please review it and try again.',
         );
         return;
       case 'shop_address_missing':
         this.toastService.error(
           'Shop location missing',
-          'Your shop address is not fully configured for service-area checks.'
+          'Your shop address is not fully configured for service-area checks.',
         );
         return;
       case 'in_shop':
