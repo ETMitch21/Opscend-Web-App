@@ -205,14 +205,14 @@ export class NewRepair implements OnInit {
     string,
     Record<string, string[]>
   > = {
-    US: {
-      smartphones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
-      'cell phones': ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
-      phones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
-      tablets: ['Apple', 'Samsung', 'Microsoft', 'Lenovo', 'Amazon'],
-      laptops: ['Apple', 'Dell', 'HP', 'Lenovo', 'Microsoft', 'Acer', 'Asus'],
-    },
-  };
+      US: {
+        smartphones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
+        'cell phones': ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
+        phones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus', 'LG'],
+        tablets: ['Apple', 'Samsung', 'Microsoft', 'Lenovo', 'Amazon'],
+        laptops: ['Apple', 'Dell', 'HP', 'Lenovo', 'Microsoft', 'Acer', 'Asus'],
+      },
+    };
 
   private readonly defaultPopularBrandsByCategory: Record<string, string[]> = {
     smartphones: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus'],
@@ -264,12 +264,12 @@ export class NewRepair implements OnInit {
     label: string;
     eyebrow: string;
   }> = [
-    { key: 'customer', label: 'Customer', eyebrow: 'Who is this for?' },
-    { key: 'device', label: 'Device', eyebrow: 'What are we fixing?' },
-    { key: 'repair', label: 'Repair', eyebrow: 'What is wrong?' },
-    { key: 'service', label: 'Service', eyebrow: 'Where and when?' },
-    { key: 'review', label: 'Review', eyebrow: 'Confirm details' },
-  ];
+      { key: 'customer', label: 'Customer', eyebrow: 'Who is this for?' },
+      { key: 'device', label: 'Device', eyebrow: 'What are we fixing?' },
+      { key: 'repair', label: 'Repair', eyebrow: 'What is wrong?' },
+      { key: 'service', label: 'Service', eyebrow: 'Where and when?' },
+      { key: 'review', label: 'Review', eyebrow: 'Confirm details' },
+    ];
 
   public readonly currentStep = signal<RepairWizardStep>('customer');
   public readonly bookingEnabled = signal(false);
@@ -3210,19 +3210,46 @@ export class NewRepair implements OnInit {
   }
 
   private buildOrderItems(serviceMode: RepairServiceMode) {
+    type RepairOrderItem = {
+      type: 'service' | 'product';
+      productId: string | null;
+      name: string;
+      quantity: number;
+      unitPriceCents: number;
+      notes: string | null;
+      sku: string | null;
+    };
+
     const quotedPriceCents = this.dollarsToCents(
       this.newRepairForm.controls.quotedPriceDollars.value
     );
 
-    const items = [
+    const items: RepairOrderItem[] = [
       {
         type: 'service',
+        productId: null,
         name: this.selectedRepairService()?.label ?? 'Repair Service',
         quantity: 1,
         unitPriceCents: quotedPriceCents,
         notes: null,
+        sku: null,
       },
     ];
+
+    if (
+      this.selectedPart?.source === 'inventory' &&
+      this.newRepairForm.controls.selectedInventoryProductId.value
+    ) {
+      items.push({
+        type: 'product',
+        productId: this.newRepairForm.controls.selectedInventoryProductId.value,
+        name: this.selectedPart.name,
+        quantity: 1,
+        unitPriceCents: Number(this.selectedPart.priceCents ?? 0),
+        notes: 'Inventory part selected during repair intake',
+        sku: this.selectedPart.sku ?? null,
+      });
+    }
 
     if (
       serviceMode === 'on_site' &&
@@ -3231,10 +3258,12 @@ export class NewRepair implements OnInit {
     ) {
       items.push({
         type: 'service',
+        productId: null,
         name: 'On-Site Trip Fee',
         quantity: 1,
         unitPriceCents: this.onsiteDefaultTripFeeCents()!,
         notes: null,
+        sku: null,
       });
     }
 

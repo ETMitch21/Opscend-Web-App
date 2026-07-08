@@ -20,6 +20,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import {
   BadgeDollarSign,
+  CheckCircle2,
   CreditCard,
   FilePlus2,
   LoaderCircle,
@@ -57,6 +58,7 @@ interface CatalogItemOption {
   name: string;
   description?: string | null;
   priceCents?: number | null;
+  sku?: string | null;
 }
 
 @Component({
@@ -98,6 +100,7 @@ export class RepairOrderCard {
   readonly refundMethod = signal<PaymentMethod>('card');
 
   readonly icons = {
+    CheckCircle2,
     FilePlus2,
     ReceiptText,
     BadgeDollarSign,
@@ -137,6 +140,7 @@ export class RepairOrderCard {
       name: product.name,
       description: product.sku ? `Product SKU: ${product.sku}` : null,
       priceCents: Number(product.price ?? 0),
+      sku: product.sku ?? null,
     }))
   );
 
@@ -290,10 +294,12 @@ export class RepairOrderCard {
       this.itemsArray().push(
         this.createItemGroup({
           type: item.type,
+          productId: item.type === 'product' ? item.id : null,
           name: item.name,
           quantity: 1,
           unitPriceDollars: (item.priceCents ?? 0) / 100,
           notes: '',
+          sku: item.sku ?? null,
           sourceId: item.id,
         })
       );
@@ -308,9 +314,11 @@ export class RepairOrderCard {
     this.itemsArray().push(
       this.createItemGroup({
         type: 'service',
+        productId: null,
         quantity: 1,
         unitPriceDollars: 0,
         notes: '',
+        sku: null,
         sourceId: null,
       })
     );
@@ -347,11 +355,12 @@ export class RepairOrderCard {
 
     const payloadItems: CreateOrderItemPayload[] = this.itemRowsRawValue().map((row) => ({
       type: row.type,
+      productId: row.type === 'product' ? row.productId ?? row.sourceId ?? null : null,
       name: String(row.name ?? '').trim(),
       quantity: Number(row.quantity ?? 1),
       unitPriceCents: this.toCents(row.unitPriceDollars ?? 0),
       notes: String(row.notes ?? '').trim() || null,
-      sku: null,
+      sku: row.sku ?? null,
     }));
 
     const updated = await this.ordersStore.replaceOrderItems(order.id, {
@@ -465,6 +474,37 @@ export class RepairOrderCard {
       this.toast.success('Refund added', 'Refund recorded on order.');
     } else {
       this.toast.error('Refund failed', this.error() ?? 'Unable to refund order.');
+    }
+  }
+
+  canFulfill(): boolean {
+    const order = this.order();
+    if (!order) return false;
+
+    return (
+      order.paymentStatus !== 'voided' &&
+      order.fulfillmentStatus !== 'fulfilled' &&
+      order.totals.balanceCents === 0 &&
+      order.items.length > 0 &&
+      !!order.customerId
+    );
+  }
+
+  async markFulfilled(): Promise<void> {
+    const order = this.order();
+    if (!order) return;
+
+    const updated = await this.ordersStore.patchOrder(order.id, {
+      fulfillmentStatus: 'fulfilled',
+    });
+
+    if (updated) {
+      this.toast.success('Order fulfilled', `${updated.orderNumber} was marked fulfilled.`);
+    } else {
+      this.toast.error(
+        'Fulfillment failed',
+        this.error() ?? 'Unable to mark order fulfilled.'
+      );
     }
   }
 
@@ -727,11 +767,13 @@ export class RepairOrderCard {
       array.push(
         this.createItemGroup({
           type: item.type,
+          productId: item.productId ?? null,
           name: item.name,
           quantity: item.quantity,
           unitPriceDollars: item.unitPriceCents / 100,
           notes: item.notes ?? '',
-          sourceId: null,
+          sku: item.sku ?? null,
+          sourceId: item.productId ?? null,
         })
       );
     }
@@ -750,14 +792,17 @@ export class RepairOrderCard {
 
   private createItemGroup(input?: {
     type?: OrderItemType;
+    productId?: string | null;
     name?: string;
     quantity?: number;
     unitPriceDollars?: number;
     notes?: string;
+    sku?: string | null;
     sourceId?: string | null;
   }) {
     return this.fb.group({
       type: this.fb.control<OrderItemType>(input?.type ?? 'service', Validators.required),
+      productId: this.fb.control<string | null>(input?.productId ?? null),
       name: this.fb.control(input?.name ?? '', [
         Validators.required,
         Validators.maxLength(120),
@@ -772,24 +817,29 @@ export class RepairOrderCard {
         Validators.min(0),
       ]),
       notes: this.fb.control(input?.notes ?? ''),
+      sku: this.fb.control<string | null>(input?.sku ?? null),
       sourceId: this.fb.control<string | null>(input?.sourceId ?? null),
     });
   }
 
   private itemRowsRawValue(): Array<{
     type: OrderItemType;
+    productId?: string | null;
     name: string;
     quantity: number;
     unitPriceDollars: number;
     notes: string;
+    sku?: string | null;
     sourceId?: string | null;
   }> {
     return this.itemsArray().getRawValue() as Array<{
       type: OrderItemType;
+      productId?: string | null;
       name: string;
       quantity: number;
       unitPriceDollars: number;
       notes: string;
+      sku?: string | null;
       sourceId?: string | null;
     }>;
   }

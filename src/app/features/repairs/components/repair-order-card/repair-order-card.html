@@ -29,6 +29,16 @@
 
     @if (order()?.paymentStatus !== 'voided') {
     <div class="flex justify-end gap-2">
+      @if (canFulfill()) {
+      <button type="button"
+        class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-medium text-white transition hover:bg-blue-700 disabled:opacity-70"
+        [disabled]="saving()"
+        (click)="markFulfilled()">
+        <lucide-icon [name]="icons.CheckCircle2" class="h-3.5 w-3.5"></lucide-icon>
+        Mark Fulfilled
+      </button>
+      }
+
       <button type="button"
         class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white transition hover:bg-emerald-700"
         (click)="openPaymentModal()">

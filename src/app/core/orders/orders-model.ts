@@ -8,6 +8,7 @@ export type OrderPaymentType = 'payment' | 'refund';
 export interface OrderItem {
   id: string;
   type: OrderItemType;
+  productId: string | null;
   name: string;
   sku: string | null;
   quantity: number;
@@ -71,6 +72,7 @@ export interface OrderListResponse {
 
 export interface CreateOrderItemPayload {
   type: OrderItemType;
+  productId?: string | null;
   name: string;
   sku?: string | null;
   quantity: number;
