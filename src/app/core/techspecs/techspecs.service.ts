@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 
 import { AppConfigService } from '../app-config/app-config.service';
 
@@ -63,6 +63,7 @@ export interface DeviceCatalogModelsParams extends DeviceCatalogPagingParams {
 export class TechSpecsService {
   private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
+  private readonly requestCache = new Map<string, Observable<unknown>>();
 
   private get apiBase(): string {
     return this.appConfig.config.apiBase;
@@ -79,9 +80,9 @@ export class TechSpecsService {
       .set('page', String(query.page ?? 0))
       .set('size', String(query.size ?? 20));
 
-    return this.http.get<DeviceCatalogPage<string>>(
+    return this.cachedGet<DeviceCatalogPage<string>>(
       `${this.baseUrl}/categories`,
-      { params }
+      params
     );
   }
 
@@ -93,13 +94,15 @@ export class TechSpecsService {
       .set('page', String(query.page ?? 0))
       .set('size', String(query.size ?? 20));
 
-    if (query.search?.trim()) {
-      params = params.set('search', query.search.trim());
+    const search = this.normalizeSearchParam(query.search);
+
+    if (search) {
+      params = params.set('search', search);
     }
 
-    return this.http.get<DeviceCatalogPage<string>>(
+    return this.cachedGet<DeviceCatalogPage<string>>(
       `${this.baseUrl}/brands`,
-      { params }
+      params
     );
   }
 
@@ -112,17 +115,19 @@ export class TechSpecsService {
       .set('page', String(query.page ?? 0))
       .set('size', String(query.size ?? 20));
 
-    if (query.search?.trim()) {
-      params = params.set('search', query.search.trim());
+    const search = this.normalizeSearchParam(query.search);
+
+    if (search) {
+      params = params.set('search', search);
     }
 
     if (query.keepCasing != null) {
       params = params.set('keepCasing', String(query.keepCasing));
     }
 
-    return this.http.get<DeviceCatalogPage<DeviceCatalogModelOption>>(
+    return this.cachedGet<DeviceCatalogPage<DeviceCatalogModelOption>>(
       `${this.baseUrl}/models`,
-      { params }
+      params
     );
   }
 
@@ -177,6 +182,30 @@ export class TechSpecsService {
       isActive: true,
       sortOrder: null,
     };
+  }
+
+
+  private cachedGet<T>(url: string, params: HttpParams): Observable<T> {
+    const cacheKey = `${url}?${params.toString()}`;
+    const cached = this.requestCache.get(cacheKey);
+
+    if (cached) {
+      return cached as Observable<T>;
+    }
+
+    const request$ = this.http.get<T>(url, { params }).pipe(
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+
+    this.requestCache.set(cacheKey, request$);
+
+    return request$;
+  }
+
+  private normalizeSearchParam(value: string | null | undefined): string | null {
+    const search = String(value ?? '').trim();
+
+    return search.length >= 2 ? search : null;
   }
 
   private slugify(value: string): string {

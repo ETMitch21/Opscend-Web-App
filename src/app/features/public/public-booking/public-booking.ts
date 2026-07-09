@@ -38,7 +38,7 @@ import {
   Watch,
   Wrench,
 } from 'lucide-angular';
-import { firstValueFrom } from 'rxjs';
+import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
 import { PublicBookingService } from '../../../core/public-booking/service';
 import {
@@ -1439,15 +1439,19 @@ export class PublicBooking {
   }
 
   private bindSearchControls(): void {
-    this.brandSearch.valueChanges.subscribe((value) => {
-      this.brandSearchTerm.set(value);
-      this.brandVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
-    });
+    this.brandSearch.valueChanges
+      .pipe(debounceTime(250), distinctUntilChanged())
+      .subscribe((value) => {
+        this.brandSearchTerm.set(value);
+        this.brandVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+      });
 
-    this.modelSearch.valueChanges.subscribe((value) => {
-      this.modelSearchTerm.set(value);
-      this.modelVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
-    });
+    this.modelSearch.valueChanges
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe((value) => {
+        this.modelSearchTerm.set(value);
+        this.modelVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+      });
   }
 
 

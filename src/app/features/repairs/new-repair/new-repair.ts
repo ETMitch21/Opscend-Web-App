@@ -200,6 +200,8 @@ export class NewRepair implements OnInit {
   ];
 
   private readonly deviceCatalogPageSize = 20;
+  private readonly deviceCatalogSearchDebounceMs = 500;
+  private readonly deviceCatalogMinimumSearchLength = 2;
 
   private readonly popularBrandsByCountryCategory: Record<
     string,
@@ -645,7 +647,7 @@ export class NewRepair implements OnInit {
 
     this.techSpecsBrandSearchControl.valueChanges
       .pipe(
-        debounceTime(250),
+        debounceTime(this.deviceCatalogSearchDebounceMs),
         distinctUntilChanged(),
         tap((rawValue) => {
           const value = rawValue.trim();
@@ -674,7 +676,7 @@ export class NewRepair implements OnInit {
           }
         }),
         filter(() => this.newDevice),
-        filter((rawValue) => rawValue.trim().length >= 2),
+        filter((rawValue) => rawValue.trim().length >= this.deviceCatalogMinimumSearchLength),
         tap(() => {
           this.searchingTechSpecsBrands = true;
           this.showTechSpecsBrandResults = true;
@@ -736,7 +738,7 @@ export class NewRepair implements OnInit {
 
     this.techSpecsModelSearchControl.valueChanges
       .pipe(
-        debounceTime(250),
+        debounceTime(this.deviceCatalogSearchDebounceMs),
         distinctUntilChanged(),
         tap((rawValue) => {
           const value = rawValue.trim();
@@ -763,7 +765,7 @@ export class NewRepair implements OnInit {
         }),
         filter(() => this.newDevice),
         filter(() => !!this.selectedTechSpecsBrand),
-        filter((rawValue) => rawValue.trim().length >= 1),
+        filter((rawValue) => rawValue.trim().length >= this.deviceCatalogMinimumSearchLength),
         tap(() => {
           this.searchingTechSpecsModels = true;
           this.showTechSpecsModelResults = true;
@@ -1590,7 +1592,7 @@ export class NewRepair implements OnInit {
 
     const value = this.techSpecsModelSearchControl.value.trim();
 
-    if (this.techSpecsModelResults.length || value.length >= 1) {
+    if (this.techSpecsModelResults.length || value.length >= this.deviceCatalogMinimumSearchLength) {
       return;
     }
 
