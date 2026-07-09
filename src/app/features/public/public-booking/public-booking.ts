@@ -73,6 +73,9 @@ type PublicCalendarDay = {
 
 const PAGE_SIZE = 50;
 const LOCAL_DISPLAY_INCREMENT = 5;
+const PUBLIC_SEARCH_DEBOUNCE_MS = 650;
+const MIN_REMOTE_SEARCH_LENGTH = 2;
+const MAX_AUTO_SEARCH_PAGES = 8;
 
 const TECHSPECS_CATEGORY_ORDER = [
   'Smartphones',
@@ -336,9 +339,15 @@ export class PublicBooking {
 
   readonly brandSearchTerm = signal('');
   readonly modelSearchTerm = signal('');
+  readonly brandSearchPending = signal(false);
+  readonly modelSearchPending = signal(false);
+  readonly activeModelSearchTerm = signal('');
 
   readonly brandVisibleCount = signal(LOCAL_DISPLAY_INCREMENT);
   readonly modelVisibleCount = signal(LOCAL_DISPLAY_INCREMENT);
+
+  private brandSearchRequestId = 0;
+  private modelSearchRequestId = 0;
 
   readonly selectedSlot = computed(() => {
     const key = this.selectedSlotKey();
@@ -528,6 +537,11 @@ export class PublicBooking {
 
     if (!search) return this.models();
 
+    // When the current list already came from the API search endpoint, do not
+    // narrow it again locally. The backend can return fuzzy/normalized matches
+    // that may not include the exact raw text the customer typed.
+    if (search === this.activeModelSearchTerm()) return this.models();
+
     return this.models().filter((model) =>
       this.normalizeSearch(model.model).includes(search)
     );
@@ -601,6 +615,26 @@ export class PublicBooking {
   }
 
   readonly progressPercent = computed(() => `${(this.stepNumber() / 8) * 100}%`);
+
+  brandSearchStatus(): string | null {
+    const search = this.normalizeSearch(this.brandSearchTerm());
+
+    if (search.length < MIN_REMOTE_SEARCH_LENGTH) return null;
+    if (this.brandSearchPending()) return 'Searching after you pause typing...';
+    if (this.brandsLoading()) return 'Searching catalog brands...';
+
+    return null;
+  }
+
+  modelSearchStatus(): string | null {
+    const search = this.normalizeSearch(this.modelSearchTerm());
+
+    if (search.length < MIN_REMOTE_SEARCH_LENGTH) return null;
+    if (this.modelSearchPending()) return 'Searching after you pause typing...';
+    if (this.modelsLoading()) return 'Searching catalog models...';
+
+    return null;
+  }
 
   async ngOnInit(): Promise<void> {
     const slug = this.route.snapshot.paramMap.get('shopSlug');
@@ -695,6 +729,11 @@ export class PublicBooking {
     this.modelSearch.setValue('', { emitEvent: false });
     this.brandSearchTerm.set('');
     this.modelSearchTerm.set('');
+    this.activeModelSearchTerm.set('');
+    this.brandSearchPending.set(false);
+    this.modelSearchPending.set(false);
+    this.brandSearchRequestId += 1;
+    this.modelSearchRequestId += 1;
 
     this.brandVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
     this.modelVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
@@ -767,6 +806,9 @@ export class PublicBooking {
 
     this.modelSearch.setValue('', { emitEvent: false });
     this.modelSearchTerm.set('');
+    this.activeModelSearchTerm.set('');
+    this.modelSearchPending.set(false);
+    this.modelSearchRequestId += 1;
     this.modelVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
 
     this.models.set([]);
@@ -777,10 +819,15 @@ export class PublicBooking {
     this.activeStep.set('model');
   }
 
-  async loadModels(page: number): Promise<void> {
+  async loadModels(
+    page: number,
+    searchTerm: string | null = this.activeModelSearchTerm(),
+    requestId?: number
+  ): Promise<void> {
     const slug = this.shopSlug();
     const category = this.selectedCategory();
     const brand = this.selectedBrand();
+    const normalizedSearch = this.normalizeSearch(searchTerm);
 
     if (!slug || !category || !brand) return;
 
@@ -788,15 +835,25 @@ export class PublicBooking {
     this.error.set(null);
 
     try {
+      const query: any = {
+        category,
+        brand,
+        page,
+        size: PAGE_SIZE,
+        keepCasing: true,
+      };
+
+      if (normalizedSearch.length >= MIN_REMOTE_SEARCH_LENGTH) {
+        query.search = String(searchTerm ?? '').trim();
+      }
+
       const response = await firstValueFrom(
-        this.bookingService.listModels(slug, {
-          category,
-          brand,
-          page,
-          size: PAGE_SIZE,
-          keepCasing: true,
-        })
+        this.bookingService.listModels(slug, query)
       );
+
+      if (requestId != null && requestId !== this.modelSearchRequestId) {
+        return;
+      }
 
       this.models.set(
         page === 0
@@ -805,11 +862,18 @@ export class PublicBooking {
       );
       this.modelPage.set(response.page ?? page);
       this.modelTotalPages.set(response.totalPages ?? 1);
+      this.activeModelSearchTerm.set(
+        normalizedSearch.length >= MIN_REMOTE_SEARCH_LENGTH ? normalizedSearch : ''
+      );
     } catch (error) {
-      console.error(error);
-      this.error.set('models_load_failed');
+      if (requestId == null || requestId === this.modelSearchRequestId) {
+        console.error(error);
+        this.error.set('models_load_failed');
+      }
     } finally {
-      this.modelsLoading.set(false);
+      if (requestId == null || requestId === this.modelSearchRequestId) {
+        this.modelsLoading.set(false);
+      }
     }
   }
 
@@ -1472,19 +1536,111 @@ export class PublicBooking {
   }
 
   private bindSearchControls(): void {
+    this.brandSearch.valueChanges.subscribe((value) => {
+      const search = this.normalizeSearch(value);
+      this.brandSearchTerm.set(value);
+      this.brandVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+      this.brandSearchPending.set(search.length >= MIN_REMOTE_SEARCH_LENGTH);
+    });
+
     this.brandSearch.valueChanges
-      .pipe(debounceTime(250), distinctUntilChanged())
+      .pipe(debounceTime(PUBLIC_SEARCH_DEBOUNCE_MS), distinctUntilChanged())
       .subscribe((value) => {
-        this.brandSearchTerm.set(value);
-        this.brandVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+        void this.handleBrandSearchChange(value);
       });
 
+    this.modelSearch.valueChanges.subscribe((value) => {
+      const search = this.normalizeSearch(value);
+      this.modelSearchTerm.set(value);
+      this.modelVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+      this.modelSearchPending.set(search.length >= MIN_REMOTE_SEARCH_LENGTH);
+    });
+
     this.modelSearch.valueChanges
-      .pipe(debounceTime(300), distinctUntilChanged())
+      .pipe(debounceTime(PUBLIC_SEARCH_DEBOUNCE_MS), distinctUntilChanged())
       .subscribe((value) => {
-        this.modelSearchTerm.set(value);
-        this.modelVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+        void this.handleModelSearchChange(value);
       });
+  }
+
+  private async handleBrandSearchChange(value: string): Promise<void> {
+    const requestId = ++this.brandSearchRequestId;
+    const search = this.normalizeSearch(value);
+
+    this.brandSearchTerm.set(value);
+    this.brandVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+
+    if (search.length < MIN_REMOTE_SEARCH_LENGTH) {
+      this.brandSearchPending.set(false);
+      return;
+    }
+
+    try {
+      await this.ensureBrandSearchResults(search, requestId);
+    } finally {
+      if (requestId === this.brandSearchRequestId) {
+        this.brandSearchPending.set(false);
+      }
+    }
+  }
+
+  private async ensureBrandSearchResults(
+    search: string,
+    requestId: number
+  ): Promise<void> {
+    let pagesLoaded = 0;
+
+    while (
+      requestId === this.brandSearchRequestId &&
+      this.canLoadMoreBrands() &&
+      this.filteredBrands().length < LOCAL_DISPLAY_INCREMENT &&
+      pagesLoaded < MAX_AUTO_SEARCH_PAGES
+    ) {
+      await this.loadBrands(this.brandPage() + 1);
+      pagesLoaded += 1;
+
+      // Keep the loop responsive if the customer keeps typing while requests are in flight.
+      if (requestId !== this.brandSearchRequestId) return;
+    }
+
+    // If we already have some matches, still load one additional page in the
+    // background for broader searches. This makes public booking feel more like
+    // admin search without hammering the catalog API.
+    if (
+      requestId === this.brandSearchRequestId &&
+      this.canLoadMoreBrands() &&
+      this.filteredBrands().length > 0 &&
+      pagesLoaded === 0
+    ) {
+      await this.loadBrands(this.brandPage() + 1);
+    }
+  }
+
+  private async handleModelSearchChange(value: string): Promise<void> {
+    const requestId = ++this.modelSearchRequestId;
+    const search = this.normalizeSearch(value);
+
+    this.modelSearchTerm.set(value);
+    this.modelVisibleCount.set(LOCAL_DISPLAY_INCREMENT);
+
+    if (!this.selectedBrand()) {
+      this.modelSearchPending.set(false);
+      return;
+    }
+
+    try {
+      if (search.length < MIN_REMOTE_SEARCH_LENGTH) {
+        this.activeModelSearchTerm.set('');
+        await this.loadModels(0, null, requestId);
+        return;
+      }
+
+      await this.loadModels(0, value.trim(), requestId);
+    } finally {
+      if (requestId === this.modelSearchRequestId) {
+        this.modelSearchPending.set(false);
+      }
+    }
   }
 
 
