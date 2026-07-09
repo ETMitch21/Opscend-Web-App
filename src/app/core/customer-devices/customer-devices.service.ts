@@ -37,8 +37,10 @@ export class CustomerDevicesService {
       params = params.set('cursor', query.cursor);
     }
 
-    if (query.search) {
-      params = params.set('search', query.search);
+    const search = this.normalizeSearch(query.search);
+
+    if (search) {
+      params = params.set('search', search);
     }
 
     return this.http.get<CustomerDeviceListResponse>(
@@ -48,16 +50,10 @@ export class CustomerDevicesService {
   }
 
   search(customerId: string, query: string): Observable<CustomerDevice[]> {
-    const params = new HttpParams()
-      .set('search', query)
-      .set('limit', '10');
-
-    return this.http
-      .get<CustomerDeviceListResponse>(
-        `${this.baseUrl}/customers/${customerId}/devices`,
-        { params }
-      )
-      .pipe(map((res) => res.data));
+    return this.list(customerId, {
+      search: this.normalizeSearch(query) ?? undefined,
+      limit: 10,
+    }).pipe(map((res) => res.data));
   }
 
   getById(id: string): Observable<CustomerDevice> {
@@ -82,5 +78,14 @@ export class CustomerDevicesService {
       `${this.baseUrl}/customer-devices/${id}`,
       payload
     );
+  }
+
+  private normalizeSearch(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const search = value.trim();
+    return search.length >= 2 ? search : null;
   }
 }
