@@ -717,7 +717,7 @@ export class NewRepair implements OnInit {
                     this.showTechSpecsBrandResults = true;
                     this.toastService.error(
                       'Brand lookup failed',
-                      'We could not search TechSpecs brands right now.',
+                      'We could not search catalog brands right now.',
                     );
                     return of({ items: [] });
                   }),
@@ -798,7 +798,7 @@ export class NewRepair implements OnInit {
                     this.showTechSpecsModelResults = true;
                     this.toastService.error(
                       'Model lookup failed',
-                      'We could not search TechSpecs models right now.',
+                      'We could not search catalog models right now.',
                     );
                     return of({ items: [] });
                   }),
@@ -1080,8 +1080,8 @@ export class NewRepair implements OnInit {
     }
 
     if (this.newDevice) {
-      if (this.selectedTechSpecsModel) return 'Matched from TechSpecs';
-      return 'TechSpecs model required';
+      if (this.selectedTechSpecsModel) return 'Matched from catalog';
+      return 'Catalog model required';
     }
 
     return 'Choose or add a device';
@@ -1956,7 +1956,7 @@ export class NewRepair implements OnInit {
   getDeviceSecondary(device: CustomerDevice): string {
     const imei = device.imei ? `IMEI •••• ${device.imei.slice(-5)}` : null;
     const serial = device.serial ? `S/N ${device.serial}` : null;
-    const catalog = device.catalogRef ? 'TechSpecs matched' : null;
+    const catalog = device.catalogRef ? 'Catalog matched' : null;
     return [catalog, imei, serial].filter(Boolean).join(' · ');
   }
 
@@ -2167,7 +2167,7 @@ export class NewRepair implements OnInit {
       if (!deviceId) {
         this.toastService.error(
           'Device could not be saved',
-          'Select a TechSpecs device model and try again.',
+          'Select a catalog device model and try again.',
         );
         return;
       }
@@ -2335,7 +2335,7 @@ export class NewRepair implements OnInit {
         if (showErrorToast) {
           this.toastService.error(
             'Device catalog unavailable',
-            'TechSpecs categories could not be loaded. Device lookup may not work until this is fixed.',
+            'Catalog categories could not be loaded. Device lookup may not work until this is fixed.',
           );
         }
       })
@@ -2836,7 +2836,7 @@ export class NewRepair implements OnInit {
       case 'device':
         this.toastService.error(
           'Device required',
-          'Select a saved device or choose an exact model from TechSpecs.',
+          'Select a saved device or choose an exact model from the catalog.',
         );
         break;
       case 'repair':

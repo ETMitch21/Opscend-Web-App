@@ -269,8 +269,8 @@
               Select the device
             </h2>
             <p class="mt-1 text-sm text-gray-500">
-              Use a saved customer device or add a new one from the TechSpecs
-              library.
+              Use a saved customer device or add a new one from the device
+              catalog.
             </p>
           </div>
 
@@ -335,7 +335,7 @@
               </button>
               } } @else if (deviceSearchControl.value.trim().length >= 2) {
               <div class="px-4 py-3 text-sm text-gray-500">
-                No matching devices found. Add a new TechSpecs device instead.
+                No matching devices found. Add a new catalog device instead.
               </div>
               }
             </div>
@@ -374,7 +374,7 @@
                   New Device Details
                 </p>
                 <p class="mt-1 text-xs text-gray-500">
-                  Select an exact TechSpecs brand and model. The model ID is
+                  Select an exact catalog brand and model. The model ID is
                   saved as the customer device catalog reference.
                 </p>
               </div>
@@ -422,7 +422,7 @@
                   @if (searchingTechSpecsBrands || loadingDeviceCatalogCategory)
                   {
                   <div class="px-4 py-3 text-sm text-gray-500">
-                    Loading TechSpecs brands...
+                    Loading catalog brands...
                   </div>
                   } @else if (techSpecsBrandResults.length > 0) { @for (brand of
                   techSpecsBrandResults; track brand.id) {
@@ -434,7 +434,7 @@
                     <span class="text-sm font-medium text-gray-900"
                       >{{ brand.name }}</span
                     >
-                    <span class="text-xs text-gray-500">TechSpecs brand</span>
+                    <span class="text-xs text-gray-500">Catalog brand</span>
                   </button>
                   } } @else if (techSpecsBrandSearchControl.value.trim().length
                   === 0) {
@@ -449,7 +449,7 @@
                   </div>
                   } @else {
                   <div class="px-4 py-3 text-sm text-gray-500">
-                    No matching TechSpecs brands found. Try a shorter brand
+                    No matching catalog brands found. Try a shorter brand
                     name.
                   </div>
                   }
@@ -500,7 +500,7 @@
                   @if (searchingTechSpecsModels || loadingDeviceCatalogCategory)
                   {
                   <div class="px-4 py-3 text-sm text-gray-500">
-                    Loading TechSpecs models...
+                    Loading catalog models...
                   </div>
                   } @else if (techSpecsModelResults.length > 0) { @for (model of
                   techSpecsModelResults; track model.id) {
@@ -529,7 +529,7 @@
                   </div>
                   } @else {
                   <div class="px-4 py-3 text-sm text-gray-500">
-                    No matching TechSpecs models found. Try a shorter model
+                    No matching catalog models found. Try a shorter model
                     search.
                   </div>
                   }
@@ -569,7 +569,7 @@
                   Device nickname<sup class="text-danger text-xs">*</sup>
                 </label>
                 <p class="mt-1 text-xs text-gray-500">
-                  Auto-filled from TechSpecs. You can customize this for the
+                  Auto-filled from the catalog. You can customize this for the
                   customer.
                 </p>
               </div>
