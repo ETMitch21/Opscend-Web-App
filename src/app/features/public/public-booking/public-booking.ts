@@ -90,6 +90,27 @@ const TECHSPECS_CATEGORY_KEYS = new Set(
   )
 );
 
+const PUBLIC_POPULAR_BRANDS_BY_CATEGORY: Record<string, string[]> = {
+  smartphones: [
+    'Apple',
+    'Samsung',
+    'Google',
+    'Motorola',
+    'OnePlus',
+    'LG',
+    'Sony',
+    'Nokia',
+    'TCL',
+    'Alcatel',
+    'ZTE',
+    'Asus',
+  ],
+  tablets: ['Apple', 'Samsung', 'Amazon', 'Lenovo', 'Microsoft', 'Google'],
+  smartwatches: ['Apple', 'Samsung', 'Google', 'Garmin', 'Fitbit', 'Fossil'],
+  laptops: ['Apple', 'Dell', 'HP', 'Lenovo', 'Microsoft', 'Asus', 'Acer'],
+  default: ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus'],
+};
+
 
 @Component({
   selector: 'app-public-booking-page',
@@ -481,11 +502,21 @@ export class PublicBooking {
   readonly filteredBrands = computed(() => {
     const search = this.normalizeSearch(this.brandSearchTerm());
 
-    if (!search) return this.brands();
+    if (!search) return this.popularBrandsForSelectedCategory();
 
-    return this.brands().filter((brand) =>
-      this.normalizeSearch(brand).includes(search)
-    );
+    return this.publicBrandCandidates()
+      .filter((brand) => this.normalizeSearch(brand).includes(search))
+      .sort((a, b) => {
+        const aIndex = this.publicBrandSortIndex(a);
+        const bIndex = this.publicBrandSortIndex(b);
+
+        if (aIndex !== bIndex) return aIndex - bIndex;
+
+        return a.localeCompare(b, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        });
+      });
   });
 
   readonly visibleBrands = computed(() =>
@@ -507,10 +538,10 @@ export class PublicBooking {
   );
 
   readonly canShowMoreBrands = computed(() => {
-    return (
-      this.brandVisibleCount() < this.filteredBrands().length ||
-      this.canLoadMoreBrands()
-    );
+    const hasMoreLocalBrands = this.brandVisibleCount() < this.filteredBrands().length;
+    const search = this.normalizeSearch(this.brandSearchTerm());
+
+    return hasMoreLocalBrands || (!!search && this.canLoadMoreBrands());
   });
 
   readonly canShowMoreModels = computed(() => {
@@ -717,7 +748,9 @@ export class PublicBooking {
       return;
     }
 
-    if (this.canLoadMoreBrands()) {
+    const search = this.normalizeSearch(this.brandSearchTerm());
+
+    if (search && this.canLoadMoreBrands()) {
       await this.loadMoreBrands();
       this.brandVisibleCount.update((value) => value + LOCAL_DISPLAY_INCREMENT);
     }
@@ -1494,6 +1527,62 @@ export class PublicBooking {
     return `#${[mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b)]
       .map((channel) => channel.toString(16).padStart(2, '0'))
       .join('')}`.toUpperCase();
+  }
+
+
+  private popularBrandsForSelectedCategory(): string[] {
+    const category = this.normalizeSearch(this.selectedCategory());
+    const brands =
+      PUBLIC_POPULAR_BRANDS_BY_CATEGORY[category] ??
+      PUBLIC_POPULAR_BRANDS_BY_CATEGORY['default'];
+
+    return this.dedupeBrands(brands);
+  }
+
+  private publicBrandCandidates(): string[] {
+    return this.dedupeBrands([
+      ...this.popularBrandsForSelectedCategory(),
+      ...this.brands().filter((brand) => this.isPublicCatalogBrandCandidate(brand)),
+    ]);
+  }
+
+  private publicBrandSortIndex(brand: string): number {
+    const brandKey = this.normalizeSearch(brand);
+    const popularBrands = this.popularBrandsForSelectedCategory();
+    const index = popularBrands.findIndex(
+      (option) => this.normalizeSearch(option) === brandKey
+    );
+
+    return index === -1 ? 999 : index;
+  }
+
+  private isPublicCatalogBrandCandidate(brand: string): boolean {
+    const trimmed = String(brand ?? '').trim();
+    const key = this.normalizeSearch(trimmed);
+
+    if (!trimmed || key.length < 2) return false;
+    if (!/[a-z]/i.test(trimmed)) return false;
+    if (/^\d/.test(trimmed)) return false;
+    if (trimmed.length > 40) return false;
+
+    return true;
+  }
+
+  private dedupeBrands(brands: string[]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+
+    for (const brand of brands) {
+      const trimmed = String(brand ?? '').trim();
+      const key = this.normalizeSearch(trimmed);
+
+      if (!trimmed || seen.has(key)) continue;
+
+      seen.add(key);
+      out.push(trimmed);
+    }
+
+    return out;
   }
 
   private isSupportedTechSpecsCategory(category: string): boolean {
