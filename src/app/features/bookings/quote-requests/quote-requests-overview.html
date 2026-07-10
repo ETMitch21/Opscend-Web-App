@@ -1,16 +1,14 @@
 <div class="">
-  <!-- Top Header -->
   <div class="flex items-center justify-between px-6 pt-1 pb-4">
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">Quote Requests</h1>
       <p class="mt-1 text-sm text-gray-500">
-        Follow up with public booking leads that need manual pricing before
-        scheduling.
+        Review public booking leads, prepare quotes, and move customers toward approval.
       </p>
     </div>
 
     <button
-      class="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+      class="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
       type="button"
       (click)="refresh()"
       [disabled]="loading()"
@@ -19,7 +17,6 @@
     </button>
   </div>
 
-  <!-- Tabs -->
   <div class="px-6">
     <nav class="flex space-x-6 text-sm font-medium text-gray-600">
       <button
@@ -76,7 +73,6 @@
     </nav>
   </div>
 
-  <!-- Search + Filters -->
   <div class="flex items-center justify-between gap-4 px-6 py-4">
     <div class="relative w-80">
       <input
@@ -91,8 +87,7 @@
         [size]="16"
         [name]="searchIcon"
         class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-      >
-      </lucide-icon>
+      ></lucide-icon>
     </div>
 
     <div class="flex items-center gap-2">
@@ -110,44 +105,34 @@
           [size]="14"
           [name]="chevronDownIcon"
           class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
-        >
-        </lucide-icon>
+        ></lucide-icon>
       </div>
     </div>
   </div>
 </div>
 
 <div class="px-6 pb-6">
-  <div
-    class="overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm"
-  >
+  <div class="overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm">
     @if (loading()) {
     <div class="flex items-center justify-center px-6 py-16">
       <div class="text-sm text-gray-500">Loading quote requests...</div>
     </div>
     } @else if (error()) {
-    <div
-      class="flex flex-col items-center justify-center px-6 py-16 text-center"
-    >
+    <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
       <p class="text-sm font-medium text-red-600">{{ error() }}</p>
       <button
         type="button"
         (click)="refresh()"
-        class="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+        class="mt-4 cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
       >
         Try Again
       </button>
     </div>
     } @else if (filteredRequests().length === 0) {
-    <div
-      class="flex flex-col items-center justify-center px-6 py-16 text-center"
-    >
-      <h3 class="text-base font-semibold text-gray-900">
-        No quote requests found
-      </h3>
+    <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+      <h3 class="text-base font-semibold text-gray-900">No quote requests found</h3>
       <p class="mt-1 text-sm text-gray-500">
-        New public quote requests will appear here when customers need manual
-        pricing.
+        New public quote requests will appear here when customers need manual pricing.
       </p>
     </div>
     } @else {
@@ -155,178 +140,74 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50/80">
           <tr>
-            <th
-              class="w-14 px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              &nbsp;
-            </th>
+            <th class="w-14 px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">&nbsp;</th>
 
-            <th
-              class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              <button
-                type="button"
-                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
-                (click)="setSort('request')"
-              >
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <button type="button" class="cursor-pointer group inline-flex items-center gap-1 transition hover:text-gray-900" (click)="setSort('request')">
                 <span>Request</span>
-                <lucide-icon
-                  [name]="chevronDownIcon"
-                  [size]="14"
-                  class="transition"
-                  [class.text-brand]="isSortedBy('request')"
-                  [class.text-gray-300]="!isSortedBy('request')"
-                  [style.transform]="getSortIconRotation('request')"
-                >
-                </lucide-icon>
+                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition" [class.text-brand]="isSortedBy('request')" [class.text-gray-300]="!isSortedBy('request')" [style.transform]="getSortIconRotation('request')"></lucide-icon>
               </button>
             </th>
 
-            <th
-              class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              <button
-                type="button"
-                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
-                (click)="setSort('customer')"
-              >
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <button type="button" class="cursor-pointer group inline-flex items-center gap-1 transition hover:text-gray-900" (click)="setSort('customer')">
                 <span>Customer</span>
-                <lucide-icon
-                  [name]="chevronDownIcon"
-                  [size]="14"
-                  class="transition"
-                  [class.text-brand]="isSortedBy('customer')"
-                  [class.text-gray-300]="!isSortedBy('customer')"
-                  [style.transform]="getSortIconRotation('customer')"
-                >
-                </lucide-icon>
+                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition" [class.text-brand]="isSortedBy('customer')" [class.text-gray-300]="!isSortedBy('customer')" [style.transform]="getSortIconRotation('customer')"></lucide-icon>
               </button>
             </th>
 
-            <th
-              class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              <button
-                type="button"
-                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
-                (click)="setSort('device')"
-              >
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <button type="button" class="cursor-pointer group inline-flex items-center gap-1 transition hover:text-gray-900" (click)="setSort('device')">
                 <span>Device</span>
-                <lucide-icon
-                  [name]="chevronDownIcon"
-                  [size]="14"
-                  class="transition"
-                  [class.text-brand]="isSortedBy('device')"
-                  [class.text-gray-300]="!isSortedBy('device')"
-                  [style.transform]="getSortIconRotation('device')"
-                >
-                </lucide-icon>
+                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition" [class.text-brand]="isSortedBy('device')" [class.text-gray-300]="!isSortedBy('device')" [style.transform]="getSortIconRotation('device')"></lucide-icon>
               </button>
             </th>
 
-            <th
-              class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              <button
-                type="button"
-                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
-                (click)="setSort('repair')"
-              >
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <button type="button" class="cursor-pointer group inline-flex items-center gap-1 transition hover:text-gray-900" (click)="setSort('repair')">
                 <span>Repair</span>
-                <lucide-icon
-                  [name]="chevronDownIcon"
-                  [size]="14"
-                  class="transition"
-                  [class.text-brand]="isSortedBy('repair')"
-                  [class.text-gray-300]="!isSortedBy('repair')"
-                  [style.transform]="getSortIconRotation('repair')"
-                >
-                </lucide-icon>
+                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition" [class.text-brand]="isSortedBy('repair')" [class.text-gray-300]="!isSortedBy('repair')" [style.transform]="getSortIconRotation('repair')"></lucide-icon>
               </button>
             </th>
 
-            <th
-              class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              <button
-                type="button"
-                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
-                (click)="setSort('quote')"
-              >
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <button type="button" class="cursor-pointer group inline-flex items-center gap-1 transition hover:text-gray-900" (click)="setSort('quote')">
                 <span>Quote</span>
-                <lucide-icon
-                  [name]="chevronDownIcon"
-                  [size]="14"
-                  class="transition"
-                  [class.text-brand]="isSortedBy('quote')"
-                  [class.text-gray-300]="!isSortedBy('quote')"
-                  [style.transform]="getSortIconRotation('quote')"
-                >
-                </lucide-icon>
+                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition" [class.text-brand]="isSortedBy('quote')" [class.text-gray-300]="!isSortedBy('quote')" [style.transform]="getSortIconRotation('quote')"></lucide-icon>
               </button>
             </th>
 
-            <th
-              class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              <button
-                type="button"
-                class="group inline-flex items-center gap-1 transition hover:text-gray-900"
-                (click)="setSort('submitted')"
-              >
+            <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <button type="button" class="cursor-pointer group inline-flex items-center gap-1 transition hover:text-gray-900" (click)="setSort('submitted')">
                 <span>Submitted</span>
-                <lucide-icon
-                  [name]="chevronDownIcon"
-                  [size]="14"
-                  class="transition"
-                  [class.text-brand]="isSortedBy('submitted')"
-                  [class.text-gray-300]="!isSortedBy('submitted')"
-                  [style.transform]="getSortIconRotation('submitted')"
-                >
-                </lucide-icon>
+                <lucide-icon [name]="chevronDownIcon" [size]="14" class="transition" [class.text-brand]="isSortedBy('submitted')" [class.text-gray-300]="!isSortedBy('submitted')" [style.transform]="getSortIconRotation('submitted')"></lucide-icon>
               </button>
             </th>
 
-            <th
-              class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              &nbsp;
-            </th>
+            <th class="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">&nbsp;</th>
           </tr>
         </thead>
 
         <tbody class="divide-y divide-gray-200 bg-white">
-          @for (request of filteredRequests(); track trackByRequestId($index,
-          request)) {
-          <tr class="transition hover:bg-gray-50/70">
+          @for (request of filteredRequests(); track trackByRequestId($index, request)) {
+          <tr class="cursor-pointer transition hover:bg-gray-50/70" (click)="openRequest(request)">
             <td class="px-4 py-4 align-top">
               <div class="flex justify-center overflow-visible">
                 @if (request.serviceMode === 'on_site') {
                 <div class="group relative inline-flex overflow-visible">
-                  <div
-                    class="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700"
-                  >
+                  <div class="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700">
                     <lucide-icon [name]="houseIcon" [size]="16"></lucide-icon>
                   </div>
-                  <div
-                    class="pointer-events-none absolute left-full top-1/2 z-[100] ml-3 -translate-y-1/2 whitespace-nowrap rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white opacity-0 shadow-xl ring-1 ring-black/10 transition duration-150 group-hover:opacity-100"
-                  >
+                  <div class="pointer-events-none absolute left-full top-1/2 z-[100] ml-3 -translate-y-1/2 whitespace-nowrap rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white opacity-0 shadow-xl ring-1 ring-black/10 transition duration-150 group-hover:opacity-100">
                     On-site quote request
                   </div>
                 </div>
                 } @else {
                 <div class="group relative inline-flex overflow-visible">
-                  <div
-                    class="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700"
-                  >
-                    <lucide-icon
-                      [name]="buildingIcon"
-                      [size]="16"
-                    ></lucide-icon>
+                  <div class="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-700">
+                    <lucide-icon [name]="buildingIcon" [size]="16"></lucide-icon>
                   </div>
-                  <div
-                    class="pointer-events-none absolute left-full top-1/2 z-[100] ml-3 -translate-y-1/2 whitespace-nowrap rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white opacity-0 shadow-xl ring-1 ring-black/10 transition duration-150 group-hover:opacity-100"
-                  >
+                  <div class="pointer-events-none absolute left-full top-1/2 z-[100] ml-3 -translate-y-1/2 whitespace-nowrap rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white opacity-0 shadow-xl ring-1 ring-black/10 transition duration-150 group-hover:opacity-100">
                     In-shop quote request
                   </div>
                 </div>
@@ -337,15 +218,10 @@
             <td class="px-6 py-4 align-top">
               <div class="flex flex-col gap-1">
                 <span
-                  class="w-fit rounded-full px-2.5 py-1 text-xs font-medium"
-                  [class.bg-blue-50]="request.requestStatus === 'new'"
-                  [class.text-blue-700]="request.requestStatus === 'new'"
-                  [class.bg-emerald-50]="request.requestStatus === 'contacted'"
-                  [class.text-emerald-700]="request.requestStatus === 'contacted'"
-                  [class.bg-rose-50]="request.requestStatus === 'canceled'"
-                  [class.text-rose-700]="request.requestStatus === 'canceled'"
+                  class="w-fit rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                  [ngClass]="tableStatusClass(request)"
                 >
-                  {{ statusLabel(request) }}
+                  {{ tableStatusLabel(request) }}
                 </span>
                 <span class="text-xs text-gray-500">{{ request.id }}</span>
               </div>
@@ -353,46 +229,32 @@
 
             <td class="px-6 py-4 align-top">
               <div class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-900"
-                  >{{ customerLabel(request) }}</span
-                >
+                <span class="text-sm font-medium text-gray-900">{{ customerLabel(request) }}</span>
                 @if (request.customer.phone) {
-                <span class="text-xs text-gray-700"
-                  >{{ request.customer.phone | phone }}</span
-                >
-                } @if (request.customer.email) {
-                <span class="text-xs text-gray-500"
-                  >{{ request.customer.email }}</span
-                >
+                <span class="text-xs text-gray-700">{{ request.customer.phone | phone }}</span>
+                }
+                @if (request.customer.email) {
+                <span class="text-xs text-gray-500">{{ request.customer.email }}</span>
                 }
               </div>
             </td>
 
             <td class="px-6 py-4 align-top">
               <div class="flex flex-col gap-1">
-                <span class="text-sm text-gray-900"
-                  >{{ deviceLabel(request) }}</span
-                >
-                <span class="text-xs text-gray-500"
-                  >{{ request.category || '—' }}</span
-                >
+                <span class="text-sm text-gray-900">{{ deviceLabel(request) }}</span>
+                <span class="text-xs text-gray-500">{{ request.category || '—' }}</span>
               </div>
             </td>
 
             <td class="px-6 py-4 align-top">
               <div class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-900"
-                  >{{ request.repairNeed?.label || 'Manual quote' }}</span
-                >
-                <span class="text-xs text-gray-500"
-                  >{{ serviceModeLabel(request.serviceMode) }}</span
-                >
+                <span class="text-sm font-medium text-gray-900">{{ request.repairNeed?.label || 'Manual quote' }}</span>
+                <span class="text-xs text-gray-500">{{ serviceModeLabel(request.serviceMode) }}</span>
 
                 @if (request.customerNotes) {
-                <span class="mt-1 line-clamp-2 text-xs text-gray-500"
-                  >{{ request.customerNotes }}</span
-                >
-                } @if (addressLines(request).length) {
+                <span class="mt-1 line-clamp-2 text-xs text-gray-500">{{ request.customerNotes }}</span>
+                }
+                @if (addressLines(request).length) {
                 <span class="mt-1 text-xs text-gray-500">
                   @for (line of addressLines(request); track line) {
                   <span class="block">{{ line }}</span>
@@ -404,9 +266,10 @@
 
             <td class="px-6 py-4 align-top">
               <div class="flex flex-col gap-1">
-                <span class="text-sm font-semibold text-gray-900"
-                  >{{ money(request.estimatedTotalCents) }}</span
-                >
+                <span class="text-sm font-semibold text-gray-900">{{ money(request.estimatedTotalCents) }}</span>
+                @if (request.depositRequired) {
+                <span class="text-xs font-medium text-amber-700">Deposit {{ money(request.depositAmountCents) }}</span>
+                }
                 <span
                   class="w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold"
                   [class.bg-amber-50]="request.requiresManualReview || request.confidence === 'manual_review'"
@@ -424,66 +287,22 @@
             <td class="px-6 py-4 align-top">
               @if (requestDate(request); as submittedAt) {
               <div class="flex flex-col">
-                <span class="text-sm font-medium text-gray-900"
-                  >{{ submittedAt | date:'MMM d, y' }}</span
-                >
-                <span class="text-xs text-gray-500"
-                  >{{ submittedAt | date:'h:mm a' }}</span
-                >
+                <span class="text-sm font-medium text-gray-900">{{ submittedAt | date:'MMM d, y' }}</span>
+                <span class="text-xs text-gray-500">{{ submittedAt | date:'h:mm a' }}</span>
               </div>
               } @else {
               <span class="text-sm text-gray-400">—</span>
               }
             </td>
 
-            <td class="px-6 py-4 align-top text-right">
-              <div class="flex items-center justify-end gap-2">
-                @if (request.customer.phone) {
-                <a
-                  class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  [href]="'tel:' + request.customer.phone"
-                >
-                  <lucide-icon [name]="phoneIcon" [size]="14"></lucide-icon>
-                  Call
-                </a>
-                } @if (request.customer.email) {
-                <a
-                  class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  [href]="'mailto:' + request.customer.email"
-                >
-                  <lucide-icon [name]="mailIcon" [size]="14"></lucide-icon>
-                  Email
-                </a>
-                } @if (request.requestStatus === 'new') {
-                <button
-                  type="button"
-                  class="cursor-pointer rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-                  [disabled]="updatingId() === request.id"
-                  (click)="markContacted(request)"
-                >
-                  {{ updatingId() === request.id ? 'Saving...' : 'Mark
-                  contacted' }}
-                </button>
-                } @else if (request.requestStatus === 'contacted') {
-                <button
-                  type="button"
-                  class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  [disabled]="updatingId() === request.id"
-                  (click)="reopenRequest(request)"
-                >
-                  Reopen
-                </button>
-                } @if (request.requestStatus !== 'canceled') {
-                <button
-                  type="button"
-                  class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  [disabled]="updatingId() === request.id"
-                  (click)="cancelRequest(request)"
-                >
-                  Cancel
-                </button>
-                }
-              </div>
+            <td class="px-6 py-4 align-top text-right" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                (click)="openRequest(request)"
+              >
+                Details
+              </button>
             </td>
           </tr>
           }
@@ -491,14 +310,9 @@
       </table>
     </div>
 
-    <div
-      class="flex items-center justify-between border-t border-gray-200 px-6 py-4"
-    >
+    <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
       <p class="text-sm text-gray-500">
-        Showing {{ filteredRequests().length }} quote request<span
-          [class.hidden]="filteredRequests().length === 1"
-          >s</span
-        >
+        Showing {{ filteredRequests().length }} quote request<span [class.hidden]="filteredRequests().length === 1">s</span>
       </p>
 
       @if (nextCursor()) {
@@ -506,7 +320,7 @@
         type="button"
         (click)="loadMore()"
         [disabled]="loadingMore()"
-        class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+        class="cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {{ loadingMore() ? 'Loading...' : 'Load more' }}
       </button>
@@ -515,3 +329,385 @@
     }
   </div>
 </div>
+
+@if (selectedRequest(); as selected) {
+<div class="fixed inset-0 z-50 overflow-hidden">
+  <button
+    type="button"
+    class="absolute inset-0 cursor-pointer bg-gray-900/35 backdrop-blur-[1px]"
+    aria-label="Close quote drawer"
+    (click)="closeDrawer()"
+  ></button>
+
+  <aside class="absolute right-0 top-0 flex h-full w-full max-w-5xl flex-col bg-white shadow-2xl">
+    <div class="border-b border-gray-200 px-5 py-3">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <h2 class="text-base font-semibold text-gray-950">{{ customerLabel(selected) }}</h2>
+          <p class="mt-0.5 text-xs text-gray-500">
+            {{ deviceLabel(selected) }} · {{ selected.repairNeed?.label || 'Manual quote' }} · {{ serviceModeLabel(selected.serviceMode) }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900"
+          (click)="closeDrawer()"
+        >
+          <lucide-icon [name]="xCloseIcon" [size]="17"></lucide-icon>
+        </button>
+      </div>
+
+
+      <div class="mt-3 rounded-2xl bg-gray-100/90 p-1.5 shadow-inner ring-1 ring-gray-200">
+        <div class="grid gap-1" [style.gridTemplateColumns]="'repeat(' + progressSteps(selected).length + ', minmax(0, 1fr))'">
+          @for (item of progressSteps(selected); track item.label) {
+          <div
+            class="flex h-9 min-w-0 items-center justify-center rounded-xl px-2 text-[10px] font-bold uppercase tracking-wide transition"
+            [ngClass]="progressSegmentClass(item)"
+            [class.opacity-70]="item.tone !== 'done'"
+            [title]="item.label"
+          >
+            <span class="truncate">{{ item.label }}</span>
+          </div>
+          }
+        </div>
+      </div>
+
+      <nav class="mt-2 flex flex-wrap gap-2 rounded-xl bg-gray-100 p-1">
+        @for (tab of drawerTabs; track tab.value) {
+        <button
+          type="button"
+          class="flex-1 cursor-pointer rounded-lg px-4 py-1.5 text-sm font-semibold transition"
+          [class.bg-white]="activeDrawerTab() === tab.value"
+          [class.text-gray-950]="activeDrawerTab() === tab.value"
+          [class.shadow-sm]="activeDrawerTab() === tab.value"
+          [class.text-gray-500]="activeDrawerTab() !== tab.value"
+          [class.hover:text-gray-900]="activeDrawerTab() !== tab.value"
+          (click)="setDrawerTab(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
+        }
+      </nav>
+    </div>
+
+    <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+      @if (drawerError()) {
+      <div class="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 ring-1 ring-rose-100">
+        {{ drawerError() }}
+      </div>
+      }
+
+      @if (activeDrawerTab() === 'summary') {
+      <div class="space-y-5">
+        <section class="rounded-2xl border border-gray-200 bg-gray-50 p-5 ring-1 ring-gray-100">
+          <div class="grid gap-4 md:grid-cols-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quote</p>
+              <p class="mt-1 text-2xl font-semibold text-gray-950">{{ money(selected.estimatedTotalCents) }}</p>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Deposit</p>
+              <p class="mt-1 text-sm font-semibold text-gray-950">
+                @if (selected.depositRequired) {
+                {{ money(selected.depositAmountCents) }}
+                } @else {
+                Not required
+                }
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Submitted</p>
+              <p class="mt-1 text-sm font-semibold text-gray-950">
+                @if (requestDate(selected); as submittedAt) {
+                {{ submittedAt | date:'MMM d, h:mm a' }}
+                } @else {
+                —
+                }
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quote link</p>
+              <p class="mt-1 text-sm font-semibold text-gray-950">
+                {{ selected.publicApprovalToken ? 'Generated' : 'Not generated' }}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid gap-5 lg:grid-cols-2">
+          <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="mb-4 flex items-center gap-2">
+              <lucide-icon [name]="userIcon" [size]="18" class="text-gray-400"></lucide-icon>
+              <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Customer</h3>
+            </div>
+
+            <div class="space-y-3 text-sm">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Name</p>
+                <p class="mt-0.5 font-medium text-gray-900">{{ selected.customer.name || '—' }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Phone</p>
+                <p class="mt-0.5 font-medium text-gray-900">{{ selected.customer.phone ? (selected.customer.phone | phone) : '—' }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Email</p>
+                <p class="mt-0.5 break-all font-medium text-gray-900">{{ selected.customer.email || '—' }}</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div class="mb-4 flex items-center gap-2">
+              <lucide-icon [name]="wrenchIcon" [size]="18" class="text-gray-400"></lucide-icon>
+              <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Request</h3>
+            </div>
+
+            <div class="space-y-3 text-sm">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Device</p>
+                <p class="mt-0.5 font-medium text-gray-900">{{ deviceLabel(selected) }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Repair</p>
+                <p class="mt-0.5 font-medium text-gray-900">{{ selected.repairNeed?.label || 'Manual quote' }}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Customer notes</p>
+                <p class="mt-0.5 whitespace-pre-line text-gray-700">{{ selected.customerNotes || '—' }}</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        @if (addressLines(selected).length) {
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div class="mb-4 flex items-center gap-2">
+            <lucide-icon [name]="mapPinIcon" [size]="18" class="text-gray-400"></lucide-icon>
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Address</h3>
+          </div>
+
+          <div class="text-sm text-gray-700">
+            @for (line of addressLines(selected); track line) {
+            <p>{{ line }}</p>
+            }
+            @if (selected.address?.notes) {
+            <p class="mt-2 text-gray-500">{{ selected.address?.notes }}</p>
+            }
+          </div>
+        </section>
+        }
+      </div>
+      }
+
+      @if (activeDrawerTab() === 'pricing') {
+      <form class="w-full space-y-5" [formGroup]="quoteForm">
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div class="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <lucide-icon [name]="dollarIcon" [size]="18" class="text-gray-400"></lucide-icon>
+                <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Pricing</h3>
+              </div>
+              <p class="mt-1 text-sm text-gray-500">Set the numbers the customer should see when the quote is sent.</p>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Part cost</span>
+              <input formControlName="partCost" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
+            </label>
+
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Labor</span>
+              <input formControlName="labor" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
+            </label>
+
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Trip fee</span>
+              <input formControlName="tripFee" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
+            </label>
+          </div>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Subtotal</span>
+              <input formControlName="subtotal" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
+            </label>
+
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total</span>
+              <input formControlName="total" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
+            </label>
+
+            <div class="flex items-end">
+              <button
+                type="button"
+                class="w-full cursor-pointer rounded-xl border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                (click)="calculateQuoteTotal()"
+              >
+                Calculate
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <label class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200">
+            <span>
+              <span class="block text-sm font-semibold text-gray-900">Require deposit</span>
+              <span class="mt-0.5 block text-xs text-gray-500">Useful for special-order parts or higher-cost repairs.</span>
+            </span>
+            <input type="checkbox" formControlName="depositRequired" class="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+
+          @if (quoteForm.controls.depositRequired.value) {
+          <label class="mt-4 block">
+            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Deposit amount</span>
+            <input formControlName="depositAmount" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
+          </label>
+          }
+        </section>
+      </form>
+      }
+
+      @if (activeDrawerTab() === 'approval') {
+      <form class="w-full space-y-5" [formGroup]="quoteForm">
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div class="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <lucide-icon [name]="sendIcon" [size]="18" class="text-gray-400"></lucide-icon>
+                <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Message & notes</h3>
+              </div>
+              <p class="mt-1 text-sm text-gray-500">
+                Add the customer-facing details for the quote and private notes for your team.
+              </p>
+            </div>
+
+            @if (publicQuoteUrl(selected); as publicUrl) {
+            <a
+              class="hidden cursor-pointer items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 sm:inline-flex"
+              [href]="publicUrl"
+              target="_blank"
+              rel="noopener"
+            >
+              <lucide-icon [name]="externalLinkIcon" [size]="14"></lucide-icon>
+              Open public quote
+            </a>
+            }
+          </div>
+
+          <label class="block">
+            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer-facing message</span>
+            <textarea
+              formControlName="customerMessage"
+              rows="5"
+              placeholder="Add warranty notes, part quality options, timing, or anything the customer should see when the quote is sent."
+              class="mt-1 w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm leading-6 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+            ></textarea>
+          </label>
+
+          <label class="mt-4 block">
+            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Internal notes</span>
+            <textarea
+              formControlName="internalNotes"
+              rows="4"
+              placeholder="Private notes for your team."
+              class="mt-1 w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm leading-6 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+            ></textarea>
+          </label>
+        </section>
+      </form>
+      }
+    </div>
+
+    <div class="border-t border-gray-200 px-5 py-3">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-wrap items-center gap-2">
+          @if (selected.requestStatus === 'new') {
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="updatingId() === selected.id"
+            (click)="markContacted(selected)"
+          >
+            Mark contacted
+          </button>
+          }
+
+          @if (selected.requestStatus === 'canceled') {
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="updatingId() === selected.id"
+            (click)="reopenRequest(selected)"
+          >
+            Restore request
+          </button>
+          } @else {
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="updatingId() === selected.id"
+            (click)="cancelRequest(selected)"
+          >
+            Cancel request
+          </button>
+          }
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="savingQuote() || actionId() === selected.id + ':decline' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'converted' || selected.requestStatus === 'canceled'"
+            (click)="declineSelectedQuote()"
+          >
+            {{ actionId() === selected.id + ':decline' ? 'Saving...' : 'Decline' }}
+          </button>
+
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="savingQuote() || actionId() === selected.id + ':accept' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'converted' || selected.requestStatus === 'canceled'"
+            (click)="acceptSelectedQuote()"
+          >
+            {{ actionId() === selected.id + ':accept' ? 'Saving...' : 'Approve' }}
+          </button>
+
+          <button
+            type="button"
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="savingQuote() || actionId() === selected.id + ':share' || (!publicQuoteUrl(selected) && !canSendQuote(selected)) || selected.requestStatus === 'canceled'"
+            (click)="shareSelectedQuote()"
+          >
+            <lucide-icon [name]="shareIcon" [size]="15"></lucide-icon>
+            @if (actionId() === selected.id + ':share') {
+            Generating...
+            } @else if (copySuccess()) {
+            Copied
+            } @else if (publicQuoteUrl(selected)) {
+            Share quote
+            } @else {
+            Generate & copy link
+            }
+          </button>
+
+          <button
+            type="button"
+            class="cursor-pointer rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800"
+            (click)="closeDrawer()"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+}

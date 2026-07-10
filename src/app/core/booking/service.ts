@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 
 import { AppConfigService } from '../app-config/app-config.service';
 import {
@@ -14,6 +14,7 @@ import {
   ShopRepairNeedCreate,
   ShopRepairNeedPatch,
   BookingQuoteRequest,
+  BookingQuoteRequestActionResponse,
   BookingQuoteRequestPatch,
   BookingQuoteRequestsListParams,
   BookingQuoteRequestsResponse,
@@ -153,9 +154,37 @@ export class BookingAdminService {
     id: string,
     body: BookingQuoteRequestPatch
   ): Observable<BookingQuoteRequest> {
-    return this.http.patch<BookingQuoteRequest>(
-      `${this.baseUrl}/quote-requests/${encodeURIComponent(id)}`,
-      body
-    );
+    return this.http.patch<BookingQuoteRequest>(this.quoteRequestUrl(id), body);
+  }
+
+  sendQuoteRequest(id: string): Observable<BookingQuoteRequest> {
+    return this.http
+      .post<BookingQuoteRequestActionResponse>(
+        `${this.quoteRequestUrl(id)}/send`,
+        {}
+      )
+      .pipe(map((response) => response.data));
+  }
+
+  acceptQuoteRequest(id: string): Observable<BookingQuoteRequest> {
+    return this.http
+      .post<BookingQuoteRequestActionResponse>(
+        `${this.quoteRequestUrl(id)}/accept`,
+        {}
+      )
+      .pipe(map((response) => response.data));
+  }
+
+  declineQuoteRequest(id: string): Observable<BookingQuoteRequest> {
+    return this.http
+      .post<BookingQuoteRequestActionResponse>(
+        `${this.quoteRequestUrl(id)}/decline`,
+        {}
+      )
+      .pipe(map((response) => response.data));
+  }
+
+  private quoteRequestUrl(id: string): string {
+    return `${this.baseUrl}/quote-requests/${encodeURIComponent(id)}`;
   }
 }

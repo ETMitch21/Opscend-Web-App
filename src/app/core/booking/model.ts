@@ -209,13 +209,27 @@ export interface ListResponse<T> {
 
 export type BookingQuoteRequestStatus = 'new' | 'contacted' | 'canceled';
 
+export type BookingQuoteWorkflowStatus =
+  | 'draft'
+  | 'quote_requested'
+  | 'quoted'
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'deposit_pending'
+  | 'deposit_paid'
+  | 'scheduled'
+  | 'converted'
+  | 'expired'
+  | 'canceled';
+
 export interface BookingQuoteRequest {
   id: string;
   shopId: string;
   repairId: string | null;
 
   requestStatus: BookingQuoteRequestStatus;
-  quoteStatus: string;
+  quoteStatus: BookingQuoteWorkflowStatus;
 
   category: string | null;
   brand: string | null;
@@ -229,8 +243,22 @@ export interface BookingQuoteRequest {
 
   partCostCents: number | null;
   laborCents: number | null;
+  tripFeeCents: number | null;
   estimatedSubtotalCents: number | null;
   estimatedTotalCents: number | null;
+
+  depositRequired: boolean;
+  depositAmountCents: number | null;
+  depositPaidAt: string | null;
+
+  publicApprovalToken: string | null;
+
+  quoteSentAt: string | null;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  convertedAt: string | null;
+
+  customerMessage: string | null;
 
   inStock: boolean | null;
   availableQty: number | null;
@@ -290,5 +318,21 @@ export interface BookingQuoteRequestsListParams {
 
 export interface BookingQuoteRequestPatch {
   requestStatus?: BookingQuoteRequestStatus;
+  quoteStatus?: BookingQuoteWorkflowStatus;
+
+  partCostCents?: number | null;
+  laborCents?: number | null;
+  tripFeeCents?: number | null;
+  estimatedSubtotalCents?: number | null;
+  estimatedTotalCents?: number | null;
+
+  depositRequired?: boolean;
+  depositAmountCents?: number | null;
+
+  customerMessage?: string | null;
   internalNotes?: string | null;
+}
+
+export interface BookingQuoteRequestActionResponse {
+  data: BookingQuoteRequest;
 }
