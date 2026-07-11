@@ -166,6 +166,15 @@ export class BookingAdminService {
       .pipe(map((response) => response.data));
   }
 
+  emailQuoteRequest(id: string): Observable<BookingQuoteRequest> {
+    return this.http
+      .post<BookingQuoteRequestActionResponse>(
+        `${this.quoteRequestUrl(id)}/email`,
+        {}
+      )
+      .pipe(map((response) => response.data));
+  }
+
   acceptQuoteRequest(id: string): Observable<BookingQuoteRequest> {
     return this.http
       .post<BookingQuoteRequestActionResponse>(

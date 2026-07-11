@@ -19,6 +19,7 @@ import {
   ExternalLink,
   House,
   LucideAngularModule,
+  Mail,
   MapPin,
   Search,
   Send,
@@ -84,6 +85,7 @@ export class QuoteRequestsOverview {
   readonly dollarIcon = DollarSign;
   readonly externalLinkIcon = ExternalLink;
   readonly houseIcon = House;
+  readonly mailIcon = Mail;
   readonly mapPinIcon = MapPin;
   readonly searchIcon = Search;
   readonly sendIcon = Send;
@@ -448,6 +450,44 @@ export class QuoteRequestsOverview {
     }
   }
 
+  async emailSelectedQuote(): Promise<void> {
+    const request = this.selectedRequest();
+    if (!request || this.actionId()) return;
+
+    if (!request.customer.email) {
+      this.drawerError.set("Add a customer email before emailing this quote.");
+      this.toast.error("Customer email required", "Add an email address before sending the quote.");
+      return;
+    }
+
+    if (!this.canEmailQuote(request)) {
+      this.drawerError.set("This quote can no longer be emailed.");
+      return;
+    }
+
+    const saved = await this.autoSaveSelectedQuote();
+    if (!saved) return;
+
+    this.actionId.set(`${request.id}:email`);
+    this.drawerError.set(null);
+
+    try {
+      const updated = await firstValueFrom(
+        this.bookingApi.emailQuoteRequest(request.id),
+      );
+
+      this.replaceRequest(updated);
+      this.patchQuoteForm(updated);
+      this.toast.success("Quote emailed", `Sent to ${updated.customer.email ?? "customer"}.`);
+    } catch (error) {
+      console.error(error);
+      this.drawerError.set("Could not email this quote.");
+      this.toast.error("Could not email quote", "The quote link was not sent to the customer.");
+    } finally {
+      this.actionId.set(null);
+    }
+  }
+
   calculateQuoteTotal(): void {
     const formValue = this.quoteForm.getRawValue();
     const partCost = this.dollarsToCents(formValue.partCost) ?? 0;
@@ -723,9 +763,24 @@ export class QuoteRequestsOverview {
   }
 
   canSendQuote(request: BookingQuoteRequest): boolean {
-    return !["accepted", "declined", "converted", "canceled"].includes(
-      request.quoteStatus,
-    );
+    return ![
+      "accepted",
+      "deposit_pending",
+      "deposit_paid",
+      "scheduled",
+      "converted",
+      "declined",
+      "expired",
+      "canceled",
+    ].includes(request.quoteStatus);
+  }
+
+  canEmailQuote(request: BookingQuoteRequest): boolean {
+    if (!request.customer.email) return false;
+    if (!request.estimatedTotalCents) return false;
+    if (request.depositRequired && !request.depositAmountCents) return false;
+    if (request.requestStatus === "canceled") return false;
+    return this.canSendQuote(request);
   }
 
   canConvertToRepair(request: BookingQuoteRequest): boolean {
