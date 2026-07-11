@@ -402,7 +402,7 @@
       @if (activeDrawerTab() === 'summary') {
       <div class="space-y-5">
         <section class="rounded-2xl border border-gray-200 bg-gray-50 p-5 ring-1 ring-gray-100">
-          <div class="grid gap-4 md:grid-cols-4">
+          <div class="grid gap-4 md:grid-cols-5">
             <div>
               <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quote</p>
               <p class="mt-1 text-2xl font-semibold text-gray-950">{{ money(selected.estimatedTotalCents) }}</p>
@@ -431,6 +431,12 @@
               <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quote link</p>
               <p class="mt-1 text-sm font-semibold text-gray-950">
                 {{ selected.publicApprovalToken ? 'Generated' : 'Not generated' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Repair</p>
+              <p class="mt-1 text-sm font-semibold text-gray-950">
+                {{ selected.repairId ? 'Created' : 'Not created' }}
               </p>
             </div>
           </div>
@@ -678,6 +684,26 @@
           >
             {{ actionId() === selected.id + ':accept' ? 'Saving...' : 'Approve' }}
           </button>
+
+          @if (selected.repairId) {
+          <a
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800"
+            [href]="'/repairs/detail/' + selected.repairId"
+          >
+            <lucide-icon [name]="externalLinkIcon" [size]="14"></lucide-icon>
+            Open repair
+          </a>
+          } @else {
+          <button
+            type="button"
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="savingQuote() || actionId() === selected.id + ':convert' || !canConvertToRepair(selected)"
+            (click)="convertSelectedQuote()"
+          >
+            <lucide-icon [name]="wrenchIcon" [size]="14"></lucide-icon>
+            {{ actionId() === selected.id + ':convert' ? 'Converting...' : 'Convert to Repair' }}
+          </button>
+          }
 
           <button
             type="button"

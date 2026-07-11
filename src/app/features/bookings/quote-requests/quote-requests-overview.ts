@@ -370,6 +370,23 @@ export class QuoteRequestsOverview {
     );
   }
 
+  async convertSelectedQuote(): Promise<void> {
+    const request = this.selectedRequest();
+    if (!request || !this.canConvertToRepair(request)) return;
+
+    const confirmed = window.confirm(
+      `Create a repair for ${this.customerLabel(request)} from this quote?`,
+    );
+    if (!confirmed) return;
+
+    const saved = await this.autoSaveSelectedQuote();
+    if (!saved) return;
+
+    await this.runQuoteAction(request, "convert", () =>
+      this.bookingApi.convertQuoteRequest(request.id),
+    );
+  }
+
   async copyPublicQuoteLink(request: BookingQuoteRequest): Promise<void> {
     const url = this.publicQuoteUrl(request);
     if (!url) return;
@@ -711,6 +728,15 @@ export class QuoteRequestsOverview {
     );
   }
 
+  canConvertToRepair(request: BookingQuoteRequest): boolean {
+    if (request.repairId) return false;
+    if (request.requestStatus === "canceled") return false;
+
+    return ["accepted", "deposit_pending", "deposit_paid"].includes(
+      request.quoteStatus,
+    );
+  }
+
   progressSegmentClass(item: QuoteTimelineItem): string {
     if (item.tone !== "done") {
       return "bg-slate-300 text-white shadow-sm";
@@ -846,7 +872,7 @@ export class QuoteRequestsOverview {
 
   private async runQuoteAction(
     request: BookingQuoteRequest,
-    action: "send" | "accept" | "decline",
+    action: "send" | "accept" | "decline" | "convert",
     operation: () => ReturnType<BookingAdminService["sendQuoteRequest"]>,
   ): Promise<void> {
     if (this.actionId()) return;
@@ -861,8 +887,8 @@ export class QuoteRequestsOverview {
       this.toast.success(this.quoteActionToastMessage(action));
     } catch (error) {
       console.error(error);
-      this.drawerError.set(`Failed to ${action} quote.`);
-      this.toast.error(`Failed to ${action} quote`);
+      this.drawerError.set(`Failed to ${this.quoteActionVerb(action)} quote.`);
+      this.toast.error(`Failed to ${this.quoteActionVerb(action)} quote`);
     } finally {
       this.actionId.set(null);
     }
@@ -880,7 +906,7 @@ export class QuoteRequestsOverview {
     }
   }
 
-  private quoteActionToastMessage(action: "send" | "accept" | "decline"): string {
+  private quoteActionToastMessage(action: "send" | "accept" | "decline" | "convert"): string {
     switch (action) {
       case "send":
         return "Quote link generated";
@@ -888,6 +914,21 @@ export class QuoteRequestsOverview {
         return "Quote approved";
       case "decline":
         return "Quote declined";
+      case "convert":
+        return "Repair created from quote";
+    }
+  }
+
+  private quoteActionVerb(action: "send" | "accept" | "decline" | "convert"): string {
+    switch (action) {
+      case "send":
+        return "send";
+      case "accept":
+        return "approve";
+      case "decline":
+        return "decline";
+      case "convert":
+        return "convert";
     }
   }
 

@@ -184,6 +184,15 @@ export class BookingAdminService {
       .pipe(map((response) => response.data));
   }
 
+  convertQuoteRequest(id: string): Observable<BookingQuoteRequest> {
+    return this.http
+      .post<BookingQuoteRequestActionResponse>(
+        `${this.quoteRequestUrl(id)}/convert-to-repair`,
+        {}
+      )
+      .pipe(map((response) => response.data));
+  }
+
   private quoteRequestUrl(id: string): string {
     return `${this.baseUrl}/quote-requests/${encodeURIComponent(id)}`;
   }
