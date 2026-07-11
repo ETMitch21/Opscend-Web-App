@@ -1,0 +1,232 @@
+<div
+  class="min-h-screen bg-[radial-gradient(circle_at_top_left,#ffffff_0,#f5f5f7_32%,#ececf1_100%)] px-4 py-6 text-gray-950 sm:px-6 lg:px-8"
+  [style.--quote-brand]="brandColor()"
+  [style.--quote-brand-tint]="brandTintColor()"
+  [style.--quote-brand-ring]="brandRingColor()"
+  [style.--quote-brand-contrast]="brandContrastColor()"
+>
+  <div class="mx-auto max-w-3xl">
+    @if (loading()) {
+      <section class="rounded-[2rem] bg-white/85 p-7 shadow-[0_24px_80px_rgba(15,23,42,0.10)] ring-1 ring-black/5 backdrop-blur-xl">
+        <div class="flex items-center gap-4">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+            <lucide-icon [name]="icons.Loader2" class="h-5 w-5 animate-spin"></lucide-icon>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-950">Loading quote...</p>
+            <p class="mt-1 text-sm text-gray-500">Checking quote details and approval status.</p>
+          </div>
+        </div>
+      </section>
+    } @else if (error() && !quote()) {
+      <section class="rounded-[2rem] bg-white/85 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.10)] ring-1 ring-black/5 backdrop-blur-xl">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600 ring-1 ring-rose-100">
+          <lucide-icon [name]="icons.XCircle" class="h-6 w-6"></lucide-icon>
+        </div>
+        <h1 class="mt-5 text-xl font-semibold tracking-tight text-gray-950">Quote unavailable</h1>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">{{ error() }}</p>
+      </section>
+    } @else if (quote(); as quoteValue) {
+      <header class="mb-5 overflow-hidden rounded-[2rem] bg-white/80 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ring-1 ring-black/5 backdrop-blur-xl sm:p-6">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex min-w-0 items-center gap-3">
+            @if (quoteValue.shop.logoUrl) {
+              <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+                <img [src]="quoteValue.shop.logoUrl" [alt]="quoteValue.shop.name + ' logo'" class="h-full w-full object-contain p-2" />
+              </div>
+            } @else {
+              <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--quote-brand)] text-sm font-bold text-[var(--quote-brand-contrast)] shadow-sm ring-1 ring-black/5">
+                {{ shopInitials(quoteValue.shop.name) }}
+              </div>
+            }
+
+            <div class="min-w-0">
+              <div class="inline-flex items-center gap-2 rounded-full bg-[var(--quote-brand-tint)] px-2.5 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-[var(--quote-brand-ring)]">
+                <span class="h-1.5 w-1.5 rounded-full bg-[var(--quote-brand)]"></span>
+                Repair Quote
+              </div>
+              <h1 class="mt-2 text-2xl font-semibold tracking-[-0.04em] text-gray-950">{{ quoteValue.shop.name }}</h1>
+              <p class="mt-1 text-sm text-gray-500">{{ deviceLabel(quoteValue) }} · {{ quoteValue.repairNeed.label }}</p>
+            </div>
+          </div>
+
+          <span
+            class="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ring-1"
+            [ngClass]="{
+              'bg-emerald-50 text-emerald-700 ring-emerald-100': isAcceptedStatus(quoteValue.status),
+              'bg-rose-50 text-rose-700 ring-rose-100': isDeclinedStatus(quoteValue.status) || isClosedStatus(quoteValue.status),
+              'bg-blue-50 text-blue-700 ring-blue-100': !isAcceptedStatus(quoteValue.status) && !isDeclinedStatus(quoteValue.status) && !isClosedStatus(quoteValue.status)
+            }"
+          >
+            {{ statusLabel(quoteValue.status) }}
+          </span>
+        </div>
+      </header>
+
+      @if (notice()) {
+        <div class="mb-5 rounded-[1.35rem] bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100">
+          {{ notice() }}
+        </div>
+      }
+
+      @if (error()) {
+        <div class="mb-5 rounded-[1.35rem] bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 ring-1 ring-rose-100">
+          {{ error() }}
+        </div>
+      }
+
+      <section class="overflow-hidden rounded-[2rem] bg-white/88 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl">
+        <div class="p-6 sm:p-7">
+          <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Quote total</p>
+              <p class="mt-2 text-5xl font-semibold tracking-[-0.07em] text-gray-950">
+                {{ money(quoteValue.estimatedTotalCents) }}
+              </p>
+              <p class="mt-3 text-sm leading-6 text-gray-500">
+                {{ quoteValue.repairNeed.label }} for {{ deviceLabel(quoteValue) }}.
+              </p>
+            </div>
+
+            <div class="rounded-[1.5rem] bg-gray-50/90 p-4 ring-1 ring-black/5 sm:min-w-56">
+              <div class="flex items-center gap-2 text-sm font-semibold text-gray-950">
+                <lucide-icon [name]="icons.CreditCard" class="h-4 w-4 text-gray-400"></lucide-icon>
+                Deposit
+              </div>
+              @if (quoteValue.depositRequired) {
+                <p class="mt-2 text-2xl font-semibold tracking-[-0.04em] text-gray-950">{{ money(quoteValue.depositAmountCents) }}</p>
+                <p class="mt-1 text-xs leading-5 text-gray-500">Deposit is required before this repair can be scheduled.</p>
+              } @else {
+                <p class="mt-2 text-sm font-semibold text-gray-950">Not required</p>
+                <p class="mt-1 text-xs leading-5 text-gray-500">No deposit is required for this quote.</p>
+              }
+            </div>
+          </div>
+
+          @if (quoteValue.customerMessage) {
+            <div class="mt-6 rounded-[1.5rem] bg-[var(--quote-brand-tint)] p-4 text-sm leading-6 text-gray-700 ring-1 ring-[var(--quote-brand-ring)]">
+              <p class="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">Message from the shop</p>
+              <p class="mt-2 whitespace-pre-line">{{ quoteValue.customerMessage }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="border-t border-gray-100 bg-[#f5f5f7]/80 p-4 sm:p-5">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-[var(--quote-brand)] px-5 py-3 text-sm font-bold text-[var(--quote-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="actioning() !== null || !canAccept(quoteValue)"
+              (click)="acceptQuote()"
+            >
+              @if (actioning() === 'accept') {
+                <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                Accepting...
+              } @else {
+                <lucide-icon [name]="icons.CheckCircle2" class="h-4 w-4"></lucide-icon>
+                Accept quote
+              }
+            </button>
+
+            <button
+              type="button"
+              class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-rose-700 shadow-sm ring-1 ring-rose-200 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="actioning() !== null || !canDecline(quoteValue)"
+              (click)="declineQuote()"
+            >
+              @if (actioning() === 'decline') {
+                <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                Declining...
+              } @else {
+                <lucide-icon [name]="icons.XCircle" class="h-4 w-4"></lucide-icon>
+                Decline
+              }
+            </button>
+          </div>
+
+          @if (!canAccept(quoteValue) && !canDecline(quoteValue)) {
+            <p class="mt-3 text-center text-xs font-medium text-gray-500">
+              This quote is currently {{ statusLabel(quoteValue.status).toLowerCase() }}.
+            </p>
+          }
+        </div>
+      </section>
+
+      <div class="mt-5 grid gap-4 lg:grid-cols-2">
+        <section class="rounded-[1.75rem] bg-white/80 p-5 shadow-sm ring-1 ring-black/5 backdrop-blur-xl">
+          <div class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-gray-500">
+            <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+            Repair details
+          </div>
+          <dl class="space-y-4 text-sm">
+            <div>
+              <dt class="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Device</dt>
+              <dd class="mt-1 font-semibold text-gray-950">{{ deviceLabel(quoteValue) }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Repair</dt>
+              <dd class="mt-1 font-semibold text-gray-950">{{ quoteValue.repairNeed.label }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Service</dt>
+              <dd class="mt-1 inline-flex items-center gap-2 font-semibold text-gray-950">
+                <lucide-icon [name]="quoteValue.serviceMode === 'on_site' ? icons.Home : icons.Store" class="h-4 w-4 text-gray-400"></lucide-icon>
+                {{ serviceModeLabel(quoteValue.serviceMode) }}
+              </dd>
+            </div>
+            @if (quoteValue.expiresAt) {
+              <div>
+                <dt class="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Expires</dt>
+                <dd class="mt-1 font-semibold text-gray-950">{{ quoteValue.expiresAt | date:'MMM d, y, h:mm a' }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+
+        <section class="rounded-[1.75rem] bg-white/80 p-5 shadow-sm ring-1 ring-black/5 backdrop-blur-xl">
+          <div class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-gray-500">
+            <lucide-icon [name]="icons.ShieldCheck" class="h-4 w-4"></lucide-icon>
+            Shop contact
+          </div>
+          <div class="space-y-3 text-sm text-gray-600">
+            @if (quoteValue.shop.phone) {
+              <a class="flex cursor-pointer items-center gap-2 font-semibold text-gray-950 hover:underline" [href]="'tel:' + quoteValue.shop.phone">
+                <lucide-icon [name]="icons.Phone" class="h-4 w-4 text-gray-400"></lucide-icon>
+                {{ quoteValue.shop.phone }}
+              </a>
+            }
+            @if (quoteValue.shop.email) {
+              <a class="flex cursor-pointer items-center gap-2 font-semibold text-gray-950 hover:underline" [href]="'mailto:' + quoteValue.shop.email">
+                <lucide-icon [name]="icons.Mail" class="h-4 w-4 text-gray-400"></lucide-icon>
+                {{ quoteValue.shop.email }}
+              </a>
+            }
+            @if (shopAddressLines(quoteValue).length) {
+              <div class="pt-1 leading-6">
+                @for (line of shopAddressLines(quoteValue); track line) {
+                  <p>{{ line }}</p>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+
+      @if (quoteValue.request.customerNotes || requestAddressLines(quoteValue).length) {
+        <section class="mt-5 rounded-[1.75rem] bg-white/70 p-5 text-sm text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur-xl">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Request info</p>
+          @if (quoteValue.request.customerNotes) {
+            <p class="mt-2 leading-6">{{ quoteValue.request.customerNotes }}</p>
+          }
+          @if (requestAddressLines(quoteValue).length) {
+            <div class="mt-3 leading-6">
+              @for (line of requestAddressLines(quoteValue); track line) {
+                <p>{{ line }}</p>
+              }
+            </div>
+          }
+        </section>
+      }
+    }
+  </div>
+</div>

@@ -9,6 +9,8 @@ import {
     PublicBookingPage,
     PublicBookingSettings,
     PublicDeviceModelOption,
+    PublicQuoteApproval,
+    PublicQuoteApprovalActionResponse,
     PublicQuoteRequest,
     PublicQuoteRequestBody,
     PublicQuoteRequestResponse,
@@ -31,6 +33,10 @@ export class PublicBookingService {
 
     private baseUrl(shopSlug: string): string {
         return `${this.apiBase}/public/shops/${encodeURIComponent(shopSlug)}/booking`;
+    }
+
+    private publicQuoteUrl(token: string): string {
+        return `${this.apiBase}/public/quotes/${encodeURIComponent(token)}`;
     }
 
     getSettings(shopSlug: string): Observable<PublicBookingSettings> {
@@ -155,6 +161,24 @@ export class PublicBookingService {
         return this.http.post<PublicQuoteRequestResponse>(
             `${this.baseUrl(shopSlug)}/quote-request`,
             body
+        );
+    }
+
+    getPublicQuote(token: string): Observable<PublicQuoteApproval> {
+        return this.http.get<PublicQuoteApproval>(this.publicQuoteUrl(token));
+    }
+
+    acceptPublicQuote(token: string): Observable<PublicQuoteApprovalActionResponse> {
+        return this.http.post<PublicQuoteApprovalActionResponse>(
+            `${this.publicQuoteUrl(token)}/accept`,
+            {}
+        );
+    }
+
+    declinePublicQuote(token: string): Observable<PublicQuoteApprovalActionResponse> {
+        return this.http.post<PublicQuoteApprovalActionResponse>(
+            `${this.publicQuoteUrl(token)}/decline`,
+            {}
         );
     }
 }

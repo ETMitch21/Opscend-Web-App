@@ -201,3 +201,80 @@ export interface PublicQuoteRequestResponse {
   status: string;
   message: string;
 }
+export type PublicQuoteApprovalStatus =
+  | 'draft'
+  | 'quote_requested'
+  | 'quoted'
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'deposit_pending'
+  | 'deposit_paid'
+  | 'scheduled'
+  | 'converted'
+  | 'expired'
+  | 'canceled'
+  | string;
+
+export interface PublicQuoteApprovalAddress {
+  label: string | null;
+  line1: string | null;
+  line2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string | null;
+  notes: string | null;
+}
+
+export interface PublicQuoteApproval {
+  quoteId: string;
+  status: PublicQuoteApprovalStatus;
+  confidence: string;
+  requiresManualReview: boolean;
+
+  category: string | null;
+  brand: string | null;
+  model: string | null;
+  techspecsProductId: string | null;
+
+  repairNeed: PublicQuoteRepairNeedSummary;
+  serviceMode: 'in_shop' | 'on_site' | string;
+
+  partCostCents: number | null;
+  laborCents: number | null;
+  tripFeeCents: number | null;
+  estimatedSubtotalCents: number | null;
+  estimatedTotalCents: number | null;
+
+  depositRequired: boolean;
+  depositAmountCents: number | null;
+  depositPaidAt: string | null;
+
+  customerMessage: string | null;
+
+  customer: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+
+  request: {
+    customerNotes: string | null;
+    address: PublicQuoteApprovalAddress | null;
+  };
+
+  shop: PublicBookingSettings['shop'];
+
+  quoteSentAt: string | null;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  convertedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PublicQuoteApprovalActionResponse {
+  data: PublicQuoteApproval;
+}

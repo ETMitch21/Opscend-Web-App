@@ -31,6 +31,7 @@ import { Contractors } from './features/contractors/contractors';
 import { ContractorPayouts } from './features/contractor-payouts/contractor-payouts';
 import { ShopBookingsComponent } from './features/settings/shop-bookings/shop-bookings';
 import { PublicBooking } from './features/public/public-booking/public-booking';
+import { PublicQuoteApproval } from './features/public/public-quote-approval/public-quote-approval';
 import { QuoteRequestsOverview } from './features/bookings/quote-requests/quote-requests-overview';
 import { Services } from './features/services/services.component';
 
@@ -38,6 +39,10 @@ export const routes: Routes = [
     {
         path: 'track/:token',
         component: RepairTracking
+    },
+    {
+        path: 'quote/:token',
+        component: PublicQuoteApproval
     },
     {
         path: 'book/:shopSlug',
