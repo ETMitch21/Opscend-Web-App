@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
+  Archive,
+  ArchiveRestore,
   ArrowLeft,
   CheckCircle2,
   ChevronDown,
@@ -50,6 +52,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
 
   readonly icons = {
+    Archive,
+    ArchiveRestore,
     ArrowLeft,
     CheckCircle2,
     ChevronDown,
@@ -74,17 +78,19 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly loading = signal(false);
   readonly threadLoading = signal(false);
   readonly sending = signal(false);
+  readonly conversationActionRunning = signal(false);
   readonly error = signal<string | null>(null);
   readonly searchTerm = signal('');
+  readonly conversationStatusFilter = signal<'open' | 'archived'>('open');
   readonly activeChannel = signal<'email' | 'sms' | 'note'>('sms');
   readonly composeSubject = signal('');
   readonly composeBody = signal('');
   readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
 
-  readonly relatedDevicesOpen = signal(false);
-  readonly relatedQuotesOpen = signal(false);
-  readonly relatedRepairsOpen = signal(false);
+  readonly relatedDevicesOpen = signal(true);
+  readonly relatedQuotesOpen = signal(true);
+  readonly relatedRepairsOpen = signal(true);
 
   readonly selectedMessages = computed(() => this.selectedConversation()?.messages ?? []);
   readonly selectedTimeline = computed(() => {
@@ -183,7 +189,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
         this.communicationApi.listConversations({
           limit: 50,
           q: this.searchTerm().trim() || undefined,
-          status: 'open',
+          status: this.conversationStatusFilter(),
         }),
       );
 
@@ -249,7 +255,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
         this.communicationApi.listConversations({
           limit: 50,
           q: this.searchTerm().trim() || undefined,
-          status: 'open',
+          status: this.conversationStatusFilter(),
         }),
       );
 
@@ -329,6 +335,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     const channel = this.activeChannel();
 
     if (!conversation || !body || this.sending()) return;
+
+    if (conversation.status === 'archived') {
+      this.toast.info('Conversation is archived', 'Reopen this conversation before sending a message.');
+      return;
+    }
 
     if (channel === 'note') {
       await this.addInternalNoteFromComposer(conversation, body);
@@ -417,6 +428,61 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     this.searchTerm.set(value);
   }
 
+  async setConversationStatusFilter(status: 'open' | 'archived'): Promise<void> {
+    if (this.conversationStatusFilter() === status) return;
+
+    this.conversationStatusFilter.set(status);
+    this.selectedConversation.set(null);
+    this.nextCursor.set(null);
+    await this.loadConversations();
+
+    const first = this.conversations()[0];
+    if (first) await this.openConversation(first);
+  }
+
+  async archiveSelectedConversation(): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.conversationActionRunning()) return;
+
+    const confirmed = window.confirm('Archive this conversation? It will leave the inbox but can be reopened later from Archived.');
+    if (!confirmed) return;
+
+    this.conversationActionRunning.set(true);
+    this.error.set(null);
+
+    try {
+      await firstValueFrom(this.communicationApi.archiveConversation(conversation.id));
+      await this.removeConversationFromCurrentList(conversation.id);
+      this.toast.success('Conversation archived', 'It was moved out of the open Inbox.');
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Conversation not archived', 'Unable to archive this conversation.');
+      this.error.set('Could not archive this conversation.');
+    } finally {
+      this.conversationActionRunning.set(false);
+    }
+  }
+
+  async reopenSelectedConversation(): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.conversationActionRunning()) return;
+
+    this.conversationActionRunning.set(true);
+    this.error.set(null);
+
+    try {
+      await firstValueFrom(this.communicationApi.reopenConversation(conversation.id));
+      await this.removeConversationFromCurrentList(conversation.id);
+      this.toast.success('Conversation reopened', 'It was moved back to the open Inbox.');
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Conversation not reopened', 'Unable to reopen this conversation.');
+      this.error.set('Could not reopen this conversation.');
+    } finally {
+      this.conversationActionRunning.set(false);
+    }
+  }
+
   toggleRelatedDevices(): void {
     this.relatedDevicesOpen.update((open) => !open);
   }
@@ -442,6 +508,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   canSendActiveChannel(conversation: CommunicationConversation): boolean {
+    if (conversation.status === 'archived') return false;
     if (this.activeChannel() === 'note') return true;
 
     return this.activeChannel() === 'sms'
@@ -467,6 +534,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   activeChannelUnavailableText(conversation: CommunicationConversation): string | null {
+    if (conversation.status === 'archived') return 'Reopen this conversation before sending a message.';
     if (this.activeChannel() === 'note') return null;
 
     if (this.activeChannel() === 'sms' && !this.canSendSms(conversation)) {
@@ -702,6 +770,19 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       top: element.scrollHeight,
       behavior: 'smooth',
     });
+  }
+
+  private async removeConversationFromCurrentList(conversationId: string): Promise<void> {
+    const current = this.conversations();
+    const nextConversations = current.filter((item) => item.id !== conversationId);
+    const nextSelected = nextConversations[0] ?? null;
+
+    this.conversations.set(nextConversations);
+    this.selectedConversation.set(null);
+
+    if (nextSelected) {
+      await this.openConversation(nextSelected);
+    }
   }
 
   private upsertConversation(conversation: CommunicationConversation): void {

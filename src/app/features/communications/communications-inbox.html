@@ -38,6 +38,25 @@
           Search
         </button>
       </div>
+
+      <div class="mt-3 grid grid-cols-2 gap-1 rounded-2xl bg-app-surface-muted p-1">
+        <button
+          type="button"
+          class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold transition"
+          [ngClass]="conversationStatusFilter() === 'open' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted hover:text-app-text'"
+          (click)="setConversationStatusFilter('open')"
+        >
+          Open
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold transition"
+          [ngClass]="conversationStatusFilter() === 'archived' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted hover:text-app-text'"
+          (click)="setConversationStatusFilter('archived')"
+        >
+          Archived
+        </button>
+      </div>
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
@@ -53,8 +72,8 @@
           <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-app-surface-muted text-app-text-muted">
             <lucide-icon [name]="icons.Inbox" class="h-5 w-5"></lucide-icon>
           </div>
-          <p class="mt-4 text-sm font-semibold text-app-text">No conversations yet</p>
-          <p class="mt-1 text-sm text-app-text-muted">Quote and customer messages will show here.</p>
+          <p class="mt-4 text-sm font-semibold text-app-text">{{ conversationStatusFilter() === 'archived' ? 'No archived conversations' : 'No conversations yet' }}</p>
+          <p class="mt-1 text-sm text-app-text-muted">{{ conversationStatusFilter() === 'archived' ? 'Archived conversations will show here.' : 'Quote and customer messages will show here.' }}</p>
         </div>
       } @else {
         <div class="divide-y divide-app-border">
@@ -106,29 +125,63 @@
     } @else if (selectedConversation(); as conversation) {
       <div class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
         <header class="border-b border-app-border bg-app-surface/95 px-6 py-4 backdrop-blur">
-          <div class="min-w-0">
-            <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold text-white">
-                {{ conversationTitle(conversation).slice(0, 1) }}
-              </div>
-              <div class="min-w-0">
-                <h2 class="truncate text-lg font-semibold tracking-tight text-app-text">{{ conversationTitle(conversation) }}</h2>
-                <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-app-text-muted">
-                  @if (conversation.customerPhone) {
-                    <span>{{ conversation.customerPhone | phone }}</span>
-                  }
-                  @if (conversation.customerPhone && conversation.customerEmail) {
-                    <span class="text-app-border">·</span>
-                  }
-                  @if (conversation.customerEmail) {
-                    <span>{{ conversation.customerEmail }}</span>
-                  }
-                  @if (!conversation.customerPhone && !conversation.customerEmail) {
-                    <span>Customer conversation</span>
-                  }
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold text-white">
+                  {{ conversationTitle(conversation).slice(0, 1) }}
+                </div>
+                <div class="min-w-0">
+                  <h2 class="truncate text-lg font-semibold tracking-tight text-app-text">{{ conversationTitle(conversation) }}</h2>
+                  <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-app-text-muted">
+                    @if (conversation.customerPhone) {
+                      <span>{{ conversation.customerPhone | phone }}</span>
+                    }
+                    @if (conversation.customerPhone && conversation.customerEmail) {
+                      <span class="text-app-border">·</span>
+                    }
+                    @if (conversation.customerEmail) {
+                      <span>{{ conversation.customerEmail }}</span>
+                    }
+                    @if (!conversation.customerPhone && !conversation.customerEmail) {
+                      <span>Customer conversation</span>
+                    }
+                  </div>
                 </div>
               </div>
             </div>
+
+            @if (conversation.status === 'archived') {
+              <button
+                type="button"
+                class="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-2xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="conversationActionRunning()"
+                (click)="reopenSelectedConversation()"
+              >
+                @if (conversationActionRunning()) {
+                  <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                  Reopening
+                } @else {
+                  <lucide-icon [name]="icons.ArchiveRestore" class="h-4 w-4"></lucide-icon>
+                  Reopen
+                }
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-2xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="conversationActionRunning()"
+                (click)="archiveSelectedConversation()"
+              >
+                @if (conversationActionRunning()) {
+                  <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                  Archiving
+                } @else {
+                  <lucide-icon [name]="icons.Archive" class="h-4 w-4"></lucide-icon>
+                  Archive
+                }
+              </button>
+            }
           </div>
         </header>
 

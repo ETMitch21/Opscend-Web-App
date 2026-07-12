@@ -73,6 +73,20 @@ export class CommunicationService {
     );
   }
 
+  archiveConversation(id: string): Observable<CommunicationConversationResponse> {
+    return this.http.post<CommunicationConversationResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/archive`,
+      {},
+    );
+  }
+
+  reopenConversation(id: string): Observable<CommunicationConversationResponse> {
+    return this.http.post<CommunicationConversationResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/reopen`,
+      {},
+    );
+  }
+
   sendEmailMessage(
     id: string,
     payload: CommunicationMessageCreate,
