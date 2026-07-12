@@ -268,7 +268,12 @@
               <div class="flex flex-col gap-1">
                 <span class="text-sm font-semibold text-gray-900">{{ money(request.estimatedTotalCents) }}</span>
                 @if (request.depositRequired) {
-                <span class="text-xs font-medium text-amber-700">Deposit {{ money(request.depositAmountCents) }}</span>
+                <span
+                  class="w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1"
+                  [ngClass]="depositStatusClass(request)"
+                >
+                  Deposit {{ depositStatusLabel(request) }} · {{ money(request.depositPaidAmountCents ?? request.depositAmountCents) }}
+                </span>
                 }
                 <span
                   class="w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold"
@@ -409,13 +414,22 @@
             </div>
             <div>
               <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Deposit</p>
-              <p class="mt-1 text-sm font-semibold text-gray-950">
+              <div class="mt-1 space-y-1">
+                <span
+                  class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                  [ngClass]="depositStatusClass(selected)"
+                >
+                  {{ depositStatusLabel(selected) }}
+                </span>
                 @if (selected.depositRequired) {
-                {{ money(selected.depositAmountCents) }}
-                } @else {
-                Not required
+                <p class="text-sm font-semibold text-gray-950">{{ money(selected.depositPaidAmountCents ?? selected.depositAmountCents) }}</p>
+                @if (selected.depositPaidAt) {
+                <p class="text-xs font-medium text-emerald-700">Paid {{ selected.depositPaidAt | date:'MMM d, h:mm a' }}</p>
                 }
-              </p>
+                } @else {
+                <p class="text-sm font-semibold text-gray-950">Not required</p>
+                }
+              </div>
             </div>
             <div>
               <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Submitted</p>
@@ -575,6 +589,12 @@
             <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Deposit amount</span>
             <input formControlName="depositAmount" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
           </label>
+
+          @if (selected.depositPaidAt) {
+          <div class="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100">
+            Deposit has been paid. Avoid changing the deposit amount unless you are correcting a record manually.
+          </div>
+          }
           }
         </section>
       </form>
@@ -698,12 +718,25 @@
             type="button"
             class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             [disabled]="savingQuote() || actionId() === selected.id + ':convert' || !canConvertToRepair(selected)"
+            [title]="convertDisabledReason(selected) || ''"
             (click)="convertSelectedQuote()"
           >
             <lucide-icon [name]="wrenchIcon" [size]="14"></lucide-icon>
-            {{ actionId() === selected.id + ':convert' ? 'Converting...' : 'Convert to Repair' }}
+            {{ convertButtonLabel(selected) }}
           </button>
+          @if (convertDisabledReason(selected); as reason) {
+          <p class="basis-full text-right text-[11px] font-medium text-gray-500">{{ reason }}</p>
           }
+          }
+
+          <a
+            class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
+            [routerLink]="['/communications']"
+            [queryParams]="conversationQueryParams(selected)"
+          >
+            <lucide-icon [name]="messageSquareIcon" [size]="14"></lucide-icon>
+            Open conversation
+          </a>
 
           <button
             type="button"

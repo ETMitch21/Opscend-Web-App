@@ -6,7 +6,8 @@ export type InternalNotificationEvent =
     | 'repair_reassigned'
     | 'appointment_scheduled'
     | 'appointment_rescheduled'
-    | 'appointment_canceled';
+    | 'appointment_canceled'
+    | 'communication_message_received';
 
 export type InternalNotificationChannel = 'email' | 'in_app';
 

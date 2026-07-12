@@ -11,6 +11,7 @@ import {
     PublicDeviceModelOption,
     PublicQuoteApproval,
     PublicQuoteApprovalActionResponse,
+    PublicQuoteDepositCheckoutResponse,
     PublicQuoteRequest,
     PublicQuoteRequestBody,
     PublicQuoteRequestResponse,
@@ -181,4 +182,12 @@ export class PublicBookingService {
             {}
         );
     }
+
+    createPublicQuoteDepositCheckout(token: string): Observable<PublicQuoteDepositCheckoutResponse> {
+        return this.http.post<PublicQuoteDepositCheckoutResponse>(
+            `${this.publicQuoteUrl(token)}/deposit-checkout`,
+            {}
+        );
+    }
+
 }

@@ -34,6 +34,7 @@ import { PublicBooking } from './features/public/public-booking/public-booking';
 import { PublicQuoteApproval } from './features/public/public-quote-approval/public-quote-approval';
 import { QuoteRequestsOverview } from './features/bookings/quote-requests/quote-requests-overview';
 import { Services } from './features/services/services.component';
+import { CommunicationsInbox } from './features/communications/communications-inbox';
 
 export const routes: Routes = [
     {
@@ -54,6 +55,7 @@ export const routes: Routes = [
     { path: "forgot", component: ForgotComponent, canActivate: [PublicGuard] },
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [AuthGuard] },
+    { path: "communications", component: CommunicationsInbox, canActivate: [AuthGuard] },
     {
         path: 'settings',
         children: [

@@ -27,6 +27,7 @@ import {
   ChevronDownIcon,
   HandshakeIcon,
   MessageSquareQuote,
+  InboxIcon,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -102,6 +103,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly chevronDownIcon = ChevronDownIcon;
   readonly handshakeIcon = HandshakeIcon;
   readonly messageSquareQuoteIcon = MessageSquareQuote;
+  readonly inboxIcon = InboxIcon;
   readonly walletCardsIcon = WalletCardsIcon;
   readonly calendarCogIcon = CalendarCog;
   readonly toolboxIcon = ToolboxIcon;
@@ -142,6 +144,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
     { label: 'Services', route: '/services', icon: this.toolboxIcon },
+    { label: 'Inbox', route: '/communications', icon: this.inboxIcon },
     {
       label: 'Products',
       icon: this.boxesIcon,
@@ -454,6 +457,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
       case 'contractor_assignment_canceled':
         return 'Contractor Canceled Repair';
+      case 'communication_message_received':
+        return 'Customer Message Received';
       default:
         return event;
     }

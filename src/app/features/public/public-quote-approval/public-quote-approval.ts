@@ -37,6 +37,7 @@ import { PublicQuoteApproval as PublicQuoteApprovalModel } from '../../../core/p
 export class PublicQuoteApproval implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly publicBookingApi = inject(PublicBookingService);
+  private depositSuccessRefreshAttempts = 0;
 
   readonly icons = {
     CheckCircle2,
@@ -53,7 +54,7 @@ export class PublicQuoteApproval implements OnInit {
   };
 
   readonly loading = signal(true);
-  readonly actioning = signal<'accept' | 'decline' | null>(null);
+  readonly actioning = signal<'accept' | 'decline' | 'deposit' | null>(null);
   readonly quote = signal<PublicQuoteApprovalModel | null>(null);
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
@@ -96,6 +97,7 @@ export class PublicQuoteApproval implements OnInit {
     try {
       const quote = await firstValueFrom(this.publicBookingApi.getPublicQuote(token));
       this.quote.set(quote);
+      this.applyDepositReturnNotice(quote);
     } catch {
       this.error.set('We could not find this quote. The link may be expired or invalid.');
     } finally {
@@ -118,7 +120,7 @@ export class PublicQuoteApproval implements OnInit {
       this.quote.set(response.data);
       this.notice.set(
         response.data.depositRequired && !response.data.depositPaidAt
-          ? 'Quote accepted. The shop will follow up with deposit/payment instructions.'
+          ? 'Quote accepted. Please pay the deposit to continue.'
           : 'Quote accepted. The shop will follow up with next steps.'
       );
     } catch {
@@ -147,6 +149,93 @@ export class PublicQuoteApproval implements OnInit {
     } finally {
       this.actioning.set(null);
     }
+  }
+
+  async payDeposit(): Promise<void> {
+    const quote = this.quote();
+    const token = this.token();
+
+    if (!quote || !token || !this.canPayDeposit(quote)) return;
+
+    this.actioning.set('deposit');
+    this.error.set(null);
+    this.notice.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.publicBookingApi.createPublicQuoteDepositCheckout(token)
+      );
+
+      window.location.href = response.url;
+    } catch {
+      this.error.set('We could not start the deposit payment. Please contact the shop for help.');
+      this.actioning.set(null);
+    }
+  }
+
+  private applyDepositReturnNotice(quote: PublicQuoteApprovalModel): void {
+    const depositResult = this.route.snapshot.queryParamMap.get('deposit');
+
+    if (depositResult === 'success') {
+      if (this.isDepositPaid(quote)) {
+        this.notice.set('Deposit paid. The shop has been notified and will follow up with next steps.');
+        return;
+      }
+
+      this.notice.set('Deposit payment submitted. This page will update automatically once payment is confirmed.');
+      this.scheduleDepositStatusRefresh();
+    }
+
+    if (depositResult === 'cancel') {
+      this.notice.set('Deposit payment was canceled. You can restart payment when you are ready.');
+    }
+  }
+
+  private scheduleDepositStatusRefresh(): void {
+    if (this.depositSuccessRefreshAttempts >= 6) return;
+
+    this.depositSuccessRefreshAttempts += 1;
+
+    window.setTimeout(() => {
+      void this.refreshDepositStatusAfterReturn();
+    }, 2500);
+  }
+
+  private async refreshDepositStatusAfterReturn(): Promise<void> {
+    const token = this.token();
+    if (!token) return;
+
+    try {
+      const quote = await firstValueFrom(this.publicBookingApi.getPublicQuote(token));
+      this.quote.set(quote);
+
+      if (this.isDepositPaid(quote)) {
+        this.notice.set('Deposit paid. The shop has been notified and will follow up with next steps.');
+        return;
+      }
+
+      this.scheduleDepositStatusRefresh();
+    } catch {
+      // Keep the current quote displayed. The customer can refresh or contact the shop if needed.
+    }
+  }
+
+  canPayDeposit(quote: PublicQuoteApprovalModel): boolean {
+    return Boolean(
+      quote.depositRequired &&
+      !quote.depositPaidAt &&
+      quote.depositAmountCents &&
+      quote.depositAmountCents > 0 &&
+      ['accepted', 'deposit_pending'].includes(String(quote.status))
+    );
+  }
+
+  isDepositPaid(quote: PublicQuoteApprovalModel): boolean {
+    return Boolean(quote.depositPaidAt || quote.status === 'deposit_paid');
+  }
+
+  depositDisplayAmount(quote: PublicQuoteApprovalModel): string {
+    return this.money(quote.depositPaidAmountCents ?? quote.depositAmountCents);
   }
 
   canAccept(quote: PublicQuoteApprovalModel): boolean {

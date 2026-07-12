@@ -7,6 +7,7 @@ import {
   signal,
 } from "@angular/core";
 import { CommonModule, DatePipe } from "@angular/common";
+import { RouterLink } from "@angular/router";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { debounceTime, firstValueFrom } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -21,6 +22,7 @@ import {
   LucideAngularModule,
   Mail,
   MapPin,
+  MessageSquare,
   Search,
   Send,
   Share2,
@@ -61,6 +63,7 @@ interface QuoteTimelineItem {
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     DatePipe,
     LucideAngularModule,
     PhonePipe,
@@ -87,6 +90,7 @@ export class QuoteRequestsOverview {
   readonly houseIcon = House;
   readonly mailIcon = Mail;
   readonly mapPinIcon = MapPin;
+  readonly messageSquareIcon = MessageSquare;
   readonly searchIcon = Search;
   readonly sendIcon = Send;
   readonly shareIcon = Share2;
@@ -377,7 +381,7 @@ export class QuoteRequestsOverview {
     if (!request || !this.canConvertToRepair(request)) return;
 
     const confirmed = window.confirm(
-      `Create a repair for ${this.customerLabel(request)} from this quote?`,
+      `Create a repair for ${this.customerLabel(request)} from this ${request.depositRequired ? "paid " : ""}quote?`,
     );
     if (!confirmed) return;
 
@@ -787,9 +791,57 @@ export class QuoteRequestsOverview {
     if (request.repairId) return false;
     if (request.requestStatus === "canceled") return false;
 
-    return ["accepted", "deposit_pending", "deposit_paid"].includes(
-      request.quoteStatus,
-    );
+    if (request.depositRequired) {
+      return request.quoteStatus === "deposit_paid" || Boolean(request.depositPaidAt);
+    }
+
+    return ["accepted", "deposit_paid"].includes(request.quoteStatus);
+  }
+
+  isDepositPaid(request: BookingQuoteRequest): boolean {
+    return Boolean(request.depositPaidAt || request.quoteStatus === "deposit_paid");
+  }
+
+  depositStatusLabel(request: BookingQuoteRequest): string {
+    if (!request.depositRequired) return "Not required";
+    if (this.isDepositPaid(request)) return "Paid";
+    if (request.quoteStatus === "deposit_pending") return "Waiting for payment";
+    return "Required";
+  }
+
+  depositStatusClass(request: BookingQuoteRequest): string {
+    if (!request.depositRequired) return "bg-gray-50 text-gray-600 ring-gray-100";
+    if (this.isDepositPaid(request)) return "bg-emerald-50 text-emerald-700 ring-emerald-100";
+    if (request.quoteStatus === "deposit_pending") return "bg-amber-50 text-amber-700 ring-amber-100";
+    return "bg-blue-50 text-blue-700 ring-blue-100";
+  }
+
+  convertButtonLabel(request: BookingQuoteRequest): string {
+    if (this.actionId() === request.id + ":convert") return "Creating repair...";
+    if (request.depositRequired && this.isDepositPaid(request)) return "Create repair from paid quote";
+    return "Create repair from quote";
+  }
+
+  convertDisabledReason(request: BookingQuoteRequest): string | null {
+    if (request.repairId) return "A repair has already been created for this quote.";
+    if (request.requestStatus === "canceled" || request.quoteStatus === "canceled") {
+      return "Restore this quote request before creating a repair.";
+    }
+    if (request.quoteStatus === "declined") return "Declined quotes cannot be converted.";
+    if (request.depositRequired && !this.isDepositPaid(request)) {
+      return request.quoteStatus === "deposit_pending"
+        ? "Waiting for the customer to pay the deposit before creating the repair."
+        : "This quote requires a paid deposit before creating the repair.";
+    }
+    if (!["accepted", "deposit_paid"].includes(request.quoteStatus)) {
+      return "The quote must be accepted before creating a repair.";
+    }
+    return null;
+  }
+
+  conversationQueryParams(request: BookingQuoteRequest): Record<string, string> {
+    if (request.conversationId) return { conversationId: request.conversationId };
+    return { quoteId: request.id };
   }
 
   progressSegmentClass(item: QuoteTimelineItem): string {

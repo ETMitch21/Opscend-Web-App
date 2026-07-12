@@ -227,6 +227,7 @@ export interface BookingQuoteRequest {
   id: string;
   shopId: string;
   repairId: string | null;
+  conversationId: string | null;
 
   requestStatus: BookingQuoteRequestStatus;
   quoteStatus: BookingQuoteWorkflowStatus;
@@ -250,6 +251,8 @@ export interface BookingQuoteRequest {
   depositRequired: boolean;
   depositAmountCents: number | null;
   depositPaidAt: string | null;
+  depositPaidAmountCents?: number | null;
+  depositPaidCurrency?: string | null;
 
   publicApprovalToken: string | null;
 

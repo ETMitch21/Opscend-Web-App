@@ -250,6 +250,8 @@ export interface PublicQuoteApproval {
   depositRequired: boolean;
   depositAmountCents: number | null;
   depositPaidAt: string | null;
+  depositPaidAmountCents: number | null;
+  depositPaidCurrency: string | null;
 
   customerMessage: string | null;
 
@@ -277,4 +279,8 @@ export interface PublicQuoteApproval {
 
 export interface PublicQuoteApprovalActionResponse {
   data: PublicQuoteApproval;
+}
+
+export interface PublicQuoteDepositCheckoutResponse {
+  url: string;
 }
