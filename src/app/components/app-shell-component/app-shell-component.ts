@@ -181,9 +181,9 @@ export class AppShellComponent implements OnInit, OnDestroy {
       ]
     },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
-    {
-      label: 'Quotes',
-      route: '/quote-requests',
+    { 
+      label: 'Quotes', 
+      route: '/quote-requests', 
       icon: this.messageSquareQuoteIcon,
       badgeCount: () => this.newQuoteRequestCount()
     },
@@ -252,21 +252,21 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   async refreshNewQuoteRequestCount(): Promise<void> {
-    try {
-      const response = await firstValueFrom(
-        this.bookingAdminService.listQuoteRequests({ limit: 100 })
-      );
+  try {
+    const response = await firstValueFrom(
+      this.bookingAdminService.listQuoteRequests({ limit: 100 })
+    );
 
-      const count = (response.data ?? []).filter(
-        (request) => request.requestStatus === 'new'
-      ).length;
+    const count = (response.data ?? []).filter(
+      (request) => request.requestStatus === 'new'
+    ).length;
 
-      this.newQuoteRequestCount.set(count);
-    } catch (error) {
-      console.error('Failed to refresh quote request count.', error);
-      this.newQuoteRequestCount.set(0);
-    }
+    this.newQuoteRequestCount.set(count);
+  } catch (error) {
+    console.error('Failed to refresh quote request count.', error);
+    this.newQuoteRequestCount.set(0);
   }
+}
 
   async refreshUnreadCommunicationCount(options: { notify?: boolean } = {}): Promise<void> {
     try {
@@ -846,6 +846,18 @@ export class AppShellComponent implements OnInit, OnDestroy {
     return item.children.some((child) => this.isNavRouteActive(child.route));
   }
 
+  isCompactSidebarRoute(): boolean {
+    return this.isCommunicationsRoute();
+  }
+
+  compactNavRoute(item: NavItem): string | undefined {
+    return item.route ?? item.children?.[0]?.route;
+  }
+
+  compactNavActive(item: NavItem): boolean {
+    return item.children?.length ? this.isNavSectionActive(item) : this.isNavRouteActive(item.route);
+  }
+
   isNavRouteActive(route: string | undefined): boolean {
     if (!route) return false;
 
@@ -915,30 +927,16 @@ export class AppShellComponent implements OnInit, OnDestroy {
         : conversation.lastMessageChannel === 'sms'
           ? 'text message'
           : 'message';
-
     const customerLabel =
       conversation.customerName ||
       conversation.customerPhone ||
       conversation.customerEmail ||
       'Customer';
-
     const preview = conversation.lastMessagePreview?.trim();
 
-    this.toast.action(
+    this.toast.info(
       `New ${channelLabel} from ${customerLabel}`,
-      () => {
-        this.closeProfileMenu();
-        this.closeNotificationMenu();
-        this.closeSearchDropdown();
-
-        this.router.navigate(['/communications'], {
-          queryParams: {
-            conversationId: conversation.id,
-          },
-        });
-      },
       preview ? preview.slice(0, 180) : 'Open Inbox to view the conversation.',
-      'Open',
     );
   }
 

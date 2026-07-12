@@ -3,7 +3,7 @@ import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter, map, distinctUntilChanged, firstValueFrom } from 'rxjs';
+import { debounceTime, filter, map, distinctUntilChanged, firstValueFrom, merge } from 'rxjs';
 import { ChevronLeft, LucideAngularModule } from 'lucide-angular';
 
 import { CustomersStore } from '../../../core/customers/customers.store';
@@ -13,6 +13,7 @@ import {
   CreateCustomerAddressRequest,
   UpdateCustomerAddressRequest,
   GeoPoint,
+  CustomerContactConflict,
 } from '../../../core/customers/customer.model';
 import { ToastService } from '../../../core/toast/toast-service';
 import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
@@ -68,6 +69,8 @@ export class EditCustomer implements OnInit {
   public customerDevices: CustomerDevice[] = [];
   public addresses: CustomerAddress[] = [];
   public working = false;
+  public customerIdentityChecking = false;
+  public customerIdentityConflicts: CustomerContactConflict[] = [];
 
   public addressModalOpen = false;
   public editingAddress: CustomerAddress | null = null;
@@ -206,6 +209,15 @@ export class EditCustomer implements OnInit {
       .subscribe(() => {
         void this.loadDevices();
       });
+
+    merge(
+      this.editCustomerForm.controls.email.valueChanges,
+      this.editCustomerForm.controls.phone.valueChanges,
+    )
+      .pipe(debounceTime(350), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        void this.checkCustomerIdentity();
+      });
   }
 
   private async loadShopCountry(): Promise<void> {
@@ -237,6 +249,8 @@ export class EditCustomer implements OnInit {
       this.loadDevices(),
       this.loadAddresses(),
     ]);
+
+    await this.checkCustomerIdentity();
   }
 
   private async loadDevices(): Promise<void> {
@@ -266,9 +280,65 @@ export class EditCustomer implements OnInit {
     }
   }
 
+  duplicateCustomer(): CustomerContactConflict['customer'] | null {
+    return this.customerIdentityConflicts[0]?.customer ?? null;
+  }
+
+  duplicateSummary(): string {
+    const fields = [...new Set(this.customerIdentityConflicts.map((item) => item.field))];
+    if (!fields.length) return 'This contact already exists.';
+    if (fields.length === 2) return 'This email and phone already belong to another customer.';
+    return `This ${fields[0]} already belongs to another customer.`;
+  }
+
+  openDuplicateCustomer(): void {
+    const customer = this.duplicateCustomer();
+    if (!customer) return;
+    void this.router.navigate(['/customers', customer.id, 'edit']);
+  }
+
+  private async checkCustomerIdentity(): Promise<void> {
+    if (!this.customer) return;
+
+    const email = this.editCustomerForm.controls.email.value.trim();
+    const phone = this.editCustomerForm.controls.phone.value.trim();
+
+    if (!email && !phone) {
+      this.customerIdentityConflicts = [];
+      this.customerIdentityChecking = false;
+      return;
+    }
+
+    this.customerIdentityChecking = true;
+
+    try {
+      const response = await firstValueFrom(
+        this.store.checkIdentity({
+          email: email || null,
+          phone: phone || null,
+          excludeCustomerId: this.customer.id,
+        }),
+      );
+
+      this.customerIdentityConflicts = response.conflicts ?? [];
+    } catch (error) {
+      console.error('Customer identity check failed.', error);
+      this.customerIdentityConflicts = [];
+    } finally {
+      this.customerIdentityChecking = false;
+    }
+  }
+
   async save(): Promise<void> {
     if (this.editCustomerForm.invalid || !this.customer || this.working) {
       this.editCustomerForm.markAllAsTouched();
+      return;
+    }
+
+    await this.checkCustomerIdentity();
+
+    if (this.customerIdentityConflicts.length) {
+      this.toast.error('Existing customer found', 'This email or phone belongs to another customer.');
       return;
     }
 

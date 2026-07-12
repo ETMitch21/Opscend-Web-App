@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Circle,
   ExternalLink,
   Inbox,
@@ -15,6 +16,10 @@ import {
   MessageSquare,
   Phone,
   RefreshCw,
+  SmartphoneIcon,
+  Wrench,
+  Clipboard,
+  UserRound,
   Search,
   Send,
 } from 'lucide-angular';
@@ -24,6 +29,7 @@ import {
   CommunicationChannel,
   CommunicationConversation,
   CommunicationMessage,
+  CommunicationTimelineItem,
 } from '../../core/communications/model';
 import { ToastService } from '../../core/toast/toast-service';
 import { PhonePipe } from '../../core/pipes/phone-pipe';
@@ -46,6 +52,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly icons = {
     ArrowLeft,
     CheckCircle2,
+    ChevronDown,
     Circle,
     ExternalLink,
     Inbox,
@@ -54,6 +61,10 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     MessageSquare,
     Phone,
     RefreshCw,
+    SmartphoneIcon,
+    Wrench,
+    Clipboard,
+    UserRound,
     Search,
     Send,
   };
@@ -65,12 +76,61 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly sending = signal(false);
   readonly error = signal<string | null>(null);
   readonly searchTerm = signal('');
-  readonly activeChannel = signal<'email' | 'sms'>('sms');
+  readonly activeChannel = signal<'email' | 'sms' | 'note'>('sms');
   readonly composeSubject = signal('');
   readonly composeBody = signal('');
+  readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
 
+  readonly relatedDevicesOpen = signal(false);
+  readonly relatedQuotesOpen = signal(false);
+  readonly relatedRepairsOpen = signal(false);
+
   readonly selectedMessages = computed(() => this.selectedConversation()?.messages ?? []);
+  readonly selectedTimeline = computed(() => {
+    const conversation = this.selectedConversation();
+    if (!conversation) return [];
+
+    if (conversation.timeline?.length) return conversation.timeline;
+
+    return (conversation.messages ?? []).map((message) => this.messageToTimelineItem(message));
+  });
+
+  readonly selectedCustomerProfile = computed(() => {
+    const conversation = this.selectedConversation();
+    if (!conversation) return null;
+
+    const profile = conversation.customerProfile;
+
+    return {
+      id: conversation.customerId ?? profile?.id ?? null,
+      name: conversation.customerName || profile?.name || null,
+      email: conversation.customerEmail || profile?.email || null,
+      phone: conversation.customerPhone || profile?.phone || null,
+    };
+  });
+
+  readonly selectedRelatedQuotes = computed(() => {
+    const conversation = this.selectedConversation();
+    if (!conversation) return [];
+    return conversation.relatedQuotes?.length
+      ? conversation.relatedQuotes
+      : conversation.quote
+        ? [conversation.quote]
+        : [];
+  });
+
+  readonly selectedRelatedRepairs = computed(() => {
+    const conversation = this.selectedConversation();
+    if (!conversation) return [];
+    return conversation.relatedRepairs?.length
+      ? conversation.relatedRepairs
+      : conversation.repair
+        ? [conversation.repair]
+        : [];
+  });
+
+  readonly selectedRelatedDevices = computed(() => this.selectedConversation()?.relatedDevices ?? []);
 
   private readonly inboxPollMs = 4_000;
   private inboxRefreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -154,11 +214,13 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
         }
       }
 
-      if (this.activeChannel() === 'sms' && !this.canSendSms(threadResponse.data)) {
-        this.activeChannel.set('email');
-      }
-      if (this.activeChannel() === 'email' && !this.canSendEmail(threadResponse.data) && this.canSendSms(threadResponse.data)) {
-        this.activeChannel.set('sms');
+      if (this.activeChannel() !== 'note') {
+        if (this.activeChannel() === 'sms' && !this.canSendSms(threadResponse.data)) {
+          this.activeChannel.set('email');
+        }
+        if (this.activeChannel() === 'email' && !this.canSendEmail(threadResponse.data) && this.canSendSms(threadResponse.data)) {
+          this.activeChannel.set('sms');
+        }
       }
 
       this.upsertConversation(threadResponse.data);
@@ -268,6 +330,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     if (!conversation || !body || this.sending()) return;
 
+    if (channel === 'note') {
+      await this.addInternalNoteFromComposer(conversation, body);
+      return;
+    }
+
     if (channel === 'email' && !this.canSendEmail(conversation)) {
       this.toast.error('Customer email required', 'Add an email address before sending email.');
       return;
@@ -318,11 +385,51 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     }
   }
 
+  private async addInternalNoteFromComposer(
+    conversation: CommunicationConversation,
+    body: string,
+  ): Promise<void> {
+    if (this.addingInternalNote()) return;
+
+    this.addingInternalNote.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.communicationApi.addInternalNote(conversation.id, body),
+      );
+
+      this.selectedConversation.set(response.data);
+      this.upsertConversation(response.data);
+      this.composeBody.set('');
+      this.scheduleScrollToBottom();
+      this.toast.success('Note added', 'The internal note was added to the timeline.');
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Note not added', 'Unable to add the internal note.');
+      this.error.set('Could not add internal note.');
+    } finally {
+      this.addingInternalNote.set(false);
+    }
+  }
+
   setSearchTerm(value: string): void {
     this.searchTerm.set(value);
   }
 
-  setChannel(channel: 'email' | 'sms'): void {
+  toggleRelatedDevices(): void {
+    this.relatedDevicesOpen.update((open) => !open);
+  }
+
+  toggleRelatedQuotes(): void {
+    this.relatedQuotesOpen.update((open) => !open);
+  }
+
+  toggleRelatedRepairs(): void {
+    this.relatedRepairsOpen.update((open) => !open);
+  }
+
+  setChannel(channel: 'email' | 'sms' | 'note'): void {
     this.activeChannel.set(channel);
   }
 
@@ -335,6 +442,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   canSendActiveChannel(conversation: CommunicationConversation): boolean {
+    if (this.activeChannel() === 'note') return true;
+
     return this.activeChannel() === 'sms'
       ? this.canSendSms(conversation)
       : this.canSendEmail(conversation);
@@ -358,6 +467,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   activeChannelUnavailableText(conversation: CommunicationConversation): string | null {
+    if (this.activeChannel() === 'note') return null;
+
     if (this.activeChannel() === 'sms' && !this.canSendSms(conversation)) {
       return this.smsUnavailableText(conversation);
     }
@@ -372,6 +483,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   composePlaceholder(conversation: CommunicationConversation): string {
     const unavailable = this.activeChannelUnavailableText(conversation);
     if (unavailable) return unavailable;
+    if (this.activeChannel() === 'note') return 'Add an internal note...';
     return this.activeChannel() === 'email' ? 'Write an email...' : 'Write an SMS...';
   }
 
@@ -386,14 +498,22 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   conversationSubtitle(conversation: CommunicationConversation): string {
-    if (conversation.quote) return `${conversation.quote.repairLabel} · ${conversation.quote.deviceLabel}`;
-    if (conversation.repair) return conversation.repair.problemSummary;
-    return conversation.subject || 'General conversation';
+    const quoteCount = conversation.relatedQuotes?.length ?? (conversation.quote ? 1 : 0);
+    const repairCount = conversation.relatedRepairs?.length ?? (conversation.repair ? 1 : 0);
+
+    const parts = [
+      quoteCount ? `${quoteCount} quote${quoteCount === 1 ? '' : 's'}` : null,
+      repairCount ? `${repairCount} repair${repairCount === 1 ? '' : 's'}` : null,
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(' · ') : conversation.subject || 'Customer conversation';
   }
 
   channelLabel(channel: CommunicationChannel | null | undefined): string {
     if (channel === 'sms') return 'SMS';
     if (channel === 'email') return 'Email';
+    if (channel === 'note') return 'Note';
+    if (channel === 'system') return 'System';
     return 'Message';
   }
 
@@ -412,6 +532,33 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     return status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
+  deviceLabel(device: { displayName?: string | null; brand?: string | null; model?: string | null; nickname?: string | null }): string {
+    return (
+      device.nickname ||
+      device.displayName ||
+      [device.brand, device.model].filter(Boolean).join(' ') ||
+      'Customer device'
+    );
+  }
+
+  deviceMetaLabel(device: { brand?: string | null; model?: string | null }): string | null {
+    const value = [device.brand, device.model].filter(Boolean).join(' ');
+    return value || null;
+  }
+
+  repairLabel(repair: { problemSummary?: string | null; deviceLabel?: string | null }): string {
+    return repair.problemSummary || repair.deviceLabel || 'Repair';
+  }
+
+  quoteDepositLabel(quote: { depositRequired?: boolean; depositPaidAt?: string | null; depositAmountCents?: number | null }): string | null {
+    if (!quote.depositRequired) return null;
+    return `${quote.depositPaidAt ? 'Deposit paid' : 'Deposit due'} · ${this.money(quote.depositAmountCents)}`;
+  }
+
+  contextCountLabel(count: number, singular: string): string {
+    return `${count} ${singular}${count === 1 ? '' : 's'}`;
+  }
+
   formatConversationDate(value: string | null | undefined): string {
     if (!value) return '';
     return new Intl.DateTimeFormat('en-US', {
@@ -422,6 +569,126 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     }).format(new Date(value));
   }
 
+
+  timelineTitle(item: CommunicationTimelineItem): string {
+    return item.title || this.channelLabel(item.channel);
+  }
+
+  timelineActor(item: CommunicationTimelineItem): string {
+    if (item.actorLabel) return item.actorLabel;
+    if (item.direction === 'outbound') return 'You';
+    if (item.direction === 'inbound') return 'Customer';
+    if (item.type === 'repair_event' || item.type === 'quote_event') return 'System';
+    return 'Internal';
+  }
+
+  timelineIsBubble(item: CommunicationTimelineItem): boolean {
+    return (
+      item.type === 'message' ||
+      item.type === 'internal_note' ||
+      (item.type === 'repair_note' && item.tone === 'note') ||
+      item.channel === 'email' ||
+      item.channel === 'sms' ||
+      item.channel === 'note'
+    );
+  }
+
+  timelineIsOutbound(item: CommunicationTimelineItem): boolean {
+    return (
+      item.direction === 'outbound' ||
+      item.direction === 'internal' ||
+      item.type === 'internal_note' ||
+      item.channel === 'note' ||
+      item.tone === 'note'
+    );
+  }
+
+  timelineBubbleClass(item: CommunicationTimelineItem): string {
+    if (
+      item.type === 'internal_note' ||
+      item.channel === 'note' ||
+      item.direction === 'internal' ||
+      item.tone === 'note'
+    ) {
+      return 'bg-amber-50 text-amber-950 ring-amber-100';
+    }
+
+    if (item.direction === 'outbound') {
+      return 'bg-gray-900 text-white ring-gray-900';
+    }
+
+    return 'bg-app-surface text-app-text ring-app-border';
+  }
+
+  timelineEventDetail(item: CommunicationTimelineItem): string | null {
+    const body = item.body?.trim();
+    if (!body) return null;
+
+    if (item.type === 'quote_event') {
+      if (item.title?.toLowerCase().includes('deposit paid')) {
+        return body.replace(/^Deposit paid:\s*/i, '');
+      }
+
+      return null;
+    }
+
+    if (item.type === 'repair_event') return null;
+
+    return body.length > 70 ? `${body.slice(0, 70).trim()}…` : body;
+  }
+
+  timelineEventDotClass(item: CommunicationTimelineItem): string {
+    switch (item.tone) {
+      case 'success':
+        return 'bg-emerald-500';
+      case 'danger':
+        return 'bg-rose-500';
+      case 'note':
+        return 'bg-amber-500';
+      case 'info':
+        return 'bg-sky-500';
+      default:
+        return 'bg-gray-400';
+    }
+  }
+
+  timelineEventClass(item: CommunicationTimelineItem): string {
+    switch (item.tone) {
+      case 'success':
+        return 'border-emerald-100 bg-emerald-50 text-emerald-900';
+      case 'danger':
+        return 'border-rose-100 bg-rose-50 text-rose-900';
+      case 'note':
+        return 'border-amber-100 bg-amber-50 text-amber-950';
+      case 'info':
+        return 'border-sky-100 bg-sky-50 text-sky-900';
+      default:
+        return 'border-app-border bg-app-surface text-app-text';
+    }
+  }
+
+  private messageToTimelineItem(message: CommunicationMessage): CommunicationTimelineItem {
+    const isInternalNote = message.channel === 'note' || message.direction === 'internal';
+
+    return {
+      id: `message:${message.id}`,
+      type: isInternalNote ? 'internal_note' : 'message',
+      sourceId: message.id,
+      channel: message.channel,
+      direction: message.direction,
+      status: message.status,
+      title: isInternalNote
+        ? 'Internal note'
+        : message.direction === 'outbound'
+          ? `Outbound ${this.channelLabel(message.channel)}`
+          : `Inbound ${this.channelLabel(message.channel)}`,
+      body: message.body,
+      subject: message.subject,
+      actorLabel: this.messageSender(message),
+      occurredAt: message.createdAt,
+      tone: isInternalNote ? 'note' : message.direction === 'outbound' ? 'outbound' : 'inbound',
+    };
+  }
 
   private scheduleScrollToBottom(delayMs = 50): void {
     window.setTimeout(() => this.scrollMessagesToBottom(), delayMs);
@@ -536,9 +803,12 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       conversation.quote?.depositPaidAt ?? '',
       conversation.quote?.deviceLabel ?? '',
       conversation.quote?.repairLabel ?? '',
+      conversation.relatedQuotes?.map((quote) => `${quote.id}:${quote.status}:${quote.updatedAt ?? ''}`).join(',') ?? '',
       conversation.repair?.id ?? '',
       conversation.repair?.status ?? '',
       conversation.repair?.problemSummary ?? '',
+      conversation.relatedRepairs?.map((repair) => `${repair.id}:${repair.status}:${repair.updatedAt ?? ''}`).join(',') ?? '',
+      conversation.relatedDevices?.map((device) => `${device.id}:${device.updatedAt ?? ''}`).join(',') ?? '',
       conversation.updatedAt,
     ].join('::');
   }
@@ -570,6 +840,13 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
         message.receivedAt ?? '',
         message.failedAt ?? '',
         message.createdAt,
+      ].join('::')),
+      ...(conversation.timeline ?? []).map((item) => [
+        item.id,
+        item.type,
+        item.title,
+        item.body ?? '',
+        item.occurredAt,
       ].join('::')),
     ].join('|');
   }

@@ -49,6 +49,23 @@ export class CommunicationService {
     );
   }
 
+  ensureRepairConversation(repairId: string): Observable<CommunicationConversationResponse> {
+    return this.http.post<CommunicationConversationResponse>(
+      `${this.baseUrl}/conversations/repair/${encodeURIComponent(repairId)}`,
+      {},
+    );
+  }
+
+  addInternalNote(
+    id: string,
+    body: string,
+  ): Observable<CommunicationConversationResponse> {
+    return this.http.post<CommunicationConversationResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/notes`,
+      { body },
+    );
+  }
+
   markConversationRead(id: string): Observable<CommunicationConversationResponse> {
     return this.http.post<CommunicationConversationResponse>(
       `${this.baseUrl}/conversations/${encodeURIComponent(id)}/read`,

@@ -24,6 +24,7 @@ import {
   filter,
   firstValueFrom,
   from,
+  merge,
   Observable,
   of,
   switchMap,
@@ -39,6 +40,7 @@ import { CustomersStore } from '../../../core/customers/customers.store';
 import {
   Customer,
   CustomerAddress,
+  CustomerContactConflict,
 } from '../../../core/customers/customer.model';
 import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
 import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
@@ -293,6 +295,8 @@ export class NewRepair implements OnInit {
   public showCustomerResults = false;
   public searchingCustomers = false;
   public newCustomer = false;
+  public customerIdentityChecking = false;
+  public customerIdentityConflicts: CustomerContactConflict[] = [];
 
   public deviceResults: CustomerDevice[] = [];
   public selectedDevice: CustomerDevice | null = null;
@@ -596,6 +600,15 @@ export class NewRepair implements OnInit {
     this.newRepairForm.controls.phone.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.updateCustomerValidators());
+
+    merge(
+      this.newRepairForm.controls.email.valueChanges,
+      this.newRepairForm.controls.phone.valueChanges,
+    )
+      .pipe(debounceTime(350), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        void this.checkNewCustomerIdentity();
+      });
 
     this.deviceSearchControl.valueChanges
       .pipe(
@@ -1599,10 +1612,67 @@ export class NewRepair implements OnInit {
     this.searchingTechSpecsModels = false;
   }
 
+  duplicateCustomer(): CustomerContactConflict['customer'] | null {
+    return this.customerIdentityConflicts[0]?.customer ?? null;
+  }
+
+  duplicateCustomerSummary(): string {
+    const fields = [...new Set(this.customerIdentityConflicts.map((item) => item.field))];
+    if (!fields.length) return 'This contact already exists.';
+    if (fields.length === 2) return 'This email and phone already belong to an existing customer.';
+    return `This ${fields[0]} already belongs to an existing customer.`;
+  }
+
+  useDuplicateCustomer(): void {
+    const duplicate = this.duplicateCustomer();
+    if (!duplicate) return;
+    this.selectCustomer(duplicate);
+    this.toastService.success('Existing customer selected', `${duplicate.name} is now selected for this repair.`);
+  }
+
+  private clearCustomerIdentityConflicts(): void {
+    this.customerIdentityConflicts = [];
+    this.customerIdentityChecking = false;
+  }
+
+  private async checkNewCustomerIdentity(): Promise<void> {
+    if (!this.newCustomer) {
+      this.clearCustomerIdentityConflicts();
+      return;
+    }
+
+    const email = this.newRepairForm.controls.email.value.trim();
+    const phone = this.newRepairForm.controls.phone.value.trim();
+
+    if (!email && !phone) {
+      this.clearCustomerIdentityConflicts();
+      return;
+    }
+
+    this.customerIdentityChecking = true;
+
+    try {
+      const response = await firstValueFrom(
+        this.customersStore.checkIdentity({
+          email: email || null,
+          phone: phone || null,
+        }),
+      );
+
+      this.customerIdentityConflicts = response.conflicts ?? [];
+    } catch (error) {
+      console.error('Customer identity check failed.', error);
+      this.customerIdentityConflicts = [];
+    } finally {
+      this.customerIdentityChecking = false;
+    }
+  }
+
   selectCustomer(customer: Customer): void {
     this.selectedCustomer = customer;
     this.newCustomer = false;
     this.showCustomerResults = false;
+    this.clearCustomerIdentityConflicts();
 
     this.newRepairForm.patchValue(
       {
@@ -1631,6 +1701,7 @@ export class NewRepair implements OnInit {
     this.selectedCustomer = null;
     this.showCustomerResults = false;
     this.customerResults = [];
+    this.clearCustomerIdentityConflicts();
 
     this.newRepairForm.patchValue(
       {
@@ -1649,10 +1720,12 @@ export class NewRepair implements OnInit {
     this.updateCustomerValidators();
     this.updateDeviceValidators();
     this.updateServiceValidators();
+    void this.checkNewCustomerIdentity();
   }
 
   cancelNewCustomer(): void {
     this.newCustomer = false;
+    this.clearCustomerIdentityConflicts();
 
     this.newRepairForm.patchValue({
       name: '',
@@ -1672,6 +1745,7 @@ export class NewRepair implements OnInit {
     this.customerResults = [];
     this.showCustomerResults = false;
     this.newCustomer = false;
+    this.clearCustomerIdentityConflicts();
 
     this.newRepairForm.patchValue({
       customerId: null,
@@ -2741,7 +2815,9 @@ export class NewRepair implements OnInit {
         this.newRepairForm.controls.name.valid &&
         this.newRepairForm.controls.email.valid &&
         this.newRepairForm.controls.phone.valid &&
-        this.hasNewCustomerContactValue()
+        this.hasNewCustomerContactValue() &&
+        !this.customerIdentityChecking &&
+        this.customerIdentityConflicts.length === 0
       );
     }
 
@@ -2828,10 +2904,17 @@ export class NewRepair implements OnInit {
   private showStepError(step: RepairWizardStep): void {
     switch (step) {
       case 'customer':
-        this.toastService.error(
-          'Customer required',
-          'Select an existing customer or complete the new customer details.',
-        );
+        if (this.customerIdentityConflicts.length) {
+          this.toastService.error(
+            'Existing customer found',
+            'Use the existing customer instead of creating a duplicate.',
+          );
+        } else {
+          this.toastService.error(
+            'Customer required',
+            'Select an existing customer or complete the new customer details.',
+          );
+        }
         break;
       case 'device':
         this.toastService.error(
@@ -3222,6 +3305,16 @@ export class NewRepair implements OnInit {
       return this.newRepairForm.controls.customerId.value;
     }
 
+    await this.checkNewCustomerIdentity();
+
+    if (this.customerIdentityConflicts.length) {
+      this.toastService.error(
+        'Existing customer found',
+        'Use the existing customer instead of creating a duplicate.',
+      );
+      return null;
+    }
+
     const createdCustomer = await this.customersStore.create({
       name: this.newRepairForm.controls.name.value.trim(),
       email: this.newRepairForm.controls.email.value.trim() || undefined,
@@ -3232,6 +3325,7 @@ export class NewRepair implements OnInit {
 
     this.selectedCustomer = createdCustomer;
     this.newCustomer = false;
+    this.clearCustomerIdentityConflicts();
 
     this.newRepairForm.patchValue(
       {

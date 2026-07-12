@@ -9,6 +9,8 @@ import {
   CustomerAddressListResponse,
   CustomerListQuery,
   CustomerListResponse,
+  CustomerIdentityCheckQuery,
+  CustomerIdentityCheckResponse,
   UpdateCustomerAddressRequest,
   UpdateCustomerRequest,
 } from './customer.model';
@@ -56,6 +58,30 @@ export class CustomersService {
     return this.http
       .get<CustomerListResponse>(this.baseUrl, { params })
       .pipe(map((res) => res.data));
+  }
+
+
+  checkIdentity(
+    query: CustomerIdentityCheckQuery
+  ): Observable<CustomerIdentityCheckResponse> {
+    let params = new HttpParams();
+
+    if (query.email) {
+      params = params.set('email', query.email);
+    }
+
+    if (query.phone) {
+      params = params.set('phone', query.phone);
+    }
+
+    if (query.excludeCustomerId) {
+      params = params.set('excludeCustomerId', query.excludeCustomerId);
+    }
+
+    return this.http.get<CustomerIdentityCheckResponse>(
+      `${this.baseUrl}/identity-check`,
+      { params }
+    );
   }
 
   getById(id: string): Observable<Customer> {

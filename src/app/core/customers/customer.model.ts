@@ -142,3 +142,25 @@ export interface UpdateCustomerAddressRequest {
   isDefault?: boolean;
   notes?: string | null;
 }
+export interface CustomerContactConflict {
+  field: 'email' | 'phone';
+  value: string;
+  customer: Customer;
+}
+
+export interface CustomerIdentityCheckResponse {
+  hasConflict: boolean;
+  conflicts: CustomerContactConflict[];
+}
+
+export interface CustomerIdentityCheckQuery {
+  email?: string | null;
+  phone?: string | null;
+  excludeCustomerId?: string | null;
+}
+
+export interface CustomerContactConflictErrorResponse {
+  error: 'customer_contact_conflict';
+  message: string;
+  conflicts: CustomerContactConflict[];
+}

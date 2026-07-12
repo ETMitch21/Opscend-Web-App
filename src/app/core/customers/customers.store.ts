@@ -6,6 +6,8 @@ import {
   Customer,
   CustomerAddress,
   CustomerListQuery,
+  CustomerIdentityCheckQuery,
+  CustomerIdentityCheckResponse,
   UpdateCustomerAddressRequest,
   UpdateCustomerRequest,
 } from './customer.model';
@@ -81,6 +83,12 @@ export class CustomersStore {
   search(query: string): Observable<Customer[]> {
     this._error.set(null);
     return this.customersService.search(query);
+  }
+
+
+  checkIdentity(query: CustomerIdentityCheckQuery): Observable<CustomerIdentityCheckResponse> {
+    this._error.set(null);
+    return this.customersService.checkIdentity(query);
   }
 
   async getById(id: string): Promise<Customer | null> {

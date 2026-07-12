@@ -79,6 +79,7 @@ import type {
 } from '../../../core/repair-notifications/repair-notification.types';
 import { RepairsService } from '../../../core/repairs/repairs-service';
 import { ContractorPayoutsService } from '../../../core/contractor-payout/contractor-payouts.service';
+import { CommunicationService } from '../../../core/communications/service';
 import type { ContractorPayout } from '../../../core/contractor-payout/contractor-payout.model'; 
 
 interface ShopListResponse {
@@ -125,6 +126,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly repairNotificationService = inject(RepairNotificationService);
   private readonly repairsService = inject(RepairsService);
   private readonly contractorPayoutsService = inject(ContractorPayoutsService);
+  private readonly communicationApi = inject(CommunicationService);
 
   public shopCountry = 'US';
 
@@ -1712,13 +1714,35 @@ export class RepairDetail implements OnInit, OnDestroy {
     });
   }
 
-  openSourceConversation(): void {
-    const conversation = this.sourceConversation();
-    if (!conversation) return;
+  async openRepairConversation(): Promise<void> {
+    const existingConversation = this.sourceConversation();
 
-    void this.router.navigate(['/communications'], {
-      queryParams: { conversationId: conversation.id },
-    });
+    if (existingConversation) {
+      await this.router.navigate(['/communications'], {
+        queryParams: { conversationId: existingConversation.id },
+      });
+      return;
+    }
+
+    const repairId = this.repairId();
+    if (!repairId) return;
+
+    try {
+      const response = await firstValueFrom(
+        this.communicationApi.ensureRepairConversation(repairId)
+      );
+
+      await this.router.navigate(['/communications'], {
+        queryParams: { conversationId: response.data.id },
+      });
+    } catch (error) {
+      console.error('Failed to open repair conversation.', error);
+      this.toast.error('Inbox thread unavailable', 'Could not open the communication thread for this repair.');
+    }
+  }
+
+  openSourceConversation(): void {
+    void this.openRepairConversation();
   }
 
   openSourceQuotePublicLink(): void {

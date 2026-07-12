@@ -482,14 +482,12 @@
                         Open quote
                     </button>
 
-                    @if (repairValue.communicationConversation) {
                     <button type="button"
                         class="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
-                        (click)="openSourceConversation()">
+                        (click)="openRepairConversation()">
                         <lucide-icon [name]="icons.MessageSquareText" class="h-3.5 w-3.5"></lucide-icon>
                         Open thread
                     </button>
-                    }
 
                     @if (sourceQuote.publicApprovalToken) {
                     <button type="button"
@@ -557,6 +555,11 @@
                             <lucide-icon [name]="icons.MailIcon" class="h-3 w-3"></lucide-icon> Email
                         </a>
                         }
+                        <button type="button"
+                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
+                            (click)="openRepairConversation()">
+                            <lucide-icon [name]="icons.MessageSquareText" class="h-3 w-3"></lucide-icon> Inbox
+                        </button>
                         <a [routerLink]="['/customers', repair()?.customerId, 'edit']" type="button"
                             class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand">
                             View Profile <lucide-icon [name]="icons.ArrowRight" class="h-3 w-3"></lucide-icon>

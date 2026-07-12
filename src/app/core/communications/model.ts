@@ -1,5 +1,14 @@
-export type CommunicationChannel = 'email' | 'sms' | string;
-export type CommunicationDirection = 'inbound' | 'outbound' | string;
+export type CommunicationChannel =
+  | 'email'
+  | 'sms'
+  | 'note'
+  | 'system'
+  | 'call'
+  | 'voice'
+  | 'repair_message'
+  | 'contractor_message'
+  | string;
+export type CommunicationDirection = 'inbound' | 'outbound' | 'internal' | 'system' | string;
 export type CommunicationMessageStatus =
   | 'queued'
   | 'sent'
@@ -35,6 +44,22 @@ export interface CommunicationMessage {
   createdAt: string;
 }
 
+
+export interface CommunicationTimelineItem {
+  id: string;
+  type: 'message' | 'internal_note' | 'repair_note' | 'quote_event' | 'repair_event' | string;
+  sourceId?: string | null;
+  channel?: CommunicationChannel | null;
+  direction?: CommunicationDirection | null;
+  status?: string | null;
+  title: string;
+  body?: string | null;
+  subject?: string | null;
+  actorLabel?: string | null;
+  occurredAt: string;
+  tone?: 'inbound' | 'outbound' | 'note' | 'system' | 'success' | 'danger' | 'info' | string | null;
+}
+
 export interface CommunicationConversationQuoteSummary {
   id: string;
   status: string;
@@ -45,12 +70,33 @@ export interface CommunicationConversationQuoteSummary {
   depositPaidAt: string | null;
   deviceLabel: string;
   repairLabel: string;
+  repairId?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface CommunicationConversationRepairSummary {
   id: string;
   status: string;
   problemSummary: string;
+  customerDeviceId?: string | null;
+  deviceLabel?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface CommunicationConversationCustomerProfile {
+  id: string | null;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+export interface CommunicationConversationDeviceSummary {
+  id: string;
+  displayName: string | null;
+  brand: string | null;
+  model: string | null;
+  nickname: string | null;
+  updatedAt: string | null;
 }
 
 export interface CommunicationConversation {
@@ -75,7 +121,12 @@ export interface CommunicationConversation {
   lastMessageDirection: CommunicationDirection | null;
   quote: CommunicationConversationQuoteSummary | null;
   repair: CommunicationConversationRepairSummary | null;
+  customerProfile: CommunicationConversationCustomerProfile | null;
+  relatedQuotes: CommunicationConversationQuoteSummary[];
+  relatedRepairs: CommunicationConversationRepairSummary[];
+  relatedDevices: CommunicationConversationDeviceSummary[];
   messages?: CommunicationMessage[];
+  timeline?: CommunicationTimelineItem[];
   createdAt: string;
   updatedAt: string;
 }

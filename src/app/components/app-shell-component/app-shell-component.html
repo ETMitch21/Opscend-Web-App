@@ -7,18 +7,24 @@
 
     <div class="flex h-screen overflow-hidden">
         <aside
-            class="fixed inset-y-0 left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-hidden border-r border-app-border bg-app-surface transform transition-transform duration-200 lg:static lg:translate-x-0"
-            [ngClass]="sidebarOpen() ? 'translate-x-0' : '-translate-x-full'">
+            class="fixed inset-y-0 left-0 top-0 z-50 flex h-screen w-72 flex-col overflow-hidden border-r border-app-border bg-app-surface transform transition-all duration-200 lg:static lg:translate-x-0"
+            [ngClass]="[
+                sidebarOpen() ? 'translate-x-0' : '-translate-x-full',
+                isCompactSidebarRoute() ? 'lg:w-16' : 'lg:w-72'
+            ]">
 
-            <div class="flex h-16 shrink-0 items-center justify-between border-b border-app-border px-6">
-                <div class="flex items-center gap-3">
+            <div class="flex h-16 shrink-0 items-center border-b border-app-border"
+                [ngClass]="isCompactSidebarRoute() ? 'justify-center px-2' : 'justify-between px-6'">
+                <div class="flex items-center gap-3" [ngClass]="isCompactSidebarRoute() ? 'justify-center' : ''">
                     <div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand/10">
                         <lucide-icon [size]="18" [img]="bookOpenIcon" class="text-brand"></lucide-icon>
                     </div>
+                    @if (!isCompactSidebarRoute()) {
                     <div>
                         <p class="text-sm font-semibold tracking-tight">Opscend</p>
                         <p class="text-xs text-app-text-muted">Operations</p>
                     </div>
+                    }
                 </div>
 
                 <button type="button" class="cursor-pointer bg-app-surface px-2 py-1 text-sm lg:hidden"
@@ -27,8 +33,27 @@
                 </button>
             </div>
 
-            <nav class="flex flex-1 flex-col overflow-hidden p-4">
-                <div class="space-y-1 overflow-y-auto">
+            <nav class="flex flex-1 flex-col overflow-hidden" [ngClass]="isCompactSidebarRoute() ? 'p-2' : 'p-4'">
+                <div class="space-y-1 overflow-y-auto" [ngClass]="isCompactSidebarRoute() ? 'px-0' : ''">
+                    @if (isCompactSidebarRoute()) {
+                    @for (item of navItems; track item.label) {
+                    <a [routerLink]="compactNavRoute(item)" [title]="item.label"
+                        class="relative flex h-11 cursor-pointer items-center justify-center rounded-2xl border border-transparent text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                        [ngClass]="compactNavActive(item)
+                            ? 'bg-brand/8 text-app-text border-brand/20'
+                            : 'text-app-text-muted border-transparent'"
+                        (click)="closeSidebar()">
+                        <lucide-icon [size]="18" [img]="item.icon"></lucide-icon>
+
+                        @if (item.badgeCount && item.badgeCount() > 0) {
+                        <span
+                            class="absolute right-1 top-1 flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-brand px-1 text-[9px] font-bold leading-none text-white">
+                            {{ item.badgeCount() > 9 ? '9+' : item.badgeCount() }}
+                        </span>
+                        }
+                    </a>
+                    }
+                    } @else {
                     @for (item of navItems; track item.label) {
                     @if (item.children?.length) {
                     <div>
@@ -85,13 +110,17 @@
                     </a>
                     }
                     }
+                    }
                 </div>
 
                 <div class="mt-auto shrink-0 pt-4">
-                    <a (click)="logout()"
-                        class="cursor-pointer flex items-center gap-3 rounded-app-md border border-transparent px-3 py-2.5 text-sm font-medium text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text">
+                    <a (click)="logout()" title="Logout"
+                        class="cursor-pointer flex items-center rounded-app-md border border-transparent py-2.5 text-sm font-medium text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                        [ngClass]="isCompactSidebarRoute() ? 'justify-center px-0' : 'gap-3 px-3'">
                         <lucide-icon [size]="18" [img]="logoutIcon"></lucide-icon>
-                        Logout
+                        @if (!isCompactSidebarRoute()) {
+                        <span>Logout</span>
+                        }
                     </a>
                 </div>
             </nav>

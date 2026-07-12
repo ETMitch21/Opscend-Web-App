@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { debounceTime, firstValueFrom, merge } from 'rxjs';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CustomersStore } from '../../../core/customers/customers.store';
+import type { CustomerContactConflict } from '../../../core/customers/customer.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ToastService } from '../../../core/toast/toast-service';
 import { ShopContextService } from '../../../core/shop/shop-context.store';
 
@@ -38,8 +40,11 @@ export class NewCustomer implements OnInit {
   private readonly customersStore = inject(CustomersStore);
   private readonly toast = inject(ToastService);
   private readonly shopContext = inject(ShopContextService);
+  private readonly destroyRef = inject(DestroyRef);
 
   public working = false;
+  public customerIdentityChecking = false;
+  public customerIdentityConflicts: CustomerContactConflict[] = [];
 
   public shopCountry = 'US';
 
@@ -105,6 +110,15 @@ export class NewCustomer implements OnInit {
     this.addressForm.patchValue({
       country: this.shopCountry,
     });
+
+    merge(
+      this.newCustomerForm.controls.email.valueChanges,
+      this.newCustomerForm.controls.phone.valueChanges,
+    )
+      .pipe(debounceTime(350), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        void this.checkCustomerIdentity();
+      });
   }
 
   public readonly newCustomerForm: NewCustomerForm = new FormGroup({
@@ -181,9 +195,62 @@ export class NewCustomer implements OnInit {
     }
   }
 
+  duplicateCustomer(): CustomerContactConflict['customer'] | null {
+    return this.customerIdentityConflicts[0]?.customer ?? null;
+  }
+
+  duplicateSummary(): string {
+    const fields = [...new Set(this.customerIdentityConflicts.map((item) => item.field))];
+    if (!fields.length) return 'This contact already exists.';
+    if (fields.length === 2) return 'This email and phone already belong to an existing customer.';
+    return `This ${fields[0]} already belongs to an existing customer.`;
+  }
+
+  openDuplicateCustomer(): void {
+    const customer = this.duplicateCustomer();
+    if (!customer) return;
+    void this.router.navigate(['/customers', customer.id, 'edit']);
+  }
+
+  private async checkCustomerIdentity(): Promise<void> {
+    const email = this.newCustomerForm.controls.email.value.trim();
+    const phone = this.newCustomerForm.controls.phone.value.trim();
+
+    if (!email && !phone) {
+      this.customerIdentityConflicts = [];
+      this.customerIdentityChecking = false;
+      return;
+    }
+
+    this.customerIdentityChecking = true;
+
+    try {
+      const response = await firstValueFrom(
+        this.customersStore.checkIdentity({
+          email: email || null,
+          phone: phone || null,
+        }),
+      );
+
+      this.customerIdentityConflicts = response.conflicts ?? [];
+    } catch (error) {
+      console.error('Customer identity check failed.', error);
+      this.customerIdentityConflicts = [];
+    } finally {
+      this.customerIdentityChecking = false;
+    }
+  }
+
   async create(): Promise<void> {
     if (this.newCustomerForm.invalid) {
       this.newCustomerForm.markAllAsTouched();
+      return;
+    }
+
+    await this.checkCustomerIdentity();
+
+    if (this.customerIdentityConflicts.length) {
+      this.toast.error('Existing customer found', 'Use the existing customer instead of creating a duplicate.');
       return;
     }
 
