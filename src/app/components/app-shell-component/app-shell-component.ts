@@ -38,6 +38,8 @@ import type {
   InternalNotificationEvent,
 } from '../../core/internal-notifications/internal-notification.types';
 import { BookingAdminService } from '../../core/booking/service';
+import { CommunicationService } from '../../core/communications/service';
+import { ToastService } from '../../core/toast/toast-service';
 
 type NavItem = {
   label: string;
@@ -84,6 +86,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private searchService = inject(SearchService);
   private internalNotificationService = inject(InternalNotificationService);
   private bookingAdminService = inject(BookingAdminService);
+  private communicationService = inject(CommunicationService);
+  private toast = inject(ToastService);
 
   readonly bookOpenIcon = BookOpenIcon;
   readonly MenuIcon = MenuIcon;
@@ -109,6 +113,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly toolboxIcon = ToolboxIcon;
 
   private readonly notificationPollMs = 15_000;
+  private readonly communicationPollMs = 5_000;
   private routerEventsSubscription: Subscription | null = null;
 
   layoutDashboardIcon: LucideIconData = LayoutDashboard;
@@ -125,8 +130,13 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public notificationsLoading = signal(false);
   public notifications = signal<InternalNotification[]>([]);
   public unreadNotificationCount = signal(0);
+  public unreadCommunicationCount = signal(0);
 
   private notificationRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private communicationRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private hasLoadedCommunicationCount = false;
+  private lastUnreadCommunicationCount = 0;
+  private lastUnreadToastKey: string | null = null;
 
   public searchQuery = signal('');
   public searchOpen = signal(false);
@@ -144,7 +154,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
     { label: 'Services', route: '/services', icon: this.toolboxIcon },
-    { label: 'Inbox', route: '/communications', icon: this.inboxIcon },
     {
       label: 'Products',
       icon: this.boxesIcon,
@@ -172,9 +181,9 @@ export class AppShellComponent implements OnInit, OnDestroy {
       ]
     },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
-    { 
-      label: 'Quotes', 
-      route: '/quote-requests', 
+    {
+      label: 'Quotes',
+      route: '/quote-requests',
       icon: this.messageSquareQuoteIcon,
       badgeCount: () => this.newQuoteRequestCount()
     },
@@ -195,8 +204,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
       await Promise.all([
         this.loadInternalNotifications(),
         this.refreshNewQuoteRequestCount(),
+        this.refreshUnreadCommunicationCount({ notify: false }),
       ]);
       this.startNotificationPolling();
+      this.startCommunicationPolling();
     }
 
     this.routerEventsSubscription = this.router.events
@@ -205,6 +216,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
         if (this.auth.getAccessToken()) {
           void this.refreshNotificationsInBackground();
           void this.refreshNewQuoteRequestCount();
+          void this.refreshUnreadCommunicationCount({ notify: false });
         }
       });
   }
@@ -213,6 +225,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
     if (this.notificationRefreshTimer) {
       clearInterval(this.notificationRefreshTimer);
       this.notificationRefreshTimer = null;
+    }
+
+    if (this.communicationRefreshTimer) {
+      clearInterval(this.communicationRefreshTimer);
+      this.communicationRefreshTimer = null;
     }
 
     if (this.searchDebounceTimer) {
@@ -235,21 +252,63 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   async refreshNewQuoteRequestCount(): Promise<void> {
-  try {
-    const response = await firstValueFrom(
-      this.bookingAdminService.listQuoteRequests({ limit: 100 })
-    );
+    try {
+      const response = await firstValueFrom(
+        this.bookingAdminService.listQuoteRequests({ limit: 100 })
+      );
 
-    const count = (response.data ?? []).filter(
-      (request) => request.requestStatus === 'new'
-    ).length;
+      const count = (response.data ?? []).filter(
+        (request) => request.requestStatus === 'new'
+      ).length;
 
-    this.newQuoteRequestCount.set(count);
-  } catch (error) {
-    console.error('Failed to refresh quote request count.', error);
-    this.newQuoteRequestCount.set(0);
+      this.newQuoteRequestCount.set(count);
+    } catch (error) {
+      console.error('Failed to refresh quote request count.', error);
+      this.newQuoteRequestCount.set(0);
+    }
   }
-}
+
+  async refreshUnreadCommunicationCount(options: { notify?: boolean } = {}): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.communicationService.listConversations({ limit: 100, status: 'open' })
+      );
+
+      const conversations = response.data ?? [];
+      const count = conversations.reduce(
+        (sum, conversation) => sum + (conversation.unreadForShopCount ?? 0),
+        0,
+      );
+      const previousCount = this.lastUnreadCommunicationCount;
+
+      this.unreadCommunicationCount.set(count);
+
+      const shouldToast =
+        Boolean(options.notify) &&
+        this.hasLoadedCommunicationCount &&
+        count > previousCount &&
+        !this.isCommunicationsRoute();
+
+      if (shouldToast) {
+        this.showIncomingCommunicationToast(conversations, count);
+      }
+
+      this.lastUnreadCommunicationCount = count;
+      this.hasLoadedCommunicationCount = true;
+    } catch (error) {
+      console.error('Failed to refresh inbox unread count.', error);
+      this.unreadCommunicationCount.set(0);
+    }
+  }
+
+  goToCommunicationsInbox(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.profileMenuOpen.set(false);
+    this.notificationMenuOpen.set(false);
+    this.closeSearchDropdown();
+    this.closeSidebar();
+    this.router.navigate(['/communications']);
+  }
 
   toggleProfileMenu(event?: MouseEvent): void {
     event?.stopPropagation();
@@ -320,6 +379,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.notificationRefreshTimer = setInterval(() => {
       void this.refreshNotificationsInBackground();
     }, this.notificationPollMs);
+  }
+
+  startCommunicationPolling(): void {
+    if (this.communicationRefreshTimer) return;
+
+    this.communicationRefreshTimer = setInterval(() => {
+      void this.refreshUnreadCommunicationCount({ notify: true });
+    }, this.communicationPollMs);
   }
 
   async refreshNotificationsInBackground(): Promise<void> {
@@ -457,8 +524,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
       case 'contractor_assignment_canceled':
         return 'Contractor Canceled Repair';
-      case 'communication_message_received':
-        return 'Customer Message Received';
       default:
         return event;
     }
@@ -811,6 +876,72 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }
   }
 
+  private isCommunicationsRoute(): boolean {
+    const url = this.router.url.split('?')[0].split('#')[0];
+    return url === '/communications' || url.startsWith('/communications/');
+  }
+
+  private showIncomingCommunicationToast(
+    conversations: Array<{
+      id: string;
+      customerName: string | null;
+      customerEmail: string | null;
+      customerPhone: string | null;
+      lastMessageAt: string | null;
+      lastMessagePreview: string | null;
+      lastMessageChannel: string | null;
+      lastMessageDirection: string | null;
+      unreadForShopCount: number;
+    }>,
+    unreadCount: number,
+  ): void {
+    const conversation =
+      conversations.find(
+        (item) =>
+          (item.unreadForShopCount ?? 0) > 0 &&
+          item.lastMessageDirection === 'inbound',
+      ) ?? conversations.find((item) => (item.unreadForShopCount ?? 0) > 0);
+
+    if (!conversation) return;
+
+    const toastKey = `${conversation.id}:${conversation.lastMessageAt ?? ''}:${unreadCount}`;
+    if (toastKey === this.lastUnreadToastKey) return;
+
+    this.lastUnreadToastKey = toastKey;
+
+    const channelLabel =
+      conversation.lastMessageChannel === 'email'
+        ? 'email'
+        : conversation.lastMessageChannel === 'sms'
+          ? 'text message'
+          : 'message';
+
+    const customerLabel =
+      conversation.customerName ||
+      conversation.customerPhone ||
+      conversation.customerEmail ||
+      'Customer';
+
+    const preview = conversation.lastMessagePreview?.trim();
+
+    this.toast.action(
+      `New ${channelLabel} from ${customerLabel}`,
+      () => {
+        this.closeProfileMenu();
+        this.closeNotificationMenu();
+        this.closeSearchDropdown();
+
+        this.router.navigate(['/communications'], {
+          queryParams: {
+            conversationId: conversation.id,
+          },
+        });
+      },
+      preview ? preview.slice(0, 180) : 'Open Inbox to view the conversation.',
+      'Open',
+    );
+  }
+
   get userDisplaySubtext(): string {
     const user = this.auth.getCurrentUser();
 
@@ -838,6 +969,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     if (document.visibilityState === 'visible') {
       void this.refreshNotificationsInBackground();
       void this.refreshNewQuoteRequestCount();
+      void this.refreshUnreadCommunicationCount({ notify: true });
     }
   }
 }

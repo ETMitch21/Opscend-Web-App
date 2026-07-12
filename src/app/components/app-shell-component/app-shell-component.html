@@ -176,6 +176,19 @@
                     </div>
 
                     <div class="relative flex items-center gap-2" (click)="$event.stopPropagation()">
+                        <button type="button"
+                            class="cursor-pointer relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-app-surface text-sm font-medium transition hover:bg-app-surface-muted"
+                            (click)="goToCommunicationsInbox($event)" aria-label="Open inbox">
+                            <lucide-icon [size]="22" [img]="inboxIcon"></lucide-icon>
+
+                            @if (unreadCommunicationCount() > 0) {
+                            <span
+                                class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-bold leading-none text-white ring-2 ring-app-surface">
+                                {{ unreadCommunicationCount() > 9 ? '9+' : unreadCommunicationCount() }}
+                            </span>
+                            }
+                        </button>
+
                         <div class="relative">
                             <button type="button"
                                 class="cursor-pointer relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-app-surface text-sm font-medium transition hover:bg-app-surface-muted"

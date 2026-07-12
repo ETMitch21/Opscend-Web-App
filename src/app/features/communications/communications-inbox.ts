@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -35,7 +35,10 @@ import { PhonePipe } from '../../core/pipes/phone-pipe';
   templateUrl: './communications-inbox.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CommunicationsInbox implements OnInit {
+export class CommunicationsInbox implements OnInit, OnDestroy {
+  @ViewChild('messageScrollContainer')
+  private messageScrollContainer?: ElementRef<HTMLElement>;
+
   private readonly communicationApi = inject(CommunicationService);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
@@ -69,8 +72,13 @@ export class CommunicationsInbox implements OnInit {
 
   readonly selectedMessages = computed(() => this.selectedConversation()?.messages ?? []);
 
+  private readonly inboxPollMs = 4_000;
+  private inboxRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private backgroundRefreshRunning = false;
+
   async ngOnInit(): Promise<void> {
     await this.loadConversations();
+    this.startInboxAutoRefresh();
 
     const quoteId = this.route.snapshot.queryParamMap.get('quoteId');
     const conversationId = this.route.snapshot.queryParamMap.get('conversationId');
@@ -87,6 +95,79 @@ export class CommunicationsInbox implements OnInit {
 
     const first = this.conversations()[0];
     if (first) await this.openConversation(first);
+  }
+
+
+  ngOnDestroy(): void {
+    if (this.inboxRefreshTimer) {
+      clearInterval(this.inboxRefreshTimer);
+      this.inboxRefreshTimer = null;
+    }
+  }
+
+  private startInboxAutoRefresh(): void {
+    if (this.inboxRefreshTimer) return;
+
+    this.inboxRefreshTimer = setInterval(() => {
+      void this.refreshInBackground();
+    }, this.inboxPollMs);
+  }
+
+  private async refreshInBackground(): Promise<void> {
+    if (this.backgroundRefreshRunning || this.sending()) return;
+
+    this.backgroundRefreshRunning = true;
+
+    try {
+      const response = await firstValueFrom(
+        this.communicationApi.listConversations({
+          limit: 50,
+          q: this.searchTerm().trim() || undefined,
+          status: 'open',
+        }),
+      );
+
+      this.reconcileConversationList(response.data ?? []);
+      this.nextCursor.set(response.nextCursor ?? null);
+
+      const selectedId = this.selectedConversation()?.id;
+      if (!selectedId) return;
+
+      const threadResponse = await firstValueFrom(
+        this.communicationApi.getConversation(selectedId),
+      );
+
+      const previousThreadSignature = this.conversationThreadSignature(
+        this.selectedConversation(),
+      );
+      const nextThreadSignature = this.conversationThreadSignature(
+        threadResponse.data,
+      );
+      const previousLastMessageId = this.selectedMessages().at(-1)?.id ?? null;
+      const nextLastMessageId = threadResponse.data.messages?.at(-1)?.id ?? null;
+
+      if (previousThreadSignature !== nextThreadSignature) {
+        this.selectedConversation.set(threadResponse.data);
+
+        if (previousLastMessageId !== nextLastMessageId) {
+          this.scheduleScrollToBottom();
+        }
+      }
+
+      if (this.activeChannel() === 'sms' && !this.canSendSms(threadResponse.data)) {
+        this.activeChannel.set('email');
+      }
+      if (this.activeChannel() === 'email' && !this.canSendEmail(threadResponse.data) && this.canSendSms(threadResponse.data)) {
+        this.activeChannel.set('sms');
+      }
+
+      this.upsertConversation(threadResponse.data);
+      await this.markSelectedRead();
+    } catch (error) {
+      console.error('Failed to refresh inbox in background.', error);
+    } finally {
+      this.backgroundRefreshRunning = false;
+    }
   }
 
   async refresh(): Promise<void> {
@@ -131,6 +212,7 @@ export class CommunicationsInbox implements OnInit {
       this.selectedConversation.set(response.data);
       this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
       this.upsertConversation(response.data);
+      this.scheduleScrollToBottom();
       await this.markSelectedRead();
     } catch (error) {
       console.error(error);
@@ -153,6 +235,7 @@ export class CommunicationsInbox implements OnInit {
       this.selectedConversation.set(response.data);
       this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
       this.upsertConversation(response.data);
+      this.scheduleScrollToBottom();
       await this.markSelectedRead();
     } catch (error) {
       console.error(error);
@@ -172,6 +255,7 @@ export class CommunicationsInbox implements OnInit {
       );
       this.selectedConversation.set(response.data);
       this.upsertConversation(response.data);
+      this.scheduleScrollToBottom();
     } catch (error) {
       console.error(error);
     }
@@ -221,6 +305,7 @@ export class CommunicationsInbox implements OnInit {
 
       this.selectedConversation.set(next);
       this.upsertConversation(next);
+      this.scheduleScrollToBottom();
       this.composeBody.set('');
       if (channel === 'email') this.composeSubject.set('');
       this.toast.success(channel === 'email' ? 'Email sent' : 'SMS sent');
@@ -296,18 +381,155 @@ export class CommunicationsInbox implements OnInit {
     }).format(new Date(value));
   }
 
-  private upsertConversation(conversation: CommunicationConversation): void {
-    this.conversations.update((items) => {
-      const existing = items.find((item) => item.id === conversation.id);
-      const next = existing
-        ? items.map((item) => (item.id === conversation.id ? { ...item, ...conversation, messages: undefined } : item))
-        : [{ ...conversation, messages: undefined }, ...items];
 
-      return next.sort((a, b) => {
-        const aDate = new Date(a.lastMessageAt || a.updatedAt || a.createdAt).getTime();
-        const bDate = new Date(b.lastMessageAt || b.updatedAt || b.createdAt).getTime();
-        return bDate - aDate;
-      });
+  private scheduleScrollToBottom(delayMs = 50): void {
+    window.setTimeout(() => this.scrollMessagesToBottom(), delayMs);
+  }
+
+  private scrollMessagesToBottom(): void {
+    const element = this.messageScrollContainer?.nativeElement;
+    if (!element) return;
+
+    element.scrollTo({
+      top: element.scrollHeight,
+      behavior: 'smooth',
     });
+  }
+
+  private upsertConversation(conversation: CommunicationConversation): void {
+    const incoming = this.conversationListItem(conversation);
+
+    this.conversations.update((items) => {
+      const existing = items.find((item) => item.id === incoming.id);
+      const next = existing
+        ? items.map((item) =>
+          item.id === incoming.id
+            ? this.conversationSummarySignature(item) === this.conversationSummarySignature(incoming)
+              ? item
+              : incoming
+            : item,
+        )
+        : [incoming, ...items];
+
+      const sorted = this.sortConversationList(next);
+      return this.conversationListSignature(items) === this.conversationListSignature(sorted)
+        ? items
+        : sorted;
+    });
+  }
+
+  private reconcileConversationList(incoming: CommunicationConversation[]): void {
+    this.conversations.update((current) => {
+      const currentById = new Map(current.map((item) => [item.id, item]));
+      const next = incoming.map((conversation) => {
+        const listItem = this.conversationListItem(conversation);
+        const existing = currentById.get(listItem.id);
+
+        if (
+          existing &&
+          this.conversationSummarySignature(existing) === this.conversationSummarySignature(listItem)
+        ) {
+          return existing;
+        }
+
+        return listItem;
+      });
+
+      const sorted = this.sortConversationList(next);
+      return this.conversationListSignature(current) === this.conversationListSignature(sorted)
+        ? current
+        : sorted;
+    });
+  }
+
+  private conversationListItem(
+    conversation: CommunicationConversation,
+  ): CommunicationConversation {
+    return {
+      ...conversation,
+      messages: undefined,
+    };
+  }
+
+  private sortConversationList(
+    conversations: CommunicationConversation[],
+  ): CommunicationConversation[] {
+    return [...conversations].sort((a, b) => {
+      const aDate = new Date(a.lastMessageAt || a.updatedAt || a.createdAt).getTime();
+      const bDate = new Date(b.lastMessageAt || b.updatedAt || b.createdAt).getTime();
+      return bDate - aDate;
+    });
+  }
+
+  private conversationListSignature(
+    conversations: CommunicationConversation[],
+  ): string {
+    return conversations.map((conversation) => this.conversationSummarySignature(conversation)).join('|');
+  }
+
+  private conversationSummarySignature(
+    conversation: CommunicationConversation,
+  ): string {
+    return [
+      conversation.id,
+      conversation.status,
+      conversation.customerId ?? '',
+      conversation.customerName ?? '',
+      conversation.customerEmail ?? '',
+      conversation.customerPhone ?? '',
+      conversation.subject ?? '',
+      conversation.publicRepairQuoteId ?? '',
+      conversation.repairId ?? '',
+      conversation.lastMessageAt ?? '',
+      conversation.lastInboundAt ?? '',
+      conversation.lastOutboundAt ?? '',
+      conversation.unreadForShopCount,
+      conversation.lastMessagePreview ?? '',
+      conversation.lastMessageChannel ?? '',
+      conversation.lastMessageDirection ?? '',
+      conversation.quote?.id ?? '',
+      conversation.quote?.status ?? '',
+      conversation.quote?.estimatedTotalCents ?? '',
+      conversation.quote?.depositRequired ?? '',
+      conversation.quote?.depositAmountCents ?? '',
+      conversation.quote?.depositPaidAt ?? '',
+      conversation.quote?.deviceLabel ?? '',
+      conversation.quote?.repairLabel ?? '',
+      conversation.repair?.id ?? '',
+      conversation.repair?.status ?? '',
+      conversation.repair?.problemSummary ?? '',
+      conversation.updatedAt,
+    ].join('::');
+  }
+
+  private conversationThreadSignature(
+    conversation: CommunicationConversation | null,
+  ): string {
+    if (!conversation) return '';
+
+    const messages = conversation.messages ?? [];
+
+    return [
+      this.conversationSummarySignature(conversation),
+      ...messages.map((message) => [
+        message.id,
+        message.status,
+        message.subject ?? '',
+        message.body,
+        message.fromName ?? '',
+        message.fromEmail ?? '',
+        message.fromPhone ?? '',
+        message.toName ?? '',
+        message.toEmail ?? '',
+        message.toPhone ?? '',
+        message.providerMessageId ?? '',
+        message.errorMessage ?? '',
+        message.readAt ?? '',
+        message.sentAt ?? '',
+        message.receivedAt ?? '',
+        message.failedAt ?? '',
+        message.createdAt,
+      ].join('::')),
+    ].join('|');
   }
 }

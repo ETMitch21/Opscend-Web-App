@@ -18,6 +18,41 @@ export class ToastService {
     toast(message, { description });
   }
 
+  infoAction(
+    message: string,
+    description: string | undefined,
+    actionLabel: string,
+    onClick: () => void,
+    duration = 10000,
+  ) {
+    toast(message, {
+      description,
+      duration,
+      action: {
+        label: actionLabel,
+        onClick: () => onClick(),
+      },
+    });
+  }
+
+  action(
+    message: string,
+    onClick: () => void | Promise<void>,
+    description?: string,
+    actionLabel = 'Open',
+  ) {
+    toast(message, {
+      description,
+      duration: 10000,
+      action: {
+        label: actionLabel,
+        onClick: () => {
+          void onClick();
+        },
+      },
+    });
+  }
+
   loading(message: string) {
     return toast.loading(message);
   }
