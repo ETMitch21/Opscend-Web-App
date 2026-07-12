@@ -7,7 +7,7 @@ import {
   signal,
 } from "@angular/core";
 import { CommonModule, DatePipe } from "@angular/common";
-import { RouterLink } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { debounceTime, firstValueFrom } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -75,10 +75,12 @@ interface QuoteTimelineItem {
 })
 export class QuoteRequestsOverview {
   private readonly bookingApi = inject(BookingAdminService);
+  private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private pendingAutoSave = false;
+  private pendingQuoteRequestId: string | null = null;
   private autoSaveToastId: string | number | undefined;
 
   readonly chevronDownIcon = ChevronDownIcon;
@@ -198,6 +200,13 @@ export class QuoteRequestsOverview {
   });
 
   ngOnInit(): void {
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        this.pendingQuoteRequestId = params.get("quoteRequestId");
+        this.tryOpenPendingQuoteRequest();
+      });
+
     void this.loadRequests();
 
     this.quoteForm.valueChanges
@@ -224,6 +233,7 @@ export class QuoteRequestsOverview {
 
       this.requests.set(response.data);
       this.nextCursor.set(response.nextCursor);
+      this.tryOpenPendingQuoteRequest();
     } catch (error) {
       console.error(error);
       this.error.set("Failed to load quote requests.");
@@ -248,6 +258,7 @@ export class QuoteRequestsOverview {
 
       this.requests.update((current) => [...current, ...response.data]);
       this.nextCursor.set(response.nextCursor);
+      this.tryOpenPendingQuoteRequest();
     } catch (error) {
       console.error(error);
       this.error.set("Failed to load more quote requests.");
@@ -319,6 +330,16 @@ export class QuoteRequestsOverview {
     this.activeDrawerTab.set("summary");
     this.drawerError.set(null);
     this.copySuccess.set(false);
+  }
+
+  private tryOpenPendingQuoteRequest(): void {
+    const id = this.pendingQuoteRequestId;
+    if (!id || this.selectedRequestId() === id) return;
+
+    const request = this.requests().find((item) => item.id === id);
+    if (!request) return;
+
+    this.openRequest(request);
   }
 
   async markContacted(request: BookingQuoteRequest): Promise<void> {

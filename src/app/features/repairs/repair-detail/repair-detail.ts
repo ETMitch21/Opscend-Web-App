@@ -21,10 +21,12 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Clipboard,
   ChevronDown,
   ChevronLeftIcon,
   Clock3,
   Copy,
+  DollarSign,
   ExternalLink,
   Grip,
   LockKeyhole,
@@ -196,7 +198,9 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly icons = {
     ArrowLeft,
     ArrowRight,
+    Clipboard,
     Copy,
+    DollarSign,
     ExternalLink,
     RefreshCw,
     Paperclip,
@@ -327,6 +331,17 @@ export class RepairDetail implements OnInit, OnDestroy {
     if (!payout) return 'No payout yet';
 
     return `${this.formatMoney(payout.totalCents)} • ${this.prettyPayoutStatus(payout.status)}`;
+  });
+
+  readonly sourceQuote = computed(() => this.repair()?.sourceQuote ?? null);
+  readonly sourceConversation = computed(
+    () => this.repair()?.communicationConversation ?? null
+  );
+  readonly sourceQuotePublicUrl = computed(() => {
+    const token = this.sourceQuote()?.publicApprovalToken;
+    if (!token) return null;
+
+    return `${window.location.origin}/quote/${encodeURIComponent(token)}`;
   });
 
   readonly hasOrder = computed(() => !!this.repair()?.orderId);
@@ -1685,6 +1700,77 @@ export class RepairDetail implements OnInit, OnDestroy {
     void this.router.navigate(['/contractor-payouts'], {
       queryParams: payout?.repairId ? { repairId: payout.repairId } : undefined,
     });
+  }
+
+
+  openSourceQuote(): void {
+    const quote = this.sourceQuote();
+    if (!quote) return;
+
+    void this.router.navigate(['/quote-requests'], {
+      queryParams: { quoteRequestId: quote.id },
+    });
+  }
+
+  openSourceConversation(): void {
+    const conversation = this.sourceConversation();
+    if (!conversation) return;
+
+    void this.router.navigate(['/communications'], {
+      queryParams: { conversationId: conversation.id },
+    });
+  }
+
+  openSourceQuotePublicLink(): void {
+    const url = this.sourceQuotePublicUrl();
+    if (!url) return;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  async copySourceQuotePublicLink(): Promise<void> {
+    const url = this.sourceQuotePublicUrl();
+    if (!url) {
+      this.toast.error('Quote link unavailable', 'This quote does not have a public approval link.');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      this.toast.success('Quote link copied', 'The original quote approval link was copied.');
+    } catch {
+      this.toast.error('Copy failed', 'Your browser blocked clipboard access.');
+    }
+  }
+
+  prettyQuoteStatus(status: string | null | undefined): string {
+    if (!status) return 'Unknown';
+    return status.replaceAll('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+  }
+
+  quoteStatusPillClasses(status: string | null | undefined): string {
+    switch (status) {
+      case 'converted':
+      case 'deposit_paid':
+      case 'accepted':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'deposit_pending':
+      case 'sent':
+        return 'border-sky-200 bg-sky-50 text-sky-700';
+      case 'declined':
+      case 'canceled':
+        return 'border-rose-200 bg-rose-50 text-rose-700';
+      default:
+        return 'border-gray-200 bg-gray-50 text-gray-600';
+    }
+  }
+
+  sourceQuoteDepositLabel(): string {
+    const quote = this.sourceQuote();
+    if (!quote) return '—';
+    if (!quote.depositRequired) return 'Not required';
+    if (quote.depositPaidAt) return `Paid ${this.formatMoney(quote.depositPaidAmountCents ?? quote.depositAmountCents)}`;
+    return `Required ${this.formatMoney(quote.depositAmountCents)}`;
   }
 
   prettyStatus(status: string | null | undefined): string {

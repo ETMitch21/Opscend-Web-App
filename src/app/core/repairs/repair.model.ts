@@ -111,6 +111,53 @@ export interface RepairAppointment {
   updatedAt: string;
 }
 
+export type RepairSourceQuoteStatus =
+  | 'draft'
+  | 'quote_requested'
+  | 'quoted'
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'deposit_pending'
+  | 'deposit_paid'
+  | 'scheduled'
+  | 'converted'
+  | 'expired'
+  | 'canceled'
+  | string;
+
+export interface RepairSourceQuote {
+  id: string;
+  status: RepairSourceQuoteStatus;
+  repairNeed: {
+    id: string;
+    label: string;
+    code: string;
+  } | null;
+  deviceLabel: string;
+  serviceMode: RepairServiceMode;
+  estimatedTotalCents: number | null;
+  depositRequired: boolean;
+  depositAmountCents: number | null;
+  depositPaidAt: string | null;
+  depositPaidAmountCents: number | null;
+  depositPaidCurrency: string | null;
+  publicApprovalToken: string | null;
+  quoteSentAt: string | null;
+  acceptedAt: string | null;
+  convertedAt: string | null;
+  customerMessage: string | null;
+  internalNotes: string | null;
+}
+
+export interface RepairCommunicationConversationSummary {
+  id: string;
+  subject: string | null;
+  status: string;
+  unreadForShopCount: number;
+  lastMessageAt: string | null;
+}
+
 export interface Repair {
   id: string;
   shopId: string;
@@ -120,6 +167,9 @@ export interface Repair {
 
   customer?: any;
   customerDevice?: any;
+
+  sourceQuote?: RepairSourceQuote | null;
+  communicationConversation?: RepairCommunicationConversationSummary | null;
 
   status: RepairStatus;
 
