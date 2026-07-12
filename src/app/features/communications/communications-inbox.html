@@ -1,4 +1,4 @@
-<div class="flex h-[calc(100vh-7rem)] overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-sm">
+<div class="-m-4 flex h-[calc(100vh-4rem)] overflow-hidden bg-app-surface">
   <aside class="flex w-full max-w-md flex-col border-r border-app-border bg-app-surface">
     <div class="border-b border-app-border p-5">
       <div class="flex items-start justify-between gap-3">
@@ -210,9 +210,10 @@
         <div class="mb-3 flex flex-wrap items-center gap-2">
           <button
             type="button"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition"
+            class="inline-flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
             [ngClass]="activeChannel() === 'sms' ? 'bg-gray-900 text-white' : 'bg-app-surface-muted text-app-text-muted hover:text-app-text'"
             [disabled]="!canSendSms(conversation)"
+            [title]="!canSendSms(conversation) ? smsUnavailableText(conversation) : ''"
             (click)="setChannel('sms')"
           >
             <lucide-icon [name]="icons.Phone" class="h-4 w-4"></lucide-icon>
@@ -230,7 +231,7 @@
           </button>
 
           @if (activeChannel() === 'sms' && !canSendSms(conversation)) {
-            <span class="text-xs font-medium text-amber-700">No customer phone on this conversation.</span>
+            <span class="text-xs font-medium text-amber-700">{{ smsUnavailableText(conversation) }}</span>
           }
           @if (activeChannel() === 'email' && !canSendEmail(conversation)) {
             <span class="text-xs font-medium text-amber-700">No customer email on this conversation.</span>
@@ -251,14 +252,15 @@
           <textarea
             rows="3"
             class="min-h-20 flex-1 resize-none rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm leading-6 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-            [placeholder]="activeChannel() === 'email' ? 'Write an email...' : 'Write an SMS...'"
+            [placeholder]="composePlaceholder(conversation)"
+            [disabled]="!canSendActiveChannel(conversation)"
             [ngModel]="composeBody()"
             (ngModelChange)="composeBody.set($event)"
           ></textarea>
           <button
             type="button"
             class="inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-brand px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="sending() || !composeBody().trim()"
+            [disabled]="sending() || !composeBody().trim() || !canSendActiveChannel(conversation)"
             (click)="sendMessage()"
           >
             @if (sending()) {

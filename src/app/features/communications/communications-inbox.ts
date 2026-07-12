@@ -274,7 +274,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     }
 
     if (channel === 'sms' && !this.canSendSms(conversation)) {
-      this.toast.error('Customer phone required', 'Add a phone number before sending SMS.');
+      this.toast.error('SMS unavailable', this.smsUnavailableText(conversation));
       return;
     }
 
@@ -331,7 +331,48 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   canSendSms(conversation: CommunicationConversation): boolean {
-    return Boolean(conversation.customerPhone);
+    return Boolean(conversation.customerPhone && conversation.smsEnabled);
+  }
+
+  canSendActiveChannel(conversation: CommunicationConversation): boolean {
+    return this.activeChannel() === 'sms'
+      ? this.canSendSms(conversation)
+      : this.canSendEmail(conversation);
+  }
+
+  smsUnavailableText(conversation: CommunicationConversation): string {
+    if (!conversation.customerPhone) return 'Customer phone required.';
+
+    switch (conversation.smsUnavailableReason) {
+      case 'sms_not_enabled_for_shop':
+        return 'SMS is not enabled for this shop. Turn it on in Shop Settings > Communications.';
+      case 'shop_twilio_number_required':
+        return 'A Twilio phone number is required before SMS can be sent.';
+      case 'customer_phone_required':
+        return 'Customer phone required.';
+      default:
+        return conversation.smsEnabled
+          ? ''
+          : 'SMS is not available for this shop.';
+    }
+  }
+
+  activeChannelUnavailableText(conversation: CommunicationConversation): string | null {
+    if (this.activeChannel() === 'sms' && !this.canSendSms(conversation)) {
+      return this.smsUnavailableText(conversation);
+    }
+
+    if (this.activeChannel() === 'email' && !this.canSendEmail(conversation)) {
+      return 'Customer email required.';
+    }
+
+    return null;
+  }
+
+  composePlaceholder(conversation: CommunicationConversation): string {
+    const unavailable = this.activeChannelUnavailableText(conversation);
+    if (unavailable) return unavailable;
+    return this.activeChannel() === 'email' ? 'Write an email...' : 'Write an SMS...';
   }
 
   conversationTitle(conversation: CommunicationConversation): string {

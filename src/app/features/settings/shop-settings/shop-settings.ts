@@ -55,6 +55,10 @@ interface ShopResponse {
     customerExperience: {
       publicRepairTrackingEnabled: boolean;
     };
+    communications: {
+      smsEnabled: boolean;
+      twilioPhoneNumber: string | null;
+    };
     pos: {
       orders: {
         prefix: string | null;
@@ -186,6 +190,8 @@ export class ShopSettings implements OnInit {
 
   bookingEnabled = false;
   publicRepairTrackingEnabled = false;
+  smsEnabled = false;
+  twilioPhoneNumber = '';
   orderPrefix = '';
   orderStartNumber: number | null = 1;
   orderPadding: number | null = 4;
@@ -272,6 +278,8 @@ export class ShopSettings implements OnInit {
       this.bookingEnabled = !!shop.settings?.booking?.enabled;
       this.publicRepairTrackingEnabled =
         !!shop.settings?.customerExperience?.publicRepairTrackingEnabled;
+      this.smsEnabled = !!shop.settings?.communications?.smsEnabled;
+      this.twilioPhoneNumber = shop.settings?.communications?.twilioPhoneNumber ?? '';
       this.orderPrefix = shop.settings?.pos?.orders?.prefix ?? '';
       this.orderStartNumber = shop.settings?.pos?.orders?.startNumber ?? 1;
       this.orderPadding = shop.settings?.pos?.orders?.padding ?? 4;
@@ -397,6 +405,14 @@ export class ShopSettings implements OnInit {
         return;
       }
 
+      const normalizedTwilioPhoneNumber = this.twilioPhoneNumber.trim();
+
+      if (this.smsEnabled && !/^\+\d{10,15}$/.test(normalizedTwilioPhoneNumber)) {
+        this.error.set('Twilio SMS number must be in E.164 format, like +18165551234.');
+        this.saving.set(false);
+        return;
+      }
+
       if (this.onsiteEnabled) {
         if (this.onsiteTripFeeEnabled) {
           if (
@@ -454,6 +470,10 @@ export class ShopSettings implements OnInit {
             },
             customerExperience: {
               publicRepairTrackingEnabled: this.publicRepairTrackingEnabled,
+            },
+            communications: {
+              smsEnabled: this.smsEnabled,
+              twilioPhoneNumber: normalizedTwilioPhoneNumber || null,
             },
             pos: {
               orders: {

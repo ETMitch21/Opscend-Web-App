@@ -68,6 +68,8 @@ export interface CommunicationConversation {
   lastInboundAt: string | null;
   lastOutboundAt: string | null;
   unreadForShopCount: number;
+  smsEnabled: boolean;
+  smsUnavailableReason: string | null;
   lastMessagePreview: string | null;
   lastMessageChannel: CommunicationChannel | null;
   lastMessageDirection: CommunicationDirection | null;
