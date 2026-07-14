@@ -87,6 +87,12 @@ export class CommunicationService {
     );
   }
 
+  deleteConversation(id: string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}`,
+    );
+  }
+
   sendEmailMessage(
     id: string,
     payload: CommunicationMessageCreate,

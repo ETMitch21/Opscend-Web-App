@@ -24,6 +24,9 @@ import {
   UserRound,
   Search,
   Send,
+  Trash2,
+  AlertTriangle,
+  PlusCircle,
 } from 'lucide-angular';
 
 import { CommunicationService } from '../../core/communications/service';
@@ -71,6 +74,9 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     UserRound,
     Search,
     Send,
+    Trash2,
+    AlertTriangle,
+    PlusCircle,
   };
 
   readonly conversations = signal<CommunicationConversation[]>([]);
@@ -81,7 +87,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly conversationActionRunning = signal(false);
   readonly error = signal<string | null>(null);
   readonly searchTerm = signal('');
-  readonly conversationStatusFilter = signal<'open' | 'archived'>('open');
+  readonly conversationStatusFilter = signal<'open' | 'archived' | 'all'>('open');
   readonly activeChannel = signal<'email' | 'sms' | 'note'>('sms');
   readonly composeSubject = signal('');
   readonly composeBody = signal('');
@@ -137,6 +143,19 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   });
 
   readonly selectedRelatedDevices = computed(() => this.selectedConversation()?.relatedDevices ?? []);
+
+  readonly selectedDeliveryWarnings = computed(() =>
+    (this.selectedConversation()?.messages ?? []).filter((message) =>
+      message.direction === 'outbound' &&
+      message.channel === 'email' &&
+      ['failed', 'bounced', 'complained', 'rejected', 'delayed'].includes(String(message.status)),
+    ),
+  );
+
+  readonly visibleConversationCount = computed(() => this.conversations().length);
+  readonly totalUnreadCount = computed(() =>
+    this.conversations().reduce((total, conversation) => total + (conversation.unreadForShopCount || 0), 0),
+  );
 
   private readonly inboxPollMs = 4_000;
   private inboxRefreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -428,7 +447,13 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     this.searchTerm.set(value);
   }
 
-  async setConversationStatusFilter(status: 'open' | 'archived'): Promise<void> {
+  async clearSearch(): Promise<void> {
+    if (!this.searchTerm().trim()) return;
+    this.searchTerm.set('');
+    await this.loadConversations();
+  }
+
+  async setConversationStatusFilter(status: 'open' | 'archived' | 'all'): Promise<void> {
     if (this.conversationStatusFilter() === status) return;
 
     this.conversationStatusFilter.set(status);
@@ -478,6 +503,31 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       console.error(error);
       this.toast.error('Conversation not reopened', 'Unable to reopen this conversation.');
       this.error.set('Could not reopen this conversation.');
+    } finally {
+      this.conversationActionRunning.set(false);
+    }
+  }
+
+  async deleteSelectedConversation(): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.conversationActionRunning()) return;
+
+    const confirmed = window.confirm(
+      'Delete this conversation and its message history? This cannot be undone.',
+    );
+    if (!confirmed) return;
+
+    this.conversationActionRunning.set(true);
+    this.error.set(null);
+
+    try {
+      await firstValueFrom(this.communicationApi.deleteConversation(conversation.id));
+      await this.removeConversationFromCurrentList(conversation.id);
+      this.toast.success('Conversation deleted', 'The conversation was removed from the inbox.');
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Conversation not deleted', 'Unable to delete this conversation.');
+      this.error.set('Could not delete this conversation.');
     } finally {
       this.conversationActionRunning.set(false);
     }
@@ -583,6 +633,66 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     if (channel === 'note') return 'Note';
     if (channel === 'system') return 'System';
     return 'Message';
+  }
+
+  messageStatusLabel(status: string | null | undefined): string | null {
+    switch (status) {
+      case 'queued':
+        return 'Queued';
+      case 'sent':
+        return 'Sent';
+      case 'delivered':
+        return 'Delivered';
+      case 'opened':
+        return 'Opened';
+      case 'clicked':
+        return 'Clicked';
+      case 'delayed':
+        return 'Delayed';
+      case 'failed':
+        return 'Failed';
+      case 'bounced':
+        return 'Bounced';
+      case 'complained':
+        return 'Spam complaint';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return null;
+    }
+  }
+
+  messageStatusPillClass(status: string | null | undefined): string {
+    switch (status) {
+      case 'delivered':
+      case 'opened':
+      case 'clicked':
+        return 'bg-emerald-100 text-emerald-800 ring-emerald-200';
+      case 'queued':
+      case 'sent':
+      case 'delayed':
+        return 'bg-amber-100 text-amber-800 ring-amber-200';
+      case 'failed':
+      case 'bounced':
+      case 'complained':
+      case 'rejected':
+        return 'bg-rose-100 text-rose-800 ring-rose-200';
+      default:
+        return 'bg-white/15 text-current ring-white/20';
+    }
+  }
+
+  timelineStatusLabel(item: CommunicationTimelineItem): string | null {
+    if (item.direction !== 'outbound' || item.channel !== 'email') return null;
+    return this.messageStatusLabel(item.status);
+  }
+
+  timelineStatusPillClass(item: CommunicationTimelineItem): string {
+    return this.messageStatusPillClass(item.status);
+  }
+
+  timelineHasDeliveryProblem(item: CommunicationTimelineItem): boolean {
+    return ['failed', 'bounced', 'complained', 'rejected', 'delayed'].includes(String(item.status));
   }
 
   messageSender(message: CommunicationMessage): string {

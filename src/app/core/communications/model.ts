@@ -15,6 +15,12 @@ export type CommunicationMessageStatus =
   | 'delivered'
   | 'failed'
   | 'received'
+  | 'bounced'
+  | 'complained'
+  | 'rejected'
+  | 'delayed'
+  | 'opened'
+  | 'clicked'
   | string;
 export type CommunicationConversationStatus = 'open' | 'archived' | string;
 
