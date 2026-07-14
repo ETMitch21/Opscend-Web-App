@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
@@ -17,6 +18,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import {
   BadgeDollarSign,
@@ -43,9 +45,11 @@ import {
   CreateOrderItemPayload,
   Order,
   OrderItemType,
+  OrderPayment,
   PaymentMethod,
 } from '../../../../core/orders/orders-model';
-import { ProductsStore } from '../../../../core/products/products-store';
+import { ProductsService } from '../../../../core/products/products-service';
+import { ServicesService } from '../../../../core/services/service';
 import { StripeService } from '../../../../core/stripe/stripe-service';
 import type { StripeStatusResponse } from '../../../../core/stripe/stripe-model';
 import { ToastService } from '../../../../core/toast/toast-service';
@@ -76,8 +80,10 @@ export class RepairOrderCard {
   readonly createRequested = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
   readonly ordersStore = inject(OrdersStore);
-  readonly productsStore = inject(ProductsStore);
+  private readonly productsService = inject(ProductsService);
+  private readonly servicesService = inject(ServicesService);
   private readonly stripeService = inject(StripeService);
   private readonly toast = inject(ToastService);
 
@@ -95,6 +101,7 @@ export class RepairOrderCard {
   readonly showRefundForm = signal(false);
   readonly searchFocused = signal(false);
   readonly expandedItemIndex = signal<number | null>(null);
+  readonly paymentsExpanded = signal(false);
 
   readonly paymentMethod = signal<PaymentMethod>('card');
   readonly refundMethod = signal<PaymentMethod>('card');
@@ -122,6 +129,7 @@ export class RepairOrderCard {
   readonly saving = this.ordersStore.selectedOrderSaving;
   readonly error = this.ordersStore.selectedOrderError;
   readonly moneyLocked = this.ordersStore.orderLockedByMoney;
+  readonly itemsLocked = this.ordersStore.orderItemsLocked;
 
   readonly stripeAvailable = computed(() => {
     const status = this.stripeStatus();
@@ -133,18 +141,14 @@ export class RepairOrderCard {
     return !!status?.connected && !status?.chargesEnabled;
   });
 
-  readonly products = computed<CatalogItemOption[]>(() =>
-    this.productsStore.activeProducts().map((product) => ({
-      id: product.id,
-      type: 'product',
-      name: product.name,
-      description: product.sku ? `Product SKU: ${product.sku}` : null,
-      priceCents: Number(product.price ?? 0),
-      sku: product.sku ?? null,
-    }))
-  );
+  readonly catalogLoading = signal(false);
+  readonly catalogLoadFailed = signal(false);
 
-  readonly services = computed<CatalogItemOption[]>(() => []);
+  private readonly productCatalogItems = signal<CatalogItemOption[]>([]);
+  private readonly serviceCatalogItems = signal<CatalogItemOption[]>([]);
+
+  readonly products = computed<CatalogItemOption[]>(() => this.productCatalogItems());
+  readonly services = computed<CatalogItemOption[]>(() => this.serviceCatalogItems());
 
   readonly itemSearchControl = new FormControl('', { nonNullable: true });
 
@@ -169,6 +173,8 @@ export class RepairOrderCard {
 
   readonly itemsArray = computed(() => this.itemsForm.controls.items as FormArray);
 
+  private readonly itemsFormRevision = signal(0);
+
   readonly catalogItems = computed(() => [...this.products(), ...this.services()]);
 
   readonly filteredCatalogItems = computed(() => {
@@ -187,6 +193,7 @@ export class RepairOrderCard {
   });
 
   readonly draftSubtotalCents = computed(() => {
+    this.itemsFormRevision();
     const rows = this.itemRowsRawValue();
     return rows.reduce((sum, row) => {
       const quantity = Number(row.quantity ?? 0);
@@ -196,6 +203,7 @@ export class RepairOrderCard {
   });
 
   readonly draftDiscountCents = computed(() => {
+    this.itemsFormRevision();
     const subtotal = this.draftSubtotalCents();
     const discount = this.toCents(this.itemsForm.controls.discountDollars.value ?? 0);
     return Math.min(Math.max(0, discount), subtotal);
@@ -205,7 +213,30 @@ export class RepairOrderCard {
     Math.max(0, this.draftSubtotalCents() - this.draftDiscountCents())
   );
 
+  readonly draftBalanceCents = computed(() =>
+    Math.max(0, this.draftTotalCents() - this.netPaidCents())
+  );
+
+  readonly balanceSummaryCents = computed(() =>
+    this.hasUnsavedItemChanges()
+      ? this.draftBalanceCents()
+      : Math.max(0, this.order()?.totals.balanceCents ?? 0)
+  );
+
+  readonly hasUnsavedItemChanges = computed(() => {
+    const order = this.order();
+    if (!order || !this.canEditItems()) return false;
+
+    return this.draftOrderSignature() !== this.persistedOrderSignature(order);
+  });
+
   constructor() {
+    void this.loadCatalogItems();
+
+    this.itemsForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.bumpDraftTotals());
+
     effect(() => {
       const orderId = this.orderId();
       if (orderId) {
@@ -259,6 +290,71 @@ export class RepairOrderCard {
     });
 
     void this.loadStripeStatus();
+  }
+
+  async loadCatalogItems(): Promise<void> {
+    if (this.catalogLoading()) return;
+
+    this.catalogLoading.set(true);
+    this.catalogLoadFailed.set(false);
+
+    const [productsResult, servicesResult] = await Promise.allSettled([
+      firstValueFrom(this.productsService.list({ status: 'active', limit: 150 })),
+      firstValueFrom(this.servicesService.listActive(150)),
+    ]);
+
+    if (productsResult.status === 'fulfilled') {
+      this.productCatalogItems.set(
+        (productsResult.value.data ?? [])
+          .filter((product: any) => product?.status === 'active')
+          .map((product: any) => ({
+            id: product.id,
+            type: 'product' as CatalogItemType,
+            name: product.name,
+            description: product.sku ? `Product SKU: ${product.sku}` : null,
+            priceCents: Number(product.price ?? product.priceCents ?? 0),
+            sku: product.sku ?? null,
+          }))
+      );
+    } else {
+      this.productCatalogItems.set([]);
+    }
+
+    if (servicesResult.status === 'fulfilled') {
+      this.serviceCatalogItems.set(
+        (servicesResult.value ?? [])
+          .filter((service: any) => service?.status === 'active')
+          .map((service: any) => ({
+            id: service.id,
+            type: 'service' as CatalogItemType,
+            name: service.name,
+            description: [
+              service.code ? `Service Code: ${service.code}` : null,
+              service.duration != null ? `${service.duration} min` : null,
+              service.description ?? null,
+            ].filter(Boolean).join(' · ') || null,
+            priceCents: Number(service.price ?? service.priceCents ?? 0),
+            sku: null,
+          }))
+      );
+    } else {
+      this.serviceCatalogItems.set([]);
+    }
+
+    const failed =
+      productsResult.status === 'rejected' &&
+      servicesResult.status === 'rejected';
+
+    this.catalogLoadFailed.set(failed);
+
+    if (failed) {
+      this.toast.error(
+        'Catalog unavailable',
+        'Products and services could not be loaded for this order.'
+      );
+    }
+
+    this.catalogLoading.set(false);
   }
 
   async loadStripeStatus(): Promise<void> {
@@ -344,12 +440,143 @@ export class RepairOrderCard {
     setTimeout(() => this.searchFocused.set(false), 150);
   }
 
+  private bumpDraftTotals(): void {
+    this.itemsFormRevision.update((value) => value + 1);
+  }
+
+  netPaidCents(): number {
+    const totals = this.order()?.totals;
+    if (!totals) return 0;
+
+    return Math.max(0, Number(totals.paidCents ?? 0) - Number(totals.refundedCents ?? 0));
+  }
+
+  draftTotalBelowNetPaid(): boolean {
+    return this.draftTotalCents() < this.netPaidCents();
+  }
+
+  canEditItems(): boolean {
+    const order = this.order();
+    if (!order) return false;
+
+    return !this.itemsLocked();
+  }
+
+  canSaveItems(): boolean {
+    return (
+      this.canEditItems() &&
+      this.itemsArray().length > 0 &&
+      this.hasUnsavedItemChanges() &&
+      !this.draftTotalBelowNetPaid()
+    );
+  }
+
+  balanceSummaryLabel(): string {
+    return this.hasUnsavedItemChanges() ? 'Draft balance' : 'Balance due';
+  }
+
+  saveButtonLabel(): string {
+    return this.hasUnsavedItemChanges() ? 'Save Changes' : 'Saved';
+  }
+
+  primaryPaymentButtonLabel(): string {
+    if (this.hasUnsavedItemChanges()) return 'Save First';
+
+    const balanceCents = Math.max(0, this.order()?.totals.balanceCents ?? 0);
+    return balanceCents > 0 ? `Collect ${this.money(balanceCents)}` : 'Add Payment';
+  }
+
+  canOpenPaymentModal(): boolean {
+    const order = this.order();
+    if (!order) return false;
+
+    return order.paymentStatus !== 'voided' && !this.hasUnsavedItemChanges();
+  }
+
+  isQuoteCreatedOrder(order: Order | null | undefined): boolean {
+    if (!order) return false;
+
+    const notes = (order.notes ?? '').toLowerCase();
+    const tags = order.tags ?? [];
+
+    return (
+      order.source === 'booking' ||
+      !!order.externalRefs.bookingId ||
+      tags.some((tag) => tag.toLowerCase().includes('quote')) ||
+      notes.includes('quote')
+    );
+  }
+
+  emptyOrderTitle(order: Order): string {
+    return this.isQuoteCreatedOrder(order)
+      ? 'Order created from accepted quote'
+      : 'No items yet';
+  }
+
+  emptyOrderDescription(order: Order): string {
+    return this.isQuoteCreatedOrder(order)
+      ? 'Add repair services, parts, or a custom line item to finish pricing.'
+      : 'Search above to add a service or product.';
+  }
+
+  isQuoteDepositPayment(payment: OrderPayment): boolean {
+    const note = (payment.note ?? '').toLowerCase();
+    return payment.type === 'payment' && note.includes('quote deposit');
+  }
+
+  paymentDisplayTitle(payment: OrderPayment): string {
+    if (this.isQuoteDepositPayment(payment)) return 'Quote Deposit';
+    return payment.type === 'refund' ? 'Refund' : 'Payment';
+  }
+
+  paymentDisplaySubtitle(payment: OrderPayment): string {
+    const method = payment.method === 'stripe' ? 'Stripe' : this.toTitleCase(payment.method);
+    return payment.type === 'refund' ? `${method} refund` : `${method} payment`;
+  }
+
+  paymentReferenceLabel(payment: OrderPayment): string {
+    if (!payment.reference) return '';
+    return payment.reference.startsWith('pi_') ? 'Payment Intent' : 'Reference';
+  }
+
+  visiblePayments(payments: OrderPayment[]): OrderPayment[] {
+    if (this.paymentsExpanded() || payments.length <= 2) return payments;
+    return payments.slice(-2);
+  }
+
+  hiddenPaymentCount(payments: OrderPayment[]): number {
+    if (this.paymentsExpanded() || payments.length <= 2) return 0;
+    return payments.length - 2;
+  }
+
+  togglePaymentsExpanded(): void {
+    this.paymentsExpanded.update((value) => !value);
+  }
+
   async saveItems(): Promise<void> {
     const order = this.order();
     if (!order) return;
 
+    if (!this.canEditItems()) {
+      this.toast.error(
+        'Order locked',
+        order.fulfillmentStatus === 'fulfilled'
+          ? 'Fulfilled orders cannot be edited.'
+          : 'Voided orders cannot be edited.'
+      );
+      return;
+    }
+
     if (this.itemsForm.invalid) {
       this.itemsForm.markAllAsTouched();
+      return;
+    }
+
+    if (this.draftTotalBelowNetPaid()) {
+      this.toast.error(
+        'Order total is too low',
+        `The order total cannot be less than the net amount already paid (${this.money(this.netPaidCents())}). Add items or issue a refund first.`
+      );
       return;
     }
 
@@ -369,7 +596,8 @@ export class RepairOrderCard {
     });
 
     if (updated) {
-      this.toast.success('Order saved', 'Line items updated.');
+      await this.ordersStore.loadOrder(order.id);
+      this.toast.success('Order saved', 'Line items updated and totals refreshed.');
       this.expandedItemIndex.set(null);
     } else {
       this.toast.error('Save failed', this.error() ?? 'Unable to save line items.');
@@ -584,12 +812,23 @@ export class RepairOrderCard {
       : 'bg-emerald-50 text-emerald-700 border-emerald-200';
   }
 
+  private toTitleCase(value: string): string {
+    if (!value) return '';
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+
   trackCatalogItem(_: number, item: CatalogItemOption): string {
     return `${item.type}-${item.id}`;
   }
 
   openPaymentModal(): void {
     const order = this.order();
+
+    if (this.hasUnsavedItemChanges()) {
+      this.toast.info('Save order first', 'Save item changes before collecting another payment.');
+      return;
+    }
+
     const defaultMethod: PaymentMethod = this.stripeAvailable() ? 'stripe' : 'card';
 
     this.showRefundForm.set(false);
@@ -755,6 +994,7 @@ export class RepairOrderCard {
     this.itemSearchControl.setValue('', { emitEvent: false });
     this.searchFocused.set(false);
     this.expandedItemIndex.set(null);
+    this.bumpDraftTotals();
   }
 
   private syncItemsFormFromOrder(order: Order): void {
@@ -788,6 +1028,7 @@ export class RepairOrderCard {
     this.itemSearchControl.setValue('', { emitEvent: false });
     this.searchFocused.set(false);
     this.expandedItemIndex.set(null);
+    this.bumpDraftTotals();
   }
 
   private createItemGroup(input?: {
@@ -843,4 +1084,41 @@ export class RepairOrderCard {
       sourceId?: string | null;
     }>;
   }
+
+  private draftOrderSignature(): string {
+    this.itemsFormRevision();
+
+    const items = this.itemRowsRawValue().map((row) => ({
+      type: row.type,
+      productId: row.type === 'product' ? row.productId ?? row.sourceId ?? null : null,
+      name: String(row.name ?? '').trim(),
+      quantity: Number(row.quantity ?? 1),
+      unitPriceCents: this.toCents(row.unitPriceDollars ?? 0),
+      notes: String(row.notes ?? '').trim() || null,
+      sku: row.sku ?? null,
+    }));
+
+    return JSON.stringify({
+      items,
+      discountCents: this.toCents(this.itemsForm.controls.discountDollars.value ?? 0),
+    });
+  }
+
+  private persistedOrderSignature(order: Order): string {
+    const items = (order.items ?? []).map((item) => ({
+      type: item.type,
+      productId: item.type === 'product' ? item.productId ?? null : null,
+      name: String(item.name ?? '').trim(),
+      quantity: Number(item.quantity ?? 1),
+      unitPriceCents: Number(item.unitPriceCents ?? 0),
+      notes: item.notes?.trim() || null,
+      sku: item.sku ?? null,
+    }));
+
+    return JSON.stringify({
+      items,
+      discountCents: Number(order.totals.discountCents ?? 0),
+    });
+  }
+
 }

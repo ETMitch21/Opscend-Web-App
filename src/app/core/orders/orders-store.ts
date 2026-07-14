@@ -33,6 +33,13 @@ export class OrdersStore {
     return order.totals.paidCents > 0 || order.totals.refundedCents > 0;
   });
 
+  readonly orderItemsLocked = computed(() => {
+    const order = this.selectedOrder();
+    if (!order) return false;
+
+    return order.paymentStatus === 'voided' || order.fulfillmentStatus === 'fulfilled';
+  });
+
   clearSelectedOrder(): void {
     this.selectedOrder.set(null);
   }
