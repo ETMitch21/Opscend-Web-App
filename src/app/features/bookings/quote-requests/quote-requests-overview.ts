@@ -18,6 +18,8 @@ import {
   Clock3,
   DollarSign,
   ExternalLink,
+  Plus,
+  Trash2,
   House,
   LucideAngularModule,
   Mail,
@@ -36,6 +38,7 @@ import { PhonePipe } from "../../../core/pipes/phone-pipe";
 import { ToastService } from "../../../core/toast/toast-service";
 import {
   BookingQuoteRequest,
+  BookingQuoteLineItemInput,
   BookingQuoteRequestPatch,
   BookingQuoteRequestStatus,
   BookingQuoteWorkflowStatus,
@@ -56,6 +59,16 @@ interface QuoteTimelineItem {
   label: string;
   value: string | null;
   tone: "done" | "muted";
+}
+
+interface QuoteLineItemDraft {
+  id: string;
+  type: string;
+  productId: string | null;
+  name: string;
+  description: string | null;
+  quantity: number;
+  unitPriceCents: number;
 }
 
 @Component({
@@ -82,6 +95,7 @@ export class QuoteRequestsOverview {
   private pendingAutoSave = false;
   private pendingQuoteRequestId: string | null = null;
   private autoSaveToastId: string | number | undefined;
+  private lineItemAutoSaveTimer: number | undefined;
 
   readonly chevronDownIcon = ChevronDownIcon;
   readonly buildingIcon = Building2;
@@ -89,6 +103,8 @@ export class QuoteRequestsOverview {
   readonly clockIcon = Clock3;
   readonly dollarIcon = DollarSign;
   readonly externalLinkIcon = ExternalLink;
+  readonly plusIcon = Plus;
+  readonly trashIcon = Trash2;
   readonly houseIcon = House;
   readonly mailIcon = Mail;
   readonly mapPinIcon = MapPin;
@@ -109,6 +125,7 @@ export class QuoteRequestsOverview {
   readonly error = signal<string | null>(null);
   readonly drawerError = signal<string | null>(null);
   readonly copySuccess = signal(false);
+  readonly quoteLineItems = signal<QuoteLineItemDraft[]>([]);
   readonly nextCursor = signal<string | null>(null);
 
   readonly activeView = signal<QuoteRequestViewFilter>("new");
@@ -510,6 +527,92 @@ export class QuoteRequestsOverview {
       this.toast.error("Could not email quote", "The quote link was not sent to the customer.");
     } finally {
       this.actionId.set(null);
+    }
+  }
+
+
+  addQuoteLineItem(type: string = "service"): void {
+    this.quoteLineItems.update((items) => [
+      ...items,
+      {
+        id: `tmp-${Date.now()}-${items.length}`,
+        type,
+        productId: null,
+        name: this.defaultLineItemName(type),
+        description: null,
+        quantity: 1,
+        unitPriceCents: 0,
+      },
+    ]);
+    this.scheduleLineItemAutosave();
+  }
+
+  removeQuoteLineItem(index: number): void {
+    this.quoteLineItems.update((items) => items.filter((_, itemIndex) => itemIndex !== index));
+    this.scheduleLineItemAutosave();
+  }
+
+  updateQuoteLineItem(index: number, field: keyof QuoteLineItemDraft, value: string | number | null): void {
+    this.quoteLineItems.update((items) =>
+      items.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        if (field === "quantity") {
+          return { ...item, quantity: Math.max(1, Math.trunc(Number(value || 1))) };
+        }
+
+        if (field === "unitPriceCents") {
+          return { ...item, unitPriceCents: this.dollarsToCents(value as string) ?? 0 };
+        }
+
+        if (field === "productId") {
+          return { ...item, productId: this.cleanText(String(value ?? "")) };
+        }
+
+        return { ...item, [field]: value } as QuoteLineItemDraft;
+      }),
+    );
+
+    this.scheduleLineItemAutosave();
+  }
+
+  quoteLineItemLineTotal(item: QuoteLineItemDraft): number {
+    const total = Math.max(1, item.quantity || 1) * Math.max(0, item.unitPriceCents || 0);
+    return item.type === "discount" ? -total : total;
+  }
+
+  quoteLineItemTotals(): { subtotalCents: number; discountCents: number; totalCents: number } {
+    const subtotalCents = this.quoteLineItems()
+      .filter((item) => item.type !== "discount")
+      .reduce((sum, item) => sum + Math.max(0, this.quoteLineItemLineTotal(item)), 0);
+    const discountCents = this.quoteLineItems()
+      .filter((item) => item.type === "discount")
+      .reduce((sum, item) => sum + Math.abs(this.quoteLineItemLineTotal(item)), 0);
+
+    return {
+      subtotalCents,
+      discountCents,
+      totalCents: Math.max(0, subtotalCents - discountCents),
+    };
+  }
+
+  quoteLineItemTypeLabel(type: string): string {
+    switch (type) {
+      case "product":
+        return "Product";
+      case "part":
+        return "Part";
+      case "labor":
+        return "Labor";
+      case "fee":
+        return "Fee";
+      case "discount":
+        return "Discount";
+      case "other":
+        return "Other";
+      case "service":
+      default:
+        return "Service";
     }
   }
 
@@ -931,13 +1034,16 @@ export class QuoteRequestsOverview {
   private buildQuotePayload(): BookingQuoteRequestPatch {
     const formValue = this.quoteForm.getRawValue();
     const depositRequired = Boolean(formValue.depositRequired);
+    const totals = this.quoteLineItemTotals();
+    const lineItems = this.normalizedQuoteLineItemPayload();
 
     return {
-      partCostCents: this.dollarsToCents(formValue.partCost),
-      laborCents: this.dollarsToCents(formValue.labor),
-      tripFeeCents: this.dollarsToCents(formValue.tripFee),
-      estimatedSubtotalCents: this.dollarsToCents(formValue.subtotal),
-      estimatedTotalCents: this.dollarsToCents(formValue.total),
+      partCostCents: this.legacyAmountForTypes(["part", "product"]),
+      laborCents: this.legacyAmountForTypes(["labor", "service"]),
+      tripFeeCents: this.legacyAmountForTypes(["fee"]),
+      estimatedSubtotalCents: totals.subtotalCents,
+      estimatedTotalCents: totals.totalCents,
+      lineItems,
       depositRequired,
       depositAmountCents: depositRequired
         ? this.dollarsToCents(formValue.depositAmount)
@@ -1081,9 +1187,92 @@ export class QuoteRequestsOverview {
       },
       { emitEvent: false },
     );
+
+    this.quoteLineItems.set(this.lineItemsFromRequest(request));
   }
 
-  private centsToDollars(cents: number | null | undefined): string {
+
+  private lineItemsFromRequest(request: BookingQuoteRequest): QuoteLineItemDraft[] {
+    if (request.lineItems?.length) {
+      return request.lineItems.map((item) => ({
+        id: item.id,
+        type: item.type || "service",
+        productId: item.productId ?? null,
+        name: item.name,
+        description: item.description ?? null,
+        quantity: Math.max(1, item.quantity || 1),
+        unitPriceCents: Math.max(0, item.unitPriceCents || 0),
+      }));
+    }
+
+    const items: QuoteLineItemDraft[] = [];
+
+    if (request.partCostCents && request.partCostCents > 0) {
+      items.push({ id: `legacy-${request.id}-part`, type: "part", productId: null, name: "Repair part", description: null, quantity: 1, unitPriceCents: request.partCostCents });
+    }
+
+    if (request.laborCents && request.laborCents > 0) {
+      items.push({ id: `legacy-${request.id}-labor`, type: "labor", productId: null, name: "Labor", description: null, quantity: 1, unitPriceCents: request.laborCents });
+    }
+
+    if (request.tripFeeCents && request.tripFeeCents > 0) {
+      items.push({ id: `legacy-${request.id}-trip-fee`, type: "fee", productId: null, name: "Trip fee", description: null, quantity: 1, unitPriceCents: request.tripFeeCents });
+    }
+
+    if (!items.length && request.estimatedTotalCents && request.estimatedTotalCents > 0) {
+      items.push({ id: `legacy-${request.id}-total`, type: "service", productId: null, name: request.repairNeed?.label || "Quoted repair", description: null, quantity: 1, unitPriceCents: request.estimatedTotalCents });
+    }
+
+    return items;
+  }
+
+  private normalizedQuoteLineItemPayload(): BookingQuoteLineItemInput[] {
+    return this.quoteLineItems()
+      .filter((item) => item.name.trim())
+      .map((item) => ({
+        id: item.id.startsWith("tmp-") || item.id.startsWith("legacy-") ? null : item.id,
+        type: item.type || "service",
+        productId: item.productId || null,
+        name: item.name.trim(),
+        description: this.cleanText(item.description ?? ""),
+        quantity: Math.max(1, Math.trunc(Number(item.quantity || 1))),
+        unitPriceCents: Math.max(0, Math.trunc(Number(item.unitPriceCents || 0))),
+      }));
+  }
+
+  private legacyAmountForTypes(types: string[]): number | null {
+    const total = this.quoteLineItems()
+      .filter((item) => types.includes(item.type))
+      .reduce((sum, item) => sum + Math.max(0, this.quoteLineItemLineTotal(item)), 0);
+
+    return total > 0 ? total : null;
+  }
+
+  private defaultLineItemName(type: string): string {
+    switch (type) {
+      case "part":
+        return "Repair part";
+      case "labor":
+        return "Labor";
+      case "fee":
+        return "Trip fee";
+      case "discount":
+        return "Discount";
+      case "product":
+        return "Product";
+      default:
+        return "Service";
+    }
+  }
+
+  private scheduleLineItemAutosave(): void {
+    window.clearTimeout(this.lineItemAutoSaveTimer);
+    this.lineItemAutoSaveTimer = window.setTimeout(() => {
+      void this.autoSaveSelectedQuote();
+    }, 700);
+  }
+
+  centsToDollars(cents: number | null | undefined): string {
     if (cents === null || cents === undefined) return "";
     return (cents / 100).toFixed(2);
   }

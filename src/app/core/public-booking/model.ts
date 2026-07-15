@@ -227,6 +227,19 @@ export interface PublicQuoteApprovalAddress {
   notes: string | null;
 }
 
+
+export interface PublicQuoteLineItem {
+  id: string;
+  type: string;
+  productId: string | null;
+  name: string;
+  description: string | null;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  sortOrder: number;
+}
+
 export interface PublicQuoteApproval {
   quoteId: string;
   status: PublicQuoteApprovalStatus;
@@ -246,6 +259,7 @@ export interface PublicQuoteApproval {
   tripFeeCents: number | null;
   estimatedSubtotalCents: number | null;
   estimatedTotalCents: number | null;
+  lineItems: PublicQuoteLineItem[];
 
   depositRequired: boolean;
   depositAmountCents: number | null;

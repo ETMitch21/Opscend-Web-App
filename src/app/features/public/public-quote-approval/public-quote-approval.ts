@@ -220,6 +220,27 @@ export class PublicQuoteApproval implements OnInit {
     }
   }
 
+
+  quoteLineItems(quote: PublicQuoteApprovalModel): Array<{ id: string; type: string; name: string; description: string | null; quantity: number; unitPriceCents: number; lineTotalCents: number }> {
+    return Array.isArray((quote as any).lineItems) ? (quote as any).lineItems : [];
+  }
+
+  quoteSubtotalFromItems(quote: PublicQuoteApprovalModel): number {
+    return this.quoteLineItems(quote)
+      .filter((item) => item.type !== 'discount')
+      .reduce((sum, item) => sum + Math.max(0, Number(item.lineTotalCents ?? 0)), 0);
+  }
+
+  quoteDiscountFromItems(quote: PublicQuoteApprovalModel): number {
+    return this.quoteLineItems(quote)
+      .filter((item) => item.type === 'discount')
+      .reduce((sum, item) => sum + Math.abs(Number(item.lineTotalCents ?? 0)), 0);
+  }
+
+  lineItemDisplayTotal(item: { lineTotalCents: number }): string {
+    return this.money(Math.abs(Number(item.lineTotalCents ?? 0)));
+  }
+
   canPayDeposit(quote: PublicQuoteApprovalModel): boolean {
     return Boolean(
       quote.depositRequired &&

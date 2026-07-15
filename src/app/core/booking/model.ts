@@ -223,6 +223,39 @@ export type BookingQuoteWorkflowStatus =
   | 'expired'
   | 'canceled';
 
+
+export type BookingQuoteLineItemType =
+  | 'service'
+  | 'product'
+  | 'part'
+  | 'labor'
+  | 'fee'
+  | 'discount'
+  | 'other'
+  | string;
+
+export interface BookingQuoteLineItem {
+  id: string;
+  type: BookingQuoteLineItemType;
+  productId: string | null;
+  name: string;
+  description: string | null;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  sortOrder: number;
+}
+
+export interface BookingQuoteLineItemInput {
+  id?: string | null;
+  type: BookingQuoteLineItemType;
+  productId?: string | null;
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitPriceCents: number;
+}
+
 export interface BookingQuoteRequest {
   id: string;
   shopId: string;
@@ -247,6 +280,7 @@ export interface BookingQuoteRequest {
   tripFeeCents: number | null;
   estimatedSubtotalCents: number | null;
   estimatedTotalCents: number | null;
+  lineItems: BookingQuoteLineItem[];
 
   depositRequired: boolean;
   depositAmountCents: number | null;
@@ -328,6 +362,7 @@ export interface BookingQuoteRequestPatch {
   tripFeeCents?: number | null;
   estimatedSubtotalCents?: number | null;
   estimatedTotalCents?: number | null;
+  lineItems?: BookingQuoteLineItemInput[];
 
   depositRequired?: boolean;
   depositAmountCents?: number | null;
