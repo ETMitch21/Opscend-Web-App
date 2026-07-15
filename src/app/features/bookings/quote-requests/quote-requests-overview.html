@@ -336,500 +336,523 @@
 </div>
 
 @if (selectedRequest(); as selected) {
-<div class="fixed inset-0 z-50 overflow-hidden">
-  <button
-    type="button"
-    class="absolute inset-0 cursor-pointer bg-gray-900/35 backdrop-blur-[1px]"
-    aria-label="Close quote drawer"
-    (click)="closeDrawer()"
-  ></button>
+<div class="fixed inset-0 z-50 flex flex-col overflow-hidden bg-slate-50">
+  <header class="flex h-[70px] shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 shadow-sm">
+    <div class="flex min-w-0 items-center gap-4">
+      <button
+        type="button"
+        class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-950"
+        aria-label="Back to quote requests"
+        (click)="closeDrawer()"
+      >
+        <lucide-icon [name]="xCloseIcon" [size]="18"></lucide-icon>
+      </button>
 
-  <aside class="absolute right-0 top-0 flex h-full w-full max-w-5xl flex-col bg-white shadow-2xl">
-    <div class="border-b border-gray-200 px-5 py-3">
-      <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-          <h2 class="text-base font-semibold text-gray-950">{{ customerLabel(selected) }}</h2>
-          <p class="mt-0.5 text-xs text-gray-500">
-            {{ deviceLabel(selected) }} · {{ selected.repairNeed?.label || 'Manual quote' }} · {{ serviceModeLabel(selected.serviceMode) }}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900"
-          (click)="closeDrawer()"
-        >
-          <lucide-icon [name]="xCloseIcon" [size]="17"></lucide-icon>
-        </button>
-      </div>
-
-
-      <div class="mt-3 rounded-2xl bg-gray-100/90 p-1.5 shadow-inner ring-1 ring-gray-200">
-        <div class="grid gap-1" [style.gridTemplateColumns]="'repeat(' + progressSteps(selected).length + ', minmax(0, 1fr))'">
-          @for (item of progressSteps(selected); track item.label) {
-          <div
-            class="flex h-9 min-w-0 items-center justify-center rounded-xl px-2 text-[10px] font-bold uppercase tracking-wide transition"
-            [ngClass]="progressSegmentClass(item)"
-            [class.opacity-70]="item.tone !== 'done'"
-            [title]="item.label"
-          >
-            <span class="truncate">{{ item.label }}</span>
-          </div>
+      <div class="min-w-0">
+        <div class="flex min-w-0 items-center gap-2">
+          <p class="truncate text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Quote request</p>
+          <span class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1" [ngClass]="tableStatusClass(selected)">
+            {{ tableStatusLabel(selected) }}
+          </span>
+          @if (savingQuote()) {
+          <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100">Saving…</span>
+          }
+          @if (!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled') {
+          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">Quote locked</span>
           }
         </div>
+        <h2 class="mt-1 truncate text-lg font-semibold tracking-tight text-slate-950">
+          {{ customerLabel(selected) }}
+        </h2>
       </div>
-
-      <nav class="mt-2 flex flex-wrap gap-2 rounded-xl bg-gray-100 p-1">
-        @for (tab of drawerTabs; track tab.value) {
-        <button
-          type="button"
-          class="flex-1 cursor-pointer rounded-lg px-4 py-1.5 text-sm font-semibold transition"
-          [class.bg-white]="activeDrawerTab() === tab.value"
-          [class.text-gray-950]="activeDrawerTab() === tab.value"
-          [class.shadow-sm]="activeDrawerTab() === tab.value"
-          [class.text-gray-500]="activeDrawerTab() !== tab.value"
-          [class.hover:text-gray-900]="activeDrawerTab() !== tab.value"
-          (click)="setDrawerTab(tab.value)"
-        >
-          {{ tab.label }}
-        </button>
-        }
-      </nav>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-      @if (drawerError()) {
-      <div class="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 ring-1 ring-rose-100">
-        {{ drawerError() }}
+    <div class="hidden min-w-0 flex-1 items-center justify-center px-6 xl:flex">
+      <div class="flex max-w-full items-center gap-2 overflow-hidden rounded-full bg-slate-100 p-1 ring-1 ring-slate-200">
+        @for (item of progressSteps(selected); track item.label) {
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition"
+          [class.bg-white]="item.tone === 'done'"
+          [class.text-slate-950]="item.tone === 'done'"
+          [class.shadow-sm]="item.tone === 'done'"
+          [class.text-slate-400]="item.tone !== 'done'"
+        >
+          <span class="h-1.5 w-1.5 rounded-full" [class.bg-emerald-500]="item.tone === 'done'" [class.bg-slate-300]="item.tone !== 'done'"></span>
+          {{ item.label }}
+        </span>
+        }
       </div>
-      }
+    </div>
 
-      @if (activeDrawerTab() === 'summary') {
-      <div class="space-y-5">
-        <section class="rounded-2xl border border-gray-200 bg-gray-50 p-5 ring-1 ring-gray-100">
-          <div class="grid gap-4 md:grid-cols-5">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quote</p>
-              <p class="mt-1 text-2xl font-semibold text-gray-950">{{ money(selected.estimatedTotalCents) }}</p>
+    <div class="flex shrink-0 items-center gap-3">
+      <div class="hidden text-right sm:block">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Quote total</p>
+        <p class="text-xl font-semibold tracking-tight text-slate-950">{{ money(quoteLineItemTotals().totalCents || selected.estimatedTotalCents) }}</p>
+      </div>
+
+      <button
+        type="button"
+        class="hidden cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 lg:inline-flex"
+        [disabled]="savingQuote() || actionId() === selected.id + ':email' || !canEmailQuote(selected)"
+        [title]="!selected.customer.email ? 'Add a customer email before emailing this quote.' : ''"
+        (click)="emailSelectedQuote()"
+      >
+        {{ actionId() === selected.id + ':email' ? 'Emailing…' : 'Email quote' }}
+      </button>
+
+      <button
+        type="button"
+        class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="savingQuote() || actionId() === selected.id + ':share' || !!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' || (!publicQuoteUrl(selected) && !canSendQuote(selected))"
+        [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is locked and can no longer be shared.' : ''"
+        (click)="shareSelectedQuote()"
+      >
+        <lucide-icon [name]="shareIcon" [size]="15"></lucide-icon>
+        @if (actionId() === selected.id + ':share') {
+        Generating…
+        } @else if (copySuccess()) {
+        Copied
+        } @else {
+        Share
+        }
+      </button>
+    </div>
+  </header>
+
+  <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+    <div class="mx-auto grid max-w-[1440px] gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_350px]">
+      <main class="min-w-0 space-y-4">
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Quote</p>
+              <h3 class="mt-1 text-lg font-semibold tracking-tight text-slate-950">Items</h3>
+              <p class="mt-1 text-[13px] text-slate-500">Build the customer-facing quote. Keep internal costs in notes.</p>
+              @if (!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled') {
+              <div class="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">Read-only quote</div>
+              }
             </div>
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Deposit</p>
-              <div class="mt-1 space-y-1">
-                <span
-                  class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
-                  [ngClass]="depositStatusClass(selected)"
+
+            <div class="flex shrink-0 flex-wrap gap-2">
+              <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Edit the repair order after conversion.' : ''" (click)="addQuoteLineItem('part')">
+                <lucide-icon [name]="plusIcon" [size]="14"></lucide-icon> Part
+              </button>
+              <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Edit the repair order after conversion.' : ''" (click)="addQuoteLineItem('labor')">
+                <lucide-icon [name]="plusIcon" [size]="14"></lucide-icon> Labor
+              </button>
+              <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Edit the repair order after conversion.' : ''" (click)="addQuoteLineItem('fee')">
+                <lucide-icon [name]="plusIcon" [size]="14"></lucide-icon> Fee
+              </button>
+              <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Edit the repair order after conversion.' : ''" (click)="addQuoteLineItem('discount')">
+                <lucide-icon [name]="plusIcon" [size]="14"></lucide-icon> Discount
+              </button>
+            </div>
+          </div>
+
+          <div class="border-b border-slate-200 bg-slate-50/70 px-5 py-2.5">
+            <div class="grid grid-cols-[minmax(0,1fr)_80px_130px_140px_38px] gap-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+              <span>Item</span>
+              <span class="text-right">Qty</span>
+              <span class="text-right">Rate</span>
+              <span class="text-right">Amount</span>
+              <span></span>
+            </div>
+          </div>
+
+          @if (quoteLineItems().length === 0) {
+          <div class="px-5 py-14 text-center">
+            <p class="text-base font-semibold text-slate-950">Start the quote</p>
+            <p class="mt-1 text-sm text-slate-500">Add parts, labor, fees, or discounts for the customer to review.</p>
+            <div class="mt-5 flex justify-center gap-2">
+              <button type="button" class="cursor-pointer rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Edit the repair order after conversion.' : ''" (click)="addQuoteLineItem('part')">Add first item</button>
+              <button type="button" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Edit the repair order after conversion.' : ''" (click)="addQuoteLineItem('labor')">Add labor</button>
+            </div>
+          </div>
+          } @else {
+          <div class="divide-y divide-slate-100">
+            @for (item of quoteLineItems(); track item.id; let i = $index) {
+            <article class="group px-5 py-3.5 transition hover:bg-slate-50/60">
+              <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_80px_130px_140px_38px] lg:items-start">
+                <div class="min-w-0">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <select
+                      class="h-9 w-[118px] shrink-0 cursor-pointer rounded-full border border-slate-200 bg-slate-50 px-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-500 outline-none transition disabled:cursor-not-allowed disabled:opacity-60 focus:border-brand focus:bg-white focus:ring-1 focus:ring-brand"
+                      [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+                      [value]="item.type"
+                      (change)="updateQuoteLineItem(i, 'type', $any($event.target).value)"
+                    >
+                      <option value="service">Service</option>
+                      <option value="part">Part</option>
+                      <option value="labor">Labor</option>
+                      <option value="fee">Fee</option>
+                      <option value="discount">Discount</option>
+                      <option value="other">Other</option>
+                    </select>
+
+                    <div class="min-w-0 flex-1">
+                      <input
+                        class="block w-full border-0 bg-transparent p-0 text-[15px] font-semibold text-slate-950 outline-none placeholder:text-slate-400 disabled:text-slate-500 focus:ring-0"
+                        [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+                        placeholder="Item name"
+                        [value]="item.name"
+                        (input)="updateQuoteLineItem(i, 'name', $any($event.target).value)"
+                      />
+                      <input
+                        class="mt-1 block w-full border-0 bg-transparent p-0 text-[13px] leading-5 text-slate-500 outline-none placeholder:text-slate-400 disabled:text-slate-400 focus:ring-0"
+                        [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+                        placeholder="Add a customer-facing description"
+                        [value]="item.description || ''"
+                        (input)="updateQuoteLineItem(i, 'description', $any($event.target).value)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <label class="block">
+                  <span class="sr-only">Quantity</span>
+                  <input
+                    inputmode="numeric"
+                    class="h-10 w-full rounded-xl border border-transparent bg-transparent px-2 text-right text-sm font-semibold text-slate-950 outline-none transition disabled:text-slate-500 hover:border-slate-200 hover:bg-white focus:border-brand focus:bg-white focus:ring-1 focus:ring-brand"
+                    [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+                    [value]="item.quantity"
+                    (input)="updateQuoteLineItem(i, 'quantity', $any($event.target).value)"
+                  />
+                </label>
+
+                <label class="block">
+                  <span class="sr-only">Rate</span>
+                  <input
+                    inputmode="decimal"
+                    class="h-10 w-full rounded-xl border border-transparent bg-transparent px-2 text-right text-sm font-semibold text-slate-950 outline-none transition disabled:text-slate-500 hover:border-slate-200 hover:bg-white focus:border-brand focus:bg-white focus:ring-1 focus:ring-brand"
+                    [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+                    [value]="centsToDollars(item.unitPriceCents)"
+                    (input)="updateQuoteLineItem(i, 'unitPriceCents', $any($event.target).value)"
+                  />
+                </label>
+
+                <div class="h-10 text-right text-[15px] font-semibold leading-10 text-slate-950">
+                  {{ money(quoteLineItemLineTotal(item)) }}
+                </div>
+
+                <button
+                  type="button"
+                  class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-300 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-30 lg:opacity-0 lg:group-hover:opacity-100"
+                  [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+                  aria-label="Remove line item"
+                  (click)="removeQuoteLineItem(i)"
                 >
-                  {{ depositStatusLabel(selected) }}
-                </span>
-                @if (selected.depositRequired) {
-                <p class="text-sm font-semibold text-gray-950">{{ money(selected.depositPaidAmountCents ?? selected.depositAmountCents) }}</p>
-                @if (selected.depositPaidAt) {
-                <p class="text-xs font-medium text-emerald-700">Paid {{ selected.depositPaidAt | date:'MMM d, h:mm a' }}</p>
-                }
-                } @else {
-                <p class="text-sm font-semibold text-gray-950">Not required</p>
+                  <lucide-icon [name]="trashIcon" [size]="16"></lucide-icon>
+                </button>
+              </div>
+            </article>
+            }
+          </div>
+          }
+
+          <form class="border-t border-slate-200 bg-slate-50/70 px-5 py-4" [formGroup]="quoteForm">
+            <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Deposit</p>
+                  @if (!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled') {
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">Locked</span>
+                  }
+                </div>
+
+                <label class="flex cursor-pointer items-start justify-between gap-4">
+                  <span>
+                    <span class="block text-sm font-semibold text-slate-950">Require deposit</span>
+                    <span class="mt-1 block text-sm leading-6 text-slate-500">Collect money before parts are ordered or the repair is scheduled.</span>
+                  </span>
+                  <input type="checkbox" formControlName="depositRequired" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" class="mt-1 h-4 w-4 rounded border-slate-300 text-brand disabled:cursor-not-allowed disabled:opacity-60 focus:ring-brand" />
+                </label>
+
+                @if (quoteForm.controls.depositRequired.value) {
+                <div class="mt-4 flex items-center gap-3">
+                  <label class="shrink-0 text-sm font-semibold text-slate-600" for="quoteDepositAmount">Deposit</label>
+                  <input id="quoteDepositAmount" formControlName="depositAmount" inputmode="decimal" placeholder="0.00" [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" class="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 focus:border-brand focus:ring-1 focus:ring-brand" />
+                </div>
+
                 }
               </div>
+
+              <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <div class="space-y-3 text-sm">
+                  <div class="flex items-center justify-between text-slate-600">
+                    <span>Subtotal</span>
+                    <span class="font-semibold text-slate-950">{{ money(quoteLineItemTotals().subtotalCents) }}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-slate-600">
+                    <span>Discounts</span>
+                    <span class="font-semibold text-slate-950">-{{ money(quoteLineItemTotals().discountCents) }}</span>
+                  </div>
+                  @if (quoteForm.controls.depositRequired.value) {
+                  <div class="flex items-center justify-between text-slate-600">
+                    <span>Deposit</span>
+                    <span class="font-semibold text-slate-950">{{ money(selected.depositPaidAmountCents ?? selected.depositAmountCents) }}</span>
+                  </div>
+                  }
+                  <div class="flex items-end justify-between border-t border-slate-200 pt-4">
+                    <span class="font-semibold text-slate-950">Quote total</span>
+                    <span class="text-3xl font-semibold tracking-tight text-slate-950">{{ money(quoteLineItemTotals().totalCents) }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Submitted</p>
-              <p class="mt-1 text-sm font-semibold text-gray-950">
-                @if (requestDate(selected); as submittedAt) {
-                {{ submittedAt | date:'MMM d, h:mm a' }}
-                } @else {
-                —
-                }
-              </p>
+          </form>
+        </section>
+
+        <form [formGroup]="quoteForm">
+          <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <input
+              #customerNotesTab
+              id="quoteNotesCustomer"
+              type="radio"
+              name="quoteNotesMode"
+              class="sr-only"
+              checked
+              (change)="0"
+            />
+            <input
+              #internalNotesTab
+              id="quoteNotesInternal"
+              type="radio"
+              name="quoteNotesMode"
+              class="sr-only"
+              (change)="0"
+            />
+
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Notes</p>
+                  @if (!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled') {
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">Locked</span>
+                  }
+                </div>
+                <h3 class="mt-1 text-base font-semibold text-slate-950">
+                  {{ internalNotesTab.checked ? 'Internal notes' : 'Customer message' }}
+                </h3>
+                <p class="mt-0.5 text-[13px] leading-5 text-slate-500">
+                  {{ internalNotesTab.checked ? 'Private supplier, cost, or follow-up notes for your team.' : 'Shown to the customer on the public quote.' }}
+                </p>
+              </div>
+
+              <div class="inline-flex w-fit rounded-xl bg-slate-100 p-1 text-[13px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                <label
+                  for="quoteNotesCustomer"
+                  class="cursor-pointer rounded-lg px-3 py-1.5 transition"
+                  [class.bg-white]="customerNotesTab.checked"
+                  [class.text-slate-950]="customerNotesTab.checked"
+                  [class.shadow-sm]="customerNotesTab.checked"
+                  [class.hover:text-slate-950]="!customerNotesTab.checked"
+                >
+                  Public
+                </label>
+                <label
+                  for="quoteNotesInternal"
+                  class="cursor-pointer rounded-lg px-3 py-1.5 transition"
+                  [class.bg-white]="internalNotesTab.checked"
+                  [class.text-slate-950]="internalNotesTab.checked"
+                  [class.shadow-sm]="internalNotesTab.checked"
+                  [class.hover:text-slate-950]="!internalNotesTab.checked"
+                >
+                  Private
+                </label>
+              </div>
             </div>
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Quote link</p>
-              <p class="mt-1 text-sm font-semibold text-gray-950">
-                {{ selected.publicApprovalToken ? 'Generated' : 'Not generated' }}
-              </p>
-            </div>
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Repair</p>
-              @if (selected.repairId) {
-              <a
-                class="mt-1 inline-flex cursor-pointer items-center gap-1 text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
-                [routerLink]="['/repairs/detail', selected.repairId]"
-              >
-                Created
-                <lucide-icon [name]="externalLinkIcon" [size]="13"></lucide-icon>
-              </a>
+
+            @if (internalNotesTab.checked) {
+            <textarea
+              formControlName="internalNotes"
+              [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+              [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Notes cannot be changed after approval or conversion.' : ''"
+              rows="5"
+              placeholder="Private notes, supplier details, cost notes, or follow-up reminders."
+              class="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-3 text-[13px] leading-5 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 focus:border-brand focus:ring-1 focus:ring-brand"
+            ></textarea>
+            } @else {
+            <textarea
+              formControlName="customerMessage"
+              [disabled]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'"
+              [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is read-only. Notes cannot be changed after approval or conversion.' : ''"
+              rows="5"
+              placeholder="Add warranty notes, part quality options, timing, or anything the customer should see."
+              class="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-3 text-[13px] leading-5 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 focus:border-brand focus:ring-1 focus:ring-brand"
+            ></textarea>
+            }
+          </section>
+        </form>
+      </main>
+
+      <aside class="space-y-4 xl:sticky xl:top-4 xl:self-start">
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Status</p>
+          <div class="mt-4 space-y-3 text-sm">
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-slate-600">Editing</span>
+              @if (!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled') {
+              <span class="font-semibold text-slate-500">Read-only</span>
               } @else {
-              <p class="mt-1 text-sm font-semibold text-gray-950">Not created</p>
+              <span class="font-semibold text-emerald-700">Open</span>
+              }
+            </div>
+            @if (!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled') {
+            <div class="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500 ring-1 ring-slate-100">
+              Quote items, deposit, notes, and sharing are locked after approval or conversion. Use the repair order for changes.
+            </div>
+            }
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-slate-600">Approval link</span>
+              <span class="font-semibold text-slate-950">{{ selected.publicApprovalToken ? 'Generated' : 'Not generated' }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-slate-600">Deposit</span>
+              <span class="font-semibold text-slate-950">{{ depositStatusLabel(selected) }}</span>
+            </div>
+            @if (selected.depositRequired) {
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-slate-600">Deposit amount</span>
+              <span class="font-semibold text-slate-950">{{ money(selected.depositPaidAmountCents ?? selected.depositAmountCents) }}</span>
+            </div>
+            }
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-slate-600">Repair</span>
+              @if (selected.repairId) {
+              <span class="font-semibold text-emerald-700">Created</span>
+              } @else {
+              <span class="font-semibold text-slate-950">Not created</span>
               }
             </div>
           </div>
         </section>
 
-        <div class="grid gap-5 lg:grid-cols-2">
-          <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div class="mb-4 flex items-center gap-2">
-              <lucide-icon [name]="userIcon" [size]="18" class="text-gray-400"></lucide-icon>
-              <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Customer</h3>
-            </div>
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Actions</p>
+          <div class="mt-4 space-y-2">
+            @if (selected.repairId) {
+            <a class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800" [routerLink]="['/repairs/detail', selected.repairId]">
+              <lucide-icon [name]="externalLinkIcon" [size]="14"></lucide-icon>
+              Open repair
+            </a>
+            } @else {
+            <button type="button" class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="savingQuote() || actionId() === selected.id + ':convert' || !canConvertToRepair(selected)" [title]="convertDisabledReason(selected) || ''" (click)="convertSelectedQuote()">
+              <lucide-icon [name]="wrenchIcon" [size]="14"></lucide-icon>
+              {{ convertButtonLabel(selected) }}
+            </button>
+            }
 
-            <div class="space-y-3 text-sm">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Name</p>
-                <p class="mt-0.5 font-medium text-gray-900">{{ selected.customer.name || '—' }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Phone</p>
-                <p class="mt-0.5 font-medium text-gray-900">{{ selected.customer.phone ? (selected.customer.phone | phone) : '—' }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Email</p>
-                <p class="mt-0.5 break-all font-medium text-gray-900">{{ selected.customer.email || '—' }}</p>
-              </div>
-            </div>
-          </section>
+            <button type="button" class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="savingQuote() || actionId() === selected.id + ':share' || !!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' || (!publicQuoteUrl(selected) && !canSendQuote(selected))"
+        [title]="!!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is locked and can no longer be shared.' : ''" (click)="shareSelectedQuote()">
+              <lucide-icon [name]="shareIcon" [size]="15"></lucide-icon>
+              @if (actionId() === selected.id + ':share') {
+              Generating…
+              } @else if (copySuccess()) {
+              Copied
+              } @else {
+              Share quote
+              }
+            </button>
 
-          <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div class="mb-4 flex items-center gap-2">
-              <lucide-icon [name]="wrenchIcon" [size]="18" class="text-gray-400"></lucide-icon>
-              <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Request</h3>
-            </div>
+            <button type="button" class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="savingQuote() || actionId() === selected.id + ':email' || !canEmailQuote(selected)" [title]="!selected.customer.email ? 'Add a customer email before emailing this quote.' : ''" (click)="emailSelectedQuote()">
+              <lucide-icon [name]="mailIcon" [size]="14"></lucide-icon>
+              {{ actionId() === selected.id + ':email' ? 'Emailing…' : 'Email quote' }}
+            </button>
 
-            <div class="space-y-3 text-sm">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Device</p>
-                <p class="mt-0.5 font-medium text-gray-900">{{ deviceLabel(selected) }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Repair</p>
-                <p class="mt-0.5 font-medium text-gray-900">{{ selected.repairNeed?.label || 'Manual quote' }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Customer notes</p>
-                <p class="mt-0.5 whitespace-pre-line text-gray-700">{{ selected.customerNotes || '—' }}</p>
-              </div>
-            </div>
-          </section>
-        </div>
+            <a class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" [routerLink]="['/communications']" [queryParams]="conversationQueryParams(selected)">
+              <lucide-icon [name]="messageSquareIcon" [size]="14"></lucide-icon>
+              Conversation
+            </a>
 
-        @if (addressLines(selected).length) {
-        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div class="mb-4 flex items-center gap-2">
-            <lucide-icon [name]="mapPinIcon" [size]="18" class="text-gray-400"></lucide-icon>
-            <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Address</h3>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <button type="button" class="cursor-pointer rounded-xl border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="savingQuote() || actionId() === selected.id + ':decline' || !!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" (click)="declineSelectedQuote()">
+                {{ actionId() === selected.id + ':decline' ? 'Saving…' : 'Decline' }}
+              </button>
+
+              <button type="button" class="cursor-pointer rounded-xl border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="savingQuote() || actionId() === selected.id + ':accept' || !!selected.repairId || selected.requestStatus === 'canceled' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" (click)="acceptSelectedQuote()">
+                {{ actionId() === selected.id + ':accept' ? 'Saving…' : 'Approve' }}
+              </button>
+            </div>
           </div>
 
-          <div class="text-sm text-gray-700">
+          @if (convertDisabledReason(selected); as reason) {
+          <p class="mt-3 text-xs font-medium leading-5 text-slate-500">{{ reason }}</p>
+          }
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Customer</p>
+          <div class="mt-3 space-y-1 text-sm font-medium text-slate-700">
+            <p class="font-semibold text-slate-950">{{ selected.customer.name || 'Unknown customer' }}</p>
+            @if (selected.customer.phone) {
+            <p>{{ selected.customer.phone | phone }}</p>
+            }
+            @if (selected.customer.email) {
+            <p class="break-all">{{ selected.customer.email }}</p>
+            }
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Request</p>
+          <dl class="mt-3 space-y-3 text-sm">
+            <div>
+              <dt class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Device</dt>
+              <dd class="mt-0.5 font-semibold text-slate-950">{{ deviceLabel(selected) }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Repair</dt>
+              <dd class="mt-0.5 font-semibold text-slate-950">{{ selected.repairNeed?.label || 'Manual quote' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Service</dt>
+              <dd class="mt-0.5 font-semibold text-slate-950">{{ serviceModeLabel(selected.serviceMode) }}</dd>
+            </div>
+            @if (selected.customerNotes) {
+            <div>
+              <dt class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Customer notes</dt>
+              <dd class="mt-0.5 whitespace-pre-line text-slate-700">{{ selected.customerNotes }}</dd>
+            </div>
+            }
+          </dl>
+        </section>
+
+        @if (addressLines(selected).length) {
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Address</p>
+          <div class="mt-3 text-sm leading-6 text-slate-700">
             @for (line of addressLines(selected); track line) {
             <p>{{ line }}</p>
             }
             @if (selected.address?.notes) {
-            <p class="mt-2 text-gray-500">{{ selected.address?.notes }}</p>
+            <p class="mt-2 text-slate-500">{{ selected.address?.notes }}</p>
             }
           </div>
         </section>
         }
-      </div>
-      }
 
-      @if (activeDrawerTab() === 'pricing') {
-      <div class="w-full space-y-5">
-        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <lucide-icon [name]="dollarIcon" [size]="18" class="text-gray-400"></lucide-icon>
-                <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Line items</h3>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">Build a customer-facing quote with parts, labor, fees, and discounts.</p>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-              <button type="button" class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="addQuoteLineItem('part')">
-                <lucide-icon [name]="plusIcon" [size]="13"></lucide-icon> Part
-              </button>
-              <button type="button" class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="addQuoteLineItem('labor')">
-                <lucide-icon [name]="plusIcon" [size]="13"></lucide-icon> Labor
-              </button>
-              <button type="button" class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="addQuoteLineItem('fee')">
-                <lucide-icon [name]="plusIcon" [size]="13"></lucide-icon> Fee
-              </button>
-              <button type="button" class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50" (click)="addQuoteLineItem('discount')">
-                <lucide-icon [name]="plusIcon" [size]="13"></lucide-icon> Discount
-              </button>
-            </div>
-          </div>
-
-          @if (quoteLineItems().length === 0) {
-          <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center">
-            <p class="text-sm font-semibold text-gray-900">No line items yet</p>
-            <p class="mt-1 text-sm text-gray-500">Add at least one item before sending the quote.</p>
-          </div>
-          } @else {
-          <div class="space-y-3">
-            @for (item of quoteLineItems(); track item.id; let i = $index) {
-            <div class="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 ring-1 ring-gray-100">
-              <div class="grid gap-3 lg:grid-cols-[150px_1fr_90px_120px_120px_40px]">
-                <label class="block">
-                  <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Type</span>
-                  <select class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" [value]="item.type" (change)="updateQuoteLineItem(i, 'type', $any($event.target).value)">
-                    <option value="service">Service</option>
-                    <option value="part">Part</option>
-                    <option value="labor">Labor</option>
-                    <option value="fee">Fee</option>
-                    <option value="discount">Discount</option>
-                    <option value="other">Other</option>
-                  </select>
-                </label>
-
-                <label class="block">
-                  <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Name</span>
-                  <input class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" [value]="item.name" (input)="updateQuoteLineItem(i, 'name', $any($event.target).value)" />
-                </label>
-
-                <label class="block">
-                  <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Qty</span>
-                  <input inputmode="numeric" class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" [value]="item.quantity" (input)="updateQuoteLineItem(i, 'quantity', $any($event.target).value)" />
-                </label>
-
-                <label class="block">
-                  <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Unit price</span>
-                  <input inputmode="decimal" class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" [value]="centsToDollars(item.unitPriceCents)" (input)="updateQuoteLineItem(i, 'unitPriceCents', $any($event.target).value)" />
-                </label>
-
-                <div>
-                  <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Line total</span>
-                  <div class="mt-1 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-200">{{ money(quoteLineItemLineTotal(item)) }}</div>
-                </div>
-
-                <div class="flex items-end">
-                  <button type="button" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-rose-200 text-rose-700 transition hover:bg-rose-50" (click)="removeQuoteLineItem(i)">
-                    <lucide-icon [name]="trashIcon" [size]="16"></lucide-icon>
-                  </button>
-                </div>
-              </div>
-
-              <label class="mt-3 block">
-                <span class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Description / notes shown to customer</span>
-                <input class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" [value]="item.description || ''" (input)="updateQuoteLineItem(i, 'description', $any($event.target).value)" />
-              </label>
-            </div>
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Request controls</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            @if (selected.requestStatus === 'new') {
+            <button type="button" class="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="updatingId() === selected.id" (click)="markContacted(selected)">
+              Mark contacted
+            </button>
             }
-          </div>
-          }
 
-          <div class="mt-5 rounded-2xl bg-gray-950 p-5 text-white">
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between text-gray-300"><span>Subtotal</span><span>{{ money(quoteLineItemTotals().subtotalCents) }}</span></div>
-              <div class="flex justify-between text-gray-300"><span>Discounts</span><span>-{{ money(quoteLineItemTotals().discountCents) }}</span></div>
-              <div class="flex justify-between border-t border-white/10 pt-3 text-lg font-bold"><span>Quote total</span><span>{{ money(quoteLineItemTotals().totalCents) }}</span></div>
-            </div>
-          </div>
-        </section>
-
-        <form class="w-full space-y-5" [formGroup]="quoteForm">
-          <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <label class="flex cursor-pointer items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200">
-              <span>
-                <span class="block text-sm font-semibold text-gray-900">Require deposit</span>
-                <span class="mt-0.5 block text-xs text-gray-500">Useful for special-order parts or higher-cost repairs.</span>
-              </span>
-              <input type="checkbox" formControlName="depositRequired" class="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand" />
-            </label>
-
-            @if (quoteForm.controls.depositRequired.value) {
-            <label class="mt-4 block">
-              <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Deposit amount</span>
-              <input formControlName="depositAmount" inputmode="decimal" placeholder="0.00" class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand" />
-            </label>
-
-            @if (selected.depositPaidAt) {
-            <div class="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100">
-              Deposit has been paid. Avoid changing the deposit amount unless you are correcting a record manually.
-            </div>
-            }
-            }
-          </section>
-        </form>
-      </div>
-      }
-
-      @if (activeDrawerTab() === 'approval') {
-      <form class="w-full space-y-5" [formGroup]="quoteForm">
-        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div class="mb-5 flex items-start justify-between gap-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <lucide-icon [name]="sendIcon" [size]="18" class="text-gray-400"></lucide-icon>
-                <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Message & notes</h3>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">
-                Add the customer-facing details for the quote and private notes for your team.
-              </p>
-            </div>
-
-            @if (publicQuoteUrl(selected); as publicUrl) {
-            <a
-              class="hidden cursor-pointer items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 sm:inline-flex"
-              [href]="publicUrl"
-              target="_blank"
-              rel="noopener"
-            >
-              <lucide-icon [name]="externalLinkIcon" [size]="14"></lucide-icon>
-              Open public quote
-            </a>
-            }
-          </div>
-
-          <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer-facing message</span>
-            <textarea
-              formControlName="customerMessage"
-              rows="5"
-              placeholder="Add warranty notes, part quality options, timing, or anything the customer should see when the quote is sent."
-              class="mt-1 w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm leading-6 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-            ></textarea>
-          </label>
-
-          <label class="mt-4 block">
-            <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Internal notes</span>
-            <textarea
-              formControlName="internalNotes"
-              rows="4"
-              placeholder="Private notes for your team."
-              class="mt-1 w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm leading-6 outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-            ></textarea>
-          </label>
-        </section>
-      </form>
-      }
-    </div>
-
-    <div class="border-t border-gray-200 px-5 py-3">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex flex-wrap items-center gap-2">
-          @if (selected.requestStatus === 'new') {
-          <button
-            type="button"
-            class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="updatingId() === selected.id"
-            (click)="markContacted(selected)"
-          >
-            Mark contacted
-          </button>
-          }
-
-          @if (selected.requestStatus === 'canceled') {
-          <button
-            type="button"
-            class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="updatingId() === selected.id"
-            (click)="reopenRequest(selected)"
-          >
-            Restore request
-          </button>
-          } @else {
-          <button
-            type="button"
-            class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="updatingId() === selected.id"
-            (click)="cancelRequest(selected)"
-          >
-            Cancel request
-          </button>
-          }
-        </div>
-
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="savingQuote() || actionId() === selected.id + ':decline' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'converted' || selected.requestStatus === 'canceled'"
-            (click)="declineSelectedQuote()"
-          >
-            {{ actionId() === selected.id + ':decline' ? 'Saving...' : 'Decline' }}
-          </button>
-
-          <button
-            type="button"
-            class="cursor-pointer rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="savingQuote() || actionId() === selected.id + ':accept' || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'converted' || selected.requestStatus === 'canceled'"
-            (click)="acceptSelectedQuote()"
-          >
-            {{ actionId() === selected.id + ':accept' ? 'Saving...' : 'Approve' }}
-          </button>
-
-          @if (selected.repairId) {
-          <a
-            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800"
-            [routerLink]="['/repairs/detail', selected.repairId]"
-          >
-            <lucide-icon [name]="externalLinkIcon" [size]="14"></lucide-icon>
-            Open repair
-          </a>
-          } @else {
-          <button
-            type="button"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="savingQuote() || actionId() === selected.id + ':convert' || !canConvertToRepair(selected)"
-            [title]="convertDisabledReason(selected) || ''"
-            (click)="convertSelectedQuote()"
-          >
-            <lucide-icon [name]="wrenchIcon" [size]="14"></lucide-icon>
-            {{ convertButtonLabel(selected) }}
-          </button>
-          @if (convertDisabledReason(selected); as reason) {
-          <p class="basis-full text-right text-[11px] font-medium text-gray-500">{{ reason }}</p>
-          }
-          }
-
-          <a
-            class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
-            [routerLink]="['/communications']"
-            [queryParams]="conversationQueryParams(selected)"
-          >
-            <lucide-icon [name]="messageSquareIcon" [size]="14"></lucide-icon>
-            Open conversation
-          </a>
-
-          <button
-            type="button"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="savingQuote() || actionId() === selected.id + ':email' || !canEmailQuote(selected)"
-            [title]="!selected.customer.email ? 'Add a customer email before emailing this quote.' : ''"
-            (click)="emailSelectedQuote()"
-          >
-            <lucide-icon [name]="mailIcon" [size]="14"></lucide-icon>
-            {{ actionId() === selected.id + ':email' ? 'Emailing...' : 'Email quote' }}
-          </button>
-
-          <button
-            type="button"
-            class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            [disabled]="savingQuote() || actionId() === selected.id + ':share' || (!publicQuoteUrl(selected) && !canSendQuote(selected)) || selected.requestStatus === 'canceled'"
-            (click)="shareSelectedQuote()"
-          >
-            <lucide-icon [name]="shareIcon" [size]="15"></lucide-icon>
-            @if (actionId() === selected.id + ':share') {
-            Generating...
-            } @else if (copySuccess()) {
-            Copied
-            } @else if (publicQuoteUrl(selected)) {
-            Share quote
+            @if (selected.requestStatus === 'canceled') {
+            <button type="button" class="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="updatingId() === selected.id" (click)="reopenRequest(selected)">
+              Restore request
+            </button>
             } @else {
-            Generate & copy link
+            <button type="button" class="cursor-pointer rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="updatingId() === selected.id || !!selected.repairId || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled'" [title]="!!selected.repairId || selected.quoteStatus === 'accepted' || selected.quoteStatus === 'deposit_pending' || selected.quoteStatus === 'deposit_paid' || selected.quoteStatus === 'scheduled' || selected.quoteStatus === 'converted' || selected.quoteStatus === 'declined' || selected.quoteStatus === 'canceled' ? 'This quote is locked and the request can no longer be canceled here.' : ''" (click)="cancelRequest(selected)">
+              Cancel request
+            </button>
             }
-          </button>
-
-          <button
-            type="button"
-            class="cursor-pointer rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800"
-            (click)="closeDrawer()"
-          >
-            Done
-          </button>
-        </div>
-      </div>
+          </div>
+        </section>
+      </aside>
     </div>
-
-  </aside>
+  </div>
 </div>
 }
