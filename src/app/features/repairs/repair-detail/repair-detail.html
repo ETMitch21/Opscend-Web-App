@@ -852,20 +852,20 @@
                         </span>
                     </div>
 
-                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor?.email) {
+                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor && repairValue.contractor.email) {
                     <div class="flex items-center justify-between gap-4">
                         <span class="text-gray-400">Email</span>
                         <span class="truncate font-medium text-gray-900">
-                            {{ repairValue.contractor?.email }}
+                            {{ repairValue.contractor.email }}
                         </span>
                     </div>
                     }
 
-                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor?.phone) {
+                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor && repairValue.contractor.phone) {
                     <div class="flex items-center justify-between gap-4">
                         <span class="text-gray-400">Phone</span>
                         <span class="font-medium text-gray-900">
-                            {{ repairValue.contractor?.phone | phone }}
+                            {{ repairValue.contractor.phone | phone }}
                         </span>
                     </div>
                     }
