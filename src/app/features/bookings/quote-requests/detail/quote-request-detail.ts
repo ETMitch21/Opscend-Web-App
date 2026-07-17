@@ -7,12 +7,13 @@ import {
   signal,
 } from "@angular/core";
 import { CommonModule, DatePipe } from "@angular/common";
-import { ActivatedRoute, RouterLink } from "@angular/router";
+import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { FormBuilder, ReactiveFormsModule } from "@angular/forms";
-import { debounceTime, firstValueFrom } from "rxjs";
+import { firstValueFrom } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import {
   Building2,
+  ChevronLeft,
   ChevronDownIcon,
   Clipboard,
   Clock3,
@@ -31,18 +32,19 @@ import {
   User,
   Wrench,
   X,
+  ChevronLeftIcon,
 } from "lucide-angular";
 
-import { BookingAdminService } from "../../../core/booking/service";
-import { PhonePipe } from "../../../core/pipes/phone-pipe";
-import { ToastService } from "../../../core/toast/toast-service";
+import { BookingAdminService } from "../../../../core/booking/service";
+import { PhonePipe } from "../../../../core/pipes/phone-pipe";
+import { ToastService } from "../../../../core/toast/toast-service";
 import {
   BookingQuoteRequest,
   BookingQuoteLineItemInput,
   BookingQuoteRequestPatch,
   BookingQuoteRequestStatus,
   BookingQuoteWorkflowStatus,
-} from "../../../core/booking/model";
+} from "../../../../core/booking/model";
 
 type QuoteRequestViewFilter = "all" | "new" | "contacted" | "canceled";
 type QuoteDrawerTab = "summary" | "pricing" | "approval";
@@ -72,32 +74,30 @@ interface QuoteLineItemDraft {
 }
 
 @Component({
-  selector: "app-quote-requests-overview",
+  selector: "app-quote-request-detail",
   standalone: true,
   imports: [
     CommonModule,
     RouterLink,
-    DatePipe,
     LucideAngularModule,
     PhonePipe,
     ReactiveFormsModule,
   ],
-  templateUrl: "./quote-requests-overview.html",
-  styleUrl: "./quote-requests-overview.scss",
+  templateUrl: "./quote-request-detail.html",
+  styleUrl: "./quote-request-detail.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class QuoteRequestsOverview {
+export class QuoteRequestDetail {
   private readonly bookingApi = inject(BookingAdminService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
-  private pendingAutoSave = false;
   private pendingQuoteRequestId: string | null = null;
-  private autoSaveToastId: string | number | undefined;
-  private lineItemAutoSaveTimer: number | undefined;
 
   readonly chevronDownIcon = ChevronDownIcon;
+  readonly leftChevronIcon = ChevronLeftIcon;
   readonly buildingIcon = Building2;
   readonly clipboardIcon = Clipboard;
   readonly clockIcon = Clock3;
@@ -122,6 +122,7 @@ export class QuoteRequestsOverview {
   readonly updatingId = signal<string | null>(null);
   readonly actionId = signal<string | null>(null);
   readonly savingQuote = signal(false);
+  readonly quoteDirty = signal(false);
   readonly error = signal<string | null>(null);
   readonly drawerError = signal<string | null>(null);
   readonly copySuccess = signal(false);
@@ -217,21 +218,49 @@ export class QuoteRequestsOverview {
   });
 
   ngOnInit(): void {
-    this.route.queryParamMap
+    this.route.paramMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((params) => {
-        this.pendingQuoteRequestId = params.get("quoteRequestId");
-        this.tryOpenPendingQuoteRequest();
-      });
+        const id = params.get("id");
 
-    void this.loadRequests();
+        if (!id) {
+          this.error.set("Quote request not found.");
+          return;
+        }
+
+        void this.loadQuoteRequest(id);
+      });
 
     this.quoteForm.valueChanges
-      .pipe(debounceTime(700), takeUntilDestroyed(this.destroyRef))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        if (!this.selectedRequest()) return;
-        void this.autoSaveSelectedQuote();
+        const request = this.selectedRequest();
+        if (!request || this.isQuoteLocked(request)) return;
+        this.markQuoteDirty();
       });
+  }
+
+  async loadQuoteRequest(id: string): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+    this.drawerError.set(null);
+    this.copySuccess.set(false);
+    this.quoteDirty.set(false);
+
+    try {
+      const request = await firstValueFrom(this.bookingApi.getQuoteRequest(id));
+
+      this.requests.set([request]);
+      this.selectedRequestId.set(request.id);
+      this.patchQuoteForm(request);
+    } catch (error) {
+      console.error(error);
+      this.error.set("Failed to load quote request.");
+      this.requests.set([]);
+      this.selectedRequestId.set(null);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   async refresh(): Promise<void> {
@@ -335,6 +364,7 @@ export class QuoteRequestsOverview {
     this.drawerError.set(null);
     this.copySuccess.set(false);
     this.patchQuoteForm(request);
+    this.quoteDirty.set(false);
   }
 
   setDrawerTab(tab: QuoteDrawerTab): void {
@@ -347,6 +377,8 @@ export class QuoteRequestsOverview {
     this.activeDrawerTab.set("summary");
     this.drawerError.set(null);
     this.copySuccess.set(false);
+    this.quoteDirty.set(false);
+    void this.router.navigate(["/quote-requests"]);
   }
 
   private tryOpenPendingQuoteRequest(): void {
@@ -379,6 +411,11 @@ export class QuoteRequestsOverview {
   async sendSelectedQuote(): Promise<void> {
     const request = this.selectedRequest();
     if (!request) return;
+    if (this.isQuoteLocked(request)) {
+      this.toast.info("Quote is locked", "This quote can no longer be shared.");
+      return;
+    }
+    if (!this.ensureQuoteIsSaved("generate a quote link")) return;
 
     await this.runQuoteAction(request, "send", () =>
       this.bookingApi.sendQuoteRequest(request.id),
@@ -388,9 +425,11 @@ export class QuoteRequestsOverview {
   async acceptSelectedQuote(): Promise<void> {
     const request = this.selectedRequest();
     if (!request) return;
-
-    const saved = await this.autoSaveSelectedQuote();
-    if (!saved) return;
+    if (this.isQuoteLocked(request)) {
+      this.toast.info("Quote is locked", "This quote can no longer be approved here.");
+      return;
+    }
+    if (!this.ensureQuoteIsSaved("approve this quote")) return;
 
     await this.runQuoteAction(request, "accept", () =>
       this.bookingApi.acceptQuoteRequest(request.id),
@@ -400,14 +439,16 @@ export class QuoteRequestsOverview {
   async declineSelectedQuote(): Promise<void> {
     const request = this.selectedRequest();
     if (!request) return;
+    if (this.isQuoteLocked(request)) {
+      this.toast.info("Quote is locked", "This quote can no longer be declined here.");
+      return;
+    }
+    if (!this.ensureQuoteIsSaved("decline this quote")) return;
 
     const confirmed = window.confirm(
       `Mark quote for ${this.customerLabel(request)} as declined?`,
     );
     if (!confirmed) return;
-
-    const saved = await this.autoSaveSelectedQuote();
-    if (!saved) return;
 
     await this.runQuoteAction(request, "decline", () =>
       this.bookingApi.declineQuoteRequest(request.id),
@@ -417,14 +458,12 @@ export class QuoteRequestsOverview {
   async convertSelectedQuote(): Promise<void> {
     const request = this.selectedRequest();
     if (!request || !this.canConvertToRepair(request)) return;
+    if (!this.ensureQuoteIsSaved("create a repair")) return;
 
     const confirmed = window.confirm(
       `Create a repair for ${this.customerLabel(request)} from this ${request.depositRequired ? "paid " : ""}quote?`,
     );
     if (!confirmed) return;
-
-    const saved = await this.autoSaveSelectedQuote();
-    if (!saved) return;
 
     await this.runQuoteAction(request, "convert", () =>
       this.bookingApi.convertQuoteRequest(request.id),
@@ -452,8 +491,12 @@ export class QuoteRequestsOverview {
     const request = this.selectedRequest();
     if (!request || this.actionId()) return;
 
-    const saved = await this.autoSaveSelectedQuote();
-    if (!saved) return;
+    if (this.isQuoteLocked(request)) {
+      this.toast.info("Quote is locked", "This quote can no longer be shared.");
+      return;
+    }
+
+    if (!this.ensureQuoteIsSaved("share this quote")) return;
 
     this.actionId.set(`${request.id}:share`);
     this.drawerError.set(null);
@@ -496,6 +539,11 @@ export class QuoteRequestsOverview {
     const request = this.selectedRequest();
     if (!request || this.actionId()) return;
 
+    if (this.isQuoteLocked(request)) {
+      this.toast.info("Quote is locked", "This quote can no longer be emailed.");
+      return;
+    }
+
     if (!request.customer.email) {
       this.drawerError.set("Add a customer email before emailing this quote.");
       this.toast.error("Customer email required", "Add an email address before sending the quote.");
@@ -507,8 +555,7 @@ export class QuoteRequestsOverview {
       return;
     }
 
-    const saved = await this.autoSaveSelectedQuote();
-    if (!saved) return;
+    if (!this.ensureQuoteIsSaved("email this quote")) return;
 
     this.actionId.set(`${request.id}:email`);
     this.drawerError.set(null);
@@ -532,6 +579,9 @@ export class QuoteRequestsOverview {
 
 
   addQuoteLineItem(type: string = "service"): void {
+    const request = this.selectedRequest();
+    if (!request || this.isQuoteLocked(request)) return;
+
     this.quoteLineItems.update((items) => [
       ...items,
       {
@@ -544,15 +594,21 @@ export class QuoteRequestsOverview {
         unitPriceCents: 0,
       },
     ]);
-    this.scheduleLineItemAutosave();
+    this.markQuoteDirty();
   }
 
   removeQuoteLineItem(index: number): void {
+    const request = this.selectedRequest();
+    if (!request || this.isQuoteLocked(request)) return;
+
     this.quoteLineItems.update((items) => items.filter((_, itemIndex) => itemIndex !== index));
-    this.scheduleLineItemAutosave();
+    this.markQuoteDirty();
   }
 
   updateQuoteLineItem(index: number, field: keyof QuoteLineItemDraft, value: string | number | null): void {
+    const request = this.selectedRequest();
+    if (!request || this.isQuoteLocked(request)) return;
+
     this.quoteLineItems.update((items) =>
       items.map((item, itemIndex) => {
         if (itemIndex !== index) return item;
@@ -573,7 +629,7 @@ export class QuoteRequestsOverview {
       }),
     );
 
-    this.scheduleLineItemAutosave();
+    this.markQuoteDirty();
   }
 
   quoteLineItemLineTotal(item: QuoteLineItemDraft): number {
@@ -994,18 +1050,25 @@ export class QuoteRequestsOverview {
     }
   }
 
-  private async autoSaveSelectedQuote(): Promise<boolean> {
+  async saveSelectedQuote(): Promise<boolean> {
     const request = this.selectedRequest();
     if (!request) return false;
 
-    if (this.savingQuote()) {
-      this.pendingAutoSave = true;
+    if (this.isQuoteLocked(request)) {
+      this.quoteDirty.set(false);
+      this.toast.info("Quote is locked", "Edit the repair order after conversion.");
       return false;
+    }
+
+    if (this.savingQuote()) return false;
+
+    if (!this.quoteDirty()) {
+      this.toast.info("No quote changes to save");
+      return true;
     }
 
     this.savingQuote.set(true);
     this.drawerError.set(null);
-    this.showAutoSaveLoadingToast();
 
     try {
       const updated = await firstValueFrom(
@@ -1014,21 +1077,56 @@ export class QuoteRequestsOverview {
 
       this.replaceRequest(updated);
       this.patchQuoteForm(updated);
-      this.showAutoSaveSuccessToast();
+      this.quoteDirty.set(false);
+      this.toast.success("Quote saved");
       return true;
     } catch (error) {
       console.error(error);
-      this.drawerError.set("Failed to save quote details.");
-      this.showAutoSaveErrorToast();
+      this.drawerError.set("Failed to save quote.");
+      this.toast.error("Could not save quote", "Quote changes were not saved.");
       return false;
     } finally {
       this.savingQuote.set(false);
-
-      if (this.pendingAutoSave && this.selectedRequest()) {
-        this.pendingAutoSave = false;
-        window.setTimeout(() => void this.autoSaveSelectedQuote(), 0);
-      }
     }
+  }
+
+  isQuoteLocked(request: BookingQuoteRequest | null | undefined): boolean {
+    if (!request) return true;
+
+    return Boolean(
+      request.repairId ||
+        request.requestStatus === "canceled" ||
+        [
+          "accepted",
+          "deposit_pending",
+          "deposit_paid",
+          "scheduled",
+          "converted",
+          "declined",
+          "expired",
+          "canceled",
+        ].includes(request.quoteStatus),
+    );
+  }
+
+  canEditQuote(request: BookingQuoteRequest | null | undefined): boolean {
+    return !this.isQuoteLocked(request);
+  }
+
+  private markQuoteDirty(): void {
+    const request = this.selectedRequest();
+    if (!request || this.isQuoteLocked(request)) return;
+    this.quoteDirty.set(true);
+  }
+
+  private ensureQuoteIsSaved(actionLabel: string): boolean {
+    if (!this.quoteDirty()) return true;
+
+    this.toast.error(
+      "Save quote first",
+      `Save your quote changes before you ${actionLabel}.`,
+    );
+    return false;
   }
 
   private buildQuotePayload(): BookingQuoteRequestPatch {
@@ -1051,27 +1149,6 @@ export class QuoteRequestsOverview {
       customerMessage: this.cleanText(formValue.customerMessage),
       internalNotes: this.cleanText(formValue.internalNotes),
     };
-  }
-
-  private showAutoSaveLoadingToast(): void {
-    this.dismissAutoSaveToast();
-    this.autoSaveToastId = this.toast.loading("Saving quote changes...");
-  }
-
-  private showAutoSaveSuccessToast(): void {
-    this.dismissAutoSaveToast();
-    this.toast.success("Quote changes saved");
-  }
-
-  private showAutoSaveErrorToast(): void {
-    this.dismissAutoSaveToast();
-    this.toast.error("Autosave failed", "Quote details were not saved.");
-  }
-
-  private dismissAutoSaveToast(): void {
-    if (this.autoSaveToastId === undefined) return;
-    this.toast.dismiss(this.autoSaveToastId);
-    this.autoSaveToastId = undefined;
   }
 
   private async updateRequestStatus(
@@ -1189,6 +1266,7 @@ export class QuoteRequestsOverview {
     );
 
     this.quoteLineItems.set(this.lineItemsFromRequest(request));
+    this.quoteDirty.set(false);
   }
 
 
@@ -1263,13 +1341,6 @@ export class QuoteRequestsOverview {
       default:
         return "Service";
     }
-  }
-
-  private scheduleLineItemAutosave(): void {
-    window.clearTimeout(this.lineItemAutoSaveTimer);
-    this.lineItemAutoSaveTimer = window.setTimeout(() => {
-      void this.autoSaveSelectedQuote();
-    }, 700);
   }
 
   centsToDollars(cents: number | null | undefined): string {

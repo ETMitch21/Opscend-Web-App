@@ -32,7 +32,8 @@ import { ContractorPayouts } from './features/contractor-payouts/contractor-payo
 import { ShopBookingsComponent } from './features/settings/shop-bookings/shop-bookings';
 import { PublicBooking } from './features/public/public-booking/public-booking';
 import { PublicQuoteApproval } from './features/public/public-quote-approval/public-quote-approval';
-import { QuoteRequestsOverview } from './features/bookings/quote-requests/quote-requests-overview';
+import { QuoteRequestsOverview } from './features/bookings/quote-requests/overview/quote-requests-overview';
+import { QuoteRequestDetail } from './features/bookings/quote-requests/detail/quote-request-detail';
 import { Services } from './features/services/services.component';
 import { CommunicationsInbox } from './features/communications/communications-inbox';
 
@@ -162,7 +163,16 @@ export const routes: Routes = [
     },
     {
         path: 'quote-requests',
-        component: QuoteRequestsOverview,
+        children: [
+            {
+                path: '',
+                component: QuoteRequestsOverview
+            },
+            {
+                path: ':id',
+                component: QuoteRequestDetail
+            }
+        ],
         canActivate: [AuthGuard]
     },
     {

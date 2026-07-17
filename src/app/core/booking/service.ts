@@ -150,6 +150,12 @@ export class BookingAdminService {
     );
   }
 
+  getQuoteRequest(id: string): Observable<BookingQuoteRequest> {
+    return this.http.get<BookingQuoteRequest>(
+      `${this.baseUrl}/quote-requests/${encodeURIComponent(id)}`
+    );
+  }
+
   updateQuoteRequest(
     id: string,
     body: BookingQuoteRequestPatch

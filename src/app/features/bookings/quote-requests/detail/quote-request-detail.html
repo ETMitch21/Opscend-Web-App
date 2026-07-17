@@ -1,0 +1,838 @@
+@if (loading()) {
+<div class="min-h-[calc(100vh-4rem)] bg-gray-50/70">
+  <div class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+    <div class="animate-pulse space-y-6">
+      <div class="h-20 rounded-2xl bg-white"></div>
+      <div class="h-32 rounded-2xl bg-white"></div>
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div class="h-[620px] rounded-2xl bg-white"></div>
+        <div class="h-[420px] rounded-2xl bg-white"></div>
+      </div>
+    </div>
+  </div>
+</div>
+} @else if (selectedRequest(); as selected) {
+<div class="min-h-[calc(100vh-4rem)] bg-gray-50/70 -m-4">
+  <!-- Page header -->
+  <header class="relative z-10 bg-white shadow-md">
+  <div class="mx-auto max-w-[1500px] px-4 pt-3 sm:px-6 lg:px-8">
+    <div class="flex flex-col gap-3 pb-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex min-w-0 items-start gap-3">
+        <a
+          class="mt-1 cursor-pointer text-sm font-medium hover:text-brand"
+          [routerLink]="['/quote-requests']"
+          aria-label="Back to quote requests">
+          <lucide-icon [name]="leftChevronIcon" [size]="20"></lucide-icon>
+        </a>
+
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="truncate text-lg font-semibold tracking-tight text-gray-950">
+              Quote Detail
+            </h1>
+
+            <span
+              class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
+              [ngClass]="tableStatusClass(selected)">
+              {{ tableStatusLabel(selected) }}
+            </span>
+
+            @if (quoteDirty()) {
+            <span
+              class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+              Unsaved changes
+            </span>
+            }
+
+            <span
+              class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset"
+              [ngClass]="depositStatusClass(selected)">
+              Deposit: {{ depositStatusLabel(selected) }}
+            </span>
+
+            @if (isQuoteLocked(selected)) {
+            <span
+              class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 ring-1 ring-inset ring-gray-200">
+              Read-only
+            </span>
+            }
+          </div>
+
+          <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
+            <span class="font-medium text-gray-700">
+              {{ selected.customer.name || 'Unknown customer' }}
+            </span>
+
+            <span aria-hidden="true">•</span>
+            <span>{{ deviceLabel(selected) }}</span>
+
+            <span aria-hidden="true">•</span>
+            <span>{{ serviceModeLabel(selected.serviceMode) }}</span>
+
+            <span aria-hidden="true">•</span>
+            <span class="font-mono text-xs text-gray-400">
+              {{ selected.id }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+        <a
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+          [routerLink]="['/communications']"
+          [queryParams]="conversationQueryParams(selected)">
+          <lucide-icon [name]="messageSquareIcon" [size]="16"></lucide-icon>
+          Conversation
+        </a>
+
+        @if (!isQuoteLocked(selected)) {
+        <button
+          type="button"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="savingQuote() || !quoteDirty()"
+          (click)="saveSelectedQuote()">
+          <lucide-icon [name]="clipboardIcon" [size]="16"></lucide-icon>
+
+          {{ savingQuote()
+            ? 'Saving...'
+            : (quoteDirty() ? 'Save changes' : 'Saved') }}
+        </button>
+
+        <button
+          type="button"
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="
+            savingQuote()
+            || actionId() === selected.id + ':share'
+            || quoteDirty()
+            || (!publicQuoteUrl(selected) && !canSendQuote(selected))
+          "
+          [title]="quoteDirty() ? 'Save quote changes before sharing.' : ''"
+          (click)="shareSelectedQuote()">
+          <lucide-icon [name]="shareIcon" [size]="16"></lucide-icon>
+
+          @if (actionId() === selected.id + ':share') {
+          Preparing link...
+          } @else if (copySuccess()) {
+          Link copied
+          } @else if (selected.publicApprovalToken) {
+          Copy quote link
+          } @else {
+          Share quote
+          }
+        </button>
+        } @else if (selected.repairId) {
+        <a
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft"
+          [routerLink]="['/repairs/detail', selected.repairId]">
+          <lucide-icon [name]="externalLinkIcon" [size]="16"></lucide-icon>
+          Open repair
+        </a>
+        } @else if (publicQuoteUrl(selected); as publicUrl) {
+        <a
+          class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft"
+          [href]="publicUrl"
+          target="_blank"
+          rel="noopener">
+          <lucide-icon [name]="externalLinkIcon" [size]="16"></lucide-icon>
+          View quote
+        </a>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="mt-2 grid w-full"
+    [style.grid-template-columns]="'repeat(' + progressSteps(selected).length + ', minmax(0, 1fr))'">
+    @for (
+      item of progressSteps(selected);
+      track item.label;
+      let i = $index;
+      let isLast = $last
+    ) {
+    <div class="min-w-0">
+      <div
+        class="mb-1 truncate px-1 text-center text-[10px] font-semibold leading-none"
+        [class.text-gray-700]="item.tone === 'done'"
+        [class.text-gray-400]="item.tone !== 'done'">
+        {{ item.label }}
+      </div>
+
+      <div class="relative h-2">
+        <span
+          class="absolute left-0 right-1/2 top-1/2 h-0.5 -translate-y-1/2 transition-colors duration-300"
+          [class.bg-brand]="item.tone === 'done'"
+          [class.bg-gray-200]="item.tone !== 'done'">
+        </span>
+
+        <span
+          class="absolute left-1/2 right-0 top-1/2 h-0.5 -translate-y-1/2 transition-colors duration-300"
+          [class.bg-brand]="
+            isLast
+              ? item.tone === 'done'
+              : progressSteps(selected)[i + 1].tone === 'done'
+          "
+          [class.bg-gray-200]="
+            isLast
+              ? item.tone !== 'done'
+              : progressSteps(selected)[i + 1].tone !== 'done'
+          ">
+        </span>
+
+        <span
+          class="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white transition-colors duration-300"
+          [class.bg-brand]="item.tone === 'done'"
+          [class.bg-gray-300]="item.tone !== 'done'">
+        </span>
+      </div>
+    </div>
+    }
+  </div>
+</header>
+
+  <main class="mx-auto max-w-[1500px] px-4 pb-6 pt-6 sm:px-6 lg:px-8">
+    @if (drawerError()) {
+    <div
+      class="mb-6 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+      <span
+        class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-bold">!</span>
+      <span>{{ drawerError() }}</span>
+    </div>
+    }
+
+    <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <!-- Primary editor column -->
+      <div class="min-w-0 space-y-6">
+        <form [formGroup]="quoteForm" class="space-y-6">
+          <!-- Quote editor -->
+          <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div
+              class="flex flex-col gap-4 border-b border-gray-200 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+              <div class="min-w-0">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-950 text-white">
+                    <lucide-icon [name]="clipboardIcon" [size]="18"></lucide-icon>
+                  </div>
+                  <div>
+                    <h2 class="text-base font-semibold text-gray-950">Quote editor</h2>
+                    <p class="mt-0.5 text-sm text-gray-500">
+                      @if (isQuoteLocked(selected)) {
+                      Pricing is locked because this quote has moved forward.
+                      } @else {
+                      Add the parts, labor, fees, and discounts the customer will see.
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            @if (!isQuoteLocked(selected)) {
+            <div
+              class="flex flex-col gap-3 border-b border-gray-200 bg-gray-50/80 px-5 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+              <p class="text-xs font-medium text-gray-500">Add line item</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button"
+                  class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:border-brand hover:text-brand"
+                  (click)="addQuoteLineItem('part')">
+                  + Part
+                </button>
+                <button type="button"
+                  class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:border-brand hover:text-brand"
+                  (click)="addQuoteLineItem('labor')">
+                  + Labor
+                </button>
+                <button type="button"
+                  class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:border-brand hover:text-brand"
+                  (click)="addQuoteLineItem('fee')">
+                  + Fee
+                </button>
+                <button type="button"
+                  class="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-600 shadow-sm transition hover:bg-rose-50"
+                  (click)="addQuoteLineItem('discount')">
+                  + Discount
+                </button>
+              </div>
+            </div>
+            }
+
+            @if (quoteLineItems().length === 0) {
+            <div class="px-6 py-16 text-center">
+              <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+                <lucide-icon [name]="plusIcon" [size]="20"></lucide-icon>
+              </div>
+              <h3 class="mt-4 text-sm font-semibold text-gray-900">No quote items yet</h3>
+              <p class="mt-1 text-sm text-gray-500">Start with the repair part or service being quoted.</p>
+              @if (!isQuoteLocked(selected)) {
+              <button type="button"
+                class="mt-5 cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft"
+                (click)="addQuoteLineItem('part')">
+                Add first item
+              </button>
+              }
+            </div>
+            } @else {
+            <div class="overflow-x-auto">
+              <div class="min-w-[760px]">
+                <div
+                  class="grid grid-cols-[minmax(0,1fr)_78px_132px_128px_40px] gap-3 border-b border-gray-200 bg-gray-50/40 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 sm:px-6">
+                  <span>Item</span>
+                  <span class="text-right">Qty</span>
+                  <span class="text-right">Price</span>
+                  <span class="text-right">Total</span>
+                  <span></span>
+                </div>
+
+                <div class="divide-y divide-gray-100">
+                  @for (item of quoteLineItems(); track item.id; let i = $index) {
+                  <div
+                    class="grid grid-cols-[minmax(0,1fr)_78px_132px_128px_40px] items-center gap-3 px-5 py-4 transition hover:bg-gray-50/70 sm:px-6">
+                    <div class="flex min-w-0 items-start gap-3">
+                      @if (isQuoteLocked(selected)) {
+                      <span
+                        class="mt-0.5 inline-flex min-w-[86px] shrink-0 justify-center rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                        {{ quoteLineItemTypeLabel(item.type) }}
+                      </span>
+                      <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-gray-900">{{ item.name }}</p>
+                        <p class="mt-0.5 truncate text-xs text-gray-500">{{ item.description || 'No description' }}</p>
+                      </div>
+                      } @else {
+                      <select
+                        class="h-8 w-[104px] shrink-0 cursor-pointer rounded-lg border border-gray-200 bg-white px-2 text-[11px] font-semibold text-gray-600 outline-none transition focus:border-brand"
+                        [value]="item.type" (change)="updateQuoteLineItem(i, 'type', $any($event.target).value)">
+                        <option value="service">Service</option>
+                        <option value="part">Part</option>
+                        <option value="labor">Labor</option>
+                        <option value="fee">Fee</option>
+                        <option value="discount">Discount</option>
+                        <option value="other">Other</option>
+                      </select>
+                      <div class="min-w-0 flex-1">
+                        <input
+                          class="block w-full border-0 bg-transparent p-0 text-sm font-semibold text-gray-900 outline-none placeholder:text-gray-400 focus:ring-0"
+                          placeholder="Item name" [value]="item.name"
+                          (input)="updateQuoteLineItem(i, 'name', $any($event.target).value)" />
+                        <input
+                          class="mt-1 block w-full border-0 bg-transparent p-0 text-xs leading-5 text-gray-500 outline-none placeholder:text-gray-400 focus:ring-0"
+                          placeholder="Customer-facing description" [value]="item.description || ''"
+                          (input)="updateQuoteLineItem(i, 'description', $any($event.target).value)" />
+                      </div>
+                      }
+                    </div>
+
+                    @if (isQuoteLocked(selected)) {
+                    <div class="text-right text-sm font-medium text-gray-700">{{ item.quantity }}</div>
+                    <div class="text-right text-sm font-medium text-gray-700">{{ money(item.unitPriceCents) }}</div>
+                    } @else {
+                    <input inputmode="numeric"
+                      class="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-right text-sm font-medium text-gray-900 outline-none transition focus:border-brand"
+                      [value]="item.quantity" (input)="updateQuoteLineItem(i, 'quantity', $any($event.target).value)" />
+                    <div class="relative">
+                      <span
+                        class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+                      <input inputmode="decimal"
+                        class="h-9 w-full rounded-lg border border-gray-200 bg-white pl-7 pr-2 text-right text-sm font-medium text-gray-900 outline-none transition focus:border-brand"
+                        [value]="centsToDollars(item.unitPriceCents)"
+                        (input)="updateQuoteLineItem(i, 'unitPriceCents', $any($event.target).value)" />
+                    </div>
+                    }
+
+                    <div class="text-right text-sm font-semibold" [class.text-rose-600]="item.type === 'discount'"
+                      [class.text-gray-950]="item.type !== 'discount'">
+                      {{ money(quoteLineItemLineTotal(item)) }}
+                    </div>
+
+                    @if (!isQuoteLocked(selected)) {
+                    <button type="button"
+                      class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-gray-300 transition hover:bg-rose-50 hover:text-rose-600"
+                      aria-label="Remove line item" (click)="removeQuoteLineItem(i)">
+                      <lucide-icon [name]="trashIcon" [size]="16"></lucide-icon>
+                    </button>
+                    } @else {
+                    <span></span>
+                    }
+                  </div>
+                  }
+                </div>
+              </div>
+            </div>
+            }
+
+            <div class="border-t border-gray-200 bg-gray-50/60 px-5 py-4 sm:px-6">
+              <div class="ml-auto w-full max-w-[360px]">
+                <div class="space-y-2.5 text-sm">
+                  <div class="flex items-center justify-between text-gray-500">
+                    <span>Subtotal</span>
+                    <span class="font-medium text-gray-900">
+                      {{ money(quoteLineItemTotals().subtotalCents) }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between text-gray-500">
+                    <span>Discounts</span>
+                    <span class="font-medium text-rose-600">
+                      -{{ money(quoteLineItemTotals().discountCents) }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-end justify-between border-t border-gray-200 pt-3">
+                    <span class="font-semibold text-gray-900">Total</span>
+                    <span class="text-2xl font-semibold tracking-tight text-gray-950">
+                      {{ money(quoteLineItemTotals().totalCents) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </section>
+
+          <!-- Messages and internal notes -->
+          <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 class="text-base font-semibold text-gray-950">Quote notes</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                  {{ internalNotesTab.checked ? 'Private context only your team can see.' : 'Message displayed to the
+                  customer with the quote.' }}
+                </p>
+              </div>
+
+              <div class="inline-flex self-start rounded-lg bg-gray-100 p-1 text-xs font-medium text-gray-600">
+                <input #customerNotesTab id="quoteNotesCustomer" type="radio" name="quoteNotesMode" class="sr-only"
+                  checked (change)="0" />
+                <input #internalNotesTab id="quoteNotesInternal" type="radio" name="quoteNotesMode" class="sr-only"
+                  (change)="0" />
+
+                <label for="quoteNotesCustomer" class="cursor-pointer rounded-md px-3 py-1.5 transition"
+                  [class.bg-white]="customerNotesTab.checked" [class.text-gray-900]="customerNotesTab.checked"
+                  [class.shadow-sm]="customerNotesTab.checked">
+                  Customer message
+                </label>
+                <label for="quoteNotesInternal" class="cursor-pointer rounded-md px-3 py-1.5 transition"
+                  [class.bg-white]="internalNotesTab.checked" [class.text-gray-900]="internalNotesTab.checked"
+                  [class.shadow-sm]="internalNotesTab.checked">
+                  Internal notes
+                </label>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              @if (isQuoteLocked(selected)) {
+              <div
+                class="min-h-[132px] whitespace-pre-wrap rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm leading-6 text-gray-700">
+                @if (internalNotesTab.checked) {
+                {{ quoteForm.controls.internalNotes.value || 'No internal notes added.' }}
+                } @else {
+                {{ quoteForm.controls.customerMessage.value || 'No customer message added.' }}
+                }
+              </div>
+              } @else if (internalNotesTab.checked) {
+              <textarea formControlName="internalNotes" rows="5"
+                placeholder="Supplier details, cost notes, follow-up reminders, or other private context..."
+                class="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition focus:border-brand"></textarea>
+              } @else {
+              <textarea formControlName="customerMessage" rows="5"
+                placeholder="Explain the repair, part quality, warranty, timing, or anything else the customer should know..."
+                class="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition focus:border-brand"></textarea>
+              }
+            </div>
+          </section>
+        </form>
+      </div>
+
+      <!-- Sticky context and actions -->
+      <aside class="space-y-5 xl:sticky xl:top-6">
+        <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div class="border-b border-gray-200 bg-gray-950 px-5 py-5 text-white">
+            <p class="text-xs font-medium text-gray-400">Quote total</p>
+            <div class="mt-1 flex items-end justify-between gap-3">
+              <p class="text-3xl font-semibold tracking-tight">
+                {{ money(quoteLineItemTotals().totalCents || selected.estimatedTotalCents) }}
+              </p>
+              <span class="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white">
+                {{ tableStatusLabel(selected) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="p-5">
+            @if (quoteDirty()) {
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <p class="text-xs font-semibold text-amber-800">Save before continuing</p>
+              <p class="mt-1 text-xs leading-5 text-amber-700">Sharing, emailing, approval, and conversion are paused
+                until your changes are saved.</p>
+            </div>
+            }
+
+            <div class="space-y-2.5">
+              @if (!isQuoteLocked(selected)) {
+              <button type="button"
+                class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="savingQuote() || actionId() === selected.id + ':share' || quoteDirty() || (!publicQuoteUrl(selected) && !canSendQuote(selected))"
+                [title]="quoteDirty() ? 'Save quote changes before sharing.' : ''" (click)="shareSelectedQuote()">
+                <lucide-icon [name]="shareIcon" [size]="16"></lucide-icon>
+                @if (actionId() === selected.id + ':share') {
+                Preparing link...
+                } @else if (copySuccess()) {
+                Quote link copied
+                } @else if (selected.publicApprovalToken) {
+                Copy quote link
+                } @else {
+                Generate & copy link
+                }
+              </button>
+
+              <button type="button"
+                class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="savingQuote() || actionId() === selected.id + ':email' || quoteDirty() || !canEmailQuote(selected)"
+                [title]="quoteDirty() ? 'Save quote changes before emailing.' : (!selected.customer.email ? 'Add a customer email before emailing this quote.' : '')"
+                (click)="emailSelectedQuote()">
+                <lucide-icon [name]="mailIcon" [size]="16"></lucide-icon>
+                {{ actionId() === selected.id + ':email' ? 'Sending email...' : 'Email quote' }}
+              </button>
+              }
+
+              @if (publicQuoteUrl(selected); as publicUrl) {
+              @if (isQuoteLocked(selected)) {
+              <button type="button"
+                class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+                (click)="copyPublicQuoteLink(selected)">
+                <lucide-icon [name]="clipboardIcon" [size]="16"></lucide-icon>
+                {{ copySuccess() ? 'Link copied' : 'Copy quote link' }}
+              </button>
+              }
+
+              <a class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+                [href]="publicUrl" target="_blank" rel="noopener">
+                <lucide-icon [name]="externalLinkIcon" [size]="16"></lucide-icon>
+                View customer quote
+              </a>
+              }
+
+              @if (selected.repairId) {
+              <a class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800"
+                [routerLink]="['/repairs/detail', selected.repairId]">
+                <lucide-icon [name]="wrenchIcon" [size]="16"></lucide-icon>
+                Open linked repair
+              </a>
+              } @else if (canConvertToRepair(selected)) {
+              <button type="button"
+                class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="savingQuote() || actionId() === selected.id + ':convert' || quoteDirty()"
+                [title]="quoteDirty() ? 'Save quote changes before creating a repair.' : ''"
+                (click)="convertSelectedQuote()">
+                <lucide-icon [name]="wrenchIcon" [size]="16"></lucide-icon>
+                {{ convertButtonLabel(selected) }}
+              </button>
+              }
+            </div>
+
+            @if (!isQuoteLocked(selected)) {
+            <div class="mt-5 border-t border-gray-100 pt-4">
+              <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Manual decision</p>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button"
+                  class="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="savingQuote() || actionId() === selected.id + ':decline' || quoteDirty()"
+                  (click)="declineSelectedQuote()">
+                  {{ actionId() === selected.id + ':decline' ? 'Updating...' : 'Decline' }}
+                </button>
+                <button type="button"
+                  class="cursor-pointer rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="savingQuote() || actionId() === selected.id + ':accept' || quoteDirty()"
+                  (click)="acceptSelectedQuote()">
+                  {{ actionId() === selected.id + ':accept' ? 'Updating...' : 'Mark accepted' }}
+                </button>
+              </div>
+            </div>
+            }
+
+            @if (convertDisabledReason(selected) && !selected.repairId) {
+            <p class="mt-4 text-xs leading-5 text-gray-500">{{ convertDisabledReason(selected) }}</p>
+            }
+          </div>
+        </section>
+
+        <!-- Deposit -->
+        <section
+          class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+          [formGroup]="quoteForm">
+          <div class="p-5">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex min-w-0 items-center gap-3">
+                <div
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200">
+                  <lucide-icon [name]="dollarIcon" [size]="18"></lucide-icon>
+                </div>
+
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-sm font-semibold text-gray-950">Deposit</h2>
+                    <span
+                      class="rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset"
+                      [ngClass]="depositStatusClass(selected)">
+                      {{ depositStatusLabel(selected) }}
+                    </span>
+                  </div>
+                  <p class="mt-0.5 text-xs leading-5 text-gray-500">
+                    Collect payment before creating the repair.
+                  </p>
+                </div>
+              </div>
+
+              @if (!isQuoteLocked(selected)) {
+              <label
+                class="relative inline-flex shrink-0 cursor-pointer items-center"
+                aria-label="Require deposit">
+                <input
+                  type="checkbox"
+                  formControlName="depositRequired"
+                  class="peer sr-only" />
+
+                <span
+                  class="h-6 w-11 rounded-full bg-gray-200 shadow-inner transition-colors duration-200 peer-checked:bg-brand peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand">
+                </span>
+
+                <span
+                  class="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 peer-checked:translate-x-5">
+                </span>
+              </label>
+              } @else {
+              <div
+                class="relative h-6 w-11 shrink-0 rounded-full shadow-inner"
+                [class.bg-brand]="selected.depositRequired"
+                [class.bg-gray-200]="!selected.depositRequired"
+                aria-hidden="true">
+                <span
+                  class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform"
+                  [class.left-5]="selected.depositRequired"
+                  [class.left-0.5]="!selected.depositRequired">
+                </span>
+              </div>
+              }
+            </div>
+
+            @if (!isQuoteLocked(selected) && quoteForm.controls.depositRequired.value) {
+            <div class="mt-5 border-t border-gray-100 pt-4">
+              <label
+                for="quoteDepositAmount"
+                class="mb-1.5 block text-xs font-medium text-gray-600">
+                Deposit amount
+              </label>
+
+              <div class="relative">
+                <span
+                  class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                  $
+                </span>
+                <input
+                  id="quoteDepositAmount"
+                  formControlName="depositAmount"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                  class="h-11 w-full rounded-xl border border-gray-200 bg-white pl-7 pr-3 text-base font-semibold text-gray-950 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10" />
+              </div>
+
+            </div>
+            } @else if (isQuoteLocked(selected) && selected.depositRequired) {
+            <div class="mt-5 border-t border-gray-100 pt-4">
+              <div class="flex items-end justify-between gap-4">
+                <div>
+                  <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    Deposit amount
+                  </p>
+                  <p class="mt-1 text-xl font-semibold tracking-tight text-gray-950">
+                    {{ money(selected.depositPaidAmountCents ?? selected.depositAmountCents) }}
+                  </p>
+                </div>
+
+                @if (selected.depositPaidAt) {
+                <div class="text-right">
+                  <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    Paid
+                  </p>
+                  <p class="mt-1 text-xs font-medium text-emerald-700">
+                    {{ selected.depositPaidAt | date:'MMM d, h:mm a' }}
+                  </p>
+                </div>
+                }
+              </div>
+            </div>
+            } @else {
+            <div class="mt-4 rounded-xl bg-gray-50 px-3 py-2.5 text-xs leading-5 text-gray-500">
+              No deposit is required for this quote.
+            </div>
+            }
+          </div>
+        </section>
+
+        <!-- Customer -->
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-950 text-xs font-semibold text-white">
+              {{ (selected.customer.name || 'U').slice(0, 2).toUpperCase() }}
+            </div>
+            <div class="min-w-0">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Customer</p>
+              <p class="truncate text-sm font-semibold text-gray-950">{{ selected.customer.name || 'Unknown customer' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-2 text-sm">
+            @if (selected.customer.phone) {
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-gray-400">Phone</span>
+              <a class="cursor-pointer font-medium text-gray-800 hover:text-brand"
+                [href]="'tel:' + selected.customer.phone">
+                {{ selected.customer.phone | phone }}
+              </a>
+            </div>
+            }
+            @if (selected.customer.email) {
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-gray-400">Email</span>
+              <a class="min-w-0 cursor-pointer truncate font-medium text-gray-800 hover:text-brand"
+                [href]="'mailto:' + selected.customer.email">
+                {{ selected.customer.email }}
+              </a>
+            </div>
+            }
+          </div>
+
+          <div class="mt-4 grid grid-cols-3 gap-2 border-t border-gray-100 pt-4">
+            @if (selected.customer.phone) {
+            <a class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-200 px-2 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+              [href]="'tel:' + selected.customer.phone">Call</a>
+            }
+            @if (selected.customer.email) {
+            <a class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-200 px-2 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+              [href]="'mailto:' + selected.customer.email">Email</a>
+            }
+            <a class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-200 px-2 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+              [routerLink]="['/communications']" [queryParams]="conversationQueryParams(selected)">Inbox</a>
+          </div>
+        </section>
+
+        <!-- Request details -->
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-600">
+              <lucide-icon [name]="wrenchIcon" [size]="18"></lucide-icon>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Request details</p>
+              <p class="text-sm font-semibold text-gray-950">{{ selected.repairNeed?.label || 'Manual quote' }}</p>
+            </div>
+          </div>
+
+          <dl class="mt-4 space-y-3 border-t border-gray-100 pt-4 text-sm">
+            <div class="flex items-start justify-between gap-4">
+              <dt class="text-gray-400">Device</dt>
+              <dd class="text-right font-medium text-gray-900">{{ deviceLabel(selected) }}</dd>
+            </div>
+            <div class="flex items-start justify-between gap-4">
+              <dt class="text-gray-400">Service</dt>
+              <dd class="text-right font-medium text-gray-900">{{ serviceModeLabel(selected.serviceMode) }}</dd>
+            </div>
+            <div class="flex items-start justify-between gap-4">
+              <dt class="text-gray-400">Requested</dt>
+              <dd class="text-right font-medium text-gray-900">
+                @if (requestDate(selected); as requestedDate) {
+                {{ requestedDate | date:'MMM d, yyyy' }}
+                } @else {
+                Unknown
+                }
+              </dd>
+            </div>
+            <div class="flex items-start justify-between gap-4">
+              <dt class="text-gray-400">Approval link</dt>
+              <dd class="text-right font-medium text-gray-900">{{ selected.publicApprovalToken ? 'Generated' : 'Not generated' }}</dd>
+            </div>
+          </dl>
+
+          @if (selected.customerNotes) {
+          <div class="mt-4 rounded-xl bg-gray-50 p-3">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Customer note</p>
+            <p class="mt-1 whitespace-pre-wrap text-sm leading-5 text-gray-700">{{ selected.customerNotes }}</p>
+          </div>
+          }
+        </section>
+
+        @if (addressLines(selected).length) {
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-600">
+              <lucide-icon [name]="mapPinIcon" [size]="18"></lucide-icon>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Service address</p>
+              <p class="text-sm font-semibold text-gray-950">{{ serviceModeLabel(selected.serviceMode) }}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 border-t border-gray-100 pt-4 text-sm leading-6 text-gray-700">
+            @for (line of addressLines(selected); track line) {
+            <p>{{ line }}</p>
+            }
+            @if (selected.address && selected.address.notes) {
+            <p class="mt-2 text-xs text-gray-500">{{ selected.address.notes }}</p>
+            }
+          </div>
+        </section>
+        }
+
+        @if (!isQuoteLocked(selected) || selected.requestStatus === 'canceled') {
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Request controls</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            @if (selected.requestStatus === 'new') {
+            <button type="button"
+              class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="updatingId() === selected.id" (click)="markContacted(selected)">
+              Mark contacted
+            </button>
+            }
+
+            @if (selected.requestStatus === 'canceled') {
+            <button type="button"
+              class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="updatingId() === selected.id" (click)="reopenRequest(selected)">
+              Restore request
+            </button>
+            } @else {
+            <button type="button"
+              class="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="updatingId() === selected.id || isQuoteLocked(selected)" (click)="cancelRequest(selected)">
+              Cancel request
+            </button>
+            }
+          </div>
+        </section>
+        }
+      </aside>
+    </div>
+  </main>
+</div>
+} @else {
+<div class="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-gray-50 p-6">
+  <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-7 text-center shadow-sm">
+    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 text-gray-400">
+      <lucide-icon [name]="clipboardIcon" [size]="20"></lucide-icon>
+    </div>
+    <h2 class="mt-4 text-lg font-semibold text-gray-950">Quote not found</h2>
+    <p class="mt-2 text-sm text-gray-500">This quote request could not be opened or may no longer exist.</p>
+    <button type="button"
+      class="mt-5 cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft"
+      (click)="closeDrawer()">
+      Back to quote requests
+    </button>
+  </div>
+</div>
+}
