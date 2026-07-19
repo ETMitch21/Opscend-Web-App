@@ -3,11 +3,10 @@
     <div>
       <h1 class="text-2xl font-semibold text-gray-900">Public Booking</h1>
       <p class="mt-1 text-sm text-gray-500">
-        Manage the customer quote flow, public categories, pricing rules, repair options, and templates.
+        Manage the public quote flow, device categories, fallback pricing, scheduling, and embed settings.
       </p>
     </div>
 
-    @if (activeTab() !== 'repairNeeds' && activeTab() !== 'templates') {
     <button
       class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
       type="button"
@@ -21,7 +20,6 @@
       Save Settings
       }
     </button>
-    }
   </div>
 
   @if (loading()) {
@@ -80,30 +78,6 @@
         [class.hover:text-gray-900]="activeTab() !== 'scheduling'"
         (click)="setActiveTab('scheduling')">
         Scheduling
-      </button>
-
-      <button
-        type="button"
-        class="cursor-pointer border-b-2 pb-3 transition"
-        [class.border-brand]="activeTab() === 'repairNeeds'"
-        [class.text-brand]="activeTab() === 'repairNeeds'"
-        [class.border-transparent]="activeTab() !== 'repairNeeds'"
-        [class.hover:text-gray-900]="activeTab() !== 'repairNeeds'"
-        (click)="setActiveTab('repairNeeds')">
-        Repair Needs
-        <span class="ml-1 text-xs text-gray-400">{{ activeRepairNeeds().length }}</span>
-      </button>
-
-      <button
-        type="button"
-        class="cursor-pointer border-b-2 pb-3 transition"
-        [class.border-brand]="activeTab() === 'templates'"
-        [class.text-brand]="activeTab() === 'templates'"
-        [class.border-transparent]="activeTab() !== 'templates'"
-        [class.hover:text-gray-900]="activeTab() !== 'templates'"
-        (click)="setActiveTab('templates')">
-        Templates
-        <span class="ml-1 text-xs text-gray-400">{{ activeTemplates().length }}</span>
       </button>
 
       <button
@@ -239,12 +213,28 @@
     }
 
     @if (activeTab() === 'pricing') {
+    <div class="space-y-5">
+      <section class="flex flex-col gap-4 rounded-2xl border border-brand/20 bg-brand/5 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900">Device-specific repair pricing</h2>
+          <p class="mt-1 text-sm leading-6 text-gray-500">
+            Repair types, model prices, and options such as Essential, Premium, or OEM now live in the shared Repair Pricing area.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="cursor-pointer shrink-0 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft"
+          (click)="goToRepairPricing()">
+          Open Repair Pricing
+        </button>
+      </section>
+
     <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div class="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 class="text-base font-semibold text-gray-900">Pricing Formula</h2>
           <p class="mt-1 text-sm text-gray-500">
-            Used for automated supplier-estimated quotes when no confirmed template exists.
+            Used for supplier-estimated quotes when a model-specific repair price is not available.
           </p>
         </div>
       </div>
@@ -340,6 +330,7 @@
         </label>
       </div>
     </section>
+    </div>
     }
 
     @if (activeTab() === 'scheduling') {
@@ -484,488 +475,5 @@
     }
   </form>
 
-  @if (activeTab() === 'repairNeeds') {
-  <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-    <div class="mb-5 flex items-start justify-between gap-4">
-      <div>
-        <h2 class="text-base font-semibold text-gray-900">Repair Needs</h2>
-        <p class="mt-1 text-sm text-gray-500">
-          These are the repair options customers can choose after selecting a device.
-        </p>
-      </div>
-    </div>
-
-    <div class="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-      <form class="rounded-2xl border border-gray-200 bg-gray-50 p-4" [formGroup]="repairNeedForm" (ngSubmit)="saveRepairNeed()">
-        <h3 class="text-sm font-semibold text-gray-900">
-          @if (editingRepairNeedId()) {
-          Edit Repair Need
-          } @else {
-          Add Repair Need
-          }
-        </h3>
-
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Label</span>
-            <input
-              formControlName="label"
-              placeholder="Screen Repair"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Code</span>
-            <input
-              formControlName="code"
-              placeholder="screen"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-            <p class="mt-1 text-xs text-gray-500">Lowercase letters, numbers, and underscores.</p>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Sort order</span>
-            <input
-              type="number"
-              formControlName="sortOrder"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Default duration</span>
-            <input
-              type="number"
-              formControlName="defaultDurationMins"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-            <p class="mt-1 text-xs text-gray-500">Minutes</p>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Default labor override</span>
-            <div class="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-brand">
-              <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-500">$</span>
-              <input
-                type="number"
-                step="0.01"
-                formControlName="defaultLaborDollars"
-                class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" />
-            </div>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Supplier search terms</span>
-            <input
-              formControlName="supplierSearchTermsText"
-              placeholder="screen, display, oled, lcd"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-        </div>
-
-        <label class="mt-4 block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Description</span>
-          <textarea
-            rows="3"
-            formControlName="description"
-            class="w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"></textarea>
-        </label>
-
-        <div class="mt-4 flex flex-wrap gap-4 text-sm text-gray-700">
-          <label class="inline-flex items-center gap-2">
-            <input type="checkbox" formControlName="isActive" />
-            Active
-          </label>
-
-          <label class="inline-flex items-center gap-2">
-            <input type="checkbox" formControlName="requiresManualReview" />
-            Requires manual review
-          </label>
-        </div>
-
-        <div class="mt-5 flex flex-wrap gap-2">
-          <button
-            class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-            type="submit"
-            [disabled]="repairNeedBusyId() !== null">
-            @if (repairNeedBusyId()) {
-            Saving...
-            } @else if (editingRepairNeedId()) {
-            Update Repair Need
-            } @else {
-            Add Repair Need
-            }
-          </button>
-
-          @if (editingRepairNeedId()) {
-          <button
-            class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            type="button"
-            (click)="cancelRepairNeedEdit()">
-            Cancel
-          </button>
-          }
-        </div>
-      </form>
-
-      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        @if (!repairNeeds().length) {
-        <div class="px-6 py-12 text-center">
-          <h3 class="text-sm font-semibold text-gray-900">No repair needs yet</h3>
-          <p class="mt-1 text-sm text-gray-500">Add your first public repair option.</p>
-        </div>
-        } @else {
-        <div class="divide-y divide-gray-200">
-          @for (need of activeRepairNeeds(); track need.id) {
-          <article class="flex items-start justify-between gap-4 px-5 py-4 transition hover:bg-gray-50/70">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <strong class="text-sm font-semibold text-gray-900">{{ need.label }}</strong>
-                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">{{ need.code }}</span>
-                @if (need.requiresManualReview) {
-                <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Manual review</span>
-                }
-              </div>
-
-              <p class="mt-1 text-sm text-gray-500">
-                Terms:
-                @if (need.supplierSearchTerms.length) {
-                {{ need.supplierSearchTerms.join(', ') }}
-                } @else {
-                None
-                }
-              </p>
-              <p class="mt-1 text-xs text-gray-500">
-                Duration: {{ need.defaultDurationMins || settings()?.defaultDurationMins || 60 }} mins
-                · Sort: {{ need.sortOrder }}
-              </p>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                (click)="editRepairNeed(need)">
-                Edit
-              </button>
-              <button
-                type="button"
-                class="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-                (click)="deactivateRepairNeed(need)">
-                Deactivate
-              </button>
-            </div>
-          </article>
-          }
-
-          @if (inactiveRepairNeeds().length) {
-          <details class="border-t border-gray-200 bg-gray-50">
-            <summary class="cursor-pointer px-5 py-3 text-sm font-medium text-gray-700">
-              Inactive repair needs ({{ inactiveRepairNeeds().length }})
-            </summary>
-
-            <div class="divide-y divide-gray-200 border-t border-gray-200 bg-white">
-              @for (need of inactiveRepairNeeds(); track need.id) {
-              <article class="flex items-center justify-between gap-4 px-5 py-4 opacity-70">
-                <div class="min-w-0">
-                  <strong class="text-sm font-semibold text-gray-900">{{ need.label }}</strong>
-                  <span class="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">{{ need.code }}</span>
-                </div>
-
-                <button
-                  type="button"
-                  class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  (click)="editRepairNeed(need)">
-                  Edit
-                </button>
-              </article>
-              }
-            </div>
-          </details>
-          }
-        </div>
-        }
-      </div>
-    </div>
-  </section>
-  }
-
-  @if (activeTab() === 'templates') {
-  <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-    <div class="mb-5">
-      <h2 class="text-base font-semibold text-gray-900">Popular Repair Templates</h2>
-      <p class="mt-1 text-sm text-gray-500">
-        Templates allow known repairs to use confirmed pricing instead of supplier-estimated pricing.
-      </p>
-    </div>
-
-    <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <form class="rounded-2xl border border-gray-200 bg-gray-50 p-4" [formGroup]="templateForm" (ngSubmit)="saveTemplate()">
-        <h3 class="text-sm font-semibold text-gray-900">
-          @if (editingTemplateId()) {
-          Edit Pricing Template
-          } @else {
-          Add Pricing Template
-          }
-        </h3>
-
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Template name</span>
-            <input
-              formControlName="name"
-              placeholder="iPhone 14 Pro Max Screen Repair"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Repair need</span>
-            <select
-              formControlName="repairNeedId"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-              <option value="">Select repair need</option>
-              @for (need of activeRepairNeeds(); track need.id) {
-              <option [value]="need.id">{{ need.label }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Category</span>
-            <input
-              formControlName="category"
-              placeholder="Smartphones"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Brand</span>
-            <input
-              formControlName="brand"
-              placeholder="Apple"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Model</span>
-            <input
-              formControlName="model"
-              placeholder="iPhone 14 Pro Max"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">TechSpecs Product ID</span>
-            <input
-              formControlName="techspecsProductId"
-              placeholder="Optional"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Service</span>
-            <select
-              formControlName="serviceId"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-              <option value="">No linked service</option>
-              @for (service of services(); track service.id) {
-              <option [value]="service.id">{{ serviceLabel(service) }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Product</span>
-            <select
-              formControlName="productId"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-              <option value="">No linked product</option>
-              @for (product of products(); track product.id) {
-              <option [value]="product.id">{{ productLabel(product) }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Fixed price</span>
-            <div class="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-brand">
-              <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-500">$</span>
-              <input
-                type="number"
-                step="0.01"
-                formControlName="fixedPriceDollars"
-                class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" />
-            </div>
-            <p class="mt-1 text-xs text-gray-500">Only used when dynamic pricing is off.</p>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Labor override</span>
-            <div class="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-brand">
-              <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-500">$</span>
-              <input
-                type="number"
-                step="0.01"
-                formControlName="laborDollars"
-                class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" />
-            </div>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Duration override</span>
-            <input
-              type="number"
-              formControlName="durationMins"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-            <p class="mt-1 text-xs text-gray-500">Minutes</p>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Sort order</span>
-            <input
-              type="number"
-              formControlName="sortOrder"
-              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          </label>
-        </div>
-
-        <div class="mt-4 flex flex-wrap gap-4 text-sm text-gray-700">
-          <label class="inline-flex items-center gap-2">
-            <input type="checkbox" formControlName="isActive" />
-            Active
-          </label>
-
-          <label class="inline-flex items-center gap-2">
-            <input type="checkbox" formControlName="useDynamicPricing" />
-            Use dynamic pricing
-          </label>
-
-          <label class="inline-flex items-center gap-2">
-            <input type="checkbox" formControlName="allowInstantConfirmation" />
-            Instant confirmation
-          </label>
-
-          <label class="inline-flex items-center gap-2">
-            <input type="checkbox" formControlName="requiresManualReview" />
-            Requires manual review
-          </label>
-        </div>
-
-        <div class="mt-5 flex flex-wrap gap-2">
-          <button
-            class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-            type="submit"
-            [disabled]="templateBusyId() !== null">
-            @if (templateBusyId()) {
-            Saving...
-            } @else if (editingTemplateId()) {
-            Update Template
-            } @else {
-            Add Template
-            }
-          </button>
-
-          @if (editingTemplateId()) {
-          <button
-            class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            type="button"
-            (click)="cancelTemplateEdit()">
-            Cancel
-          </button>
-          }
-        </div>
-      </form>
-
-      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-        @if (!templates().length) {
-        <div class="px-6 py-12 text-center">
-          <h3 class="text-sm font-semibold text-gray-900">No pricing templates yet</h3>
-          <p class="mt-1 text-sm text-gray-500">Add confirmed pricing for your most popular repairs.</p>
-        </div>
-        } @else {
-        <div class="divide-y divide-gray-200">
-          @for (template of activeTemplates(); track template.id) {
-          <article class="flex items-start justify-between gap-4 px-5 py-4 transition hover:bg-gray-50/70">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <strong class="text-sm font-semibold text-gray-900">{{ template.name }}</strong>
-                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
-                  {{ templateStatusLabel(template) }}
-                </span>
-              </div>
-
-              <p class="mt-1 text-sm text-gray-500">
-                {{ template.repairNeed?.label || 'No repair need' }}
-                ·
-                @if (template.brand || template.model) {
-                {{ template.brand || '' }} {{ template.model || '' }}
-                } @else {
-                Any matching device
-                }
-              </p>
-
-              <p class="mt-1 text-xs text-gray-500">
-                @if (template.fixedPriceCents !== null && !template.useDynamicPricing) {
-                Fixed: {{ money(template.fixedPriceCents) }}
-                } @else {
-                Dynamic pricing
-                }
-
-                @if (template.product) {
-                · Product: {{ template.product.name }}
-                }
-
-                @if (template.service) {
-                · Service: {{ template.service.name }}
-                }
-              </p>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                (click)="editTemplate(template)">
-                Edit
-              </button>
-              <button
-                type="button"
-                class="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-                (click)="deactivateTemplate(template)">
-                Deactivate
-              </button>
-            </div>
-          </article>
-          }
-
-          @if (inactiveTemplates().length) {
-          <details class="border-t border-gray-200 bg-gray-50">
-            <summary class="cursor-pointer px-5 py-3 text-sm font-medium text-gray-700">
-              Inactive templates ({{ inactiveTemplates().length }})
-            </summary>
-
-            <div class="divide-y divide-gray-200 border-t border-gray-200 bg-white">
-              @for (template of inactiveTemplates(); track template.id) {
-              <article class="flex items-center justify-between gap-4 px-5 py-4 opacity-70">
-                <div class="min-w-0">
-                  <strong class="text-sm font-semibold text-gray-900">{{ template.name }}</strong>
-                  <p class="mt-1 text-sm text-gray-500">{{ template.repairNeed?.label || 'No repair need' }}</p>
-                </div>
-
-                <button
-                  type="button"
-                  class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  (click)="editTemplate(template)">
-                  Edit
-                </button>
-              </article>
-              }
-            </div>
-          </details>
-          }
-        </div>
-        }
-      </div>
-    </div>
-  </section>
-  }
   }
 </div>

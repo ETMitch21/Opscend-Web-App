@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -7,6 +7,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { loadStripe, type Stripe, type StripeElements, type StripePaymentElement } from '@stripe/stripe-js';
 import {
   ArrowLeft,
   BatteryCharging,
@@ -41,11 +42,15 @@ import {
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
 import { PublicBookingService } from '../../../core/public-booking/service';
+import { AppConfigService } from '../../../core/app-config/app-config.service';
 import {
   PublicAvailabilitySlot,
+  PublicBookingPaymentChoice,
+  PublicBookingPaymentIntentResponse,
   PublicBookingSettings,
   PublicDeviceModelOption,
   PublicRepairNeed,
+  PublicRepairPricingOption,
   PublicRepairQuote,
   PublicScheduleResponse,
   PublicQuoteRequestResponse,
@@ -60,7 +65,14 @@ type BookingStep =
   | 'quote'
   | 'quoteRequest'
   | 'schedule'
+  | 'payment'
   | 'confirm';
+
+type ExternalPaymentState =
+  | 'request-complete'
+  | 'request-processing'
+  | 'slot-refunded'
+  | 'request-canceled';
 
 type PublicCalendarDay = {
   dateKey: string;
@@ -121,9 +133,15 @@ const PUBLIC_POPULAR_BRANDS_BY_CATEGORY: Record<string, string[]> = {
   imports: [CommonModule, LucideAngularModule, ReactiveFormsModule],
   templateUrl: './public-booking.html',
 })
-export class PublicBooking {
+export class PublicBooking implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly bookingService = inject(PublicBookingService);
+  private readonly appConfig = inject(AppConfigService);
+
+  readonly paymentElementHost = viewChild<ElementRef<HTMLDivElement>>('paymentElementHost');
+  private stripe: Stripe | null = null;
+  private stripeElements: StripeElements | null = null;
+  private stripePaymentElement: StripePaymentElement | null = null;
 
   readonly icons = {
     ArrowLeft,
@@ -164,7 +182,9 @@ export class PublicBooking {
       this.quoting() ||
       this.availabilityLoading() ||
       this.scheduling() ||
-      this.quoteRequestSubmitting()
+      this.quoteRequestSubmitting() ||
+      this.paymentPreparing() ||
+      this.paymentSubmitting()
     );
   });
 
@@ -174,6 +194,8 @@ export class PublicBooking {
     if (this.quoting()) return 'Building your quote...';
     if (this.availabilityLoading()) return 'Checking appointment times...';
     if (this.scheduling()) return 'Scheduling your repair...';
+    if (this.paymentPreparing()) return 'Preparing secure payment...';
+    if (this.paymentSubmitting()) return 'Confirming payment...';
     if (this.quoteRequestSubmitting()) return 'Sending your request...';
     if (this.categoriesLoading()) return 'Loading options...';
 
@@ -264,6 +286,13 @@ export class PublicBooking {
   readonly availabilityLoading = signal(false);
   readonly scheduling = signal(false);
   readonly quoteRequestSubmitting = signal(false);
+  readonly paymentPreparing = signal(false);
+  readonly paymentSubmitting = signal(false);
+  readonly paymentChoice = signal<PublicBookingPaymentChoice>('pay_later');
+  readonly paymentIntent = signal<PublicBookingPaymentIntentResponse | null>(null);
+  readonly paymentError = signal<string | null>(null);
+  readonly externalPaymentNotice = signal<string | null>(null);
+  readonly externalPaymentState = signal<ExternalPaymentState | null>(null);
 
   readonly settings = signal<PublicBookingSettings | null>(null);
 
@@ -285,6 +314,7 @@ export class PublicBooking {
   readonly selectedBrand = signal<string | null>(null);
   readonly selectedModel = signal<PublicDeviceModelOption | null>(null);
   readonly selectedRepairNeed = signal<PublicRepairNeed | null>(null);
+  readonly selectedPricingOption = signal<PublicRepairPricingOption | null>(null);
   readonly serviceMode = signal<'on_site' | 'in_shop'>('on_site');
 
   readonly quote = signal<PublicRepairQuote | null>(null);
@@ -582,6 +612,8 @@ export class PublicBooking {
         return 6;
       case 'schedule':
         return 7;
+      case 'payment':
+        return 8;
       case 'confirm':
         return 8;
       default:
@@ -607,6 +639,8 @@ export class PublicBooking {
         return 'Request';
       case 'schedule':
         return 'Details';
+      case 'payment':
+        return 'Payment';
       case 'confirm':
         return 'Complete';
       default:
@@ -650,6 +684,134 @@ export class PublicBooking {
     this.bindSearchControls();
 
     await this.loadInitialData();
+
+    const paymentReturn = this.route.snapshot.queryParamMap.get('payment');
+    const pendingBookingId =
+      this.route.snapshot.queryParamMap.get('pendingBookingId');
+
+    if (
+      paymentReturn === 'request-complete' ||
+      paymentReturn === 'request-processing' ||
+      paymentReturn === 'slot-refunded' ||
+      paymentReturn === 'request-canceled'
+    ) {
+      this.externalPaymentState.set(paymentReturn);
+    }
+
+    if (pendingBookingId) {
+      await this.resumeReturnedPayment(pendingBookingId);
+    }
+  }
+
+  externalPaymentBadge(): string {
+    switch (this.externalPaymentState()) {
+      case 'request-complete':
+        return 'Payment received';
+      case 'request-processing':
+        return 'Finalizing appointment';
+      case 'slot-refunded':
+        return 'Refund initiated';
+      case 'request-canceled':
+        return 'Payment not completed';
+      default:
+        return '';
+    }
+  }
+
+  externalPaymentTitle(): string {
+    switch (this.externalPaymentState()) {
+      case 'request-complete':
+        return 'Your appointment is confirmed';
+      case 'request-processing':
+        return 'Your payment was received';
+      case 'slot-refunded':
+        return 'That appointment time is no longer available';
+      case 'request-canceled':
+        return 'Your appointment is not confirmed yet';
+      default:
+        return 'Payment update';
+    }
+  }
+
+  externalPaymentMessage(): string {
+    switch (this.externalPaymentState()) {
+      case 'request-complete':
+        return `${this.shopName()} has received your payment and officially scheduled your repair.`;
+      case 'request-processing':
+        return 'Stripe received your payment successfully. We are finishing the appointment confirmation now, and no additional payment is needed.';
+      case 'slot-refunded':
+        return 'The selected appointment time was taken before payment finished. Your payment is being refunded automatically.';
+      case 'request-canceled':
+        return 'Payment was canceled before it was completed, so the appointment has not been scheduled.';
+      default:
+        return '';
+    }
+  }
+
+  externalPaymentNextSteps(): string {
+    switch (this.externalPaymentState()) {
+      case 'request-complete':
+        return 'Watch your email for repair and appointment details. You can safely close this page.';
+      case 'request-processing':
+        return 'You can safely close this page. Watch your email for the finalized appointment details.';
+      case 'slot-refunded':
+        return 'Refund timing depends on your bank. Please start a new booking to choose another available appointment.';
+      case 'request-canceled':
+        return 'Return to the secure payment email to try again, or start a new booking if you need a different appointment time.';
+      default:
+        return '';
+    }
+  }
+
+  externalPaymentIcon() {
+    switch (this.externalPaymentState()) {
+      case 'request-processing':
+        return Loader2;
+      case 'slot-refunded':
+        return CalendarDays;
+      case 'request-canceled':
+        return ShieldCheck;
+      default:
+        return CheckCircle2;
+    }
+  }
+
+  externalPaymentIconClass(): string {
+    switch (this.externalPaymentState()) {
+      case 'request-complete':
+        return 'bg-emerald-50 text-emerald-600 ring-emerald-100';
+      case 'request-processing':
+        return 'bg-blue-50 text-blue-600 ring-blue-100';
+      case 'slot-refunded':
+        return 'bg-amber-50 text-amber-600 ring-amber-100';
+      case 'request-canceled':
+        return 'bg-gray-100 text-gray-600 ring-black/5';
+      default:
+        return 'bg-gray-100 text-gray-600 ring-black/5';
+    }
+  }
+
+  externalPaymentBadgeClass(): string {
+    switch (this.externalPaymentState()) {
+      case 'request-complete':
+        return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+      case 'request-processing':
+        return 'bg-blue-50 text-blue-700 ring-blue-100';
+      case 'slot-refunded':
+        return 'bg-amber-50 text-amber-700 ring-amber-100';
+      case 'request-canceled':
+        return 'bg-gray-100 text-gray-600 ring-black/5';
+      default:
+        return 'bg-gray-100 text-gray-600 ring-black/5';
+    }
+  }
+
+  startAnotherRepair(): void {
+    window.location.assign(window.location.pathname);
+  }
+
+  ngOnDestroy(): void {
+    this.destroyPaymentElement();
   }
 
   async loadInitialData(): Promise<void> {
@@ -661,17 +823,16 @@ export class PublicBooking {
     this.error.set(null);
 
     try {
-      const [settings, categories, repairNeeds] = await Promise.all([
+      const [settings, categories] = await Promise.all([
         firstValueFrom(this.bookingService.getSettings(slug)),
         firstValueFrom(this.bookingService.listCategories(slug, 0, PAGE_SIZE)),
-        firstValueFrom(this.bookingService.listRepairNeeds(slug)),
       ]);
 
       this.settings.set(settings);
       this.categories.set(categories.items ?? []);
       this.categoryPage.set(categories.page ?? 0);
       this.categoryTotalPages.set(categories.totalPages ?? 1);
-      this.repairNeeds.set(repairNeeds.data ?? []);
+      this.repairNeeds.set([]);
 
       if (!settings.enabled) {
         this.error.set('booking_disabled');
@@ -720,6 +881,7 @@ export class PublicBooking {
     this.selectedBrand.set(null);
     this.selectedModel.set(null);
     this.selectedRepairNeed.set(null);
+    this.selectedPricingOption.set(null);
     this.quote.set(null);
     this.slots.set([]);
     this.selectedSlotKey.set(null);
@@ -799,6 +961,7 @@ export class PublicBooking {
     this.selectedBrand.set(brand);
     this.selectedModel.set(null);
     this.selectedRepairNeed.set(null);
+    this.selectedPricingOption.set(null);
     this.quote.set(null);
     this.slots.set([]);
     this.selectedSlotKey.set(null);
@@ -895,24 +1058,61 @@ export class PublicBooking {
     }
   }
 
-  chooseModel(model: PublicDeviceModelOption): void {
+  async chooseModel(model: PublicDeviceModelOption): Promise<void> {
     this.selectedModel.set(model);
     this.selectedRepairNeed.set(null);
+    this.selectedPricingOption.set(null);
+    this.repairNeeds.set([]);
     this.quote.set(null);
     this.slots.set([]);
     this.selectedSlotKey.set(null);
     this.confirmation.set(null);
-    this.activeStep.set('repair');
+    this.error.set(null);
+
+    const slug = this.shopSlug();
+    if (!slug) return;
+
+    this.quoting.set(true);
+    try {
+      const response = await firstValueFrom(
+        this.bookingService.listRepairNeeds(
+          slug,
+          model.techspecsProductId,
+        ),
+      );
+      this.repairNeeds.set(response.data ?? []);
+      this.activeStep.set('repair');
+    } catch (error) {
+      console.error(error);
+      this.error.set('repair_options_load_failed');
+    } finally {
+      this.quoting.set(false);
+    }
   }
 
   chooseRepairNeed(need: PublicRepairNeed): void {
     this.selectedRepairNeed.set(need);
+    this.selectedPricingOption.set(
+      need.options.length === 1 ? need.options[0] : null,
+    );
+    this.error.set(null);
+  }
+
+  choosePricingOption(option: PublicRepairPricingOption): void {
+    this.selectedPricingOption.set(option);
     this.error.set(null);
   }
 
   goToLocation(): void {
     if (!this.selectedRepairNeed()) {
       this.error.set('repair_need_required');
+      return;
+    }
+
+    const selectedNeed = this.selectedRepairNeed();
+
+    if (selectedNeed?.options.length && !this.selectedPricingOption()) {
+      this.error.set('pricing_option_required');
       return;
     }
 
@@ -959,9 +1159,15 @@ export class PublicBooking {
     const brand = this.selectedBrand();
     const model = this.selectedModel();
     const repairNeed = this.selectedRepairNeed();
+    const pricingOption = this.selectedPricingOption();
 
     if (!slug || !category || !brand || !model || !repairNeed) {
       this.error.set('repair_selection_missing');
+      return;
+    }
+
+    if (repairNeed.options.length && !pricingOption) {
+      this.error.set('pricing_option_required');
       return;
     }
 
@@ -980,11 +1186,15 @@ export class PublicBooking {
           model: model.model,
           techspecsProductId: model.techspecsProductId,
           repairNeedId: repairNeed.id,
+          ...(pricingOption ? { pricingOptionId: pricingOption.id } : {}),
           serviceMode: this.serviceMode(),
         })
       );
 
       this.quote.set(quote);
+      this.paymentChoice.set(quote.depositRequired ? 'deposit' : 'pay_later');
+      this.paymentIntent.set(null);
+      this.paymentError.set(null);
 
       if (this.canScheduleQuote(quote)) {
         this.activeStep.set('quote');
@@ -1163,6 +1373,9 @@ export class PublicBooking {
       case 'schedule':
         this.activeStep.set('quote');
         return;
+      case 'payment':
+        void this.cancelPreparedPaymentAndReturn();
+        return;
       default:
         return;
     }
@@ -1178,12 +1391,93 @@ export class PublicBooking {
     this.activeStep.set('schedule');
   }
 
+  private buildSchedulePayload() {
+    const quote = this.quote();
+    const slot = this.selectedSlot();
+    if (!quote || !slot) return null;
+
+    return {
+      quoteId: quote.quoteId,
+      startAt: slot.startAt,
+      endAt: slot.endAt,
+      candidateType: slot.candidateType as 'internal' | 'contractor' | 'unassigned',
+      assignedUserId: slot.assignedUserId,
+      contractorId: slot.contractorId,
+      customer: {
+        name: this.scheduleForm.controls.name.value,
+        email: this.scheduleForm.controls.email.value,
+        phone: this.scheduleForm.controls.phone.value,
+      },
+      address:
+        this.serviceMode() === 'on_site'
+          ? {
+              label: 'Service address',
+              line1: this.scheduleForm.controls.line1.value,
+              line2: this.scheduleForm.controls.line2.value,
+              city: this.scheduleForm.controls.city.value,
+              state: this.scheduleForm.controls.state.value,
+              postalCode: this.scheduleForm.controls.postalCode.value,
+              country: 'US',
+            }
+          : undefined,
+      notes: this.scheduleForm.controls.notes.value,
+    };
+  }
+
+  paymentChoiceAmountCents(choice: PublicBookingPaymentChoice): number | null {
+    const quote = this.quote();
+    const settings = this.settings();
+    if (!quote?.estimatedTotalCents) return null;
+    if (choice === 'deposit') return quote.depositAmountCents;
+    if (choice === 'full') {
+      const percent = Math.max(0, settings?.fullPrepaymentDiscountPercent ?? 0);
+      const eligibleCents = Math.max(
+        0,
+        quote.estimatedTotalCents - (quote.tripFeeCents ?? 0),
+      );
+      const discount = Math.round((eligibleCents * percent) / 100);
+      return Math.max(0, quote.estimatedTotalCents - discount);
+    }
+    return null;
+  }
+
+  fullPrepaymentSavingsCents(): number {
+    const quote = this.quote();
+    const total = quote?.estimatedTotalCents ?? 0;
+    const full = this.paymentChoiceAmountCents('full') ?? total;
+    return Math.max(0, total - full);
+  }
+
+  shouldOfferFullPrepayment(): boolean {
+    const settings = this.settings();
+    const quote = this.quote();
+    return Boolean(
+      settings?.stripePaymentsEnabled &&
+        settings.fullPrepaymentEnabled &&
+        quote?.estimatedTotalCents &&
+        quote.estimatedTotalCents > 0,
+    );
+  }
+
+  selectPaymentChoice(choice: PublicBookingPaymentChoice): void {
+    this.paymentChoice.set(choice);
+    this.paymentError.set(null);
+  }
+
+  scheduleButtonLabel(): string {
+    if (this.scheduling()) return 'Scheduling...';
+    if (this.paymentPreparing()) return 'Preparing payment...';
+    if (this.paymentChoice() === 'deposit') return 'Continue to secure deposit';
+    if (this.paymentChoice() === 'full') return 'Continue to secure payment';
+    return 'Schedule repair';
+  }
+
   async scheduleRepair(): Promise<void> {
     const slug = this.shopSlug();
     const quote = this.quote();
-    const slot = this.selectedSlot();
+    const payload = this.buildSchedulePayload();
 
-    if (!slug || !quote || !slot) {
+    if (!slug || !quote || !payload) {
       this.error.set('schedule_missing_data');
       return;
     }
@@ -1193,44 +1487,24 @@ export class PublicBooking {
       return;
     }
 
+    const choice = this.paymentChoice();
+    if (choice !== 'pay_later') {
+      await this.beginBookingPayment(choice);
+      return;
+    }
+
+    if (quote.depositRequired) {
+      this.error.set('payment_required');
+      return;
+    }
+
     this.scheduling.set(true);
     this.error.set(null);
 
     try {
       const response = await firstValueFrom(
-        this.bookingService.schedule(slug, {
-          quoteId: quote.quoteId,
-
-          startAt: slot.startAt,
-          endAt: slot.endAt,
-
-          candidateType: slot.candidateType as any,
-          assignedUserId: slot.assignedUserId,
-          contractorId: slot.contractorId,
-
-          customer: {
-            name: this.scheduleForm.controls.name.value,
-            email: this.scheduleForm.controls.email.value,
-            phone: this.scheduleForm.controls.phone.value,
-          },
-
-          address:
-            this.serviceMode() === 'on_site'
-              ? {
-                label: 'Service address',
-                line1: this.scheduleForm.controls.line1.value,
-                line2: this.scheduleForm.controls.line2.value,
-                city: this.scheduleForm.controls.city.value,
-                state: this.scheduleForm.controls.state.value,
-                postalCode: this.scheduleForm.controls.postalCode.value,
-                country: 'US',
-              }
-              : undefined,
-
-          notes: this.scheduleForm.controls.notes.value,
-        })
+        this.bookingService.schedule(slug, payload),
       );
-
       this.confirmation.set(response);
       this.activeStep.set('confirm');
     } catch (error) {
@@ -1238,6 +1512,205 @@ export class PublicBooking {
       this.error.set('schedule_failed');
     } finally {
       this.scheduling.set(false);
+    }
+  }
+
+  private async beginBookingPayment(
+    choice: Exclude<PublicBookingPaymentChoice, 'pay_later'>,
+  ): Promise<void> {
+    const slug = this.shopSlug();
+    const payload = this.buildSchedulePayload();
+    if (!slug || !payload) return;
+
+    this.paymentPreparing.set(true);
+    this.paymentError.set(null);
+    this.error.set(null);
+
+    try {
+      const intent = await firstValueFrom(
+        this.bookingService.createBookingPaymentIntent(slug, {
+          paymentMode: choice,
+          booking: payload,
+        }),
+      );
+      this.paymentIntent.set(intent);
+      this.activeStep.set('payment');
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      await this.mountPaymentElement(intent);
+    } catch (error: any) {
+      console.error(error);
+      this.paymentError.set(
+        error?.error?.message ??
+          'Secure payment could not be prepared. Please try again.',
+      );
+    } finally {
+      this.paymentPreparing.set(false);
+    }
+  }
+
+  private async mountPaymentElement(
+    intent: PublicBookingPaymentIntentResponse,
+  ): Promise<void> {
+    this.destroyPaymentElement();
+    const publishableKey = this.appConfig.config.stripePublishableKey;
+    this.stripe = await loadStripe(publishableKey, {
+      stripeAccount: intent.stripeAccountId,
+    });
+    if (!this.stripe) throw new Error('stripe_js_failed');
+
+    this.stripeElements = this.stripe.elements({
+      clientSecret: intent.clientSecret,
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          borderRadius: '14px',
+          colorPrimary: this.brandColor(),
+        },
+      },
+    });
+    this.stripePaymentElement = this.stripeElements.create('payment', {
+      layout: 'tabs',
+    });
+    const host = this.paymentElementHost()?.nativeElement;
+    if (!host) throw new Error('payment_element_host_missing');
+    this.stripePaymentElement.mount(host);
+  }
+
+  private async cancelPreparedPaymentAndReturn(): Promise<void> {
+    const intent = this.paymentIntent();
+    const slug = this.shopSlug();
+
+    this.paymentPreparing.set(true);
+    this.destroyPaymentElement();
+    this.paymentIntent.set(null);
+    this.paymentError.set(null);
+    this.activeStep.set('schedule');
+
+    if (!intent || !slug) {
+      this.paymentPreparing.set(false);
+      return;
+    }
+
+    try {
+      await firstValueFrom(
+        this.bookingService.cancelBookingPaymentIntent(
+          slug,
+          intent.pendingBookingId,
+        ),
+      );
+    } catch (error) {
+      console.error('Could not release the pending payment hold.', error);
+      this.paymentError.set(
+        'The previous payment session could not be released. Wait a moment before choosing another payment option.',
+      );
+    } finally {
+      this.paymentPreparing.set(false);
+    }
+  }
+
+  private destroyPaymentElement(): void {
+    try {
+      this.stripePaymentElement?.unmount();
+      this.stripePaymentElement?.destroy();
+    } catch {
+      // The Stripe element may already be gone after navigation.
+    }
+    this.stripePaymentElement = null;
+    this.stripeElements = null;
+    this.stripe = null;
+  }
+
+  async confirmBookingPayment(): Promise<void> {
+    const intent = this.paymentIntent();
+    const slug = this.shopSlug();
+    if (!intent || !slug || !this.stripe || !this.stripeElements) return;
+
+    this.paymentSubmitting.set(true);
+    this.paymentError.set(null);
+    try {
+      const result = await this.stripe.confirmPayment({
+        elements: this.stripeElements,
+        redirect: 'if_required',
+        confirmParams: {
+          return_url: `${window.location.origin}${window.location.pathname}?payment=return&pendingBookingId=${encodeURIComponent(intent.pendingBookingId)}`,
+        },
+      });
+      if (result.error) {
+        this.paymentError.set(result.error.message || 'Payment could not be completed.');
+        return;
+      }
+
+      for (let attempt = 0; attempt < 15; attempt += 1) {
+        const status = await firstValueFrom(
+          this.bookingService.getBookingPaymentStatus(
+            slug,
+            intent.pendingBookingId,
+          ),
+        );
+        if (status.status === 'finalized' && status.repairId && status.appointmentId) {
+          this.confirmation.set({
+            quoteId: this.quote()?.quoteId ?? '',
+            repairId: status.repairId,
+            appointmentId: status.appointmentId,
+            publicTrackingToken: status.publicTrackingToken,
+            status: 'scheduled',
+            message: status.message,
+          });
+          this.destroyPaymentElement();
+          this.activeStep.set('confirm');
+          return;
+        }
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
+      }
+      this.paymentError.set(
+        'Payment was received and is still being confirmed. Please keep this page open for another moment.',
+      );
+    } catch (error: any) {
+      console.error(error);
+      this.paymentError.set(
+        error?.error?.message ??
+          'Payment could not be confirmed. Please try again.',
+      );
+    } finally {
+      this.paymentSubmitting.set(false);
+    }
+  }
+
+  private async resumeReturnedPayment(pendingBookingId: string): Promise<void> {
+    const slug = this.shopSlug();
+    if (!slug) return;
+
+    this.paymentSubmitting.set(true);
+    this.error.set(null);
+    try {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const status = await firstValueFrom(
+          this.bookingService.getBookingPaymentStatus(slug, pendingBookingId),
+        );
+        if (status.status === 'finalized' && status.repairId) {
+          this.confirmation.set({
+            quoteId: '',
+            repairId: status.repairId,
+            appointmentId: status.appointmentId ?? '',
+            publicTrackingToken: status.publicTrackingToken,
+            status: status.appointmentId ? 'scheduled' : 'created',
+            message: status.message,
+          });
+          this.activeStep.set('confirm');
+          return;
+        }
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
+      }
+      this.externalPaymentNotice.set(
+        'Your payment is still processing. The shop will send confirmation as soon as Stripe completes it.',
+      );
+    } catch (error) {
+      console.error(error);
+      this.externalPaymentNotice.set(
+        'We could not refresh the payment status, but Stripe may still be processing it. Please check your email for confirmation.',
+      );
+    } finally {
+      this.paymentSubmitting.set(false);
     }
   }
 
@@ -1289,12 +1762,19 @@ export class PublicBooking {
     ].join('|');
   }
 
+  quoteRepairLabel(quote: PublicRepairQuote): string {
+    return [quote.repairNeed.label, quote.template?.variantName]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .join(' — ');
+  }
+
   selectionSummary(): string {
     return [
       this.selectedCategory(),
       this.selectedBrand(),
       this.selectedModel()?.model,
       this.selectedRepairNeed()?.label,
+      this.selectedPricingOption()?.variantName,
       this.locationSummary(),
     ]
       .filter(Boolean)
@@ -1379,6 +1859,10 @@ export class PublicBooking {
       return 'Your repair is scheduled.';
     }
 
+    if (quote?.depositRequired) {
+      return 'Your repair request was received.';
+    }
+
     return 'Your quote request was received.';
   }
 
@@ -1387,6 +1871,10 @@ export class PublicBooking {
 
     if (this.canScheduleQuote(quote)) {
       return 'The shop will contact you if anything changes before your appointment.';
+    }
+
+    if (quote?.depositRequired) {
+      return `The shop will email your confirmed quote and secure ${this.money(quote.depositAmountCents)} deposit link. After payment, they can finalize your appointment.`;
     }
 
     return 'The shop will review pricing and part availability, then contact you with a quote very soon. For immediate service, call the shop directly.';
@@ -1444,6 +1932,18 @@ export class PublicBooking {
     return brand.trim().slice(0, 1).toUpperCase() || '?';
   }
 
+  pricingOptionPriceLabel(option: PublicRepairPricingOption): string {
+    if (option.useDynamicPricing) {
+      return option.fixedPriceCents == null
+        ? 'Price calculated next'
+        : `From ${this.money(option.fixedPriceCents)}`;
+    }
+
+    return option.fixedPriceCents == null
+      ? 'Request a quote'
+      : this.money(option.fixedPriceCents);
+  }
+
   money(cents: number | null | undefined): string {
     if (cents === null || cents === undefined) return 'Pending review';
 
@@ -1493,6 +1993,10 @@ export class PublicBooking {
         return 'Unable to load device models right now.';
       case 'repair_need_required':
         return 'Please choose what needs fixed before continuing.';
+      case 'pricing_option_required':
+        return 'Please choose a repair option before continuing.';
+      case 'repair_options_load_failed':
+        return 'Repair options could not be loaded for this device.';
       case 'service_address_required':
         return 'Please enter the service address for an on-site repair.';
       case 'repair_selection_missing':

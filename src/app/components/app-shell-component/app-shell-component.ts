@@ -28,6 +28,8 @@ import {
   HandshakeIcon,
   MessageSquareQuote,
   InboxIcon,
+  SmartphoneIcon,
+  DollarSignIcon,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -108,6 +110,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly handshakeIcon = HandshakeIcon;
   readonly messageSquareQuoteIcon = MessageSquareQuote;
   readonly inboxIcon = InboxIcon;
+  readonly deviceCatalogIcon = SmartphoneIcon;
+  readonly repairPricingIcon = DollarSignIcon;
   readonly walletCardsIcon = WalletCardsIcon;
   readonly calendarCogIcon = CalendarCog;
   readonly toolboxIcon = ToolboxIcon;
@@ -330,6 +334,16 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.router.navigate(['/settings/shop/shop-bookings']);
   }
 
+  goToDeviceCatalog(): void {
+    this.closeProfileMenu();
+    this.router.navigate(['/settings/shop/device-catalog']);
+  }
+
+  goToRepairPricing(): void {
+    this.closeProfileMenu();
+    this.router.navigate(['/settings/shop/repair-pricing']);
+  }
+
   goToMyAvailability(): void {
     this.closeProfileMenu();
     this.router.navigate(['/settings/profile/my-availability']);
@@ -500,13 +514,20 @@ export class AppShellComponent implements OnInit, OnDestroy {
     await this.markNotificationRead(notification);
     this.closeNotificationMenu();
 
+    if (String(notification.event) === 'device_catalog_update_available') {
+      this.router.navigate(['/settings/shop/device-catalog']);
+      return;
+    }
+
     if (notification.repairId) {
       this.router.navigate(['/repairs/detail', notification.repairId]);
     }
   }
 
   prettyInternalNotificationEvent(event: InternalNotificationEvent): string {
-    switch (event) {
+    switch (String(event)) {
+      case 'device_catalog_update_available':
+        return 'Device Catalog Update Available';
       case 'repair_assigned':
         return 'Repair Assigned';
       case 'repair_unassigned':

@@ -244,13 +244,76 @@
                         </div>
 
                         <button type="button"
-                            class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
+                            class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
                             [class.bg-brand]="bookingEnabled" [class.bg-gray-300]="!bookingEnabled"
                             [disabled]="saving()" (click)="bookingEnabled = !bookingEnabled">
                             <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
                                 [class.translate-x-6]="bookingEnabled" [class.translate-x-1]="!bookingEnabled">
                             </span>
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-semibold text-gray-900">Booking Payments</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Control deposit enforcement and optional pay-in-full savings. Stripe must be connected to collect online payments.
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Staff-created repair deposits
+                        </label>
+                        <select [(ngModel)]="adminDepositEnforcement"
+                            class="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
+                            <option value="required">Always require payment before confirmation</option>
+                            <option value="allow_override">Require payment, allow audited staff override</option>
+                            <option value="disabled">Do not enforce deposits internally</option>
+                        </select>
+                        <p class="mt-2 text-xs leading-5 text-gray-500">
+                            Required deposits are emailed as secure Stripe Checkout pages when staff set appointments by phone.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border border-gray-200 p-4 transition"
+                        [class.bg-emerald-50]="fullPrepaymentEnabled">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-900">Offer full prepayment</p>
+                                <p class="mt-1 text-xs leading-5 text-gray-500">
+                                    Let customers pay the entire confirmed repair price during booking and optionally receive a discount.
+                                </p>
+                            </div>
+                            <button type="button"
+                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
+                                [class.bg-brand]="fullPrepaymentEnabled" [class.bg-gray-300]="!fullPrepaymentEnabled"
+                                [disabled]="saving()" (click)="fullPrepaymentEnabled = !fullPrepaymentEnabled">
+                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
+                                    [class.translate-x-6]="fullPrepaymentEnabled" [class.translate-x-1]="!fullPrepaymentEnabled">
+                                </span>
+                            </button>
+                        </div>
+
+                        @if (fullPrepaymentEnabled) {
+                        <div class="mt-4">
+                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Pay-in-full discount
+                            </label>
+                            <div class="relative">
+                                <input type="number" min="0" max="25" step="0.25"
+                                    [(ngModel)]="fullPrepaymentDiscountPercent"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 text-sm outline-none transition focus:border-brand" />
+                                <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400">%</span>
+                            </div>
+                            <p class="mt-2 text-xs leading-5 text-gray-500">
+                                Applied to the repair subtotal. Trip fees and other pass-through charges remain unchanged. Maximum 25%.
+                            </p>
+                        </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -276,7 +339,7 @@
                         </div>
 
                         <button type="button"
-                            class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
+                            class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
                             [class.bg-brand]="publicRepairTrackingEnabled"
                             [class.bg-gray-300]="!publicRepairTrackingEnabled" [disabled]="saving()"
                             (click)="publicRepairTrackingEnabled = !publicRepairTrackingEnabled">
@@ -366,7 +429,7 @@
                             </div>
 
                             <button type="button"
-                                class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
+                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
                                 [class.bg-brand]="onsiteEnabled" [class.bg-gray-300]="!onsiteEnabled"
                                 [disabled]="saving()" (click)="onsiteEnabled = !onsiteEnabled; onOnsiteEnabledChange()">
                                 <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
@@ -387,7 +450,7 @@
                             </div>
 
                             <button type="button"
-                                class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition"
+                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
                                 [class.bg-brand]="onsiteTripFeeEnabled" [class.bg-gray-300]="!onsiteTripFeeEnabled"
                                 [disabled]="saving()"
                                 (click)="onsiteTripFeeEnabled = !onsiteTripFeeEnabled; onOnsiteTripFeeEnabledChange()">
@@ -450,7 +513,7 @@
                                         <div
                                             class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
                                             <span>{{ zip.postalCode }}</span>
-                                            <button type="button" class="text-gray-400 hover:text-gray-600"
+                                            <button type="button" class="cursor-pointer text-gray-400 hover:text-gray-600"
                                                 (click)="removeServiceAreaZip(zip.id)">
                                                 ×
                                             </button>

@@ -9,6 +9,13 @@ import { AppConfigService } from '../../../core/app-config/app-config.service';
 
 type FulfillmentStatus = 'unfulfilled' | 'fulfilled';
 type ServiceAreaMode = 'radius' | 'zip_codes' | 'custom';
+type AdminDepositEnforcement = 'required' | 'allow_override' | 'disabled';
+
+interface BookingPaymentSettings {
+  adminDepositEnforcement: AdminDepositEnforcement;
+  fullPrepaymentEnabled: boolean;
+  fullPrepaymentDiscountPercent: number;
+}
 
 interface ShopServiceAreaZip {
   id: string;
@@ -189,6 +196,9 @@ export class ShopSettings implements OnInit {
   localeCountry = 'US';
 
   bookingEnabled = false;
+  adminDepositEnforcement: AdminDepositEnforcement = 'allow_override';
+  fullPrepaymentEnabled = false;
+  fullPrepaymentDiscountPercent = 0;
   publicRepairTrackingEnabled = false;
   smsEnabled = false;
   twilioPhoneNumber = '';
@@ -276,6 +286,16 @@ export class ShopSettings implements OnInit {
       this.localeCountry = shop.locale?.country ?? 'US';
 
       this.bookingEnabled = !!shop.settings?.booking?.enabled;
+
+      const paymentSettings = await firstValueFrom(
+        this.http.get<BookingPaymentSettings>(`${this.apiBase}/booking-payments/settings`)
+      );
+      this.adminDepositEnforcement =
+        paymentSettings.adminDepositEnforcement ?? 'allow_override';
+      this.fullPrepaymentEnabled = !!paymentSettings.fullPrepaymentEnabled;
+      this.fullPrepaymentDiscountPercent =
+        paymentSettings.fullPrepaymentDiscountPercent ?? 0;
+
       this.publicRepairTrackingEnabled =
         !!shop.settings?.customerExperience?.publicRepairTrackingEnabled;
       this.smsEnabled = !!shop.settings?.communications?.smsEnabled;
@@ -399,6 +419,16 @@ export class ShopSettings implements OnInit {
         return;
       }
 
+      if (
+        !Number.isFinite(Number(this.fullPrepaymentDiscountPercent)) ||
+        this.fullPrepaymentDiscountPercent < 0 ||
+        this.fullPrepaymentDiscountPercent > 25
+      ) {
+        this.error.set('Full prepayment discount must be between 0% and 25%.');
+        this.saving.set(false);
+        return;
+      }
+
       if (this.orderPadding !== null && this.orderPadding < 1) {
         this.error.set('Order padding must be 1 or greater.');
         this.saving.set(false);
@@ -499,6 +529,19 @@ export class ShopSettings implements OnInit {
             },
           },
         })
+      );
+
+      await firstValueFrom(
+        this.http.patch<BookingPaymentSettings>(
+          `${this.apiBase}/booking-payments/settings`,
+          {
+            adminDepositEnforcement: this.adminDepositEnforcement,
+            fullPrepaymentEnabled: this.fullPrepaymentEnabled,
+            fullPrepaymentDiscountPercent: this.fullPrepaymentEnabled
+              ? this.fullPrepaymentDiscountPercent
+              : 0,
+          }
+        )
       );
 
       if (this.onsiteEnabled) {

@@ -193,6 +193,8 @@ export interface Repair {
   assignedTo: string | null;
 
   serviceId: string | null;
+  repairNeedId?: string | null;
+  pricingTemplateId?: string | null;
   dispatchType: RepairDispatchType;
   contractorId?: string | null;
   contractor?: RepairContractorSummary | null;
@@ -256,6 +258,8 @@ export interface CreateRepairDto {
   assignedTo?: string | null;
 
   serviceId?: string | null;
+  repairNeedId?: string | null;
+  pricingTemplateId?: string | null;
   dispatchType?: RepairDispatchType;
   contractorId?: string | null;
 
@@ -283,6 +287,8 @@ export interface UpdateRepairDto {
   orderId?: string | null;
 
   serviceId?: string | null;
+  repairNeedId?: string | null;
+  pricingTemplateId?: string | null;
   dispatchType?: RepairDispatchType;
   contractorId?: string | null;
 

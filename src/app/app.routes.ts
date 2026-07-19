@@ -36,6 +36,8 @@ import { QuoteRequestsOverview } from './features/bookings/quote-requests/overvi
 import { QuoteRequestDetail } from './features/bookings/quote-requests/detail/quote-request-detail';
 import { Services } from './features/services/services.component';
 import { CommunicationsInbox } from './features/communications/communications-inbox';
+import { DeviceCatalogSettings } from './features/settings/device-catalog/device-catalog';
+import { RepairPricingSettings } from './features/settings/repair-pricing/repair-pricing';
 
 export const routes: Routes = [
     {
@@ -82,6 +84,14 @@ export const routes: Routes = [
                     {
                         path: 'shop-bookings',
                         component: ShopBookingsComponent
+                    },
+                    {
+                        path: 'device-catalog',
+                        component: DeviceCatalogSettings
+                    },
+                    {
+                        path: 'repair-pricing',
+                        component: RepairPricingSettings
                     },
                     {
                         path: '',

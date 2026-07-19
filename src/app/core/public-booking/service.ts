@@ -6,6 +6,9 @@ import { AppConfigService } from '../app-config/app-config.service';
 import {
     PublicAvailabilityQuery,
     PublicAvailabilityResponse,
+    PublicBookingPaymentIntentRequest,
+    PublicBookingPaymentIntentResponse,
+    PublicBookingPaymentStatusResponse,
     PublicBookingPage,
     PublicBookingSettings,
     PublicDeviceModelOption,
@@ -109,9 +112,18 @@ export class PublicBookingService {
         );
     }
 
-    listRepairNeeds(shopSlug: string): Observable<PublicRepairNeedsResponse> {
+    listRepairNeeds(
+        shopSlug: string,
+        techspecsProductId: string
+    ): Observable<PublicRepairNeedsResponse> {
+        const params = new HttpParams().set(
+            'techspecsProductId',
+            techspecsProductId
+        );
+
         return this.http.get<PublicRepairNeedsResponse>(
-            `${this.baseUrl(shopSlug)}/repair-needs`
+            `${this.baseUrl(shopSlug)}/repair-needs`,
+            { params }
         );
     }
 
@@ -152,6 +164,35 @@ export class PublicBookingService {
         return this.http.post<PublicScheduleResponse>(
             `${this.baseUrl(shopSlug)}/schedule`,
             payload
+        );
+    }
+
+    createBookingPaymentIntent(
+        shopSlug: string,
+        payload: PublicBookingPaymentIntentRequest
+    ): Observable<PublicBookingPaymentIntentResponse> {
+        return this.http.post<PublicBookingPaymentIntentResponse>(
+            `${this.baseUrl(shopSlug)}/payment-intent`,
+            payload
+        );
+    }
+
+    getBookingPaymentStatus(
+        shopSlug: string,
+        pendingBookingId: string
+    ): Observable<PublicBookingPaymentStatusResponse> {
+        return this.http.get<PublicBookingPaymentStatusResponse>(
+            `${this.baseUrl(shopSlug)}/payment-status/${encodeURIComponent(pendingBookingId)}`
+        );
+    }
+
+
+    cancelBookingPaymentIntent(
+        shopSlug: string,
+        pendingBookingId: string
+    ): Observable<{ canceled: boolean }> {
+        return this.http.delete<{ canceled: boolean }>(
+            `${this.baseUrl(shopSlug)}/payment-intent/${encodeURIComponent(pendingBookingId)}`
         );
     }
 

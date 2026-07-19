@@ -10,6 +10,9 @@ export interface PublicBookingSettings {
   manualReviewLeadDays: number;
   defaultDurationMins: number;
   quoteDisclaimer: string | null;
+  stripePaymentsEnabled: boolean;
+  fullPrepaymentEnabled: boolean;
+  fullPrepaymentDiscountPercent: number;
   shop: {
     name: string;
     phone: string | null;
@@ -41,6 +44,17 @@ export interface PublicDeviceModelOption {
   releaseDate?: string;
 }
 
+export interface PublicRepairPricingOption {
+  id: string;
+  variantName: string;
+  description: string | null;
+  fixedPriceCents: number | null;
+  useDynamicPricing: boolean;
+  durationMins: number | null;
+  allowInstantConfirmation: boolean;
+  requiresManualReview: boolean;
+}
+
 export interface PublicRepairNeed {
   id: string;
   label: string;
@@ -49,6 +63,7 @@ export interface PublicRepairNeed {
   sortOrder: number;
   requiresManualReview: boolean;
   defaultDurationMins: number | null;
+  options: PublicRepairPricingOption[];
 }
 
 export interface PublicRepairNeedsResponse {
@@ -61,6 +76,7 @@ export interface PublicQuoteRequest {
   model: string;
   techspecsProductId?: string;
   repairNeedId: string;
+  pricingOptionId?: string;
   serviceMode: 'in_shop' | 'on_site';
 }
 
@@ -73,6 +89,8 @@ export interface PublicQuoteRepairNeedSummary {
 export interface PublicQuoteTemplateSummary {
   id: string;
   name: string;
+  variantName: string;
+  description: string | null;
   allowInstantConfirmation: boolean;
 }
 
@@ -102,8 +120,12 @@ export interface PublicRepairQuote {
 
   partCostCents: number | null;
   laborCents: number | null;
+  tripFeeCents: number | null;
   estimatedSubtotalCents: number | null;
   estimatedTotalCents: number | null;
+
+  depositRequired: boolean;
+  depositAmountCents: number | null;
 
   inStock: boolean;
   availableQty: number | null;
@@ -297,4 +319,36 @@ export interface PublicQuoteApprovalActionResponse {
 
 export interface PublicQuoteDepositCheckoutResponse {
   url: string;
+}
+
+export type PublicBookingPaymentMode = 'deposit' | 'full';
+export type PublicBookingPaymentChoice = 'pay_later' | PublicBookingPaymentMode;
+
+export interface PublicBookingPaymentIntentRequest {
+  paymentMode: PublicBookingPaymentMode;
+  booking: PublicScheduleRequest;
+}
+
+export interface PublicBookingPaymentIntentResponse {
+  pendingBookingId: string;
+  paymentIntentId: string;
+  clientSecret: string;
+  stripeAccountId: string;
+  paymentMode: PublicBookingPaymentMode;
+  amountCents: number;
+  subtotalCents: number;
+  discountCents: number;
+  totalCents: number;
+  expiresAt: string;
+}
+
+export interface PublicBookingPaymentStatusResponse {
+  pendingBookingId: string;
+  status: string;
+  paymentStatus: string | null;
+  repairId: string | null;
+  orderId: string | null;
+  appointmentId: string | null;
+  publicTrackingToken: string | null;
+  message: string;
 }

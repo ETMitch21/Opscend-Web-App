@@ -102,7 +102,7 @@
             </button>
             } @if (showCustomerResults && !selectedCustomer) {
             <div
-              class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+              class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-lg"
             >
               @if (searchingCustomers) {
               <div class="px-4 py-3 text-sm text-gray-500">
@@ -338,7 +338,7 @@
             </div>
             } @if (showDeviceResults) {
             <div
-              class="absolute z-40 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+              class="absolute z-40 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-lg"
             >
               @if (searchingDevices) {
               <div class="px-4 py-3 text-sm text-gray-500">
@@ -361,7 +361,7 @@
               </button>
               } } @else if (deviceSearchControl.value.trim().length >= 2) {
               <div class="px-4 py-3 text-sm text-gray-500">
-                No matching devices found. Add a new catalog device instead.
+                No matching devices found. Add a new device instead.
               </div>
               }
             </div>
@@ -375,8 +375,7 @@
                   {{ getDeviceDisplay(selectedDevice) }}
                 </p>
                 <p class="truncate text-xs text-gray-500">
-                  {{ getDeviceSecondary(selectedDevice) || 'No IMEI or serial on
-                  file' }}
+                  {{ getDeviceSecondary(selectedDevice) || 'No IMEI or serial on file' }}
                 </p>
               </div>
               <button
@@ -400,8 +399,7 @@
                   New Device Details
                 </p>
                 <p class="mt-1 text-xs text-gray-500">
-                  Select an exact catalog brand and model. The model ID is
-                  saved as the customer device catalog reference.
+                  Select a device from your shops internal catalog.
                 </p>
               </div>
               <button
@@ -413,170 +411,210 @@
               </button>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div class="relative" (click)="$event.stopPropagation()">
-                <input
-                  type="text"
-                  id="techSpecsBrand"
-                  placeholder=" "
-                  formControlName="techSpecsBrandSearchControl"
-                  (focus)="onTechSpecsBrandFocus()"
-                  autocomplete="off"
-                  class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  [class.pr-20]="selectedTechSpecsBrand"
-                  [class.border-red-300]="newRepairForm.controls.techSpecsBrandSearchControl.invalid && newRepairForm.controls.techSpecsBrandSearchControl.touched"
-                />
-                <label
-                  for="techSpecsBrand"
-                  class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500"
-                >
-                  Brand<sup class="text-danger text-xs">*</sup>
-                </label>
-
-                @if (selectedTechSpecsBrand) {
-                <button
-                  type="button"
-                  class="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                  (click)="clearTechSpecsBrand(); $event.stopPropagation()"
-                >
-                  Clear
-                </button>
-                } @if (showTechSpecsBrandResults) {
-                <div
-                  class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
-                >
-                  @if (searchingTechSpecsBrands || loadingDeviceCatalogCategory)
-                  {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    Loading catalog brands...
-                  </div>
-                  } @else if (techSpecsBrandResults.length > 0) { @for (brand of
-                  techSpecsBrandResults; track brand.id) {
-                  <button
-                    type="button"
-                    class="cursor-pointer flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
-                    (click)="selectTechSpecsBrand(brand); $event.stopPropagation()"
+            <div class="grid gap-4 lg:grid-cols-[0.9fr_1fr_1.15fr]">
+              <div class="min-w-0">
+                <div class="mb-2 flex min-h-5 items-center justify-between gap-3">
+                  <label
+                    for="techSpecsCategory"
+                    class="text-xs font-semibold uppercase tracking-wide text-gray-500"
                   >
-                    <span class="text-sm font-medium text-gray-900"
-                      >{{ brand.name }}</span
-                    >
-                    <span class="text-xs text-gray-500">Catalog brand</span>
-                  </button>
-                  } } @else if (techSpecsBrandSearchControl.value.trim().length
-                  === 0) {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    Start typing a brand. Popular matches like Apple, Samsung,
-                    Google, and Motorola will appear first.
-                  </div>
-                  } @else if (techSpecsBrandSearchControl.value.trim().length >
-                  0 && techSpecsBrandSearchControl.value.trim().length < 2) {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    Type at least 2 characters to search brands.
-                  </div>
-                  } @else {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    No matching catalog brands found. Try a shorter brand
-                    name.
-                  </div>
-                  }
+                    Category <span class="text-red-500">*</span>
+                  </label>
                 </div>
+
+                <div class="relative">
+                  <select
+                    id="techSpecsCategory"
+                    formControlName="techSpecsCategorySearchControl"
+                    (change)="onDeviceCatalogCategoryChange()"
+                    [disabled]="loadingDeviceCatalogCategories"
+                    class="h-[52px] w-full cursor-pointer appearance-none rounded-2xl border border-gray-300 bg-white px-4 pr-10 text-sm text-gray-900 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+                    [class.border-red-300]="newRepairForm.controls.techSpecsCategorySearchControl.invalid && newRepairForm.controls.techSpecsCategorySearchControl.touched"
+                  >
+                    <option value="">
+                      {{ loadingDeviceCatalogCategories ? 'Loading categories...' : 'Select a category' }}
+                    </option>
+
+                    @for (category of deviceCatalogCategories; track category) {
+                    <option [value]="category">{{ category }}</option>
+                    }
+                  </select>
+
+                  <div
+                    class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+
+                @if (!loadingDeviceCatalogCategories && !deviceCatalogCategories.length) {
+                <p class="mt-1.5 text-xs text-red-600">
+                  No active catalog categories are available.
+                </p>
                 }
               </div>
 
-              <div class="relative" (click)="$event.stopPropagation()">
-                <input
-                  type="text"
-                  id="techSpecsModel"
-                  placeholder=" "
-                  formControlName="techSpecsModelSearchControl"
-                  (focus)="onTechSpecsModelFocus()"
-                  autocomplete="off"
-                  [readonly]="!selectedTechSpecsBrand"
-                  class="peer w-full rounded-2xl border border-gray-300 bg-white px-4 pb-2 pt-5 text-sm text-gray-900 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  [class.bg-gray-50]="!selectedTechSpecsBrand"
-                  [class.cursor-default]="!selectedTechSpecsBrand"
-                  [class.pr-20]="selectedTechSpecsModel"
-                  [class.border-red-300]="newRepairForm.controls.techSpecsModelSearchControl.invalid && newRepairForm.controls.techSpecsModelSearchControl.touched"
-                />
-                <label
-                  for="techSpecsModel"
-                  class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500"
-                >
-                  Model<sup class="text-danger text-xs">*</sup>
-                </label>
+              <div class="min-w-0" (click)="$event.stopPropagation()">
+                <div class="mb-2 flex min-h-5 items-center justify-between gap-3">
+                  <label
+                    for="techSpecsBrand"
+                    class="text-xs font-semibold uppercase tracking-wide text-gray-500"
+                  >
+                    Brand <span class="text-red-500">*</span>
+                  </label>
 
-                @if (!selectedTechSpecsBrand) {
-                <div
-                  class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-gray-400"
-                >
-                  Select brand first
-                </div>
-                } @if (selectedTechSpecsModel) {
-                <button
-                  type="button"
-                  class="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                  (click)="clearTechSpecsModel(); $event.stopPropagation()"
-                >
-                  Clear
-                </button>
-                } @if (showTechSpecsModelResults && selectedTechSpecsBrand) {
-                <div
-                  class="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
-                >
-                  @if (searchingTechSpecsModels || loadingDeviceCatalogCategory)
-                  {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    Loading catalog models...
-                  </div>
-                  } @else if (techSpecsModelResults.length > 0) { @for (model of
-                  techSpecsModelResults; track model.id) {
+                  @if (selectedTechSpecsBrand) {
                   <button
                     type="button"
-                    class="cursor-pointer flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
-                    (click)="selectTechSpecsModel(model); $event.stopPropagation()"
+                    class="cursor-pointer text-xs font-semibold text-gray-400 transition hover:text-gray-700"
+                    (click)="clearTechSpecsBrand(); $event.stopPropagation()"
                   >
-                    <span class="text-sm font-medium text-gray-900"
-                      >{{ model.name }}</span
-                    >
-                    <span class="text-xs text-gray-500"
-                      >{{ selectedTechSpecsBrand.name }}</span
-                    >
+                    Clear
                   </button>
-                  } } @else if (techSpecsModelSearchControl.value.trim().length
-                  === 0) {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    Start typing a model, like iPhone 15 Pro, Galaxy S24 Ultra,
-                    or Pixel 8 Pro.
-                  </div>
-                  } @else if (techSpecsModelSearchControl.value.trim().length >
-                  0 && techSpecsModelSearchControl.value.trim().length < 2) {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    Type at least 2 characters to search models.
-                  </div>
-                  } @else {
-                  <div class="px-4 py-3 text-sm text-gray-500">
-                    No matching catalog models found. Try a shorter model
-                    search.
+                  }
+                </div>
+
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="techSpecsBrand"
+                    placeholder="{{ deviceCatalogCategory ? 'Search brands' : 'Select category first' }}"
+                    formControlName="techSpecsBrandSearchControl"
+                    (focus)="onTechSpecsBrandFocus()"
+                    autocomplete="off"
+                    [readonly]="!deviceCatalogCategory"
+                    class="h-[52px] w-full rounded-2xl border border-gray-300 bg-white px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    [class.bg-gray-50]="!deviceCatalogCategory"
+                    [class.cursor-default]="!deviceCatalogCategory"
+                    [class.border-red-300]="newRepairForm.controls.techSpecsBrandSearchControl.invalid && newRepairForm.controls.techSpecsBrandSearchControl.touched"
+                  />
+
+                  @if (showTechSpecsBrandResults && deviceCatalogCategory) {
+                  <div
+                    class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-lg"
+                  >
+                    @if (searchingTechSpecsBrands || loadingDeviceCatalogCategories)
+                    {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      Loading catalog brands...
+                    </div>
+                    } @else if (techSpecsBrandResults.length > 0) { @for (brand of
+                    techSpecsBrandResults; track brand.id) {
+                    <button
+                      type="button"
+                      class="cursor-pointer flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
+                      (click)="selectTechSpecsBrand(brand); $event.stopPropagation()"
+                    >
+                      <span class="text-sm font-medium text-gray-900"
+                        >{{ brand.name }}</span
+                      >
+                      <span class="text-xs text-gray-500">Catalog brand</span>
+                    </button>
+                    } } @else if (techSpecsBrandSearchControl.value.trim().length
+                    === 0) {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      Start typing a brand available under
+                      {{ deviceCatalogCategory }}.
+                    </div>
+                    } @else if (techSpecsBrandSearchControl.value.trim().length >
+                    0 && techSpecsBrandSearchControl.value.trim().length < 2) {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      Type at least 2 characters to search brands.
+                    </div>
+                    } @else {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      No matching catalog brands found. Try a shorter brand
+                      name.
+                    </div>
+                    }
                   </div>
                   }
                 </div>
-                }
+              </div>
+
+              <div class="min-w-0" (click)="$event.stopPropagation()">
+                <div class="mb-2 flex min-h-5 items-center justify-between gap-3">
+                  <label
+                    for="techSpecsModel"
+                    class="text-xs font-semibold uppercase tracking-wide text-gray-500"
+                  >
+                    Model <span class="text-red-500">*</span>
+                  </label>
+
+                  @if (selectedTechSpecsModel) {
+                  <button
+                    type="button"
+                    class="cursor-pointer text-xs font-semibold text-gray-400 transition hover:text-gray-700"
+                    (click)="clearTechSpecsModel(); $event.stopPropagation()"
+                  >
+                    Clear
+                  </button>
+                  }
+                </div>
+
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="techSpecsModel"
+                    placeholder="{{ selectedTechSpecsBrand ? 'Search models' : 'Select brand first' }}"
+                    formControlName="techSpecsModelSearchControl"
+                    (focus)="onTechSpecsModelFocus()"
+                    autocomplete="off"
+                    [readonly]="!selectedTechSpecsBrand"
+                    class="h-[52px] w-full rounded-2xl border border-gray-300 bg-white px-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    [class.bg-gray-50]="!selectedTechSpecsBrand"
+                    [class.cursor-default]="!selectedTechSpecsBrand"
+                    [class.border-red-300]="newRepairForm.controls.techSpecsModelSearchControl.invalid && newRepairForm.controls.techSpecsModelSearchControl.touched"
+                  />
+
+                  @if (showTechSpecsModelResults && selectedTechSpecsBrand) {
+                  <div
+                    class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-lg"
+                  >
+                    @if (searchingTechSpecsModels || loadingDeviceCatalogCategories)
+                    {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      Loading catalog models...
+                    </div>
+                    } @else if (techSpecsModelResults.length > 0) { @for (model of
+                    techSpecsModelResults; track model.id) {
+                    <button
+                      type="button"
+                      class="cursor-pointer flex w-full flex-col border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 last:border-b-0"
+                      (click)="selectTechSpecsModel(model); $event.stopPropagation()"
+                    >
+                      <span class="text-sm font-medium text-gray-900"
+                        >{{ model.name }}</span
+                      >
+                      <span class="text-xs text-gray-500"
+                        >{{ selectedTechSpecsBrand.name }}</span
+                      >
+                    </button>
+                    } } @else if (techSpecsModelSearchControl.value.trim().length
+                    === 0) {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      Start typing a model, like iPhone 15 Pro, Galaxy S24 Ultra,
+                      or Pixel 8 Pro.
+                    </div>
+                    } @else if (techSpecsModelSearchControl.value.trim().length >
+                    0 && techSpecsModelSearchControl.value.trim().length < 2) {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      Type at least 2 characters to search models.
+                    </div>
+                    } @else {
+                    <div class="px-4 py-3 text-sm text-gray-500">
+                      No matching catalog models found. Try a shorter model
+                      search.
+                    </div>
+                    }
+                  </div>
+                  }
+                </div>
               </div>
             </div>
-
-            @if (selectedTechSpecsModel) {
-            <div
-              class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3"
-            >
-              <p class="text-sm font-semibold text-emerald-900">
-                Device matched
-              </p>
-              <p class="mt-1 text-xs text-emerald-700">
-                {{ newRepairForm.controls.nickname.value }} will be saved with
-                catalogRef {{ newRepairForm.controls.catalogRef.value }}.
-              </p>
-            </div>
-            }
 
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
               <div class="relative sm:col-span-2">
@@ -640,11 +678,11 @@
               Step 3
             </p>
             <h2 class="mt-1 text-xl font-semibold text-gray-900">
-              Services & parts
+              Repair pricing & parts
             </h2>
             <p class="mt-1 text-sm text-gray-500">
-              Choose the repair need, select the service, then check inventory
-              and MobileSentrix before confirming the quote.
+              Choose the repair type and its configured pricing option. Parts and
+              supplier links remain optional.
             </p>
           </div>
 
@@ -653,14 +691,26 @@
               <div class="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <h3 class="text-sm font-semibold text-gray-900">
-                    Repair need
+                    Repair type
                   </h3>
                   <p class="mt-1 text-xs text-gray-500">
-                    Start with the main issue the customer needs solved.
+                    Select the type of work being completed.
                   </p>
                 </div>
               </div>
 
+              @if (loadingRepairServices) {
+              <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
+                Loading repair types and pricing...
+              </div>
+              } @else if (!repairNeeds.length) {
+              <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-5">
+                <p class="text-sm font-semibold text-amber-900">No repair types are configured</p>
+                <p class="mt-1 text-xs leading-5 text-amber-700">
+                  Add repair types from Settings → Repair Pricing before creating priced repairs.
+                </p>
+              </div>
+              } @else {
               <div class="-mx-1 overflow-x-auto px-1 pb-3">
                 <div class="flex min-w-max gap-3">
                   @for (need of repairNeeds; track need.key) {
@@ -682,6 +732,7 @@
                   }
                 </div>
               </div>
+              }
 
               @if (newRepairForm.controls.repairNeedKey.invalid &&
               newRepairForm.controls.repairNeedKey.touched) {
@@ -693,10 +744,10 @@
             <div class="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
               <div class="mb-3">
                 <h3 class="text-sm font-semibold text-gray-900">
-                  Recommended service
+                  Pricing option
                 </h3>
                 <p class="mt-1 text-xs text-gray-500">
-                  Pick the service/labor item that best matches this repair.
+                  Choose a saved quality tier or use Custom price for this repair.
                 </p>
               </div>
 
@@ -712,18 +763,30 @@
                   (click)="selectRepairService(service)"
                 >
                   <div class="flex items-start justify-between gap-4">
-                    <div>
-                      <div class="text-sm font-semibold text-gray-900">
-                        {{ service.label }}
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-semibold text-gray-900">
+                          {{ service.label }}
+                        </span>
+                        @if (service.requiresManualReview) {
+                        <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                          Manual review
+                        </span>
+                        }
                       </div>
-                      <div class="mt-1 text-xs text-gray-500">
+                      <div class="mt-1 text-xs leading-5 text-gray-500">
                         {{ service.description }}
                       </div>
+                      @if (repairPricingOptionMeta(service)) {
+                      <div class="mt-2 text-[11px] font-medium text-gray-400">
+                        {{ repairPricingOptionMeta(service) }}
+                      </div>
+                      }
                     </div>
                     <div
-                      class="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600"
+                      class="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700"
                     >
-                      Labor {{ formatCents(service.defaultLaborCents) }}
+                      {{ repairPricingOptionPriceLabel(service) }}
                     </div>
                   </div>
                 </button>
@@ -732,7 +795,7 @@
 
               @if (newRepairForm.controls.repairServiceKey.invalid &&
               newRepairForm.controls.repairServiceKey.touched) {
-              <p class="mt-2 text-xs text-red-600">Select a repair service.</p>
+              <p class="mt-2 text-xs text-red-600">Select a pricing option.</p>
               }
             </div>
             } @if (selectedRepairService()) {
@@ -1306,6 +1369,76 @@
                 Quoted price: {{ quotedPriceSummary() }}
               </p>
             </div>
+
+            @if (selectedPricingRequiresDeposit()) {
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Deposit</p>
+                  <p class="mt-1 text-sm font-semibold text-amber-950">
+                    {{ formatCents(selectedDepositAmountCents()) }} required by this pricing option
+                  </p>
+                  <p class="mt-1 text-xs leading-5 text-amber-800">
+                    @if (adminDepositEnforcement === 'disabled') {
+                    Internal deposit enforcement is disabled. This repair can be created immediately.
+                    } @else {
+                    Send the customer a secure Stripe checkout email. The repair and appointment are created only after payment succeeds.
+                    }
+                  </p>
+                </div>
+                @if (fullPrepaymentEnabled && depositFullPrepaymentAmountCents() !== null) {
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  Full payment option: {{ formatCents(depositFullPrepaymentAmountCents()) }}
+                </span>
+                }
+              </div>
+
+              @if (shouldEnforceSelectedDeposit() && !depositRequestSent) {
+              <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                <button type="button"
+                  class="cursor-pointer rounded-xl border px-4 py-3 text-left transition"
+                  [ngClass]="adminDepositAction === 'send_payment' ? 'border-brand bg-white shadow-sm' : 'border-amber-200 bg-amber-50 hover:bg-white'"
+                  (click)="selectAdminDepositAction('send_payment')">
+                  <span class="block text-sm font-semibold text-gray-900">Email secure payment request</span>
+                  <span class="mt-1 block text-xs text-gray-500">Customer enters their own card on Stripe.</span>
+                </button>
+
+                @if (canOverrideSelectedDeposit()) {
+                <button type="button"
+                  class="cursor-pointer rounded-xl border px-4 py-3 text-left transition"
+                  [ngClass]="adminDepositAction === 'override' ? 'border-brand bg-white shadow-sm' : 'border-amber-200 bg-amber-50 hover:bg-white'"
+                  (click)="selectAdminDepositAction('override')">
+                  <span class="block text-sm font-semibold text-gray-900">Override deposit</span>
+                  <span class="mt-1 block text-xs text-gray-500">Create now and record a required audit reason.</span>
+                </button>
+                }
+              </div>
+
+              @if (adminDepositAction === 'send_payment' && !depositCustomerEmail()) {
+              <p class="mt-3 text-xs font-semibold text-red-700">Add a valid customer email to send the payment request.</p>
+              }
+
+              @if (adminDepositAction === 'override') {
+              <label class="mt-4 block">
+                <span class="text-xs font-semibold uppercase tracking-wide text-amber-700">Override reason</span>
+                <textarea rows="2" [(ngModel)]="depositOverrideReason"
+                  [ngModelOptions]="{ standalone: true }"
+                  placeholder="Example: Approved repeat customer account"
+                  class="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"></textarea>
+              </label>
+              }
+              }
+
+              @if (depositRequestSent) {
+              <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <p class="text-sm font-semibold text-emerald-900">Payment request sent</p>
+                <p class="mt-1 text-xs leading-5 text-emerald-700">
+                  Sent to {{ depositRequestSent.customerEmail }}. No repair or appointment has been created yet. Stripe payment will confirm it automatically.
+                </p>
+              </div>
+              }
+            </div>
+            }
 
             <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
               <p

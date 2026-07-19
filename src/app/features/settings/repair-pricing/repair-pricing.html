@@ -1,0 +1,896 @@
+<div class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-brand">Shop settings</p>
+      <h1 class="mt-1 text-2xl font-semibold text-gray-900">Repair Pricing</h1>
+      <p class="mt-1 max-w-3xl text-sm leading-6 text-gray-500">
+        Set reusable repair types and model-specific pricing options for public booking, quotes, and internal repairs.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
+      [disabled]="saving() || (activeTab() === 'pricing' && !selectedModels().length)"
+      (click)="activeTab() === 'types' ? openNewRepairType() : openNewOption()"
+    >
+      <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+      {{ activeTab() === 'types' ? 'Add Repair Type' : 'Add Pricing Option' }}
+    </button>
+  </div>
+
+  <div class="mb-6 flex gap-1 rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
+    <button
+      type="button"
+      class="cursor-pointer flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:flex-none"
+      [ngClass]="activeTab() === 'pricing' ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+      (click)="setTab('pricing')"
+    >
+      Device Pricing
+    </button>
+    <button
+      type="button"
+      class="cursor-pointer flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition sm:flex-none"
+      [ngClass]="activeTab() === 'types' ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'"
+      (click)="setTab('types')"
+    >
+      Repair Types
+      <span class="ml-1 text-xs opacity-70">{{ repairTypes().length }}</span>
+    </button>
+  </div>
+
+  @if (error()) {
+  <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    {{ error() }}
+  </div>
+  }
+
+  @if (loading()) {
+  <div class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm">
+    <p class="text-sm font-medium text-gray-700">Loading repair pricing...</p>
+  </div>
+  } @else if (activeTab() === 'types') {
+  <section class="rounded-3xl border border-gray-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-gray-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="text-base font-semibold text-gray-900">Repair Types</h2>
+        <p class="mt-1 text-sm text-gray-500">
+          These are the reusable repair categories shown across Opscend. Drag them to change their display order.
+        </p>
+      </div>
+      <div class="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600">
+        {{ activeRepairTypes().length }} active
+      </div>
+    </div>
+
+    @if (!repairTypes().length) {
+    <div class="px-6 py-16 text-center">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500">
+        <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-gray-900">No repair types yet</h3>
+      <p class="mt-1 text-sm text-gray-500">Create Screen Replacement, Battery Replacement, Diagnostics, or any service your shop offers.</p>
+    </div>
+    } @else {
+    <div class="divide-y divide-gray-100">
+      @for (repairType of repairTypes(); track repairType.id) {
+      <article
+        class="group flex items-start gap-3 px-4 py-4 transition hover:bg-gray-50/70 sm:px-5"
+        [class.opacity-60]="!repairType.isActive"
+        (dragover)="$event.preventDefault()"
+        (drop)="onRepairTypeDrop($event, repairType.id)"
+      >
+        <span
+          class="mt-1 inline-flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 active:cursor-grabbing"
+          [attr.draggable]="true"
+          (dragstart)="onRepairTypeDragStart($event, repairType.id)"
+          aria-label="Drag to reorder repair type"
+          title="Drag to reorder"
+        >
+          <lucide-icon [name]="icons.Grip" class="h-4 w-4"></lucide-icon>
+        </span>
+
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-sm font-semibold text-gray-900">{{ repairType.label }}</h3>
+            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">{{ repairType.code }}</span>
+            <span
+              class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+              [ngClass]="repairType.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'"
+            >
+              {{ repairType.isActive ? 'Active' : 'Inactive' }}
+            </span>
+            @if (repairType.requiresManualReview) {
+            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Manual review</span>
+            }
+          </div>
+
+          <p class="mt-1 text-sm leading-5 text-gray-500">
+            {{ repairType.description || 'No description added.' }}
+          </p>
+          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <span>{{ repairType.pricingOptionCount }} pricing option{{ repairType.pricingOptionCount === 1 ? '' : 's' }}</span>
+            <span>Default duration: {{ repairType.defaultDurationMins || 60 }} min</span>
+            <span>Default labor: {{ repairType.defaultLaborCents == null ? 'Shop default' : money(repairType.defaultLaborCents) }}</span>
+          </div>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50"
+            (click)="editRepairType(repairType)"
+          >
+            Edit
+          </button>
+          @if (repairType.isActive) {
+          <button
+            type="button"
+            class="cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+            (click)="deactivateRepairType(repairType)"
+          >
+            Deactivate
+          </button>
+          }
+        </div>
+      </article>
+      }
+    </div>
+    }
+  </section>
+  } @else {
+  <div class="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+    <aside class="min-w-0 rounded-3xl border border-gray-200 bg-white shadow-sm xl:sticky xl:top-4 xl:self-start">
+      <div class="border-b border-gray-200 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-gray-900">Device Models</h2>
+            <p class="mt-1 text-xs text-gray-500">Select one model to manage it or several for bulk setup.</p>
+          </div>
+          @if (selectedModels().length) {
+          <button
+            type="button"
+            class="cursor-pointer text-xs font-semibold text-gray-400 hover:text-gray-700"
+            (click)="clearModelSelection()"
+          >
+            Clear
+          </button>
+          }
+        </div>
+
+        <div class="mt-4 grid gap-3">
+          <label class="block">
+            <span class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500">Category</span>
+            <select
+              class="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand"
+              [value]="selectedCategoryId()"
+              (change)="onCategoryChange($any($event.target).value)"
+            >
+              @for (category of categories(); track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-gray-500">Brand</span>
+            <select
+              class="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand"
+              [value]="selectedBrandId()"
+              (change)="onBrandChange($any($event.target).value)"
+            >
+              @for (brand of brands(); track brand.id) {
+              <option [value]="brand.id">{{ brand.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="relative block">
+            <span class="sr-only">Search models</span>
+            <lucide-icon [name]="icons.Search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></lucide-icon>
+            <input
+              type="text"
+              class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-brand"
+              placeholder="Search models..."
+              [value]="modelSearch()"
+              (input)="onModelSearch($any($event.target).value)"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-3">
+        <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-700">
+          <input
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand"
+            [checked]="allVisibleModelsSelected()"
+            [indeterminate]="someVisibleModelsSelected()"
+            (change)="toggleAllVisibleModels()"
+          />
+          Select visible
+        </label>
+        <span class="text-xs text-gray-500">{{ selectedModels().length }} selected</span>
+      </div>
+
+      <div class="max-h-[560px] overflow-y-auto overscroll-contain p-2">
+        @if (!visibleModels().length) {
+        <div class="px-3 py-10 text-center text-sm text-gray-500">No matching active models.</div>
+        } @else {
+        @for (model of visibleModels(); track model.id) {
+        <div
+          class="group mb-1 flex items-center gap-3 rounded-2xl border px-3 py-3 transition"
+          [ngClass]="selectedModelIds().has(model.id) ? 'border-brand bg-brand/5' : 'border-transparent hover:border-gray-200 hover:bg-gray-50'"
+        >
+          <input
+            type="checkbox"
+            class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand"
+            [checked]="selectedModelIds().has(model.id)"
+            (change)="toggleModel(model.id)"
+          />
+          <button
+            type="button"
+            class="cursor-pointer min-w-0 flex-1 text-left"
+            (click)="selectOnlyModel(model.id)"
+          >
+            <span class="block truncate text-sm font-semibold text-gray-900">{{ model.name }}</span>
+            <span class="mt-0.5 block text-xs text-gray-500">{{ model.releaseYear || 'Year not listed' }}</span>
+          </button>
+          <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 text-gray-300 transition group-hover:text-gray-500"></lucide-icon>
+        </div>
+        }
+        }
+      </div>
+    </aside>
+
+    <main class="min-w-0 space-y-5">
+      @if (!selectedModels().length) {
+      <section class="rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-20 text-center shadow-sm">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-500">
+          <lucide-icon [name]="icons.Layers" class="h-6 w-6"></lucide-icon>
+        </div>
+        <h2 class="mt-4 text-base font-semibold text-gray-900">Select a device model</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">
+          Choose one model to manage its repair options, or select multiple models to apply the same pricing in bulk.
+        </p>
+      </section>
+      } @else if (selectedModels().length > 1) {
+      <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-brand">Bulk setup</p>
+            <h2 class="mt-1 text-xl font-semibold text-gray-900">{{ selectedModels().length }} models selected</h2>
+            <p class="mt-1 text-sm text-gray-500">Create or update the same repair option across every selected model.</p>
+          </div>
+          <button
+            type="button"
+            class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-soft"
+            (click)="openNewOption()"
+          >
+            <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+            Configure Bulk Option
+          </button>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          @for (model of selectedModels(); track model.id) {
+          <span class="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">{{ model.name }}</span>
+          }
+        </div>
+      </section>
+      } @else if (singleSelectedModel(); as model) {
+      <section class="rounded-3xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 border-b border-gray-200 px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-brand">{{ model.categoryName }} · {{ model.brandName }}</p>
+            <h2 class="mt-1 text-xl font-semibold text-gray-900">{{ model.name }}</h2>
+            <p class="mt-1 text-sm text-gray-500">Add Essential, Premium, OEM, or any custom option your shop uses.</p>
+          </div>
+          <button
+            type="button"
+            class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-soft"
+            (click)="openNewOption()"
+          >
+            <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+            Add Pricing Option
+          </button>
+        </div>
+
+        @if (!options().length) {
+        <div class="px-6 py-16 text-center">
+          <h3 class="text-sm font-semibold text-gray-900">No pricing configured</h3>
+          <p class="mt-1 text-sm text-gray-500">Add the first repair type and price for this model.</p>
+        </div>
+        } @else {
+        <div class="space-y-5 p-5">
+          @for (group of groupedOptions(); track group.repairType.id) {
+          <section class="overflow-hidden rounded-2xl border border-gray-200">
+            <div class="flex items-center justify-between gap-3 bg-gray-50 px-4 py-3">
+              <div>
+                <h3 class="text-sm font-semibold text-gray-900">{{ group.repairType.label }}</h3>
+                <p class="mt-0.5 text-xs text-gray-500">Drag options to set the customer and staff display order.</p>
+              </div>
+              <span class="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-600 ring-1 ring-gray-200">{{ group.options.length }}</span>
+            </div>
+
+            <div class="divide-y divide-gray-100">
+              @for (option of group.options; track option.id) {
+              <article
+                class="flex items-start gap-3 px-3 py-4 transition hover:bg-gray-50/70 sm:px-4"
+                [class.opacity-60]="!option.isActive"
+                (dragover)="$event.preventDefault()"
+                (drop)="onOptionDrop($event, option)"
+              >
+                <span
+                  class="mt-1 inline-flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:cursor-grabbing"
+                  [attr.draggable]="true"
+                  (dragstart)="onOptionDragStart($event, option)"
+                  aria-label="Drag to reorder pricing option"
+                  title="Drag to reorder"
+                >
+                  <lucide-icon [name]="icons.Grip" class="h-4 w-4"></lucide-icon>
+                </span>
+
+                <input
+                  type="checkbox"
+                  class="mt-2 h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand"
+                  [checked]="selectedOptionIds().has(option.id)"
+                  (change)="toggleOptionSelection(option.id)"
+                />
+
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h4 class="text-sm font-semibold text-gray-900">{{ option.variantName }}</h4>
+                    <span class="rounded-full bg-gray-900 px-2 py-0.5 text-[11px] font-semibold text-white">{{ optionPriceLabel(option) }}</span>
+                    <span
+                      class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                      [ngClass]="option.isPublic ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                    >
+                      {{ option.isPublic ? 'Public' : 'Internal only' }}
+                    </span>
+                    @if (!option.isActive) {
+                    <span class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">Inactive</span>
+                    }
+                    @if (option.requiresManualReview) {
+                    <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Manual review</span>
+                    }
+                    @if (option.depositMode !== 'none') {
+                    <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700">{{ optionDepositLabel(option) }}</span>
+                    }
+                  </div>
+                  @if (option.description) {
+                  <p class="mt-1 text-sm text-gray-500">{{ option.description }}</p>
+                  }
+                  <p class="mt-2 truncate text-xs text-gray-500">{{ optionLinksLabel(option) }}</p>
+                  <p class="mt-1 text-xs text-gray-400">
+                    {{ option.durationMins || group.repairType.defaultDurationMins || 60 }} min
+                    · Labor {{ option.laborCents == null ? 'default' : money(option.laborCents) }}
+                    · {{ option.allowInstantConfirmation ? 'Instant confirmation allowed' : 'Estimated/manual confirmation' }}
+                  </p>
+                </div>
+
+                <div class="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                    (click)="editOption(option)"
+                  >
+                    Edit
+                  </button>
+                  @if (option.isActive) {
+                  <button
+                    type="button"
+                    class="cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                    (click)="deactivateOption(option)"
+                  >
+                    Deactivate
+                  </button>
+                  }
+                </div>
+              </article>
+              }
+            </div>
+          </section>
+          }
+        </div>
+        }
+      </section>
+
+      @if (selectedOptions().length) {
+      <section class="rounded-3xl border border-brand/20 bg-brand/5 p-5 shadow-sm">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900">{{ selectedOptions().length }} pricing option{{ selectedOptions().length === 1 ? '' : 's' }} selected</h3>
+            <p class="mt-1 text-xs text-gray-500">Apply visibility, price, product, or service changes together.</p>
+          </div>
+          <button type="button" class="cursor-pointer text-xs font-semibold text-gray-500 hover:text-gray-900" (click)="clearOptionSelection()">Clear selection</button>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="runBulkStatusAction('activate')">Activate</button>
+          <button type="button" class="cursor-pointer rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100" (click)="runBulkStatusAction('publish')">Publish</button>
+          <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50" (click)="runBulkStatusAction('make_private')">Internal only</button>
+          <button type="button" class="cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100" (click)="runBulkStatusAction('deactivate')">Deactivate</button>
+        </div>
+
+        <div class="mt-4 grid gap-3 lg:grid-cols-[1fr_150px_auto]">
+          <select
+            class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"
+            [value]="bulkAdjustmentMode()"
+            (change)="bulkAdjustmentMode.set($any($event.target).value)"
+          >
+            <option value="set_price">Set fixed price</option>
+            <option value="increase_fixed">Increase by dollars</option>
+            <option value="decrease_fixed">Decrease by dollars</option>
+            <option value="increase_percent">Increase by percent</option>
+            <option value="decrease_percent">Decrease by percent</option>
+          </select>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            class="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"
+            placeholder="Amount"
+            [value]="bulkAdjustmentValue() ?? ''"
+            (input)="bulkAdjustmentValue.set($any($event.target).value === '' ? null : +$any($event.target).value)"
+          />
+          <button type="button" class="cursor-pointer rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700" (click)="applyBulkPriceAdjustment()">Apply price</button>
+        </div>
+
+        <div class="mt-3 grid gap-3 lg:grid-cols-[1fr_auto]">
+          <select
+            class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"
+            [value]="bulkServiceId()"
+            (change)="bulkServiceId.set($any($event.target).value)"
+          >
+            <option value="">No linked service</option>
+            @for (service of services(); track service.id) {
+            <option [value]="service.id">{{ serviceLabel(service) }}</option>
+            }
+          </select>
+          <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" (click)="applyBulkService()">Apply service</button>
+        </div>
+
+        <div class="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+          <select
+            class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"
+            [value]="bulkProductId()"
+            (change)="bulkProductId.set($any($event.target).value); bulkProductSupplierId.set('')"
+          >
+            <option value="">No linked product</option>
+            @for (product of products(); track product.id) {
+            <option [value]="product.id">{{ productLabel(product) }}</option>
+            }
+          </select>
+          <select
+            class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand disabled:cursor-not-allowed disabled:bg-gray-50"
+            [disabled]="!bulkProductId()"
+            [value]="bulkProductSupplierId()"
+            (change)="bulkProductSupplierId.set($any($event.target).value)"
+          >
+            <option value="">No supplier link</option>
+            @for (link of bulkProductSupplierLinks(); track link.id) {
+            <option [value]="link.id">{{ supplierLinkLabel(link) }}</option>
+            }
+          </select>
+          <div class="flex gap-2">
+            <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" (click)="applyBulkProduct()">Apply product</button>
+            <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" [disabled]="!bulkProductId()" (click)="applyBulkProductSupplier()">Apply supplier</button>
+          </div>
+        </div>
+
+        <button type="button" class="mt-3 cursor-pointer text-xs font-semibold text-red-700 hover:text-red-900" (click)="runBulkStatusAction('clear_links')">Clear all linked products and services</button>
+      </section>
+      }
+      }
+    </main>
+  </div>
+  }
+</div>
+
+@if (typeEditorOpen()) {
+<div class="fixed inset-0 z-50 flex justify-end bg-black/30" (click)="closeRepairTypeEditor()">
+  <aside class="h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl" (click)="$event.stopPropagation()">
+    <form [formGroup]="repairTypeForm" (ngSubmit)="saveRepairType()">
+      <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gray-200 bg-white px-6 py-5">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand">Repair Types</p>
+          <h2 class="mt-1 text-xl font-semibold text-gray-900">{{ editingRepairTypeId() ? 'Edit Repair Type' : 'New Repair Type' }}</h2>
+        </div>
+        <button type="button" class="cursor-pointer rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700" (click)="closeRepairTypeEditor()" aria-label="Close">
+          <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="space-y-5 p-6">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block sm:col-span-2">
+            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Name</span>
+            <input formControlName="label" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Screen Replacement" (input)="onRepairTypeLabelInput($any($event.target).value)" />
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Code</span>
+            <input formControlName="code" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" placeholder="screen_replacement" />
+          </label>
+          <label class="block">
+            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Default duration</span>
+            <input type="number" min="5" formControlName="defaultDurationMins" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" />
+          </label>
+        </div>
+
+        <label class="block">
+          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Description</span>
+          <textarea rows="3" formControlName="description" class="w-full resize-y rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Customer-facing description of this repair type."></textarea>
+        </label>
+
+        <label class="block">
+          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Supplier search terms</span>
+          <input formControlName="supplierSearchTermsText" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" placeholder="screen, display, oled, lcd" />
+          <span class="mt-1 block text-xs text-gray-500">Optional comma-separated terms used by supplier fallback searches.</span>
+        </label>
+
+        <label class="block">
+          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Default labor</span>
+          <div class="flex overflow-hidden rounded-xl border border-gray-200 focus-within:border-brand">
+            <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm text-gray-500">$</span>
+            <input type="number" min="0" step="0.01" formControlName="defaultLaborDollars" class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" placeholder="Use shop default" />
+          </div>
+        </label>
+
+        <div class="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <label class="flex cursor-pointer items-start justify-between gap-4">
+            <span>
+              <span class="block text-sm font-semibold text-gray-900">Active</span>
+              <span class="mt-1 block text-xs text-gray-500">Available for pricing and internal repairs.</span>
+            </span>
+            <input type="checkbox" formControlName="isActive" class="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-gray-200 pt-3">
+            <span>
+              <span class="block text-sm font-semibold text-gray-900">Requires manual review by default</span>
+              <span class="mt-1 block text-xs text-gray-500">Individual pricing options can also enable manual review.</span>
+            </span>
+            <input type="checkbox" formControlName="requiresManualReview" class="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+        </div>
+      </div>
+
+      <div class="sticky bottom-0 flex justify-end gap-2 border-t border-gray-200 bg-white px-6 py-4">
+        <button type="button" class="cursor-pointer rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" (click)="closeRepairTypeEditor()">Cancel</button>
+        <button type="submit" class="cursor-pointer rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save Repair Type' }}</button>
+      </div>
+    </form>
+  </aside>
+</div>
+}
+
+@if (optionEditorOpen()) {
+<div class="fixed inset-0 z-50 flex justify-end bg-black/30" (click)="closeOptionEditor()">
+  <aside class="h-full w-full max-w-2xl overflow-y-auto bg-white shadow-2xl" (click)="$event.stopPropagation()">
+    <form [formGroup]="optionForm" (ngSubmit)="saveOption()">
+      <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-gray-200 bg-white px-6 py-5">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand">{{ selectedModels().length > 1 ? 'Bulk Pricing' : 'Device Pricing' }}</p>
+          <h2 class="mt-1 text-xl font-semibold text-gray-900">{{ optionEditorTitle() }}</h2>
+          <p class="mt-1 text-sm text-gray-500">Products, services, and supplier links are optional.</p>
+        </div>
+        <button type="button" class="cursor-pointer rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700" (click)="closeOptionEditor()" aria-label="Close">
+          <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="space-y-6 p-6">
+        <section>
+          <h3 class="text-sm font-semibold text-gray-900">Repair option</h3>
+          <div class="mt-3 grid gap-4 sm:grid-cols-2">
+            <label class="block">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Repair type</span>
+              <select formControlName="repairNeedId" class="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand">
+                <option value="">Select repair type</option>
+                @for (repairType of activeRepairTypes(); track repairType.id) {
+                <option [value]="repairType.id">{{ repairType.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Option name</span>
+              <input formControlName="variantName" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Essential, Premium, OEM..." />
+            </label>
+          </div>
+          <label class="mt-4 block">
+            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Description</span>
+            <textarea rows="3" formControlName="description" class="w-full resize-y rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Explain what makes this option different."></textarea>
+          </label>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 p-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900">Pricing</h3>
+              <p class="mt-1 text-xs text-gray-500">Use a fixed price or calculate from optional product cost and labor.</p>
+            </div>
+            <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-700">
+              <input type="checkbox" formControlName="useDynamicPricing" class="h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+              Dynamic pricing
+            </label>
+          </div>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-3">
+            <label class="block">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Fixed price</span>
+              <div class="flex overflow-hidden rounded-xl border border-gray-200 focus-within:border-brand">
+                <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm text-gray-500">$</span>
+                <input type="number" min="0" step="0.01" formControlName="fixedPriceDollars" class="min-w-0 flex-1 px-3 py-3 text-sm outline-none" />
+              </div>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Labor override</span>
+              <div class="flex overflow-hidden rounded-xl border border-gray-200 focus-within:border-brand">
+                <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm text-gray-500">$</span>
+                <input type="number" min="0" step="0.01" formControlName="laborDollars" class="min-w-0 flex-1 px-3 py-3 text-sm outline-none" placeholder="Default" />
+              </div>
+            </label>
+            <label class="block">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Duration</span>
+              <input type="number" min="5" formControlName="durationMins" class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Default" />
+            </label>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 p-4">
+          <h3 class="text-sm font-semibold text-gray-900">Optional links</h3>
+          <p class="mt-1 text-xs text-gray-500">Leave these blank when your shop prices repairs without product or service records.</p>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div class="block">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Service</span>
+              <div class="relative" (click)="$event.stopPropagation()">
+                <lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></lucide-icon>
+                <input
+                  type="text"
+                  autocomplete="off"
+                  [value]="serviceLinkSearch()"
+                  (input)="onServiceLinkInput($any($event.target).value)"
+                  (focus)="openServiceLinkTypeahead()"
+                  placeholder="Search services..."
+                  class="h-[46px] w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10" />
+
+                @if (serviceLinkSearch()) {
+                <button
+                  type="button"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                  (click)="clearServiceLink(); $event.stopPropagation()"
+                  aria-label="Clear linked service">
+                  <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                </button>
+                }
+
+                @if (serviceLinkOpen()) {
+                <div class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-xl">
+                  <button
+                    type="button"
+                    class="flex w-full cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm text-gray-500 transition hover:bg-gray-50"
+                    (click)="clearServiceLink(); $event.stopPropagation()">
+                    <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                    No linked service
+                  </button>
+
+                  @for (service of filteredServiceLinks(); track service.id) {
+                  <button
+                    type="button"
+                    class="block w-full cursor-pointer border-b border-gray-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-gray-50"
+                    [ngClass]="optionForm.controls.serviceId.value === service.id ? 'bg-brand/5' : ''"
+                    (click)="selectServiceLink(service); $event.stopPropagation()">
+                    <span class="block text-sm font-semibold text-gray-900">{{ service.name }}</span>
+                    <span class="mt-0.5 block text-xs text-gray-500">{{ serviceLabel(service) }}</span>
+                  </button>
+                  } @empty {
+                  <div class="px-4 py-4 text-sm text-gray-500">No matching services.</div>
+                  }
+                </div>
+                }
+              </div>
+            </div>
+
+            <div class="block">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Product</span>
+              <div class="relative" (click)="$event.stopPropagation()">
+                <lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></lucide-icon>
+                <input
+                  type="text"
+                  autocomplete="off"
+                  [value]="productLinkSearch()"
+                  (input)="onProductLinkInput($any($event.target).value)"
+                  (focus)="openProductLinkTypeahead()"
+                  placeholder="Search products or SKUs..."
+                  class="h-[46px] w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10" />
+
+                @if (productLinkSearch()) {
+                <button
+                  type="button"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                  (click)="clearProductLink(); $event.stopPropagation()"
+                  aria-label="Clear linked product">
+                  <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                </button>
+                }
+
+                @if (productLinkOpen()) {
+                <div class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-xl">
+                  <button
+                    type="button"
+                    class="flex w-full cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm text-gray-500 transition hover:bg-gray-50"
+                    (click)="clearProductLink(); $event.stopPropagation()">
+                    <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                    No linked product
+                  </button>
+
+                  @for (product of filteredProductLinks(); track product.id) {
+                  <button
+                    type="button"
+                    class="block w-full cursor-pointer border-b border-gray-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-gray-50"
+                    [ngClass]="optionForm.controls.productId.value === product.id ? 'bg-brand/5' : ''"
+                    (click)="selectProductLink(product); $event.stopPropagation()">
+                    <span class="block text-sm font-semibold text-gray-900">{{ product.name }}</span>
+                    <span class="mt-0.5 block text-xs text-gray-500">{{ productLabel(product) }}</span>
+                  </button>
+                  } @empty {
+                  <div class="px-4 py-4 text-sm text-gray-500">No matching products.</div>
+                  }
+                </div>
+                }
+              </div>
+            </div>
+
+            <div class="block sm:col-span-2">
+              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Supplier link</span>
+              <div class="relative" (click)="$event.stopPropagation()">
+                <lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></lucide-icon>
+                <input
+                  type="text"
+                  autocomplete="off"
+                  [disabled]="!selectedProduct()"
+                  [value]="supplierLinkSearch()"
+                  (input)="onSupplierLinkInput($any($event.target).value)"
+                  (focus)="openSupplierLinkTypeahead()"
+                  [placeholder]="selectedProduct() ? 'Search supplier names or SKUs...' : 'Select a product first'"
+                  class="h-[46px] w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400" />
+
+                @if (supplierLinkSearch()) {
+                <button
+                  type="button"
+                  class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                  (click)="clearSupplierLink(); $event.stopPropagation()"
+                  aria-label="Clear linked supplier record">
+                  <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                </button>
+                }
+
+                @if (supplierLinkOpen() && selectedProduct()) {
+                <div class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white shadow-xl">
+                  <button
+                    type="button"
+                    class="flex w-full cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm text-gray-500 transition hover:bg-gray-50"
+                    (click)="clearSupplierLink(); $event.stopPropagation()">
+                    <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                    No linked supplier record
+                  </button>
+
+                  @for (link of filteredSupplierLinks(); track link.id) {
+                  <button
+                    type="button"
+                    class="block w-full cursor-pointer border-b border-gray-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-gray-50"
+                    [ngClass]="optionForm.controls.productSupplierId.value === link.id ? 'bg-brand/5' : ''"
+                    (click)="selectSupplierLink(link); $event.stopPropagation()">
+                    <span class="block text-sm font-semibold text-gray-900">{{ link.supplierName || 'Supplier' }}</span>
+                    <span class="mt-0.5 block text-xs text-gray-500">{{ supplierLinkLabel(link) }}</span>
+                  </button>
+                  } @empty {
+                  <div class="px-4 py-4 text-sm text-gray-500">This product has no matching supplier links.</div>
+                  }
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-gray-200 p-4">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900">Deposit</h3>
+            <p class="mt-1 text-xs text-gray-500">Choose whether this pricing option requires money up front. Deposits are handled through the existing quote payment flow.</p>
+          </div>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              class="cursor-pointer rounded-2xl border px-4 py-3 text-left transition"
+              [ngClass]="optionForm.controls.depositMode.value === 'none' ? 'border-brand bg-brand/5 ring-1 ring-brand/10' : 'border-gray-200 bg-white hover:bg-gray-50'"
+              (click)="setDepositMode('none')">
+              <span class="block text-sm font-semibold text-gray-900">No deposit</span>
+              <span class="mt-1 block text-xs leading-5 text-gray-500">The full balance remains due later.</span>
+            </button>
+
+            <button
+              type="button"
+              class="cursor-pointer rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="selectedDepositProductCostCents() == null"
+              [ngClass]="optionForm.controls.depositMode.value === 'product_cost' ? 'border-brand bg-brand/5 ring-1 ring-brand/10' : 'border-gray-200 bg-white hover:bg-gray-50'"
+              (click)="setDepositMode('product_cost')">
+              <span class="block text-sm font-semibold text-gray-900">Product cost</span>
+              <span class="mt-1 block text-xs leading-5 text-gray-500">
+                @if (selectedDepositProductCostCents() != null) {
+                Current amount: {{ money(selectedDepositProductCostCents()) }}
+                } @else {
+                Link a product with a cost first.
+                }
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="cursor-pointer rounded-2xl border px-4 py-3 text-left transition"
+              [ngClass]="optionForm.controls.depositMode.value === 'custom' ? 'border-brand bg-brand/5 ring-1 ring-brand/10' : 'border-gray-200 bg-white hover:bg-gray-50'"
+              (click)="setDepositMode('custom')">
+              <span class="block text-sm font-semibold text-gray-900">Custom amount</span>
+              <span class="mt-1 block text-xs leading-5 text-gray-500">Enter a fixed deposit for this option.</span>
+            </button>
+          </div>
+
+          @if (optionForm.controls.depositMode.value === 'custom') {
+          <label class="mt-4 block max-w-sm">
+            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Deposit amount</span>
+            <div class="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-brand">
+              <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm text-gray-500">$</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                formControlName="depositAmountDollars"
+                class="min-w-0 flex-1 px-3 py-3 text-sm outline-none"
+                placeholder="0.00" />
+            </div>
+          </label>
+          }
+
+          @if (optionForm.controls.depositMode.value === 'product_cost' && selectedDepositProductCostCents() != null) {
+          <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            The deposit will use the current linked product cost of <strong>{{ money(selectedDepositProductCostCents()) }}</strong> when the quote is created.
+          </div>
+          }
+        </section>
+
+        <section class="space-y-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <label class="flex cursor-pointer items-start justify-between gap-4">
+            <span><span class="block text-sm font-semibold text-gray-900">Active</span><span class="mt-1 block text-xs text-gray-500">Available inside Opscend.</span></span>
+            <input type="checkbox" formControlName="isActive" class="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-gray-200 pt-3">
+            <span><span class="block text-sm font-semibold text-gray-900">Public</span><span class="mt-1 block text-xs text-gray-500">Customers can select this option in public booking.</span></span>
+            <input type="checkbox" formControlName="isPublic" class="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-gray-200 pt-3">
+            <span><span class="block text-sm font-semibold text-gray-900">Allow instant confirmation</span><span class="mt-1 block text-xs text-gray-500">Public bookings can schedule immediately when pricing is complete.</span></span>
+            <input type="checkbox" formControlName="allowInstantConfirmation" class="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-gray-200 pt-3">
+            <span><span class="block text-sm font-semibold text-gray-900">Requires manual review</span><span class="mt-1 block text-xs text-gray-500">Always route this option through quote review.</span></span>
+            <input type="checkbox" formControlName="requiresManualReview" class="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+          @if (selectedModels().length > 1) {
+          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-gray-200 pt-3">
+            <span><span class="block text-sm font-semibold text-gray-900">Update matching options</span><span class="mt-1 block text-xs text-gray-500">Overwrite an existing option with the same repair type and name.</span></span>
+            <input type="checkbox" formControlName="overwriteExisting" class="mt-1 h-4 w-4 cursor-pointer rounded border-gray-300 text-brand focus:ring-brand" />
+          </label>
+          }
+        </section>
+      </div>
+
+      <div class="sticky bottom-0 flex justify-end gap-2 border-t border-gray-200 bg-white px-6 py-4">
+        <button type="button" class="cursor-pointer rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50" (click)="closeOptionEditor()">Cancel</button>
+        <button type="submit" class="cursor-pointer rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60" [disabled]="saving()">{{ saving() ? 'Saving...' : selectedModels().length > 1 ? 'Apply to Selected Models' : 'Save Pricing Option' }}</button>
+      </div>
+    </form>
+  </aside>
+</div>
+}

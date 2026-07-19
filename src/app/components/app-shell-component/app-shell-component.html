@@ -429,6 +429,20 @@
                                 <span>Shop Bookings</span>
                             </button>
 
+                            <button type="button"
+                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
+                                (click)="goToRepairPricing()">
+                                <lucide-icon [size]="18" [img]="repairPricingIcon"></lucide-icon>
+                                <span>Repair Pricing</span>
+                            </button>
+
+                            <button type="button"
+                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
+                                (click)="goToDeviceCatalog()">
+                                <lucide-icon [size]="18" [img]="deviceCatalogIcon"></lucide-icon>
+                                <span>Device Catalog</span>
+                            </button>
+
                             <div class="border-t border-app-border"></div>
 
                             <button type="button"

@@ -1,0 +1,684 @@
+<div class="mx-auto max-w-[1800px] px-4 py-6 sm:px-6 lg:px-8">
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div class="flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
+          <lucide-icon [name]="icons.Database" class="h-5 w-5"></lucide-icon>
+        </div>
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight text-gray-950">Device Catalog</h1>
+          <p class="mt-1 text-sm text-gray-500">
+            Manage the categories, brands, and models used throughout Opscend.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        class="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="
+          importing() ||
+          loadingSyncStatus() ||
+          (syncStatus()?.currentRevision ?? 0) === 0 ||
+          (!!syncStatus() && !syncStatus()?.updateAvailable && (syncStatus()?.lastSyncedRevision ?? 0) > 0)
+        "
+        (click)="importExisting()"
+      >
+        <lucide-icon
+          [name]="importing() ? icons.Loader2 : ((syncStatus()?.lastSyncedRevision ?? 0) > 0 ? icons.RefreshCw : icons.Download)"
+          class="h-4 w-4"
+          [class.animate-spin]="importing()"
+        ></lucide-icon>
+        {{ syncButtonLabel() }}
+      </button>
+
+      <button
+        type="button"
+        class="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft"
+        (click)="openNewCategory()"
+      >
+        <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+        Add Category
+      </button>
+    </div>
+  </div>
+
+  @if (loadingSyncStatus()) {
+  <div class="mb-5 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-4 text-sm text-gray-500">
+    <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+    Checking the Opscend master catalog...
+  </div>
+  } @else if ((syncStatus()?.currentRevision ?? 0) === 0) {
+  <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+    <p class="font-semibold">The Opscend master catalog has not been published yet.</p>
+    <p class="mt-1 leading-6">Your shop can still create and manage its own categories, brands, and models.</p>
+  </div>
+  } @else if (syncStatus()?.updateAvailable) {
+  <div class="mb-5 rounded-2xl border border-brand/20 bg-brand/5 px-4 py-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <p class="text-sm font-semibold text-gray-950">Catalog update available · Revision {{ syncStatus()?.currentRevision }}</p>
+        <p class="mt-1 text-sm font-medium text-brand">{{ syncStatus()?.latestRelease?.title }}</p>
+        @if (syncStatus()?.latestRelease?.summary) {
+        <p class="mt-1 max-w-3xl text-sm leading-6 text-gray-600">{{ syncStatus()?.latestRelease?.summary }}</p>
+        }
+      </div>
+      <div class="shrink-0 rounded-xl border border-brand/15 bg-white px-3 py-2 text-xs font-semibold text-gray-600">
+        {{ syncStatus()?.availableCounts?.models ?? 0 }} models available
+      </div>
+    </div>
+  </div>
+  } @else {
+  <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+    <p class="text-sm font-semibold text-emerald-900">Catalog is up to date · Revision {{ syncStatus()?.lastSyncedRevision }}</p>
+    <p class="mt-1 text-sm text-emerald-700">Last updated {{ formatSyncDate(syncStatus()?.lastSyncedAt) }}</p>
+  </div>
+  }
+
+  <div class="mb-5 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm leading-6 text-blue-800">
+    Opscend-managed records are copied into your shop catalog. Updates refresh master names, release years, and external links, but your shop keeps its own active, public, and sort-order settings. Newly imported records start as internal-only until you publish them.
+  </div>
+
+  @if (error()) {
+  <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    {{ error() }}
+  </div>
+  }
+
+  <div class="grid min-h-[660px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm lg:grid-cols-[280px_300px_minmax(0,1fr)] xl:grid-cols-[300px_320px_minmax(0,1fr)]">
+    <section class="border-b border-gray-200 lg:border-b-0 lg:border-r">
+      <div class="border-b border-gray-100 px-4 py-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Level 1</p>
+            <h2 class="mt-1 text-base font-semibold text-gray-950">Categories</h2>
+          </div>
+          <button
+            type="button"
+            class="cursor-pointer inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 hover:text-brand"
+            (click)="openNewCategory()"
+            aria-label="Add category"
+          >
+            <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+          </button>
+        </div>
+
+        @if (categories().length) {
+        <label class="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-600">
+          <input
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer rounded border-gray-300 accent-brand"
+            [checked]="allCategoriesSelected()"
+            [indeterminate]="someCategoriesSelected() && !allCategoriesSelected()"
+            (change)="toggleAllCategories()"
+          />
+          Select all {{ categories().length }}
+        </label>
+        }
+      </div>
+
+      @if (selectedCategoryCount() > 0) {
+      <div class="border-b border-gray-100 bg-gray-50/80 p-3">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-xs font-bold text-gray-800">{{ selectedCategoryCount() }} selected</span>
+          <button
+            type="button"
+            class="cursor-pointer text-xs font-semibold text-gray-500 transition hover:text-gray-900"
+            [disabled]="bulkBusyEntity() !== null"
+            (click)="clearBulkSelection('category')"
+          >
+            Clear
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" class="cursor-pointer rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-gray-700 transition hover:border-brand/30 hover:text-brand disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('category', 'activate')">Activate</button>
+          <button type="button" class="cursor-pointer rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('category', 'publish')">Publish</button>
+          <button type="button" class="cursor-pointer rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('category', 'make_private')">Internal only</button>
+          <button type="button" class="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('category', 'deactivate')">Deactivate</button>
+        </div>
+      </div>
+      }
+
+      <div class="max-h-[600px] overflow-y-auto p-2">
+        @if (loadingCategories()) {
+        <div class="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
+          <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+          Loading categories...
+        </div>
+        } @else {
+          @for (category of categories(); track category.id) {
+          <div
+            class="group mb-1 flex items-center gap-2 rounded-2xl px-2 transition"
+            [ngClass]="[
+              selectedCategoryId() === category.id ? 'bg-brand/5' : '',
+              isCategorySelected(category.id) ? 'ring-1 ring-brand/25' : ''
+            ]"
+          >
+            <input
+              type="checkbox"
+              class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand"
+              [checked]="isCategorySelected(category.id)"
+              (click)="$event.stopPropagation()"
+              (change)="toggleCategorySelection(category.id, $any($event.target).checked)"
+              [attr.aria-label]="'Select ' + category.name"
+            />
+            <button
+              type="button"
+              class="cursor-pointer flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-3 text-left transition hover:text-brand"
+              (click)="selectCategory(category)"
+            >
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600">
+                <lucide-icon [name]="icons.Boxes" class="h-4 w-4"></lucide-icon>
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block break-words text-sm font-semibold leading-5 text-gray-900">{{ category.name }}</span>
+                <span class="mt-1 block text-xs text-gray-500">{{ category.brandCount }} brands · {{ category.modelCount }} models</span>
+                <span class="mt-2 flex flex-wrap items-center gap-1.5">
+                  @if (category.source === 'opscend_master') {
+                  <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Opscend</span>
+                  }
+                  @if (!category.isActive || !category.isPublic) {
+                  <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">{{ !category.isActive ? 'Inactive' : 'Private' }}</span>
+                  }
+                </span>
+              </span>
+              <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 shrink-0 text-gray-300"></lucide-icon>
+            </button>
+            <button
+              type="button"
+              class="cursor-pointer inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-white hover:text-gray-700"
+              (click)="openEditCategory(category)"
+              aria-label="Edit category"
+            >
+              <lucide-icon [name]="icons.Pencil" class="h-3.5 w-3.5"></lucide-icon>
+            </button>
+          </div>
+          } @empty {
+          <div class="px-3 py-10 text-center">
+            <p class="text-sm font-semibold text-gray-900">No categories yet</p>
+            <p class="mt-1 text-xs leading-5 text-gray-500">Import the Opscend catalog or add your first category.</p>
+          </div>
+          }
+        }
+      </div>
+    </section>
+
+    <section class="border-b border-gray-200 lg:border-b-0 lg:border-r">
+      <div class="border-b border-gray-100 px-4 py-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Level 2</p>
+            <h2 class="mt-1 break-words text-base font-semibold text-gray-950">{{ selectedCategory()?.name || 'Brands' }}</h2>
+          </div>
+          <button
+            type="button"
+            class="cursor-pointer inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+            [disabled]="!selectedCategoryId()"
+            (click)="openNewBrand()"
+            aria-label="Add brand"
+          >
+            <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+          </button>
+        </div>
+
+        @if (brands().length) {
+        <label class="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-600">
+          <input
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer rounded border-gray-300 accent-brand"
+            [checked]="allBrandsSelected()"
+            [indeterminate]="someBrandsSelected() && !allBrandsSelected()"
+            (change)="toggleAllBrands()"
+          />
+          Select all {{ brands().length }}
+        </label>
+        }
+      </div>
+
+      @if (selectedBrandCount() > 0) {
+      <div class="border-b border-gray-100 bg-gray-50/80 p-3">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-xs font-bold text-gray-800">{{ selectedBrandCount() }} selected</span>
+          <button type="button" class="cursor-pointer text-xs font-semibold text-gray-500 transition hover:text-gray-900" [disabled]="bulkBusyEntity() !== null" (click)="clearBulkSelection('brand')">Clear</button>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" class="cursor-pointer rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-gray-700 transition hover:border-brand/30 hover:text-brand disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('brand', 'activate')">Activate</button>
+          <button type="button" class="cursor-pointer rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('brand', 'publish')">Publish</button>
+          <button type="button" class="cursor-pointer rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('brand', 'make_private')">Internal only</button>
+          <button type="button" class="cursor-pointer rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('brand', 'deactivate')">Deactivate</button>
+        </div>
+      </div>
+      }
+
+      <div class="max-h-[600px] overflow-y-auto p-2">
+        @if (loadingBrands()) {
+        <div class="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
+          <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+          Loading brands...
+        </div>
+        } @else if (!selectedCategoryId()) {
+        <div class="px-3 py-10 text-center text-sm text-gray-500">Choose a category first.</div>
+        } @else {
+          @for (brand of brands(); track brand.id) {
+          <div
+            class="group mb-1 flex items-center gap-2 rounded-2xl px-2 transition"
+            [ngClass]="[
+              selectedBrandId() === brand.id ? 'bg-brand/5' : '',
+              isBrandSelected(brand.id) ? 'ring-1 ring-brand/25' : ''
+            ]"
+          >
+            <input
+              type="checkbox"
+              class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand"
+              [checked]="isBrandSelected(brand.id)"
+              (click)="$event.stopPropagation()"
+              (change)="toggleBrandSelection(brand.id, $any($event.target).checked)"
+              [attr.aria-label]="'Select ' + brand.name"
+            />
+            <button
+              type="button"
+              class="cursor-pointer flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-3 text-left transition hover:text-brand"
+              (click)="selectBrand(brand)"
+            >
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">{{ brand.name.charAt(0).toUpperCase() }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="block break-words text-sm font-semibold leading-5 text-gray-900">{{ brand.name }}</span>
+                <span class="mt-1 block text-xs text-gray-500">{{ brand.modelCount }} models</span>
+                <span class="mt-2 flex flex-wrap items-center gap-1.5">
+                  @if (brand.source === 'opscend_master') {
+                  <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Opscend</span>
+                  }
+                  @if (!brand.isActive || !brand.isPublic) {
+                  <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">{{ !brand.isActive ? 'Inactive' : 'Private' }}</span>
+                  }
+                </span>
+              </span>
+              <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 shrink-0 text-gray-300"></lucide-icon>
+            </button>
+            <button
+              type="button"
+              class="cursor-pointer inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-white hover:text-gray-700"
+              (click)="openEditBrand(brand)"
+              aria-label="Edit brand"
+            >
+              <lucide-icon [name]="icons.Pencil" class="h-3.5 w-3.5"></lucide-icon>
+            </button>
+          </div>
+          } @empty {
+          <div class="px-3 py-10 text-center">
+            <p class="text-sm font-semibold text-gray-900">No brands here</p>
+            <p class="mt-1 text-xs leading-5 text-gray-500">Add a brand under {{ selectedCategory()?.name }}.</p>
+          </div>
+          }
+        }
+      </div>
+    </section>
+
+    <section class="min-w-0">
+      <div class="border-b border-gray-100 px-4 py-4 sm:px-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Level 3</p>
+            <h2 class="mt-1 break-words text-base font-semibold text-gray-950">{{ selectedBrand()?.name ? selectedBrand()?.name + ' Models' : 'Models' }}</h2>
+          </div>
+
+          <button
+            type="button"
+            class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-40"
+            [disabled]="!selectedBrandId()"
+            (click)="openNewModel()"
+          >
+            <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+            Add Model
+          </button>
+        </div>
+
+        @if (selectedBrandId()) {
+        <label class="mt-4 block">
+          <span class="sr-only">Search models</span>
+          <div class="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 focus-within:border-brand focus-within:bg-white">
+            <lucide-icon [name]="icons.Search" class="h-4 w-4 text-gray-400"></lucide-icon>
+            <input
+              type="text"
+              [ngModel]="modelSearch()"
+              (ngModelChange)="modelSearch.set($event)"
+              placeholder="Search models..."
+              class="w-full border-0 bg-transparent text-sm outline-none placeholder:text-gray-400"
+            />
+          </div>
+        </label>
+
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-600">
+            <input
+              type="checkbox"
+              class="h-4 w-4 cursor-pointer rounded border-gray-300 accent-brand"
+              [checked]="allVisibleModelsSelected()"
+              [indeterminate]="someVisibleModelsSelected() && !allVisibleModelsSelected()"
+              (change)="toggleAllVisibleModels()"
+            />
+            Select all {{ filteredModels().length }}{{ modelSearch().trim() ? ' matching' : '' }}
+          </label>
+          <span class="text-xs text-gray-500">{{ models().length }} total</span>
+        </div>
+        }
+      </div>
+
+      @if (selectedModelCount() > 0) {
+      <div class="border-b border-gray-100 bg-gray-50/80 px-4 py-3 sm:px-5">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div class="flex items-center gap-3">
+            @if (bulkBusyEntity() === 'model') {
+            <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin text-brand"></lucide-icon>
+            }
+            <span class="text-sm font-bold text-gray-900">{{ selectedModelCount() }} models selected</span>
+            <button type="button" class="cursor-pointer text-xs font-semibold text-gray-500 transition hover:text-gray-900" [disabled]="bulkBusyEntity() !== null" (click)="clearBulkSelection('model')">Clear selection</button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-brand/30 hover:text-brand disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('model', 'activate')">Activate</button>
+            <button type="button" class="cursor-pointer rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('model', 'publish')">Publish publicly</button>
+            <button type="button" class="cursor-pointer rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('model', 'make_private')">Internal only</button>
+            <button type="button" class="cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="bulkBusyEntity() !== null" (click)="applyBulkAction('model', 'deactivate')">Deactivate</button>
+          </div>
+        </div>
+      </div>
+      }
+
+      <div class="max-h-[545px] overflow-y-auto p-3 sm:p-4">
+        @if (loadingModels()) {
+        <div class="flex items-center gap-2 px-3 py-4 text-sm text-gray-500">
+          <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+          Loading models...
+        </div>
+        } @else if (!selectedBrandId()) {
+        <div class="flex min-h-64 flex-col items-center justify-center px-6 text-center">
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-500">
+            <lucide-icon [name]="icons.Smartphone" class="h-6 w-6"></lucide-icon>
+          </div>
+          <p class="mt-4 text-sm font-semibold text-gray-900">Choose a brand</p>
+          <p class="mt-1 max-w-xs text-sm leading-6 text-gray-500">Models for the selected brand will appear here.</p>
+        </div>
+        } @else {
+        <div class="space-y-2">
+          @for (model of filteredModels(); track model.id) {
+          <div
+            class="group flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-left transition hover:border-brand/30 hover:bg-brand/5 hover:shadow-sm"
+            [ngClass]="isModelSelected(model.id) ? 'border-brand/40 bg-brand/5 ring-1 ring-brand/10' : 'border-gray-200'"
+          >
+            <input
+              type="checkbox"
+              class="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand"
+              [checked]="isModelSelected(model.id)"
+              (click)="$event.stopPropagation()"
+              (change)="toggleModelSelection(model.id, $any($event.target).checked)"
+              [attr.aria-label]="'Select ' + model.name"
+            />
+
+            <button
+              type="button"
+              class="cursor-pointer flex min-w-0 flex-1 items-center gap-3 text-left"
+              (click)="openEditModel(model)"
+            >
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-600 transition group-hover:bg-brand/10 group-hover:text-brand">
+                <lucide-icon [name]="icons.Smartphone" class="h-4 w-4"></lucide-icon>
+              </span>
+
+              <span class="min-w-0 flex-1">
+                <span class="block break-words text-sm font-semibold leading-5 text-gray-950">{{ model.name }}</span>
+                <span class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                  @if (model.releaseYear) {
+                  <span class="font-medium text-gray-500">{{ model.releaseYear }}</span>
+                  }
+                  @if (!model.isActive) {
+                  <span class="rounded-full bg-gray-100 px-2 py-0.5 font-semibold">Inactive</span>
+                  } @else if (!model.isPublic) {
+                  <span class="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">Internal only</span>
+                  } @else {
+                  <span class="rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">Public</span>
+                  }
+                  @if (model.source === 'opscend_master') {
+                  <span class="rounded-full bg-violet-50 px-2 py-0.5 font-semibold text-violet-700">Opscend</span>
+                  }
+                  @if (model.externalProductId) {
+                  <span class="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-700">Linked</span>
+                  }
+                </span>
+              </span>
+
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-gray-300 transition group-hover:bg-brand/10 group-hover:text-brand">
+                <lucide-icon [name]="icons.Pencil" class="h-4 w-4"></lucide-icon>
+              </span>
+            </button>
+          </div>
+          } @empty {
+          <div class="rounded-2xl border border-dashed border-gray-200 px-6 py-12 text-center">
+            <p class="text-sm font-semibold text-gray-900">No matching models</p>
+            <p class="mt-1 text-sm text-gray-500">Add a model or adjust your search.</p>
+          </div>
+          }
+        </div>
+        }
+      </div>
+    </section>
+  </div>
+</div>
+
+@if (editorType()) {
+<div class="fixed inset-0 z-50 flex justify-end bg-black/30" (click)="closeEditor()">
+  <aside
+    class="h-full w-full max-w-lg overflow-y-auto bg-white shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-brand">Device Catalog</p>
+        <h2 class="mt-1 text-xl font-semibold text-gray-950">{{ editorTitle() }}</h2>
+      </div>
+      <button
+        type="button"
+        class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+        (click)="closeEditor()"
+        aria-label="Close editor"
+      >
+        <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+      </button>
+    </div>
+
+    <div class="space-y-5 p-5">
+      @if (editorType() === 'category') {
+      <div>
+        <label class="mb-1.5 block text-sm font-semibold text-gray-800">Category name</label>
+        <input
+          type="text"
+          [(ngModel)]="categoryName"
+          placeholder="Smartphones"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-sm font-semibold text-gray-800">Sort order</label>
+        <input
+          type="number"
+          min="0"
+          [(ngModel)]="categorySortOrder"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand"
+        />
+      </div>
+      <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 p-4">
+        <span>
+          <span class="block text-sm font-semibold text-gray-900">Active internally</span>
+          <span class="mt-1 block text-xs text-gray-500">Available when staff adds a customer device.</span>
+        </span>
+        <input type="checkbox" [(ngModel)]="categoryIsActive" class="h-5 w-5 cursor-pointer accent-brand" />
+      </label>
+      <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 p-4">
+        <span>
+          <span class="block text-sm font-semibold text-gray-900">Show in public booking</span>
+          <span class="mt-1 block text-xs text-gray-500">Customers can choose this category online.</span>
+        </span>
+        <input type="checkbox" [(ngModel)]="categoryIsPublic" class="h-5 w-5 cursor-pointer accent-brand" />
+      </label>
+      }
+
+      @if (editorType() === 'brand') {
+      <div class="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        Category: <span class="font-semibold text-gray-900">{{ selectedCategory()?.name }}</span>
+      </div>
+      <div>
+        <label class="mb-1.5 block text-sm font-semibold text-gray-800">Brand name</label>
+        <input
+          type="text"
+          [(ngModel)]="brandName"
+          placeholder="Apple"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-sm font-semibold text-gray-800">Sort order</label>
+        <input
+          type="number"
+          min="0"
+          [(ngModel)]="brandSortOrder"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand"
+        />
+      </div>
+      <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 p-4">
+        <span>
+          <span class="block text-sm font-semibold text-gray-900">Active internally</span>
+          <span class="mt-1 block text-xs text-gray-500">Available to staff throughout Opscend.</span>
+        </span>
+        <input type="checkbox" [(ngModel)]="brandIsActive" class="h-5 w-5 cursor-pointer accent-brand" />
+      </label>
+      <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 p-4">
+        <span>
+          <span class="block text-sm font-semibold text-gray-900">Show in public booking</span>
+          <span class="mt-1 block text-xs text-gray-500">Customers can choose this brand online.</span>
+        </span>
+        <input type="checkbox" [(ngModel)]="brandIsPublic" class="h-5 w-5 cursor-pointer accent-brand" />
+      </label>
+      }
+
+      @if (editorType() === 'model') {
+      <div class="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        {{ selectedCategory()?.name }} / <span class="font-semibold text-gray-900">{{ selectedBrand()?.name }}</span>
+      </div>
+      <div>
+        <label class="mb-1.5 block text-sm font-semibold text-gray-800">Model name</label>
+        <input
+          type="text"
+          [(ngModel)]="modelName"
+          placeholder="iPhone 16 Pro Max"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
+        />
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-sm font-semibold text-gray-800">Release year</label>
+          <input
+            type="number"
+            min="1970"
+            max="2200"
+            [(ngModel)]="modelReleaseYear"
+            placeholder="2026"
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand"
+          />
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-semibold text-gray-800">Sort order</label>
+          <input
+            type="number"
+            min="0"
+            [(ngModel)]="modelSortOrder"
+            class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand"
+          />
+        </div>
+      </div>
+      <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 p-4">
+        <span>
+          <span class="block text-sm font-semibold text-gray-900">Active internally</span>
+          <span class="mt-1 block text-xs text-gray-500">Available when staff adds or edits devices.</span>
+        </span>
+        <input type="checkbox" [(ngModel)]="modelIsActive" class="h-5 w-5 cursor-pointer accent-brand" />
+      </label>
+      <label class="flex cursor-pointer items-center justify-between rounded-2xl border border-gray-200 p-4">
+        <span>
+          <span class="block text-sm font-semibold text-gray-900">Show in public booking</span>
+          <span class="mt-1 block text-xs text-gray-500">Customers can select this exact model online.</span>
+        </span>
+        <input type="checkbox" [(ngModel)]="modelIsPublic" class="h-5 w-5 cursor-pointer accent-brand" />
+      </label>
+
+      <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-4">
+        <div class="mb-4">
+          <p class="text-sm font-semibold text-gray-900">Optional external API link</p>
+          <p class="mt-1 text-xs leading-5 text-gray-500">
+            This is stored for future enrichment only. Repairs and booking do not depend on it.
+          </p>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">Provider</label>
+            <input
+              type="text"
+              [(ngModel)]="modelExternalProvider"
+              placeholder="mobileapi"
+              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+            />
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">External model ID</label>
+            <input
+              type="text"
+              [(ngModel)]="modelExternalProductId"
+              placeholder="mobileapi:12345"
+              class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
+            />
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <div class="sticky bottom-0 mt-auto border-t border-gray-200 bg-white px-5 py-4">
+      <div class="flex items-center justify-between gap-3">
+        @if (editingId()) {
+        <button
+          type="button"
+          class="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="saving()"
+          (click)="deactivateCurrent()"
+        >
+          Deactivate
+        </button>
+        } @else {
+        <span></span>
+        }
+
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="cursor-pointer rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="saving()"
+            (click)="closeEditor()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="saving()"
+            (click)="saveEditor()"
+          >
+            @if (saving()) {
+            <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+            }
+            {{ saving() ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+}

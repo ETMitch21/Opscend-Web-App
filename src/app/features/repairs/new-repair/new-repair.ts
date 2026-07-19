@@ -23,7 +23,6 @@ import {
   distinctUntilChanged,
   filter,
   firstValueFrom,
-  from,
   merge,
   Observable,
   of,
@@ -68,10 +67,10 @@ import {
 
 import { ProductsService } from '../../../core/products/products-service';
 import { Product } from '../../../core/products/products-model';
-import { ServicesService } from '../../../core/services/service';
-import { Service } from '../../../core/services/model';
 import { MobileSentrixService } from '../../../core/mobilesentrix/mobilesentrix-service';
 import { mapMobileSentrixItems } from '../../../core/mobilesentrix/mobilesentrix-search-mapper';
+import { RepairPricingService } from '../../../core/repair-pricing/service';
+import { PricingOption, PricingOptionDepositMode, RepairType } from '../../../core/repair-pricing/model';
 
 type RepairWizardStep = 'customer' | 'device' | 'repair' | 'service' | 'review';
 
@@ -87,6 +86,7 @@ type NewRepairForm = FormGroup<{
   phone: FormControl<string>;
 
   catalogRef: FormControl<string | null>;
+  techSpecsCategorySearchControl: FormControl<string>;
   techSpecsBrandSearchControl: FormControl<string>;
   techSpecsModelSearchControl: FormControl<string>;
   nickname: FormControl<string>;
@@ -117,6 +117,27 @@ type NewRepairForm = FormGroup<{
   addressNotes: FormControl<string>;
 }>;
 
+type AdminDepositEnforcement = 'required' | 'allow_override' | 'disabled';
+type AdminDepositAction = 'send_payment' | 'override';
+
+interface BookingPaymentSettings {
+  adminDepositEnforcement: AdminDepositEnforcement;
+  fullPrepaymentEnabled: boolean;
+  fullPrepaymentDiscountPercent: number;
+}
+
+interface AdminDepositRequestResponse {
+  status: 'payment_sent' | 'created';
+  pendingBookingId: string | null;
+  repairId: string | null;
+  orderId: string | null;
+  appointmentId: string | null;
+  depositAmountCents: number | null;
+  fullPrepaymentAmountCents: number | null;
+  customerEmail: string;
+  message: string;
+}
+
 interface ShopListResponse {
   data: Array<{
     id: string;
@@ -135,19 +156,39 @@ interface ShopListResponse {
 }
 
 interface RepairNeedOption {
+  id: string;
   key: string;
   shortLabel: string;
   label: string;
   description: string;
+  defaultLaborCents: number | null;
+  defaultDurationMins: number | null;
+  requiresManualReview: boolean;
+  supplierSearchTerms: string[];
 }
 
 interface RepairServiceOption {
   key: string;
-  serviceId: string;
+  pricingOptionId: string | null;
+  serviceId: string | null;
+  serviceName: string | null;
+  productId: string | null;
+  productName: string | null;
+  productSku: string | null;
+  productPriceCents: number | null;
+  productCostCents: number | null;
+  depositMode: PricingOptionDepositMode;
+  depositAmountCents: number | null;
+  resolvedDepositCents: number | null;
   needKey: string;
   label: string;
   description: string;
+  fixedPriceCents: number | null;
+  useDynamicPricing: boolean;
   defaultLaborCents: number;
+  durationMins: number | null;
+  isPublic: boolean;
+  requiresManualReview: boolean;
   searchTerms: string[];
   tags: string[];
 }
@@ -189,17 +230,9 @@ export class NewRepair implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly shopContext = inject(ShopContextService);
   private readonly techSpecsService = inject(TechSpecsService);
-  private readonly servicesService = inject(ServicesService);
   private readonly productsService = inject(ProductsService);
   private readonly mobileSentrixService = inject(MobileSentrixService);
-
-  private readonly preferredDeviceCatalogCategories = [
-    'Mobile Phones',
-    'Cell Phones',
-    'Smartphones',
-    'Phones',
-    'Phone',
-  ];
+  private readonly repairPricingService = inject(RepairPricingService);
 
   private readonly deviceCatalogPageSize = 20;
   private readonly deviceCatalogSearchDebounceMs = 500;
@@ -263,10 +296,11 @@ export class NewRepair implements OnInit {
 
   public shopId: string | null = null;
   public shopCountry = 'US';
+  public deviceCatalogCategories: string[] = [];
   public deviceCatalogCategory: string | null = null;
-  public loadingDeviceCatalogCategory = false;
+  public loadingDeviceCatalogCategories = false;
 
-  private deviceCatalogCategoryLoadPromise: Promise<void> | null = null;
+  private deviceCatalogCategoriesLoadPromise: Promise<void> | null = null;
 
   public readonly leftChevronIcon: LucideIconData = ChevronLeftIcon;
 
@@ -313,85 +347,18 @@ export class NewRepair implements OnInit {
   public searchingTechSpecsBrands = false;
   public searchingTechSpecsModels = false;
 
-  public readonly repairNeeds: RepairNeedOption[] = [
-    {
-      key: 'screen_damage',
-      shortLabel: 'Screen',
-      label: 'Screen damage',
-      description:
-        'Cracked glass, display lines, black screen, or touch issues.',
-    },
-    {
-      key: 'battery_issue',
-      shortLabel: 'Battery',
-      label: 'Battery issue',
-      description:
-        'Poor battery life, swelling, charging cycles, or random shutdowns.',
-    },
-    {
-      key: 'charging_issue',
-      shortLabel: 'Charging',
-      label: 'Charging issue',
-      description:
-        'Won’t charge, loose port, slow charging, or cable detection issues.',
-    },
-    {
-      key: 'camera_issue',
-      shortLabel: 'Camera',
-      label: 'Camera issue',
-      description:
-        'Blurry camera, broken lens, camera app failure, or focus problems.',
-    },
-    {
-      key: 'back_glass_damage',
-      shortLabel: 'Back glass',
-      label: 'Back glass damage',
-      description: 'Cracked back housing or rear glass damage.',
-    },
-    {
-      key: 'speaker_audio',
-      shortLabel: 'Audio',
-      label: 'Speaker / audio issue',
-      description: 'Speaker, microphone, receiver, or audio quality issue.',
-    },
-    {
-      key: 'button_issue',
-      shortLabel: 'Buttons',
-      label: 'Button issue',
-      description: 'Power, volume, mute, home, or side button issue.',
-    },
-    {
-      key: 'water_damage',
-      shortLabel: 'Water damage',
-      label: 'Water damage',
-      description:
-        'Liquid exposure, corrosion, or intermittent behavior after moisture.',
-    },
-    {
-      key: 'no_power',
-      shortLabel: 'No power',
-      label: 'No power',
-      description: 'Device will not power on or appears completely dead.',
-    },
-    {
-      key: 'software_diagnostics',
-      shortLabel: 'Software',
-      label: 'Software / diagnostics',
-      description:
-        'Software issue, setup help, diagnostics, or unknown behavior.',
-    },
-    {
-      key: 'other',
-      shortLabel: 'Other',
-      label: 'Other repair need',
-      description: 'Something else not listed here.',
-    },
-  ];
+  public repairNeeds: RepairNeedOption[] = [];
+  public pricingOptions: PricingOption[] = [];
+  public adminDepositEnforcement: AdminDepositEnforcement = 'allow_override';
+  public fullPrepaymentEnabled = false;
+  public fullPrepaymentDiscountPercent = 0;
+  public adminDepositAction: AdminDepositAction = 'send_payment';
+  public depositOverrideReason = '';
+  public depositRequestSent: AdminDepositRequestResponse | null = null;
 
   public repairServices: RepairServiceOption[] = [];
   public loadingRepairServices = false;
   public repairServicesLookupFailed = false;
-  public activeShopServices: Service[] = [];
 
   public selectedPart: SelectedPartDraft | null = null;
   public showPartsPanel = false;
@@ -484,6 +451,7 @@ export class NewRepair implements OnInit {
     phone: new FormControl('', { nonNullable: true }),
 
     catalogRef: new FormControl<string | null>(null),
+    techSpecsCategorySearchControl: new FormControl('', { nonNullable: true }),
     techSpecsBrandSearchControl: new FormControl('', { nonNullable: true }),
     techSpecsModelSearchControl: new FormControl('', { nonNullable: true }),
     nickname: new FormControl('', { nonNullable: true }),
@@ -694,49 +662,31 @@ export class NewRepair implements OnInit {
           this.searchingTechSpecsBrands = true;
           this.showTechSpecsBrandResults = true;
         }),
+        filter(() => !!this.deviceCatalogCategory),
         switchMap((rawValue) => {
+          const category = this.deviceCatalogCategory;
           const search = rawValue.trim();
-          const searchKey = this.normalizeCatalogKey(search);
-
-          const preferredMatches = this.getPreferredCatalogBrandOptions()
-            .filter((brand) =>
-              this.normalizeCatalogKey(brand.name).includes(searchKey),
-            )
-            .map((brand) => brand.name);
-
-          if (preferredMatches.length) {
-            return of({ items: preferredMatches });
+          if (!category) {
+            return of({ items: [] });
           }
 
-          return from(this.loadDeviceCatalogCategory(true)).pipe(
-            switchMap(() => {
-              const category = this.deviceCatalogCategory;
-
-              if (!category) {
+          return this.techSpecsService
+            .searchBrands(category, search, {
+              page: 0,
+              size: this.deviceCatalogPageSize,
+            })
+            .pipe(
+              catchError(() => {
                 this.searchingTechSpecsBrands = false;
+                this.techSpecsBrandResults = [];
                 this.showTechSpecsBrandResults = true;
-                return of({ items: [] });
-              }
-
-              return this.techSpecsService
-                .searchBrands(category, search, {
-                  page: 0,
-                  size: this.deviceCatalogPageSize,
-                })
-                .pipe(
-                  catchError(() => {
-                    this.searchingTechSpecsBrands = false;
-                    this.techSpecsBrandResults = [];
-                    this.showTechSpecsBrandResults = true;
-                    this.toastService.error(
-                      'Brand lookup failed',
-                      'We could not search catalog brands right now.',
-                    );
-                    return of({ items: [] });
-                  }),
+                this.toastService.error(
+                  'Brand lookup failed',
+                  'We could not search catalog brands right now.',
                 );
-            }),
-          );
+                return of({ items: [] });
+              }),
+            );
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -783,42 +733,37 @@ export class NewRepair implements OnInit {
           this.searchingTechSpecsModels = true;
           this.showTechSpecsModelResults = true;
         }),
-        switchMap((rawValue) =>
-          from(this.loadDeviceCatalogCategory(true)).pipe(
-            switchMap(() => {
-              const category = this.deviceCatalogCategory;
+        filter(() => !!this.deviceCatalogCategory),
+        switchMap((rawValue) => {
+          const category = this.deviceCatalogCategory;
 
-              if (!category || !this.selectedTechSpecsBrand) {
+          if (!category || !this.selectedTechSpecsBrand) {
+            return of({ items: [] });
+          }
+
+          return this.techSpecsService
+            .searchModels(
+              category,
+              this.selectedTechSpecsBrand.name,
+              rawValue.trim(),
+              {
+                page: 0,
+                size: this.deviceCatalogPageSize,
+              },
+            )
+            .pipe(
+              catchError(() => {
                 this.searchingTechSpecsModels = false;
+                this.techSpecsModelResults = [];
                 this.showTechSpecsModelResults = true;
-                return of({ items: [] });
-              }
-
-              return this.techSpecsService
-                .searchModels(
-                  category,
-                  this.selectedTechSpecsBrand.name,
-                  rawValue.trim(),
-                  {
-                    page: 0,
-                    size: this.deviceCatalogPageSize,
-                  },
-                )
-                .pipe(
-                  catchError(() => {
-                    this.searchingTechSpecsModels = false;
-                    this.techSpecsModelResults = [];
-                    this.showTechSpecsModelResults = true;
-                    this.toastService.error(
-                      'Model lookup failed',
-                      'We could not search catalog models right now.',
-                    );
-                    return of({ items: [] });
-                  }),
+                this.toastService.error(
+                  'Model lookup failed',
+                  'We could not search catalog models right now.',
                 );
-            }),
-          ),
-        ),
+                return of({ items: [] });
+              }),
+            );
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((response) => {
@@ -840,7 +785,9 @@ export class NewRepair implements OnInit {
   ngOnInit(): void {
     void this.loadShopContext();
     void this.loadBookingEnabled();
+    void this.loadBookingPaymentSettings();
     void this.loadRepairServices();
+    void this.loadDeviceCatalogCategories(false);
   }
 
   get customerSearchControl(): FormControl<string> {
@@ -849,6 +796,10 @@ export class NewRepair implements OnInit {
 
   get deviceSearchControl(): FormControl<string> {
     return this.newRepairForm.controls.deviceSearchControl;
+  }
+
+  get techSpecsCategorySearchControl(): FormControl<string> {
+    return this.newRepairForm.controls.techSpecsCategorySearchControl;
   }
 
   get techSpecsBrandSearchControl(): FormControl<string> {
@@ -931,12 +882,23 @@ export class NewRepair implements OnInit {
   };
 
   readonly canCreateRepair = (): boolean => {
-    if (this.creatingRepair) return false;
+    if (this.creatingRepair || this.depositRequestSent) return false;
     if (!this.newRepairForm.valid) return false;
     if (!this.isCustomerStepValid()) return false;
     if (!this.isDeviceStepValid()) return false;
     if (!this.isRepairStepValid()) return false;
     if (!this.isServiceStepValid()) return false;
+    if (this.shouldEnforceSelectedDeposit()) {
+      if (this.adminDepositAction === 'send_payment' && !this.depositCustomerEmail()) {
+        return false;
+      }
+      if (
+        this.adminDepositAction === 'override' &&
+        (!this.canOverrideSelectedDeposit() || this.depositOverrideReason.trim().length < 3)
+      ) {
+        return false;
+      }
+    }
     if (!this.isOnSiteMode()) return true;
     return this.hasValidOnsiteAddress() && !this.serviceAreaCheckInFlight;
   };
@@ -981,6 +943,10 @@ export class NewRepair implements OnInit {
     if (step === 'device') {
       this.prepareDeviceStep();
     }
+
+    if (step === 'repair') {
+      void this.loadPricingOptionsForCurrentDevice();
+    }
   }
 
   goBack(): void {
@@ -1009,11 +975,24 @@ export class NewRepair implements OnInit {
     if (next === 'device') {
       this.prepareDeviceStep();
     }
+
+    if (next === 'repair') {
+      void this.loadPricingOptionsForCurrentDevice();
+    }
   }
 
   primaryButtonLabel(): string {
     if (this.creatingRepair) return 'Creating...';
-    if (this.currentStep() === 'review') return 'Create Repair';
+    if (this.depositRequestSent) return 'Deposit Request Sent';
+    if (this.currentStep() === 'review') {
+      if (this.shouldEnforceSelectedDeposit() && this.adminDepositAction === 'send_payment') {
+        return 'Send Deposit Request';
+      }
+      if (this.shouldEnforceSelectedDeposit() && this.adminDepositAction === 'override') {
+        return 'Create With Override';
+      }
+      return 'Create Repair';
+    }
     return 'Continue';
   }
 
@@ -1162,197 +1141,193 @@ export class NewRepair implements OnInit {
     this.repairServicesLookupFailed = false;
 
     try {
-      const services = await firstValueFrom(
-        this.servicesService.listActive(150),
+      const response = await firstValueFrom(
+        this.repairPricingService.listRepairTypes(),
       );
-      this.activeShopServices = services;
-      this.repairServices = this.mapServicesToRepairOptions(services);
-    } catch {
-      this.activeShopServices = [];
+
+      this.repairNeeds = (response.data ?? [])
+        .filter((repairType) => repairType.isActive)
+        .sort(
+          (a, b) =>
+            a.sortOrder - b.sortOrder || a.label.localeCompare(b.label),
+        )
+        .map((repairType) => this.mapRepairTypeOption(repairType));
+
+      await this.loadPricingOptionsForCurrentDevice();
+    } catch (error) {
+      console.error('Repair pricing could not be loaded.', error);
+      this.repairNeeds = [];
       this.repairServices = [];
       this.repairServicesLookupFailed = true;
       this.toastService.error(
-        'Services could not be loaded',
-        'The active service catalog could not be loaded. Refresh and try again.',
+        'Repair pricing could not be loaded',
+        'Refresh and try again. You can still create a repair after pricing is available.',
       );
     } finally {
       this.loadingRepairServices = false;
     }
   }
 
-  private mapServicesToRepairOptions(
-    services: Service[],
-  ): RepairServiceOption[] {
-    return services
-      .filter((service) => service.status === 'active')
-      .flatMap((service) => {
-        const needKeys = this.inferRepairNeedKeys(service);
-
-        return needKeys.map((needKey) => ({
-          key: `${service.id}:${needKey}`,
-          serviceId: service.id,
-          needKey,
-          label: service.name,
-          description: this.serviceDescription(service),
-          defaultLaborCents: Number(service.price ?? 0),
-          searchTerms: this.serviceSearchTerms(service, needKey),
-          tags: service.tags ?? [],
-        }));
-      })
-      .sort((a, b) => {
-        const priceSort = b.defaultLaborCents - a.defaultLaborCents;
-        if (priceSort !== 0) return priceSort;
-        return a.label.localeCompare(b.label);
-      });
+  private mapRepairTypeOption(repairType: RepairType): RepairNeedOption {
+    return {
+      id: repairType.id,
+      key: repairType.id,
+      shortLabel: repairType.label.split(/\s+/)[0] || repairType.label,
+      label: repairType.label,
+      description: repairType.description || 'Shop repair type.',
+      defaultLaborCents: repairType.defaultLaborCents,
+      defaultDurationMins: repairType.defaultDurationMins,
+      requiresManualReview: repairType.requiresManualReview,
+      supplierSearchTerms: repairType.supplierSearchTerms ?? [],
+    };
   }
 
-  private inferRepairNeedKeys(service: Service): string[] {
-    const haystack = this.normalizeServiceText(
-      [service.name, service.code, ...(service.tags ?? [])]
-        .filter(Boolean)
-        .join(' '),
+  private currentDeviceCatalogRef(): string | null {
+    return (
+      this.selectedDevice?.catalogRef ??
+      this.newRepairForm.controls.catalogRef.value ??
+      null
+    );
+  }
+
+  private async loadPricingOptionsForCurrentDevice(): Promise<void> {
+    const modelId = this.currentDeviceCatalogRef();
+
+    this.repairServicesLookupFailed = false;
+    this.pricingOptions = [];
+    this.repairServices = [];
+    this.newRepairForm.patchValue(
+      {
+        repairNeedKey: '',
+        repairServiceKey: '',
+        quotedPriceDollars: null,
+      },
+      { emitEvent: false },
+    );
+    this.resetPartLookup();
+
+    if (!modelId || !this.repairNeeds.length) {
+      this.repairServices = this.buildManualPricingOptions();
+      return;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.repairPricingService.listOptions({
+          modelId,
+          includeInactive: false,
+          includePrivate: true,
+        }),
+      );
+
+      this.pricingOptions = response.data ?? [];
+      this.repairServices = [
+        ...this.pricingOptions.map((option) =>
+          this.mapPricingOptionToRepairService(option),
+        ),
+        ...this.buildManualPricingOptions(),
+      ];
+    } catch (error) {
+      console.error('Device pricing options could not be loaded.', error);
+      this.repairServices = this.buildManualPricingOptions();
+      this.repairServicesLookupFailed = true;
+    }
+  }
+
+  private mapPricingOptionToRepairService(
+    option: PricingOption,
+  ): RepairServiceOption {
+    const repairType = this.repairNeeds.find(
+      (need) => need.id === option.repairNeedId,
     );
 
-    const matches: string[] = [];
-
-    const add = (key: string) => {
-      if (!matches.includes(key)) matches.push(key);
+    return {
+      key: option.id,
+      pricingOptionId: option.id,
+      serviceId: option.serviceId,
+      serviceName: option.service?.name ?? null,
+      productId: option.productId,
+      productName: option.product?.name ?? null,
+      productSku: option.product?.sku ?? null,
+      productPriceCents: option.product?.priceCents ?? null,
+      productCostCents: option.product?.costCents ?? null,
+      depositMode: option.depositMode,
+      depositAmountCents: option.depositAmountCents,
+      resolvedDepositCents:
+        option.depositMode === 'custom'
+          ? option.depositAmountCents
+          : option.depositMode === 'product_cost'
+            ? (option.productSupplier?.lastKnownCostCents ??
+              option.product?.costCents ??
+              null)
+            : null,
+      needKey: option.repairNeedId,
+      label: option.variantName,
+      description:
+        option.description ||
+        this.pricingOptionLinksDescription(option) ||
+        'Configured repair pricing option.',
+      fixedPriceCents: option.fixedPriceCents,
+      useDynamicPricing: option.useDynamicPricing,
+      defaultLaborCents:
+        option.laborCents ?? repairType?.defaultLaborCents ?? 0,
+      durationMins:
+        option.durationMins ?? repairType?.defaultDurationMins ?? null,
+      isPublic: option.isPublic,
+      requiresManualReview: option.requiresManualReview,
+      searchTerms: repairType
+        ? this.defaultSearchTermsForRepairType(repairType)
+        : [],
+      tags: [option.variantName, repairType?.label ?? ''].filter(Boolean),
     };
-
-    if (/\b(back glass|rear glass|housing|backglass)\b/.test(haystack)) {
-      add('back_glass_damage');
-    }
-
-    if (/\b(screen|display|oled|lcd|digitizer|glass)\b/.test(haystack)) {
-      add('screen_damage');
-    }
-
-    if (/\b(battery|batteries)\b/.test(haystack)) {
-      add('battery_issue');
-    }
-
-    if (
-      /\b(charge|charging|charger|port|dock connector|lightning|usb c|usb-c)\b/.test(
-        haystack,
-      )
-    ) {
-      add('charging_issue');
-    }
-
-    if (/\b(camera|lens|front camera|rear camera)\b/.test(haystack)) {
-      add('camera_issue');
-    }
-
-    if (
-      /\b(speaker|microphone|mic|receiver|earpiece|audio|sound)\b/.test(
-        haystack,
-      )
-    ) {
-      add('speaker_audio');
-    }
-
-    if (
-      /\b(button|power button|volume|mute|home button|side button)\b/.test(
-        haystack,
-      )
-    ) {
-      add('button_issue');
-    }
-
-    if (/\b(water|liquid|moisture|corrosion)\b/.test(haystack)) {
-      add('water_damage');
-    }
-
-    if (
-      /\b(no power|dead|won'?t power|does not power|logic board|board)\b/.test(
-        haystack,
-      )
-    ) {
-      add('no_power');
-    }
-
-    if (
-      /\b(software|diagnostic|diagnostics|setup|restore|data|transfer|troubleshoot)\b/.test(
-        haystack,
-      )
-    ) {
-      add('software_diagnostics');
-    }
-
-    if (!matches.length) {
-      add('other');
-    }
-
-    return matches;
   }
 
-  private serviceDescription(service: Service): string {
-    const details: string[] = [];
-
-    if (service.duration != null && service.duration > 0) {
-      details.push(`${service.duration} min`);
-    }
-
-    if (service.code) {
-      details.push(service.code);
-    }
-
-    if (service.tags?.length) {
-      details.push(service.tags.slice(0, 4).join(', '));
-    }
-
-    return details.length
-      ? details.join(' · ')
-      : 'Active service from your service catalog.';
+  private buildManualPricingOptions(): RepairServiceOption[] {
+    return this.repairNeeds.map((repairType) => ({
+      key: `manual:${repairType.id}`,
+      pricingOptionId: null,
+      serviceId: null,
+      serviceName: null,
+      productId: null,
+      productName: null,
+      productSku: null,
+      productPriceCents: null,
+      productCostCents: null,
+      depositMode: 'none',
+      depositAmountCents: null,
+      resolvedDepositCents: null,
+      needKey: repairType.id,
+      label: 'Custom price',
+      description: 'Create this repair without a saved model price.',
+      fixedPriceCents: null,
+      useDynamicPricing: false,
+      defaultLaborCents: repairType.defaultLaborCents ?? 0,
+      durationMins: repairType.defaultDurationMins,
+      isPublic: false,
+      requiresManualReview: true,
+      searchTerms: this.defaultSearchTermsForRepairType(repairType),
+      tags: ['custom'],
+    }));
   }
 
-  private serviceSearchTerms(service: Service, needKey: string): string[] {
-    const baseTerms = [
-      service.name,
-      service.code ?? '',
-      ...(service.tags ?? []),
-      ...this.defaultSearchTermsForNeed(needKey),
-    ]
-      .filter(Boolean)
+  private defaultSearchTermsForRepairType(
+    repairType: RepairNeedOption,
+  ): string[] {
+    return Array.from(
+      new Set([
+        ...repairType.supplierSearchTerms,
+        repairType.label,
+        repairType.shortLabel,
+      ]),
+    )
       .map((value) => value.trim())
       .filter(Boolean);
-
-    return Array.from(new Set(baseTerms));
   }
 
-  private defaultSearchTermsForNeed(needKey: string): string[] {
-    switch (needKey) {
-      case 'screen_damage':
-        return ['screen', 'display', 'oled', 'lcd'];
-      case 'battery_issue':
-        return ['battery'];
-      case 'charging_issue':
-        return ['charge port', 'charging port', 'dock connector'];
-      case 'camera_issue':
-        return ['camera', 'front camera', 'rear camera'];
-      case 'back_glass_damage':
-        return ['back glass', 'rear glass', 'housing'];
-      case 'speaker_audio':
-        return ['speaker', 'microphone', 'receiver', 'earpiece'];
-      case 'button_issue':
-        return ['button', 'flex cable'];
-      case 'water_damage':
-        return ['water damage', 'diagnostic'];
-      case 'no_power':
-        return ['battery', 'charge port', 'logic board'];
-      case 'software_diagnostics':
-        return ['diagnostic'];
-      default:
-        return ['repair'];
-    }
-  }
-
-  private normalizeServiceText(value: string): string {
-    return value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+  private pricingOptionLinksDescription(option: PricingOption): string {
+    return [option.service?.name, option.product?.name]
+      .filter(Boolean)
+      .join(' · ');
   }
 
   selectedRepairNeed(): RepairNeedOption | null {
@@ -1363,6 +1338,63 @@ export class NewRepair implements OnInit {
   selectedRepairService(): RepairServiceOption | null {
     const key = this.newRepairForm.controls.repairServiceKey.value;
     return this.repairServices.find((service) => service.key === key) ?? null;
+  }
+
+  selectedDepositAmountCents(): number | null {
+    const amount = this.selectedRepairService()?.resolvedDepositCents ?? null;
+    return amount && amount > 0 ? amount : null;
+  }
+
+  selectedPricingRequiresDeposit(): boolean {
+    return this.selectedDepositAmountCents() !== null;
+  }
+
+  shouldEnforceSelectedDeposit(): boolean {
+    return (
+      this.selectedPricingRequiresDeposit() &&
+      this.adminDepositEnforcement !== 'disabled'
+    );
+  }
+
+  canOverrideSelectedDeposit(): boolean {
+    return this.adminDepositEnforcement === 'allow_override';
+  }
+
+  depositCustomerEmail(): string {
+    return (
+      this.selectedCustomer?.email ??
+      this.newRepairForm.controls.email.value
+    )?.trim() ?? '';
+  }
+
+  depositFullPrepaymentAmountCents(): number | null {
+    if (!this.fullPrepaymentEnabled) return null;
+    const items = this.buildOrderItems(
+      this.onsiteEnabled()
+        ? this.newRepairForm.controls.serviceMode.value
+        : 'in_shop',
+    );
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPriceCents,
+      0,
+    );
+    const discountEligibleCents = items
+      .filter((item) => item.name.trim().toLowerCase() !== 'on-site trip fee')
+      .reduce(
+        (sum, item) => sum + item.quantity * item.unitPriceCents,
+        0,
+      );
+    const discount = Math.round(
+      discountEligibleCents *
+        (Math.max(0, this.fullPrepaymentDiscountPercent) / 100),
+    );
+    return Math.max(0, subtotal - discount);
+  }
+
+  selectAdminDepositAction(action: AdminDepositAction): void {
+    if (action === 'override' && !this.canOverrideSelectedDeposit()) return;
+    this.adminDepositAction = action;
+    if (action !== 'override') this.depositOverrideReason = '';
   }
 
   repairServicesForSelectedNeed(): RepairServiceOption[] {
@@ -1384,12 +1416,45 @@ export class NewRepair implements OnInit {
   }
 
   selectRepairService(service: RepairServiceOption): void {
-    this.newRepairForm.patchValue({ repairServiceKey: service.key });
+    let defaultPriceCents = service.fixedPriceCents;
 
-    if (this.newRepairForm.controls.quotedPriceDollars.value == null) {
-      this.newRepairForm.controls.quotedPriceDollars.setValue(
-        Number((service.defaultLaborCents / 100).toFixed(2)),
-      );
+    if (defaultPriceCents == null && service.useDynamicPricing) {
+      const productRetail = service.productPriceCents ?? 0;
+      const labor = service.defaultLaborCents ?? 0;
+      defaultPriceCents = productRetail + labor || null;
+    }
+
+    if (defaultPriceCents == null && service.defaultLaborCents > 0) {
+      defaultPriceCents = service.defaultLaborCents;
+    }
+
+    this.newRepairForm.patchValue({
+      repairServiceKey: service.key,
+      quotedPriceDollars:
+        defaultPriceCents == null
+          ? null
+          : Number((defaultPriceCents / 100).toFixed(2)),
+    });
+
+    if (service.productId && service.productName) {
+      this.selectedPart = {
+        source: 'inventory',
+        id: service.productId,
+        name: service.productName,
+        sku: service.productSku,
+        costCents: service.productCostCents,
+        priceCents: service.productPriceCents,
+      };
+      this.newRepairForm.patchValue({
+        selectedInventoryProductId: service.productId,
+        selectedSupplierPartId: null,
+      });
+    } else {
+      this.selectedPart = null;
+      this.newRepairForm.patchValue({
+        selectedInventoryProductId: null,
+        selectedSupplierPartId: null,
+      });
     }
 
     this.seedPartSearchControl();
@@ -1399,6 +1464,29 @@ export class NewRepair implements OnInit {
   formatCents(value: number | null | undefined): string {
     const cents = Number(value ?? 0);
     return `$${(cents / 100).toFixed(2)}`;
+  }
+
+  repairPricingOptionPriceLabel(option: RepairServiceOption): string {
+    if (option.fixedPriceCents != null) {
+      return this.formatCents(option.fixedPriceCents);
+    }
+
+    if (option.useDynamicPricing) {
+      return 'Dynamic';
+    }
+
+    return 'Custom';
+  }
+
+  repairPricingOptionMeta(option: RepairServiceOption): string {
+    const values = [
+      option.isPublic ? 'Public' : 'Internal only',
+      option.durationMins ? `${option.durationMins} min` : null,
+      option.serviceName ? `Service: ${option.serviceName}` : null,
+      option.productName ? `Product: ${option.productName}` : null,
+    ];
+
+    return values.filter(Boolean).join(' · ');
   }
 
   canSearchParts(): boolean {
@@ -1413,7 +1501,7 @@ export class NewRepair implements OnInit {
     if (!this.canSearchParts()) {
       this.toastService.error(
         'Parts search not ready',
-        'Select a repair service and device before searching parts.',
+        'Select a pricing option and device before searching parts.',
       );
       return;
     }
@@ -1579,8 +1667,40 @@ export class NewRepair implements OnInit {
     }
   }
 
+  onDeviceCatalogCategoryChange(): void {
+    const category = this.techSpecsCategorySearchControl.value.trim();
+    this.deviceCatalogCategory = category || null;
+
+    this.selectedTechSpecsBrand = null;
+    this.selectedTechSpecsModel = null;
+    this.techSpecsBrandResults = [];
+    this.techSpecsModelResults = [];
+    this.showTechSpecsBrandResults = false;
+    this.showTechSpecsModelResults = false;
+    this.searchingTechSpecsBrands = false;
+    this.searchingTechSpecsModels = false;
+
+    this.newRepairForm.patchValue(
+      {
+        catalogRef: null,
+        techSpecsBrandSearchControl: '',
+        techSpecsModelSearchControl: '',
+        brand: '',
+        model: '',
+        nickname: '',
+      },
+      { emitEvent: false },
+    );
+
+    this.updateDeviceValidators();
+
+    if (this.deviceCatalogCategory) {
+      void this.loadInitialCatalogBrands();
+    }
+  }
+
   onTechSpecsBrandFocus(): void {
-    if (this.selectedTechSpecsBrand) return;
+    if (!this.deviceCatalogCategory || this.selectedTechSpecsBrand) return;
 
     this.showTechSpecsBrandResults = true;
 
@@ -1594,8 +1714,7 @@ export class NewRepair implements OnInit {
       return;
     }
 
-    this.searchingTechSpecsBrands = false;
-    this.techSpecsBrandResults = this.getPreferredCatalogBrandOptions();
+    void this.loadInitialCatalogBrands();
   }
 
   onTechSpecsModelFocus(): void {
@@ -1605,11 +1724,14 @@ export class NewRepair implements OnInit {
 
     const value = this.techSpecsModelSearchControl.value.trim();
 
-    if (this.techSpecsModelResults.length || value.length >= this.deviceCatalogMinimumSearchLength) {
+    if (
+      this.techSpecsModelResults.length ||
+      value.length >= this.deviceCatalogMinimumSearchLength
+    ) {
       return;
     }
 
-    this.searchingTechSpecsModels = false;
+    void this.loadInitialCatalogModels();
   }
 
   duplicateCustomer(): CustomerContactConflict['customer'] | null {
@@ -1803,6 +1925,7 @@ export class NewRepair implements OnInit {
         deviceId: null,
         deviceSearchControl: '',
         catalogRef: null,
+        techSpecsCategorySearchControl: '',
         techSpecsBrandSearchControl: '',
         techSpecsModelSearchControl: '',
         nickname: '',
@@ -1815,6 +1938,7 @@ export class NewRepair implements OnInit {
     );
 
     this.updateDeviceValidators();
+    void this.loadDeviceCatalogCategories(true);
   }
 
   cancelNewDevice(): void {
@@ -1823,6 +1947,7 @@ export class NewRepair implements OnInit {
 
     this.newRepairForm.patchValue({
       catalogRef: null,
+      techSpecsCategorySearchControl: '',
       techSpecsBrandSearchControl: '',
       techSpecsModelSearchControl: '',
       nickname: '',
@@ -1847,6 +1972,7 @@ export class NewRepair implements OnInit {
         deviceId: null,
         deviceSearchControl: '',
         catalogRef: null,
+        techSpecsCategorySearchControl: '',
         techSpecsBrandSearchControl: '',
         techSpecsModelSearchControl: '',
         nickname: '',
@@ -1862,6 +1988,8 @@ export class NewRepair implements OnInit {
   }
 
   selectTechSpecsBrand(brand: TechSpecsBrand): void {
+    if (!this.deviceCatalogCategory) return;
+
     this.selectedTechSpecsBrand = brand;
     this.selectedTechSpecsModel = null;
     this.techSpecsBrandResults = [];
@@ -1882,10 +2010,27 @@ export class NewRepair implements OnInit {
     );
 
     this.updateDeviceValidators();
+    void this.loadInitialCatalogModels();
   }
 
   clearTechSpecsBrand(): void {
-    this.clearTechSpecsSelection(true);
+    this.selectedTechSpecsBrand = null;
+    this.selectedTechSpecsModel = null;
+    this.techSpecsBrandResults = [];
+    this.techSpecsModelResults = [];
+    this.showTechSpecsBrandResults = false;
+    this.showTechSpecsModelResults = false;
+
+    this.newRepairForm.patchValue({
+      catalogRef: null,
+      techSpecsBrandSearchControl: '',
+      techSpecsModelSearchControl: '',
+      brand: '',
+      model: '',
+      nickname: '',
+    });
+
+    this.updateDeviceValidators();
   }
 
   selectTechSpecsModel(model: TechSpecsModel): void {
@@ -1929,6 +2074,87 @@ export class NewRepair implements OnInit {
     });
 
     this.updateDeviceValidators();
+  }
+
+  private async loadInitialCatalogBrands(): Promise<void> {
+    const category = this.deviceCatalogCategory;
+    if (!category) return;
+
+    this.searchingTechSpecsBrands = true;
+    this.showTechSpecsBrandResults = true;
+
+    try {
+      const response = await firstValueFrom(
+        this.techSpecsService.searchBrands(category, '', {
+          page: 0,
+          size: 50,
+        }),
+      );
+
+      if (category !== this.deviceCatalogCategory) return;
+
+      this.techSpecsBrandResults = this.unwrapBrandPage(response);
+    } catch {
+      if (category !== this.deviceCatalogCategory) return;
+
+      this.techSpecsBrandResults = [];
+      this.toastService.error(
+        'Brand lookup failed',
+        'We could not load catalog brands right now.',
+      );
+    } finally {
+      if (category === this.deviceCatalogCategory) {
+        this.searchingTechSpecsBrands = false;
+      }
+    }
+  }
+
+  private async loadInitialCatalogModels(): Promise<void> {
+    const category = this.deviceCatalogCategory;
+    const brand = this.selectedTechSpecsBrand;
+
+    if (!category || !brand) return;
+
+    this.searchingTechSpecsModels = true;
+    this.showTechSpecsModelResults = true;
+
+    try {
+      const response = await firstValueFrom(
+        this.techSpecsService.searchModels(category, brand.name, '', {
+          page: 0,
+          size: 50,
+        }),
+      );
+
+      if (
+        category !== this.deviceCatalogCategory ||
+        brand.id !== this.selectedTechSpecsBrand?.id
+      ) {
+        return;
+      }
+
+      this.techSpecsModelResults = this.unwrapModelPage(response);
+    } catch {
+      if (
+        category !== this.deviceCatalogCategory ||
+        brand.id !== this.selectedTechSpecsBrand?.id
+      ) {
+        return;
+      }
+
+      this.techSpecsModelResults = [];
+      this.toastService.error(
+        'Model lookup failed',
+        'We could not load catalog models right now.',
+      );
+    } finally {
+      if (
+        category === this.deviceCatalogCategory &&
+        brand.id === this.selectedTechSpecsBrand?.id
+      ) {
+        this.searchingTechSpecsModels = false;
+      }
+    }
   }
 
   private prepareDeviceStep(): void {
@@ -2263,10 +2489,33 @@ export class NewRepair implements OnInit {
         return;
       }
 
+      const selectedRepairType = this.selectedRepairNeed();
+      const selectedPricingOption = this.selectedRepairService();
+
+      if (
+        this.shouldEnforceSelectedDeposit() &&
+        selectedPricingOption?.pricingOptionId
+      ) {
+        await this.submitAdminDepositRequest({
+          customerId,
+          deviceId,
+          serviceMode,
+          serviceAddressId,
+          selectedRepairType,
+          selectedPricingOption,
+          schedulingSelection,
+          dispatchType,
+        });
+        return;
+      }
+
       const repair = await this.repairsStore.createRepair({
         customerId,
         customerDeviceId: deviceId,
         problemSummary: this.buildProblemSummary(),
+        repairNeedId: selectedRepairType?.id ?? undefined,
+        pricingTemplateId: selectedPricingOption?.pricingOptionId ?? undefined,
+        serviceId: selectedPricingOption?.serviceId ?? undefined,
         assignedTo: this.bookingEnabled()
           ? (schedulingSelection?.assignedTo ?? undefined)
           : undefined,
@@ -2360,51 +2609,155 @@ export class NewRepair implements OnInit {
       }
 
       await this.router.navigate(['/repairs', 'detail', repair.id]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create repair flow.', error);
       this.toastService.error(
         'Repair creation failed',
-        'Something went wrong while creating this repair.',
+        error?.error?.message ??
+          (error?.error?.error === 'stripe_not_ready'
+            ? 'Connect Stripe before sending a deposit request, or use an allowed override.'
+            : 'Something went wrong while creating this repair.'),
       );
     } finally {
       this.creatingRepair = false;
     }
   }
 
-  private async loadDeviceCatalogCategory(
-    showErrorToast = false,
-  ): Promise<void> {
-    if (this.deviceCatalogCategory) {
+  private async submitAdminDepositRequest(params: {
+    customerId: string;
+    deviceId: string;
+    serviceMode: RepairServiceMode;
+    serviceAddressId: string | null;
+    selectedRepairType: RepairNeedOption | null;
+    selectedPricingOption: RepairServiceOption;
+    schedulingSelection: SchedulingSelection | null;
+    dispatchType: 'internal' | 'contractor' | 'unassigned';
+  }): Promise<void> {
+    const customerEmail = this.depositCustomerEmail();
+    if (this.adminDepositAction === 'send_payment' && !customerEmail) {
+      this.toastService.error(
+        'Customer email required',
+        'Add an email address before sending the secure Stripe deposit request.',
+      );
       return;
     }
 
-    if (this.deviceCatalogCategoryLoadPromise) {
-      return this.deviceCatalogCategoryLoadPromise;
+    if (
+      this.adminDepositAction === 'override' &&
+      this.depositOverrideReason.trim().length < 3
+    ) {
+      this.toastService.error(
+        'Override reason required',
+        'Enter a short reason for bypassing the configured deposit.',
+      );
+      return;
     }
 
-    this.loadingDeviceCatalogCategory = true;
+    const response = await firstValueFrom(
+      this.http.post<AdminDepositRequestResponse>(
+        `${this.apiBase}/booking-payments/admin-request`,
+        {
+          action: this.adminDepositAction,
+          ...(this.adminDepositAction === 'override'
+            ? { overrideReason: this.depositOverrideReason.trim() }
+            : {}),
+          customerId: params.customerId,
+          customerDeviceId: params.deviceId,
+          ...(customerEmail ? { customerEmail } : {}),
+          repair: {
+            problemSummary: this.buildProblemSummary(),
+            intakeNotes:
+              this.newRepairForm.controls.customerNotes.value.trim() || null,
+            repairNeedId: params.selectedRepairType?.id ?? null,
+            pricingTemplateId:
+              params.selectedPricingOption.pricingOptionId!,
+            serviceId: params.selectedPricingOption.serviceId ?? null,
+            assignedTo: this.bookingEnabled()
+              ? (params.schedulingSelection?.assignedTo ?? null)
+              : null,
+            dispatchType: params.dispatchType,
+            serviceMode: params.serviceMode,
+            serviceAddressId:
+              params.serviceMode === 'on_site'
+                ? params.serviceAddressId
+                : null,
+            tripFeeApplied:
+              params.serviceMode === 'on_site' &&
+              this.onsiteTripFeeEnabled(),
+            tripFeeCents:
+              params.serviceMode === 'on_site' &&
+              this.onsiteTripFeeEnabled()
+                ? this.onsiteDefaultTripFeeCents()
+                : null,
+          },
+          order: {
+            items: this.buildOrderItems(params.serviceMode),
+            tags: ['repair'],
+            notes: 'Created from new repair flow',
+          },
+          appointment:
+            this.bookingEnabled() && params.schedulingSelection
+              ? {
+                  startAt: params.schedulingSelection.startAt,
+                  endAt: params.schedulingSelection.endAt,
+                  candidateType:
+                    params.schedulingSelection.candidateType,
+                  assignedUserId:
+                    params.schedulingSelection.candidateType === 'internal'
+                      ? (params.schedulingSelection.assignedUserId ?? null)
+                      : null,
+                  contractorId:
+                    params.schedulingSelection.candidateType === 'contractor'
+                      ? (params.schedulingSelection.contractorId ?? null)
+                      : null,
+                }
+              : null,
+        },
+      ),
+    );
 
-    this.deviceCatalogCategoryLoadPromise = firstValueFrom(
+    if (response.status === 'created' && response.repairId) {
+      this.toastService.success(
+        'Repair created',
+        'The deposit requirement was overridden and recorded in the audit history.',
+      );
+      await this.router.navigate(['/repairs', 'detail', response.repairId]);
+      return;
+    }
+
+    this.depositRequestSent = response;
+    this.toastService.success(
+      'Deposit request sent',
+      `A secure Stripe payment request was emailed to ${response.customerEmail}. The appointment is not confirmed yet.`,
+    );
+  }
+
+  private async loadDeviceCatalogCategories(
+    showErrorToast = false,
+  ): Promise<void> {
+    if (this.deviceCatalogCategories.length) {
+      return;
+    }
+
+    if (this.deviceCatalogCategoriesLoadPromise) {
+      return this.deviceCatalogCategoriesLoadPromise;
+    }
+
+    this.loadingDeviceCatalogCategories = true;
+
+    this.deviceCatalogCategoriesLoadPromise = firstValueFrom(
       this.techSpecsService.listCategories({
         page: 0,
-        size: this.deviceCatalogPageSize,
+        size: 100,
       }),
     )
       .then((page) => {
-        const categories = this.unwrapStringPage(page);
-
-        this.deviceCatalogCategory =
-          this.preferredDeviceCatalogCategories.find((preferred) =>
-            categories.some(
-              (category) => category.toLowerCase() === preferred.toLowerCase(),
-            ),
-          ) ??
-          categories.find((category) => /phone|mobile|cell/i.test(category)) ??
-          categories[0] ??
-          null;
+        this.deviceCatalogCategories = this.unwrapStringPage(page).sort(
+          (a, b) => a.localeCompare(b),
+        );
       })
       .catch(() => {
-        this.deviceCatalogCategory = null;
+        this.deviceCatalogCategories = [];
 
         if (showErrorToast) {
           this.toastService.error(
@@ -2414,11 +2767,11 @@ export class NewRepair implements OnInit {
         }
       })
       .finally(() => {
-        this.loadingDeviceCatalogCategory = false;
-        this.deviceCatalogCategoryLoadPromise = null;
+        this.loadingDeviceCatalogCategories = false;
+        this.deviceCatalogCategoriesLoadPromise = null;
       });
 
-    return this.deviceCatalogCategoryLoadPromise;
+    return this.deviceCatalogCategoriesLoadPromise;
   }
 
   private unwrapStringPage(response: unknown): string[] {
@@ -2432,7 +2785,7 @@ export class NewRepair implements OnInit {
 
   private unwrapBrandPage(response: unknown, search = ''): TechSpecsBrand[] {
     const searchKey = this.normalizeCatalogKey(search);
-    const category = this.deviceCatalogCategory ?? 'Smartphones';
+    const category = this.deviceCatalogCategory ?? '';
 
     const brands = this.uniqueStrings(this.unwrapStringPage(response)).filter(
       (brand) =>
@@ -2443,32 +2796,6 @@ export class NewRepair implements OnInit {
       brands,
       category,
       country: this.shopCountry,
-    }).map((brand) => this.techSpecsService.toBrandOption(brand));
-  }
-
-  private getPreferredCatalogBrandOptions(): TechSpecsBrand[] {
-    const category = this.deviceCatalogCategory ?? 'Smartphones';
-    const categoryKey = this.normalizeCatalogKey(category);
-    const country = this.normalizeCountryCode(this.shopCountry);
-
-    const countryPopular =
-      this.popularBrandsByCountryCategory[country]?.[categoryKey] ?? [];
-    const defaultPopular =
-      this.defaultPopularBrandsByCategory[categoryKey] ?? [];
-    const fallbackPopular = this.defaultPopularBrandsByCategory[
-      'smartphones'
-    ] ?? ['Apple', 'Samsung', 'Google', 'Motorola', 'OnePlus'];
-
-    const brands = countryPopular.length
-      ? countryPopular
-      : defaultPopular.length
-        ? defaultPopular
-        : fallbackPopular;
-
-    return this.sortCatalogBrands({
-      brands,
-      category,
-      country,
     }).map((brand) => this.techSpecsService.toBrandOption(brand));
   }
 
@@ -2597,61 +2924,14 @@ export class NewRepair implements OnInit {
     );
   }
 
-  private escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
   private simplifyCatalogModelName(opts: {
     brand: string;
     model: string;
     country: string;
   }): string {
-    const brandKey = this.normalizeCatalogKey(opts.brand);
-    let model = String(opts.model ?? '').trim();
-
-    if (
-      brandKey &&
-      this.normalizeCatalogKey(model).startsWith(`${brandKey} `)
-    ) {
-      const brandRegex = new RegExp(
-        `^${this.escapeRegExp(opts.brand)}\\s+`,
-        'i',
-      );
-      model = model.replace(brandRegex, '').trim();
-    }
-
-    model = model
-      .replace(/\bA\d{4}\b/gi, '')
-      .replace(/\bSM-[A-Z0-9]+(?:\/[A-Z0-9]+)?\b/gi, '')
-      .replace(/\bXT\d{4,5}(?:-\d+)?\b/gi, '')
-      .replace(/\b[A-Z]{1,3}\d{3,5}(?:[A-Z]{1,3})?\b/g, '');
-
-    model = model
-      .replace(/\b\d+\s?(GB|TB)\b/gi, '')
-      .replace(/\b\d+\s?GB\s?RAM\b/gi, '')
-      .replace(/\b\d+\s?\/\s?\d+\s?(GB|TB)\b/gi, '');
-
-    model = model
-      .replace(
-        /\b(Global|International|China|Chinese|India|Indian|Japan|Japanese|Korea|Korean|Hong Kong|Taiwan|Russia|Europe|European|Middle East|Latin America|Brazil|Mexico|Canada|USA|US|United States)\b/gi,
-        '',
-      )
-      .replace(
-        /\b(Dual SIM|Dual-SIM|DualSim|Single SIM|eSIM|CDMA|GSM|Unlocked|Carrier|Verizon|AT&T|T-Mobile|Sprint)\b/gi,
-        '',
-      );
-
-    model = model.replace(/\b5G\b/gi, '');
-
-    model = model
-      .replace(/\([^)]*\)/g, '')
-      .replace(/\[[^\]]*\]/g, '')
-      .replace(/\s*[-–—]\s*$/g, '')
-      .replace(/^\s*[-–—]\s*/g, '')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-
-    return model || String(opts.model ?? '').trim();
+    // The shop catalog is already curated. Preserve its exact display name,
+    // including generation, chipset, screen size, and year qualifiers.
+    return String(opts.model ?? '').trim();
   }
 
   private catalogModelDedupKey(opts: {
@@ -2836,6 +3116,7 @@ export class NewRepair implements OnInit {
   private isDeviceStepValid(): boolean {
     if (this.newDevice) {
       return (
+        !!this.deviceCatalogCategory &&
         !!this.selectedTechSpecsBrand &&
         !!this.selectedTechSpecsModel &&
         !!this.newRepairForm.controls.catalogRef.value &&
@@ -2876,6 +3157,7 @@ export class NewRepair implements OnInit {
       case 'device':
         this.newRepairForm.controls.deviceSearchControl.markAsTouched();
         this.newRepairForm.controls.catalogRef.markAsTouched();
+        this.newRepairForm.controls.techSpecsCategorySearchControl.markAsTouched();
         this.newRepairForm.controls.techSpecsBrandSearchControl.markAsTouched();
         this.newRepairForm.controls.techSpecsModelSearchControl.markAsTouched();
         this.newRepairForm.controls.nickname.markAsTouched();
@@ -2919,13 +3201,13 @@ export class NewRepair implements OnInit {
       case 'device':
         this.toastService.error(
           'Device required',
-          'Select a saved device or choose an exact model from the catalog.',
+          'Select a saved device or choose an exact category, brand, and model from the catalog.',
         );
         break;
       case 'repair':
         this.toastService.error(
           'Repair details required',
-          'Select a repair need and recommended service before continuing.',
+          'Select a repair type and pricing option before continuing.',
         );
         break;
       case 'service':
@@ -3125,6 +3407,8 @@ export class NewRepair implements OnInit {
 
   private updateDeviceValidators(): void {
     const catalogRefControl = this.newRepairForm.controls.catalogRef;
+    const categorySearchControl =
+      this.newRepairForm.controls.techSpecsCategorySearchControl;
     const brandSearchControl =
       this.newRepairForm.controls.techSpecsBrandSearchControl;
     const modelSearchControl =
@@ -3136,6 +3420,7 @@ export class NewRepair implements OnInit {
 
     if (this.newDevice) {
       catalogRefControl.setValidators([Validators.required]);
+      categorySearchControl.setValidators([Validators.required]);
       brandSearchControl.setValidators([Validators.required]);
       modelSearchControl.setValidators([Validators.required]);
       nicknameControl.setValidators([
@@ -3147,6 +3432,7 @@ export class NewRepair implements OnInit {
       searchControl.clearValidators();
     } else {
       catalogRefControl.clearValidators();
+      categorySearchControl.clearValidators();
       brandSearchControl.clearValidators();
       modelSearchControl.clearValidators();
       nicknameControl.clearValidators();
@@ -3156,6 +3442,7 @@ export class NewRepair implements OnInit {
     }
 
     catalogRefControl.updateValueAndValidity({ emitEvent: false });
+    categorySearchControl.updateValueAndValidity({ emitEvent: false });
     brandSearchControl.updateValueAndValidity({ emitEvent: false });
     modelSearchControl.updateValueAndValidity({ emitEvent: false });
     nicknameControl.updateValueAndValidity({ emitEvent: false });
@@ -3280,6 +3567,7 @@ export class NewRepair implements OnInit {
   }
 
   private clearTechSpecsSelection(updateValidators: boolean): void {
+    this.deviceCatalogCategory = null;
     this.selectedTechSpecsBrand = null;
     this.selectedTechSpecsModel = null;
     this.techSpecsBrandResults = [];
@@ -3290,6 +3578,7 @@ export class NewRepair implements OnInit {
     if (updateValidators) {
       this.newRepairForm.patchValue({
         catalogRef: null,
+        techSpecsCategorySearchControl: '',
         techSpecsBrandSearchControl: '',
         techSpecsModelSearchControl: '',
         brand: '',
@@ -3518,6 +3807,26 @@ export class NewRepair implements OnInit {
     }
   }
 
+  private async loadBookingPaymentSettings(): Promise<void> {
+    try {
+      const settings = await firstValueFrom(
+        this.http.get<BookingPaymentSettings>(
+          `${this.apiBase}/booking-payments/settings`,
+        ),
+      );
+      this.adminDepositEnforcement =
+        settings.adminDepositEnforcement ?? 'allow_override';
+      this.fullPrepaymentEnabled = !!settings.fullPrepaymentEnabled;
+      this.fullPrepaymentDiscountPercent =
+        settings.fullPrepaymentDiscountPercent ?? 0;
+    } catch (error) {
+      console.error('Failed to load booking payment settings.', error);
+      this.adminDepositEnforcement = 'allow_override';
+      this.fullPrepaymentEnabled = false;
+      this.fullPrepaymentDiscountPercent = 0;
+    }
+  }
+
   private async loadShopContext(): Promise<void> {
     try {
       const shop = await firstValueFrom(this.shopContext.load());
@@ -3559,11 +3868,20 @@ export class NewRepair implements OnInit {
       this.newRepairForm.controls.quotedPriceDollars.value,
     );
 
+    const selectedRepairType = this.selectedRepairNeed();
+    const selectedPricingOption = this.selectedRepairService();
+    const serviceLineName = [
+      selectedRepairType?.label,
+      selectedPricingOption?.label,
+    ]
+      .filter(Boolean)
+      .join(' — ') || 'Repair Service';
+
     const items: RepairOrderItem[] = [
       {
         type: 'service',
         productId: null,
-        name: this.selectedRepairService()?.label ?? 'Repair Service',
+        name: serviceLineName,
         quantity: 1,
         unitPriceCents: quotedPriceCents,
         notes: null,
@@ -3575,13 +3893,23 @@ export class NewRepair implements OnInit {
       this.selectedPart?.source === 'inventory' &&
       this.newRepairForm.controls.selectedInventoryProductId.value
     ) {
+      const selectedProductId =
+        this.newRepairForm.controls.selectedInventoryProductId.value;
+      const includedByPricingOption =
+        !!selectedPricingOption?.productId &&
+        selectedPricingOption.productId === selectedProductId;
+
       items.push({
         type: 'product',
-        productId: this.newRepairForm.controls.selectedInventoryProductId.value,
+        productId: selectedProductId,
         name: this.selectedPart.name,
         quantity: 1,
-        unitPriceCents: Number(this.selectedPart.priceCents ?? 0),
-        notes: 'Inventory part selected during repair intake',
+        unitPriceCents: includedByPricingOption
+          ? 0
+          : Number(this.selectedPart.priceCents ?? 0),
+        notes: includedByPricingOption
+          ? 'Included in the configured repair price'
+          : 'Inventory part selected during repair intake',
         sku: this.selectedPart.sku ?? null,
       });
     }
