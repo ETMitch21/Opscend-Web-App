@@ -48,6 +48,10 @@ export interface WorkQueueItem {
   snoozedUntil: string | null;
   sourceUpdatedAt: string | null;
   lastSeenAt: string | null;
+  timerStartedAt: string | null;
+  timerAccumulatedSeconds: number;
+  timerStartedByUserId: string | null;
+  timerStartedBy: WorkQueueAssignee | null;
   resolvedAt: string | null;
   resolvedByUserId: string | null;
   resolutionNote: string | null;

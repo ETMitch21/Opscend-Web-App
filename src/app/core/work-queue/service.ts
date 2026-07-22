@@ -88,6 +88,13 @@ export class WorkQueueService {
     );
   }
 
+  start(id: string): Observable<WorkQueueItem> {
+    return this.http.post<WorkQueueItem>(
+      `${this.baseUrl}/${encodeURIComponent(id)}/start`,
+      {},
+    );
+  }
+
   snooze(id: string, until: string): Observable<WorkQueueItem> {
     return this.http.post<WorkQueueItem>(
       `${this.baseUrl}/${encodeURIComponent(id)}/snooze`,

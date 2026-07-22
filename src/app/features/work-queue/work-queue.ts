@@ -33,6 +33,7 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  UserRoundX,
   Users,
   Wrench,
   X,
@@ -41,6 +42,8 @@ import {
 } from 'lucide-angular';
 
 import { ToastService } from '../../core/toast/toast-service';
+import { AppointmentsStore } from '../../core/appointments/appointments.store';
+import { OrdersService } from '../../core/orders/orders-service';
 import {
   CreateWorkQueueItemPayload,
   WorkQueueAssignee,
@@ -82,6 +85,8 @@ interface TaskDraft {
 })
 export class WorkQueue implements OnInit, OnDestroy {
   private readonly workQueueService = inject(WorkQueueService);
+  private readonly appointmentsStore = inject(AppointmentsStore);
+  private readonly ordersService = inject(OrdersService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
@@ -106,7 +111,8 @@ export class WorkQueue implements OnInit, OnDestroy {
     RefreshCw,
     RotateCcw,
     Search,
-        Users,
+    UserRoundX,
+    Users,
     Wrench,
     X,
   };
@@ -177,11 +183,22 @@ export class WorkQueue implements OnInit, OnDestroy {
   readonly resolutionNote = signal('');
   readonly resolutionSaving = signal(false);
 
+  readonly appointmentActionModalOpen = signal(false);
+  readonly appointmentActionItem = signal<WorkQueueItem | null>(null);
+  readonly appointmentActionSaving = signal(false);
+
+  readonly orderActionModalOpen = signal(false);
+  readonly orderActionItem = signal<WorkQueueItem | null>(null);
+  readonly orderActionSaving = signal(false);
+
   readonly snoozeMenuItemId = signal<string | null>(null);
+  readonly actionMenuItemId = signal<string | null>(null);
+  readonly nowTick = signal(Date.now());
 
   taskDraft: TaskDraft = this.emptyTaskDraft();
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
+  private clockTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly activeCount = computed(() => this.summary()?.counts.open ?? 0);
   readonly resultLabel = computed(() => {
@@ -199,6 +216,10 @@ export class WorkQueue implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
+    this.clockTimer = setInterval(() => {
+      this.nowTick.set(Date.now());
+    }, 1000);
+
     void this.loadAll();
   }
 
@@ -206,6 +227,11 @@ export class WorkQueue implements OnInit, OnDestroy {
     if (this.searchTimer) {
       clearTimeout(this.searchTimer);
       this.searchTimer = null;
+    }
+
+    if (this.clockTimer) {
+      clearInterval(this.clockTimer);
+      this.clockTimer = null;
     }
   }
 
@@ -256,6 +282,7 @@ export class WorkQueue implements OnInit, OnDestroy {
   async setView(view: QueueView): Promise<void> {
     this.activeView.set(view);
     this.snoozeMenuItemId.set(null);
+    this.actionMenuItemId.set(null);
     await this.loadItems();
   }
 
@@ -301,6 +328,7 @@ export class WorkQueue implements OnInit, OnDestroy {
           : 'all',
     );
     this.snoozeMenuItemId.set(null);
+    this.actionMenuItemId.set(null);
     await this.loadItems();
   }
 
@@ -313,6 +341,7 @@ export class WorkQueue implements OnInit, OnDestroy {
   openEditTask(item: WorkQueueItem): void {
     if (item.automatic) return;
 
+    this.actionMenuItemId.set(null);
     this.editingItem.set(item);
     this.taskDraft = {
       title: item.title,
@@ -402,11 +431,18 @@ export class WorkQueue implements OnInit, OnDestroy {
   }
 
   async startItem(item: WorkQueueItem): Promise<void> {
+    if (item.automatic || item.sourceType !== 'manual') return;
+
+    const isResume =
+      item.status === 'snoozed' ||
+      (item.timerAccumulatedSeconds ?? 0) > 0;
+
     await this.runItemAction(item, async () => {
-      await firstValueFrom(
-        this.workQueueService.update(item.id, { status: 'in_progress' }),
+      await firstValueFrom(this.workQueueService.start(item.id));
+      this.toast.success(
+        isResume ? 'Work resumed' : 'Work started',
+        item.title,
       );
-      this.toast.success('Work started', item.title);
     });
   }
 
@@ -448,6 +484,381 @@ export class WorkQueue implements OnInit, OnDestroy {
     }
   }
 
+  isManualItem(item: WorkQueueItem): boolean {
+    return !item.automatic && item.sourceType === 'manual';
+  }
+
+  hasTrackedTime(item: WorkQueueItem): boolean {
+    return Boolean(
+      this.isManualItem(item) &&
+        (item.timerStartedAt || (item.timerAccumulatedSeconds ?? 0) > 0),
+    );
+  }
+
+  timerElapsedSeconds(item: WorkQueueItem): number {
+    const accumulated = Math.max(0, item.timerAccumulatedSeconds ?? 0);
+
+    if (item.status !== 'in_progress' || !item.timerStartedAt) {
+      return accumulated;
+    }
+
+    const activeSeconds = Math.max(
+      0,
+      Math.floor(
+        (this.nowTick() - new Date(item.timerStartedAt).getTime()) / 1000,
+      ),
+    );
+
+    return accumulated + activeSeconds;
+  }
+
+  timerElapsedLabel(item: WorkQueueItem): string {
+    const total = this.timerElapsedSeconds(item);
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  timerHeading(item: WorkQueueItem): string {
+    switch (item.status) {
+      case 'in_progress':
+        return 'Work in progress';
+      case 'snoozed':
+        return 'Timer paused';
+      case 'completed':
+      case 'dismissed':
+      case 'resolved':
+        return 'Time tracked';
+      default:
+        return 'Previous work time';
+    }
+  }
+
+  timerSubheading(item: WorkQueueItem): string {
+    if (item.status === 'in_progress' && item.timerStartedAt) {
+      const starter = item.timerStartedBy?.name?.trim();
+      const startedAt = this.formatTimeOnly(item.timerStartedAt);
+      return starter
+        ? `Started by ${starter} at ${startedAt}`
+        : `Started at ${startedAt}`;
+    }
+
+    if (item.status === 'snoozed' && item.snoozedUntil) {
+      return `Paused until ${this.formatDateTime(item.snoozedUntil)}`;
+    }
+
+    if (item.status === 'completed') {
+      return 'Final elapsed time retained with this task.';
+    }
+
+    return 'Start or resume when work continues.';
+  }
+
+  timerPanelClass(item: WorkQueueItem): string {
+    switch (item.status) {
+      case 'in_progress':
+        return 'border-blue-200 bg-blue-50/70';
+      case 'snoozed':
+        return 'border-amber-200 bg-amber-50/70';
+      case 'completed':
+        return 'border-emerald-200 bg-emerald-50/70';
+      default:
+        return 'border-slate-200 bg-slate-50';
+    }
+  }
+
+  isAppointmentDisposition(item: WorkQueueItem): boolean {
+    return (
+      item.sourceType === 'appointment' &&
+      item.kind === 'appointment_disposition'
+    );
+  }
+
+  isOrderFulfillment(item: WorkQueueItem): boolean {
+    return item.sourceType === 'order' && item.kind === 'order_fulfillment';
+  }
+
+  canAcknowledgeItem(item: WorkQueueItem): boolean {
+    return new Set([
+      'customer_approval',
+      'parts_follow_up',
+      'appointment_no_show',
+      'appointment_preparation',
+      'deposit_reminder',
+      'quote_follow_up',
+      'delivery_issue',
+    ]).has(item.kind);
+  }
+
+  primaryActionLabel(item: WorkQueueItem): string {
+    switch (item.kind) {
+      case 'repair_assignment':
+        return 'Assign repair';
+      case 'customer_approval':
+        return 'Follow up';
+      case 'parts_follow_up':
+        return 'Review repair';
+      case 'documentation':
+        return 'Complete docs';
+      case 'pickup_reminder':
+        return 'Open pickup';
+      case 'appointment_required':
+        return 'Schedule';
+      case 'appointment_no_show':
+        return 'Follow up';
+      case 'appointment_disposition':
+        return 'Close out';
+      case 'appointment_assignment':
+        return 'Assign';
+      case 'appointment_preparation':
+        return 'Prepare';
+      case 'quote_request':
+        return 'Review request';
+      case 'manual_quote_review':
+        return 'Review quote';
+      case 'draft_quote':
+        return 'Finish quote';
+      case 'send_quote':
+        return 'Send quote';
+      case 'deposit_reminder':
+        return 'Follow up';
+      case 'accepted_quote':
+        return 'Schedule quote';
+      case 'quote_follow_up':
+        return 'Follow up';
+      case 'order_fulfillment':
+        return 'Fulfill order';
+      case 'payment_collection':
+        return 'Collect payment';
+      case 'delivery_issue':
+        return 'Resolve delivery';
+      case 'customer_reply':
+        return 'Respond';
+      case 'manual_task':
+        return 'Complete';
+      default:
+        return item.route ? 'Open source' : 'Complete';
+    }
+  }
+
+  primaryActionIcon(item: WorkQueueItem): LucideIconData {
+    switch (item.kind) {
+      case 'repair_assignment':
+      case 'appointment_assignment':
+        return this.icons.Users;
+      case 'appointment_required':
+      case 'accepted_quote':
+      case 'appointment_disposition':
+      case 'appointment_preparation':
+        return this.icons.CalendarClock;
+      case 'order_fulfillment':
+        return this.icons.PackageCheck;
+      case 'payment_collection':
+        return this.icons.ClipboardCheck;
+      case 'customer_reply':
+      case 'customer_approval':
+      case 'appointment_no_show':
+      case 'deposit_reminder':
+      case 'quote_follow_up':
+        return this.icons.MessageSquare;
+      case 'delivery_issue':
+        return this.icons.MailWarning;
+      case 'quote_request':
+      case 'manual_quote_review':
+      case 'draft_quote':
+      case 'send_quote':
+        return this.icons.FileText;
+      case 'manual_task':
+        return this.icons.Check;
+      case 'parts_follow_up':
+      case 'documentation':
+      case 'pickup_reminder':
+        return this.icons.Wrench;
+      default:
+        return item.route ? this.icons.ExternalLink : this.icons.Check;
+    }
+  }
+
+  primaryActionClass(item: WorkQueueItem): string {
+    if (this.isAppointmentDisposition(item)) {
+      return 'bg-brand text-white hover:bg-brand-soft';
+    }
+
+    if (this.isOrderFulfillment(item)) {
+      return 'bg-emerald-600 text-white hover:bg-emerald-700';
+    }
+
+    if (!item.automatic || !item.route) {
+      return 'bg-emerald-600 text-white hover:bg-emerald-700';
+    }
+
+    return 'bg-slate-950 text-white hover:bg-slate-800';
+  }
+
+  async performPrimaryAction(item: WorkQueueItem): Promise<void> {
+    if (this.isAppointmentDisposition(item)) {
+      this.openAppointmentActionModal(item);
+      return;
+    }
+
+    if (this.isOrderFulfillment(item)) {
+      this.openOrderFulfillmentModal(item);
+      return;
+    }
+
+    if (!item.automatic || !item.route) {
+      this.openResolutionModal(item);
+      return;
+    }
+
+    await this.openSource(item);
+  }
+
+  openAppointmentActionModal(item: WorkQueueItem): void {
+    if (!this.isAppointmentDisposition(item)) return;
+
+    this.appointmentActionItem.set(item);
+    this.appointmentActionModalOpen.set(true);
+  }
+
+  closeAppointmentActionModal(): void {
+    if (this.appointmentActionSaving()) return;
+
+    this.appointmentActionModalOpen.set(false);
+    this.appointmentActionItem.set(null);
+  }
+
+  async applyAppointmentDisposition(
+    status: 'completed' | 'no_show' | 'canceled',
+  ): Promise<void> {
+    const item = this.appointmentActionItem();
+
+    if (!item || this.appointmentActionSaving()) return;
+
+    const repairId = this.appointmentRepairId(item);
+
+    if (!repairId) {
+      this.toast.error(
+        'Appointment not updated',
+        'The linked repair could not be identified.',
+      );
+      return;
+    }
+
+    this.appointmentActionSaving.set(true);
+    this.workingItemId.set(item.id);
+
+    try {
+      if (status === 'canceled') {
+        const canceled = await this.appointmentsStore.cancelAppointment(repairId);
+
+        if (!canceled) {
+          throw new Error(
+            this.appointmentsStore.error() || 'Appointment could not be canceled.',
+          );
+        }
+      } else {
+        const updated = await this.appointmentsStore.updateAppointmentStatus(
+          repairId,
+          status,
+        );
+
+        if (!updated) {
+          throw new Error(
+            this.appointmentsStore.error() ||
+              'Appointment status could not be updated.',
+          );
+        }
+      }
+
+      const successMessage =
+        status === 'completed'
+          ? 'The appointment was marked completed.'
+          : status === 'no_show'
+            ? 'The appointment was marked as a no-show.'
+            : 'The appointment was canceled and the repair returned to intake.';
+
+      this.toast.success('Appointment updated', successMessage);
+      this.appointmentActionModalOpen.set(false);
+      this.appointmentActionItem.set(null);
+      await this.refresh();
+    } catch (error) {
+      console.error('Appointment disposition could not be saved.', error);
+      this.toast.error(
+        'Appointment not updated',
+        this.appointmentsStore.error() || 'Please try again.',
+      );
+    } finally {
+      this.appointmentActionSaving.set(false);
+      this.workingItemId.set(null);
+    }
+  }
+
+  openOrderFulfillmentModal(item: WorkQueueItem): void {
+    if (!this.isOrderFulfillment(item)) return;
+
+    this.orderActionItem.set(item);
+    this.orderActionModalOpen.set(true);
+  }
+
+  closeOrderFulfillmentModal(): void {
+    if (this.orderActionSaving()) return;
+
+    this.orderActionModalOpen.set(false);
+    this.orderActionItem.set(null);
+  }
+
+  async fulfillOrder(): Promise<void> {
+    const item = this.orderActionItem();
+
+    if (!item || this.orderActionSaving()) return;
+
+    const orderId = item.sourceId?.trim();
+
+    if (!orderId) {
+      this.toast.error(
+        'Order not fulfilled',
+        'The linked order could not be identified.',
+      );
+      return;
+    }
+
+    this.orderActionSaving.set(true);
+    this.workingItemId.set(item.id);
+
+    try {
+      await firstValueFrom(
+        this.ordersService.patchOrder(orderId, {
+          fulfillmentStatus: 'fulfilled',
+        }),
+      );
+
+      this.toast.success(
+        'Order fulfilled',
+        `${this.orderNumber(item)} is now fulfilled.`,
+      );
+
+      this.orderActionModalOpen.set(false);
+      this.orderActionItem.set(null);
+      await this.refresh();
+    } catch (error) {
+      console.error('Order could not be fulfilled from the work queue.', error);
+      this.toast.error(
+        'Order not fulfilled',
+        this.orderFulfillmentErrorMessage(error),
+      );
+    } finally {
+      this.orderActionSaving.set(false);
+      this.workingItemId.set(null);
+    }
+  }
+
   async dismissItem(item: WorkQueueItem): Promise<void> {
     await this.runItemAction(item, async () => {
       await firstValueFrom(
@@ -467,7 +878,15 @@ export class WorkQueue implements OnInit, OnDestroy {
   }
 
   toggleSnoozeMenu(item: WorkQueueItem): void {
+    this.actionMenuItemId.set(null);
     this.snoozeMenuItemId.update((current) =>
+      current === item.id ? null : item.id,
+    );
+  }
+
+  toggleActionMenu(item: WorkQueueItem): void {
+    this.snoozeMenuItemId.set(null);
+    this.actionMenuItemId.update((current) =>
       current === item.id ? null : item.id,
     );
   }
@@ -637,6 +1056,13 @@ export class WorkQueue implements OnInit, OnDestroy {
     }).format(new Date(value));
   }
 
+  formatTimeOnly(value: string): string {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(new Date(value));
+  }
+
   assigneeName(userId: string): string {
     return this.assignees().find((user) => user.id === userId)?.name ?? 'User';
   }
@@ -721,6 +1147,7 @@ export class WorkQueue implements OnInit, OnDestroy {
 
     this.workingItemId.set(item.id);
     this.snoozeMenuItemId.set(null);
+    this.actionMenuItemId.set(null);
 
     try {
       await action();
@@ -740,6 +1167,72 @@ export class WorkQueue implements OnInit, OnDestroy {
       );
       this.toast.success('Item snoozed', `Hidden until ${this.formatDateTime(until.toISOString())}.`);
     });
+  }
+
+  private appointmentRepairId(item: WorkQueueItem): string | null {
+    const metadataRepairId = item.metadata?.['repairId'];
+
+    if (
+      typeof metadataRepairId === 'string' &&
+      metadataRepairId.trim().length > 0
+    ) {
+      return metadataRepairId.trim();
+    }
+
+    const routeMatch = item.route?.match(/\/repairs\/detail\/([^/?#]+)/);
+    if (!routeMatch?.[1]) return null;
+
+    try {
+      return decodeURIComponent(routeMatch[1]);
+    } catch {
+      return routeMatch[1];
+    }
+  }
+
+  orderNumber(item: WorkQueueItem): string {
+    const metadataOrderNumber = item.metadata?.['orderNumber'];
+
+    if (
+      typeof metadataOrderNumber === 'string' &&
+      metadataOrderNumber.trim().length > 0
+    ) {
+      return metadataOrderNumber.trim();
+    }
+
+    return 'This order';
+  }
+
+  private orderFulfillmentErrorMessage(error: unknown): string {
+    const payload =
+      typeof error === 'object' && error !== null && 'error' in error
+        ? (error as { error?: unknown }).error
+        : null;
+
+    const code =
+      typeof payload === 'string'
+        ? payload
+        : typeof payload === 'object' &&
+            payload !== null &&
+            'error' in payload &&
+            typeof (payload as { error?: unknown }).error === 'string'
+          ? (payload as { error: string }).error
+          : null;
+
+    switch (code) {
+      case 'insufficient_inventory':
+      case 'insufficient_reserved_inventory':
+        return 'Inventory is not available yet. Receive the purchase order or correct the reserved quantity before fulfilling this order.';
+      case 'must_be_paid_to_fulfill':
+        return 'The order must be paid in full before it can be fulfilled.';
+      case 'customer_required':
+        return 'A customer must be attached before this order can be fulfilled.';
+      case 'items_required':
+        return 'The order needs at least one item before it can be fulfilled.';
+      case 'order_voided':
+        return 'A voided order cannot be fulfilled.';
+      default:
+        return 'The order could not be fulfilled. Open the source record for more details.';
+    }
   }
 
   private emptyTaskDraft(): TaskDraft {

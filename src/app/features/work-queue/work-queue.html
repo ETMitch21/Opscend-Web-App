@@ -309,10 +309,39 @@
                         <span class="h-1 w-1 rounded-full bg-slate-300"></span>
                         <span [ngClass]="dueClass(item)">{{ dueLabel(item) }}</span>
                       </div>
+
+                      @if (hasTrackedTime(item)) {
+                        <div
+                          class="mt-3 flex flex-col gap-3 rounded-2xl border px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between"
+                          [ngClass]="timerPanelClass(item)"
+                        >
+                          <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/90 text-slate-700 shadow-sm">
+                              <lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon>
+                            </span>
+
+                            <div class="min-w-0">
+                              <p class="text-xs font-semibold text-slate-900">
+                                {{ timerHeading(item) }}
+                              </p>
+                              <p class="mt-0.5 truncate text-[11px] leading-4 text-slate-500">
+                                {{ timerSubheading(item) }}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div class="shrink-0 rounded-xl border border-white/80 bg-white/90 px-3 py-2 text-right shadow-sm">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Elapsed</p>
+                            <p class="mt-0.5 font-mono text-base font-semibold tabular-nums text-slate-950">
+                              {{ timerElapsedLabel(item) }}
+                            </p>
+                          </div>
+                        </div>
+                      }
                     </div>
                   </div>
 
-                  <div class="grid gap-2 sm:grid-cols-2 2xl:w-[540px] 2xl:grid-cols-[180px_130px_auto]">
+                  <div class="grid gap-3 sm:grid-cols-2 2xl:w-[620px] 2xl:grid-cols-[180px_130px_minmax(0,1fr)]">
                     <select
                       class="cursor-pointer h-10 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
                       [ngModel]="item.assignedToUserId || ''"
@@ -337,10 +366,11 @@
                       <option value="low">Low</option>
                     </select>
 
-                    <div class="flex flex-wrap justify-start gap-1.5 2xl:justify-end">
+                    <div class="flex flex-wrap items-center justify-start gap-2 sm:col-span-2 2xl:col-span-1 2xl:justify-end">
                       @if (workingItemId() === item.id) {
-                        <span class="inline-flex h-10 items-center px-3 text-slate-400">
+                        <span class="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-500">
                           <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                          Updating
                         </span>
                       } @else if (activeView() === 'completed') {
                         <button
@@ -352,107 +382,159 @@
                           Reopen
                         </button>
                       } @else {
-                        @if (item.status === 'open') {
+                        @if (isManualItem(item)) {
+                          @if (item.status === 'open') {
+                            <button
+                              type="button"
+                              class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                              (click)="startItem(item)"
+                            >
+                              <lucide-icon [name]="icons.CircleDot" class="h-4 w-4"></lucide-icon>
+                              Start
+                            </button>
+
+                            <button
+                              type="button"
+                              class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                              (click)="openResolutionModal(item)"
+                            >
+                              <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                              Complete
+                            </button>
+                          } @else if (item.status === 'in_progress') {
+                            <button
+                              type="button"
+                              class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                              (click)="openResolutionModal(item)"
+                            >
+                              <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                              Complete
+                            </button>
+                          } @else if (item.status === 'snoozed') {
+                            <button
+                              type="button"
+                              class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                              (click)="startItem(item)"
+                            >
+                              <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4"></lucide-icon>
+                              Resume
+                            </button>
+
+                            <button
+                              type="button"
+                              class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                              (click)="openResolutionModal(item)"
+                            >
+                              <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                              Complete
+                            </button>
+                          }
+                        } @else {
                           <button
                             type="button"
-                            class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                            (click)="startItem(item)"
+                            class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold shadow-sm transition"
+                            [ngClass]="primaryActionClass(item)"
+                            (click)="performPrimaryAction(item)"
                           >
-                            <lucide-icon [name]="icons.CircleDot" class="h-4 w-4"></lucide-icon>
-                            Start
+                            <lucide-icon [name]="primaryActionIcon(item)" class="h-4 w-4"></lucide-icon>
+                            {{ primaryActionLabel(item) }}
                           </button>
+
+                          @if (canAcknowledgeItem(item)) {
+                            <button
+                              type="button"
+                              class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                              (click)="openResolutionModal(item)"
+                            >
+                              <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                              Done
+                            </button>
+                          }
                         }
 
-                        @if (item.status === 'snoozed') {
-                          <button
-                            type="button"
-                            class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                            (click)="reopenItem(item)"
-                          >
-                            <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4"></lucide-icon>
-                            Resume
-                          </button>
-                        }
+                        @if (item.status !== 'snoozed') {
+                          <div class="relative">
+                            <button
+                              type="button"
+                              class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                              (click)="toggleSnoozeMenu(item)"
+                            >
+                              <lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon>
+                              Snooze
+                            </button>
 
-                        @if (item.route) {
-                          <button
-                            type="button"
-                            class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                            title="Open source"
-                            aria-label="Open source"
-                            (click)="openSource(item)"
-                          >
-                            <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon>
-                          </button>
-                        }
-
-                        @if (!item.automatic) {
-                          <button
-                            type="button"
-                            class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                            title="Edit task"
-                            aria-label="Edit task"
-                            (click)="openEditTask(item)"
-                          >
-                            <lucide-icon [name]="icons.Pencil" class="h-4 w-4"></lucide-icon>
-                          </button>
+                            @if (snoozeMenuItemId() === item.id) {
+                              <div class="absolute right-0 top-12 z-20 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                                <button
+                                  type="button"
+                                  class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  (click)="snoozeForHours(item, 3)"
+                                >
+                                  Later today
+                                </button>
+                                <button
+                                  type="button"
+                                  class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  (click)="snoozeUntilTomorrow(item)"
+                                >
+                                  Tomorrow at 9:00 AM
+                                </button>
+                                <button
+                                  type="button"
+                                  class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  (click)="snoozeUntilNextWeek(item)"
+                                >
+                                  Next week
+                                </button>
+                              </div>
+                            }
+                          </div>
                         }
 
                         <div class="relative">
                           <button
                             type="button"
-                            class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                            (click)="toggleSnoozeMenu(item)"
+                            class="cursor-pointer inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                            (click)="toggleActionMenu(item)"
                           >
-                            <lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon>
-                            Snooze
+                            More
                           </button>
 
-                          @if (snoozeMenuItemId() === item.id) {
-                            <div class="absolute right-0 top-12 z-20 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                          @if (actionMenuItemId() === item.id) {
+                            <div class="absolute right-0 top-12 z-20 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                              @if (isManualItem(item)) {
+                                <button
+                                  type="button"
+                                  class="cursor-pointer flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  (click)="openEditTask(item)"
+                                >
+                                  <lucide-icon [name]="icons.Pencil" class="h-4 w-4"></lucide-icon>
+                                  Edit task
+                                </button>
+
+                                @if (item.route) {
+                                  <button
+                                    type="button"
+                                    class="cursor-pointer flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                    (click)="openSource(item)"
+                                  >
+                                    <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon>
+                                    Open source
+                                  </button>
+                                }
+                              }
+
                               <button
                                 type="button"
-                                class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                                (click)="snoozeForHours(item, 3)"
+                                class="cursor-pointer flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
+                                (click)="dismissItem(item)"
                               >
-                                Later today
-                              </button>
-                              <button
-                                type="button"
-                                class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                                (click)="snoozeUntilTomorrow(item)"
-                              >
-                                Tomorrow at 9:00 AM
-                              </button>
-                              <button
-                                type="button"
-                                class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                                (click)="snoozeUntilNextWeek(item)"
-                              >
-                                Next week
+                                <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                                Dismiss
                               </button>
                             </div>
                           }
                         </div>
-
-                        <button
-                          type="button"
-                          class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700"
-                          (click)="openResolutionModal(item)"
-                        >
-                          <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
-                          Complete
-                        </button>
-
-                        <button
-                          type="button"
-                          class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-                          title="Dismiss"
-                          aria-label="Dismiss"
-                          (click)="dismissItem(item)"
-                        >
-                          <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
-                        </button>
                       }
                     </div>
                   </div>
@@ -673,6 +755,157 @@
             <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
           }
           Complete item
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (appointmentActionModalOpen() && appointmentActionItem(); as item) {
+  <div class="fixed inset-0 z-[90] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <div class="border-b border-slate-200 px-5 py-5 sm:px-6">
+        <div class="flex items-start gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-brand">
+            <lucide-icon [name]="icons.CalendarClock" class="h-5 w-5"></lucide-icon>
+          </span>
+
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold text-slate-950">Close out appointment</h2>
+            <p class="mt-1 line-clamp-2 text-sm text-slate-500">{{ item.description || item.title }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-3 px-5 py-5 sm:px-6">
+        <button
+          type="button"
+          class="cursor-pointer flex w-full items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-left transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="appointmentActionSaving()"
+          (click)="applyAppointmentDisposition('completed')"
+        >
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-700 shadow-sm">
+            <lucide-icon [name]="icons.Check" class="h-5 w-5"></lucide-icon>
+          </span>
+          <span>
+            <span class="block text-sm font-semibold text-emerald-950">Mark completed</span>
+            <span class="mt-0.5 block text-xs leading-5 text-emerald-700">The appointment occurred and is finished.</span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer flex w-full items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-left transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="appointmentActionSaving()"
+          (click)="applyAppointmentDisposition('no_show')"
+        >
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-rose-700 shadow-sm">
+            <lucide-icon [name]="icons.UserRoundX" class="h-5 w-5"></lucide-icon>
+          </span>
+          <span>
+            <span class="block text-sm font-semibold text-rose-950">Mark no-show</span>
+            <span class="mt-0.5 block text-xs leading-5 text-rose-700">The customer did not attend the scheduled appointment.</span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition hover:border-rose-200 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="appointmentActionSaving()"
+          (click)="applyAppointmentDisposition('canceled')"
+        >
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+            <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+          </span>
+          <span>
+            <span class="block text-sm font-semibold text-slate-900">Cancel appointment</span>
+            <span class="mt-0.5 block text-xs leading-5 text-slate-500">
+              Returns the repair to Intake and removes the current provider assignment.
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between border-t border-slate-200 px-5 py-4 sm:px-6">
+        @if (appointmentActionSaving()) {
+          <span class="inline-flex items-center gap-2 text-sm font-medium text-slate-500">
+            <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+            Updating appointment...
+          </span>
+        } @else {
+          <span class="text-xs text-slate-400">Choose the outcome that actually occurred.</span>
+        }
+
+        <button
+          type="button"
+          class="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="appointmentActionSaving()"
+          (click)="closeAppointmentActionModal()"
+        >
+          Back
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+
+
+@if (orderActionModalOpen() && orderActionItem(); as item) {
+  <div class="fixed inset-0 z-[90] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <div class="border-b border-slate-200 px-5 py-5 sm:px-6">
+        <div class="flex items-start gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+            <lucide-icon [name]="icons.PackageCheck" class="h-5 w-5"></lucide-icon>
+          </span>
+
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold text-slate-950">Fulfill {{ orderNumber(item) }}</h2>
+            <p class="mt-1 text-sm leading-6 text-slate-500">
+              This marks the order fulfilled and consumes its reserved inventory.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-5 sm:px-6">
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+          <div class="flex items-start gap-3">
+            <lucide-icon [name]="icons.AlertTriangle" class="mt-0.5 h-5 w-5 shrink-0 text-amber-700"></lucide-icon>
+            <div>
+              <p class="text-sm font-semibold text-amber-950">Confirm inventory is ready</p>
+              <p class="mt-1 text-xs leading-5 text-amber-800">
+                Opscend will block fulfillment when required inventory has not been received or reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+        <button
+          type="button"
+          class="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="orderActionSaving()"
+          (click)="closeOrderFulfillmentModal()"
+        >
+          Back
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="orderActionSaving()"
+          (click)="fulfillOrder()"
+        >
+          @if (orderActionSaving()) {
+            <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+            Fulfilling...
+          } @else {
+            <lucide-icon [name]="icons.PackageCheck" class="h-4 w-4"></lucide-icon>
+            Fulfill order
+          }
         </button>
       </div>
     </div>
