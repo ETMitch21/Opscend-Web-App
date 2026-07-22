@@ -5,6 +5,7 @@ import type {
   Appointment,
   AppointmentListItem,
   AppointmentListParams,
+  AppointmentStatus,
   UpsertAppointmentDto,
 } from './appointments.model';
 
@@ -122,6 +123,32 @@ export class AppointmentsStore {
     contractorId?: string | null;
   }): Promise<Appointment | null> {
     return this.scheduleAppointment(input);
+  }
+
+  async updateAppointmentStatus(
+    repairId: string,
+    status: Extract<AppointmentStatus, 'completed' | 'no_show'>
+  ): Promise<Appointment | null> {
+    this._saving.set(true);
+    this._error.set(null);
+    this._errorCode.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.appointmentsService.updateAppointmentStatus(repairId, { status })
+      );
+
+      const appointment = response.appointment;
+      this._selectedAppointment.set(appointment);
+      this.patchAppointmentInList(appointment);
+
+      return appointment;
+    } catch (error) {
+      this.handleError(error, 'Failed to update appointment status.');
+      return null;
+    } finally {
+      this._saving.set(false);
+    }
   }
 
   async cancelAppointment(repairId: string): Promise<boolean> {

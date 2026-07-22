@@ -6,6 +6,7 @@ import type {
   AppointmentListParams,
   AppointmentListResponse,
   AppointmentResponse,
+  UpdateAppointmentStatusDto,
   UpsertAppointmentDto,
 } from './appointments.model';
 import { AppConfigService } from '../app-config/app-config.service';
@@ -52,6 +53,16 @@ export class AppointmentsService {
     return this.http.put<AppointmentResponse>(
       `${this.repairsBaseUrl}/${repairId}/appointment`,
       body
+    );
+  }
+
+  updateAppointmentStatus(
+    repairId: string,
+    payload: UpdateAppointmentStatusDto
+  ): Observable<AppointmentResponse> {
+    return this.http.patch<AppointmentResponse>(
+      `${this.repairsBaseUrl}/${repairId}/appointment/status`,
+      payload
     );
   }
 

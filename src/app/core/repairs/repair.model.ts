@@ -104,7 +104,8 @@ export interface RepairAppointment {
   technicianUserId?: string | null;
   assignedUserId?: string | null;
   contractorId?: string | null;
-  candidateType?: 'internal' | 'contractor' | null;
+  candidateType?: 'internal' | 'contractor' | 'unassigned' | null;
+  status: 'scheduled' | 'canceled' | 'completed' | 'no_show';
 
   notes?: string | null;
   createdAt: string;

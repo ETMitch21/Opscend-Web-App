@@ -156,6 +156,78 @@
                                     Provider changes are handled through scheduling so availability, contractor
                                     assignment, and appointment timing stay in sync.
                                 </p>
+
+                                @if (repairValue.appointment; as appointment) {
+                                <div class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                                    <div class="flex items-center gap-3 px-4 py-3.5">
+                                        <div
+                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                                            <lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon>
+                                        </div>
+
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+                                                Appointment
+                                            </p>
+                                            <p class="mt-0.5 text-sm font-semibold leading-5 text-gray-900">
+                                                {{ formatAppointmentWindow(appointment.startAt, appointment.endAt || appointment.endsAt) }}
+                                            </p>
+                                        </div>
+
+                                        <span
+                                            class="w-fit shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                                            [ngClass]="appointmentStatusPillClasses(appointment.status)">
+                                            {{ prettyAppointmentStatus(appointment.status) }}
+                                        </span>
+                                    </div>
+
+                                    @if (
+                                    appointment.status === 'scheduled' &&
+                                    repairValue.status !== 'picked_up' &&
+                                    repairValue.status !== 'canceled'
+                                    ) {
+                                    <div
+                                        class="flex flex-wrap items-center gap-2 border-t border-gray-100 bg-gray-50/70 px-3 py-3">
+                                        <button type="button"
+                                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+                                            [disabled]="appointmentSaving()" (click)="markAppointmentCompleted()">
+                                            <lucide-icon [name]="icons.Check" class="h-3.5 w-3.5"></lucide-icon>
+                                            Complete
+                                        </button>
+
+                                        <button type="button"
+                                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+                                            [disabled]="appointmentSaving()" (click)="markAppointmentNoShow()">
+                                            <lucide-icon [name]="icons.UserRoundX" class="h-3.5 w-3.5"></lucide-icon>
+                                            No-show
+                                        </button>
+
+                                        <button type="button"
+                                            class="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-gray-500 transition hover:bg-white hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:w-auto"
+                                            [disabled]="appointmentSaving()" (click)="cancelRepairAppointment()">
+                                            <lucide-icon [name]="icons.X" class="h-3.5 w-3.5"></lucide-icon>
+                                            Cancel
+                                        </button>
+                                    </div>
+                                    } @else if (
+                                    appointment.status !== 'scheduled' &&
+                                    repairValue.status !== 'picked_up' &&
+                                    repairValue.status !== 'canceled'
+                                    ) {
+                                    <div class="border-t border-gray-100 bg-gray-50/70 px-4 py-3">
+                                        <p class="text-xs leading-5 text-gray-500">
+                                            Rescheduling this repair will return the appointment to Scheduled.
+                                        </p>
+                                    </div>
+                                    } @else {
+                                    <div class="border-t border-gray-100 bg-gray-50/70 px-4 py-3">
+                                        <p class="text-xs leading-5 text-gray-500">
+                                            Appointment status follows this closed repair automatically.
+                                        </p>
+                                    </div>
+                                    }
+                                </div>
+                                }
                             </div>
                         </div>
                     </div>

@@ -53,6 +53,11 @@ export interface UpsertAppointmentDto {
   contractorId?: string | null;
 }
 
+
+export interface UpdateAppointmentStatusDto {
+  status: Extract<AppointmentStatus, 'completed' | 'no_show'>;
+}
+
 export interface AppointmentResponse {
   appointment: Appointment;
 }

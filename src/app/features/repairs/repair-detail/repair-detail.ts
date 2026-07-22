@@ -348,6 +348,7 @@ export class RepairDetail implements OnInit, OnDestroy {
 
   readonly hasOrder = computed(() => !!this.repair()?.orderId);
   readonly hasAppointment = computed(() => !!this.repair()?.appointment);
+  readonly appointmentSaving = this.appointmentsStore.saving;
 
   readonly publicTrackingUrl = computed(() => {
     const token = this.repair()?.publicTrackingToken;
@@ -1235,6 +1236,137 @@ export class RepairDetail implements OnInit, OnDestroy {
         this.error() ?? 'Unable to change status.'
       );
     }
+  }
+
+  prettyAppointmentStatus(
+    status: 'scheduled' | 'canceled' | 'completed' | 'no_show' | null | undefined
+  ): string {
+    switch (status) {
+      case 'scheduled':
+        return 'Scheduled';
+      case 'completed':
+        return 'Completed';
+      case 'no_show':
+        return 'No-show';
+      case 'canceled':
+        return 'Canceled';
+      default:
+        return 'Not scheduled';
+    }
+  }
+
+  appointmentStatusPillClasses(
+    status: 'scheduled' | 'canceled' | 'completed' | 'no_show' | null | undefined
+  ): string {
+    switch (status) {
+      case 'completed':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'no_show':
+        return 'border-rose-200 bg-rose-50 text-rose-700';
+      case 'canceled':
+        return 'border-gray-200 bg-gray-100 text-gray-600';
+      case 'scheduled':
+      default:
+        return 'border-blue-200 bg-blue-50 text-blue-700';
+    }
+  }
+
+  formatAppointmentWindow(
+    startAt: string | null | undefined,
+    endAt: string | null | undefined
+  ): string {
+    if (!startAt) return 'Time not available';
+
+    const start = new Date(startAt);
+    const end = endAt ? new Date(endAt) : null;
+
+    if (Number.isNaN(start.getTime())) return 'Time not available';
+
+    const dateLabel = new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    }).format(start);
+
+    const startLabel = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(start);
+
+    const endLabel =
+      end && !Number.isNaN(end.getTime())
+        ? new Intl.DateTimeFormat('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+          }).format(end)
+        : null;
+
+    return `${dateLabel} · ${startLabel}${endLabel ? `–${endLabel}` : ''}`;
+  }
+
+  async markAppointmentCompleted(): Promise<void> {
+    await this.updateAppointmentDisposition('completed');
+  }
+
+  async markAppointmentNoShow(): Promise<void> {
+    await this.updateAppointmentDisposition('no_show');
+  }
+
+  private async updateAppointmentDisposition(
+    status: 'completed' | 'no_show'
+  ): Promise<void> {
+    const repairId = this.repairId();
+    if (!repairId || !this.repair()?.appointment) return;
+
+    const updated = await this.appointmentsStore.updateAppointmentStatus(
+      repairId,
+      status
+    );
+
+    if (!updated) {
+      this.toast.error(
+        'Appointment update failed',
+        this.appointmentsStore.error() ?? 'Unable to update the appointment.'
+      );
+      return;
+    }
+
+    await this.store.loadRepair(repairId);
+
+    this.toast.success(
+      status === 'completed' ? 'Appointment completed' : 'No-show recorded',
+      status === 'completed'
+        ? 'The appointment has been closed out.'
+        : 'The appointment was marked as a no-show and added to follow-up.'
+    );
+  }
+
+  async cancelRepairAppointment(): Promise<void> {
+    const repairId = this.repairId();
+    if (!repairId || !this.repair()?.appointment) return;
+
+    const confirmed = window.confirm(
+      'Cancel this appointment? The repair will return to Intake and its provider assignment will be removed.'
+    );
+
+    if (!confirmed) return;
+
+    const canceled = await this.appointmentsStore.cancelAppointment(repairId);
+
+    if (!canceled) {
+      this.toast.error(
+        'Appointment cancel failed',
+        this.appointmentsStore.error() ?? 'Unable to cancel the appointment.'
+      );
+      return;
+    }
+
+    await this.store.loadRepair(repairId);
+
+    this.toast.success(
+      'Appointment canceled',
+      'The repair was returned to Intake and is now unassigned.'
+    );
   }
 
   async addNote(): Promise<void> {
