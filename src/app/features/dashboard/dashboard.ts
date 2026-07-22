@@ -7,7 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   ArrowRight,
@@ -19,6 +19,8 @@ import {
   DollarSign,
   House,
   Loader2,
+  ListTodo,
+  AlertTriangle,
   LucideAngularModule,
   MessageSquareQuote,
   PackageCheck,
@@ -44,10 +46,11 @@ import type {
 } from '../../core/repairs/repair.model';
 import { RepairsService } from '../../core/repairs/repairs-service';
 import { ShopContextService } from '../../core/shop/shop-context.store';
+import { WorkQueueService } from '../../core/work-queue/service';
+import type { WorkQueueItem, WorkQueueSummary } from '../../core/work-queue/model';
 
 type DashboardRange = 1 | 14 | 30 | 90;
 type TrendDirection = 'up' | 'down' | 'flat';
-type AttentionTone = 'rose' | 'amber' | 'blue' | 'emerald' | 'slate';
 
 interface DashboardTrend {
   direction: TrendDirection;
@@ -97,16 +100,6 @@ interface FunnelItem {
   barClass: string;
 }
 
-interface AttentionItem {
-  key: string;
-  label: string;
-  detail: string;
-  count: number;
-  route: string | any[];
-  queryParams?: Record<string, string>;
-  tone: AttentionTone;
-  icon: LucideIconData;
-}
 
 interface DashboardActivityItem {
   key: string;
@@ -171,6 +164,8 @@ export class DashboardComponent implements OnInit {
   private readonly repairsService = inject(RepairsService);
   private readonly bookingApi = inject(BookingAdminService);
   private readonly ordersService = inject(OrdersService);
+  private readonly workQueueService = inject(WorkQueueService);
+  private readonly router = inject(Router);
 
   readonly icons = {
     ArrowRight,
@@ -182,6 +177,8 @@ export class DashboardComponent implements OnInit {
     DollarSign,
     House,
     Loader2,
+    ListTodo,
+    AlertTriangle,
     MessageSquareQuote,
     PackageCheck,
     RefreshCw,
@@ -200,6 +197,7 @@ export class DashboardComponent implements OnInit {
   readonly repairs = signal<Repair[]>([]);
   readonly quotes = signal<BookingQuoteRequest[]>([]);
   readonly orders = signal<Order[]>([]);
+  readonly workQueueSummary = signal<WorkQueueSummary | null>(null);
   readonly loading = signal(true);
   readonly refreshing = signal(false);
   readonly error = signal<string | null>(null);
@@ -588,66 +586,6 @@ export class DashboardComponent implements OnInit {
     };
   });
 
-  readonly attentionItems = computed<AttentionItem[]>(() => {
-    const newQuotes = this.quotes().filter((quote) => quote.requestStatus === 'new');
-    const approval = this.repairs().filter((repair) => repair.status === 'awaiting_approval');
-    const parts = this.repairs().filter((repair) => repair.status === 'awaiting_parts');
-    const ready = this.repairs().filter((repair) => repair.status === 'ready');
-    const unassigned = this.repairs().filter((repair) =>
-      this.isOpenRepair(repair) &&
-      (repair.status === 'needs_reassignment' || repair.dispatchType === 'unassigned'),
-    );
-
-    const items: AttentionItem[] = [
-      {
-        key: 'new-quotes',
-        label: 'New quote requests',
-        detail: 'Customers waiting for pricing or contact',
-        count: newQuotes.length,
-        route: '/quote-requests',
-        tone: 'rose',
-        icon: this.icons.MessageSquareQuote,
-      },
-      {
-        key: 'approval',
-        label: 'Awaiting customer approval',
-        detail: 'Repairs paused until the customer responds',
-        count: approval.length,
-        route: '/repairs/overview',
-        tone: 'amber',
-        icon: this.icons.Clock3,
-      },
-      {
-        key: 'parts',
-        label: 'Waiting on parts',
-        detail: 'Open jobs blocked by parts availability',
-        count: parts.length,
-        route: '/repairs/overview',
-        tone: 'blue',
-        icon: this.icons.PackageCheck,
-      },
-      {
-        key: 'ready',
-        label: 'Ready for pickup',
-        detail: 'Completed devices still awaiting handoff',
-        count: ready.length,
-        route: '/repairs/overview',
-        tone: 'emerald',
-        icon: this.icons.CheckCircle2,
-      },
-      {
-        key: 'unassigned',
-        label: 'Needs assignment',
-        detail: 'Repairs without a confirmed provider',
-        count: unassigned.length,
-        route: '/repairs/overview',
-        tone: 'slate',
-        icon: this.icons.Wrench,
-      },
-    ];
-
-    return items.filter((item) => item.count > 0).slice(0, 5);
-  });
 
   readonly upcomingAppointments = computed(() => {
     const now = Date.now();
@@ -737,21 +675,29 @@ export class DashboardComponent implements OnInit {
     if (showInitialLoader) this.loading.set(true);
     this.error.set(null);
 
-    const [repairsResult, quotesResult, ordersResult] = await Promise.allSettled([
-      this.loadAllRepairs(),
-      this.loadAllQuotes(),
-      this.loadAllOrders(),
-    ]);
+    const [repairsResult, quotesResult, ordersResult, workQueueResult] =
+      await Promise.allSettled([
+        this.loadAllRepairs(),
+        this.loadAllQuotes(),
+        this.loadAllOrders(),
+        firstValueFrom(this.workQueueService.getSummary()),
+      ]);
 
     if (repairsResult.status === 'fulfilled') this.repairs.set(repairsResult.value);
     if (quotesResult.status === 'fulfilled') this.quotes.set(quotesResult.value);
     if (ordersResult.status === 'fulfilled') this.orders.set(ordersResult.value);
+    if (workQueueResult.status === 'fulfilled') {
+      this.workQueueSummary.set(workQueueResult.value.data);
+    }
 
-    const failed = [repairsResult, quotesResult, ordersResult].filter(
-      (result) => result.status === 'rejected',
-    ).length;
+    const failed = [
+      repairsResult,
+      quotesResult,
+      ordersResult,
+      workQueueResult,
+    ].filter((result) => result.status === 'rejected').length;
 
-    if (failed === 3) {
+    if (failed === 4) {
       this.error.set('Dashboard data could not be loaded. Please try again.');
     } else if (failed > 0) {
       this.error.set('Some dashboard data could not be loaded. The available sections are shown below.');
@@ -759,6 +705,63 @@ export class DashboardComponent implements OnInit {
 
     this.loadedAt.set(new Date());
     this.loading.set(false);
+  }
+
+
+  openWorkQueueItem(item: WorkQueueItem): void {
+    if (item.route) {
+      void this.router.navigateByUrl(item.route);
+      return;
+    }
+
+    void this.router.navigate(['/work-queue']);
+  }
+
+  workQueueDueLabel(item: WorkQueueItem): string {
+    if (!item.dueAt) return 'No due date';
+
+    const dueAt = new Date(item.dueAt);
+    const diffMs = dueAt.getTime() - Date.now();
+    const hours = Math.round(Math.abs(diffMs) / 3_600_000);
+
+    if (diffMs < 0) {
+      if (hours < 1) return 'Overdue';
+      if (hours < 24) return `${hours}h overdue`;
+      return `${Math.round(hours / 24)}d overdue`;
+    }
+
+    if (hours < 1) return 'Due soon';
+    if (hours < 24) return `Due in ${hours}h`;
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+    }).format(dueAt);
+  }
+
+  workQueuePriorityClass(item: WorkQueueItem): string {
+    if (item.priority === 'urgent') {
+      return 'bg-rose-50 text-rose-700 ring-rose-100';
+    }
+
+    if (item.priority === 'high') {
+      return 'bg-amber-50 text-amber-700 ring-amber-100';
+    }
+
+    if (item.sourceType === 'communication') {
+      return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+    }
+
+    return 'bg-slate-100 text-slate-700 ring-slate-200';
+  }
+
+  isWorkQueueOverdue(item: WorkQueueItem): boolean {
+    return Boolean(item.dueAt && new Date(item.dueAt).getTime() < Date.now());
+  }
+
+  workQueueSourceLabel(item: WorkQueueItem): string {
+    return item.sourceType.charAt(0).toUpperCase() + item.sourceType.slice(1);
   }
 
   money(cents: number | null | undefined, compact = false): string {
@@ -847,21 +850,6 @@ export class DashboardComponent implements OnInit {
     }).format(date);
   }
 
-  attentionToneClasses(tone: AttentionTone): string {
-    switch (tone) {
-      case 'rose':
-        return 'bg-rose-50 text-rose-700 ring-rose-100';
-      case 'amber':
-        return 'bg-amber-50 text-amber-700 ring-amber-100';
-      case 'blue':
-        return 'bg-blue-50 text-blue-700 ring-blue-100';
-      case 'emerald':
-        return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
-      case 'slate':
-      default:
-        return 'bg-slate-100 text-slate-700 ring-slate-200';
-    }
-  }
 
   private async loadAllRepairs(maxItems = 500): Promise<Repair[]> {
     const items: Repair[] = [];

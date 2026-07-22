@@ -161,3 +161,46 @@ export interface CommunicationConversationListParams {
   q?: string;
   status?: 'open' | 'archived' | 'all';
 }
+
+export interface CustomerCommunicationActivityItem {
+  id: string;
+  conversationId: string;
+  channel: CommunicationChannel;
+  direction: CommunicationDirection;
+  status: CommunicationMessageStatus;
+  subject: string | null;
+  preview: string;
+  occurredAt: string;
+  errorMessage: string | null;
+}
+
+export interface CustomerCommunicationDeliveryWarning {
+  id: string;
+  conversationId: string;
+  channel: CommunicationChannel;
+  status: CommunicationMessageStatus;
+  errorMessage: string | null;
+  occurredAt: string;
+}
+
+export interface CustomerCommunicationSummary {
+  customerId: string;
+  hasConversation: boolean;
+  conversationId: string | null;
+  conversationStatus: CommunicationConversationStatus | null;
+  unreadCount: number;
+  lastMessageAt: string | null;
+  lastInboundAt: string | null;
+  lastOutboundAt: string | null;
+  lastMessagePreview: string | null;
+  lastMessageChannel: CommunicationChannel | null;
+  lastMessageDirection: CommunicationDirection | null;
+  lastMessageStatus: CommunicationMessageStatus | null;
+  deliveryWarningCount: number;
+  latestDeliveryWarning: CustomerCommunicationDeliveryWarning | null;
+  recentActivity: CustomerCommunicationActivityItem[];
+}
+
+export interface CustomerCommunicationSummaryResponse {
+  data: CustomerCommunicationSummary;
+}

@@ -15,6 +15,7 @@ import {
   UpdateCustomerRequest,
 } from './customer.model';
 import { AppConfigService } from '../app-config/app-config.service';
+import { CustomerWorkspace } from './customer-workspace.model';
 
 @Injectable({
   providedIn: 'root',
@@ -86,6 +87,10 @@ export class CustomersService {
 
   getById(id: string): Observable<Customer> {
     return this.http.get<Customer>(`${this.baseUrl}/${id}`);
+  }
+
+  getWorkspace(id: string): Observable<CustomerWorkspace> {
+    return this.http.get<CustomerWorkspace>(`${this.baseUrl}/${id}/workspace`);
   }
 
   create(payload: CreateCustomerRequest): Observable<Customer> {

@@ -7,6 +7,7 @@ import {
   CommunicationConversationListParams,
   CommunicationConversationListResponse,
   CommunicationConversationResponse,
+  CustomerCommunicationSummaryResponse,
   CommunicationMessageCreate,
   CommunicationMessageResponse,
 } from './model';
@@ -42,6 +43,12 @@ export class CommunicationService {
     );
   }
 
+  getCustomerSummary(customerId: string): Observable<CustomerCommunicationSummaryResponse> {
+    return this.http.get<CustomerCommunicationSummaryResponse>(
+      `${this.baseUrl}/customers/${encodeURIComponent(customerId)}/summary`,
+    );
+  }
+
   ensureQuoteConversation(quoteId: string): Observable<CommunicationConversationResponse> {
     return this.http.post<CommunicationConversationResponse>(
       `${this.baseUrl}/conversations/quote/${encodeURIComponent(quoteId)}`,
@@ -52,6 +59,13 @@ export class CommunicationService {
   ensureRepairConversation(repairId: string): Observable<CommunicationConversationResponse> {
     return this.http.post<CommunicationConversationResponse>(
       `${this.baseUrl}/conversations/repair/${encodeURIComponent(repairId)}`,
+      {},
+    );
+  }
+
+  ensureCustomerConversation(customerId: string): Observable<CommunicationConversationResponse> {
+    return this.http.post<CommunicationConversationResponse>(
+      `${this.baseUrl}/conversations/customer/${encodeURIComponent(customerId)}`,
       {},
     );
   }

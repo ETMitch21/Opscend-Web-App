@@ -144,6 +144,12 @@ export class BookingAdminService {
       httpParams = httpParams.set('cursor', params.cursor);
     }
 
+    if (params.customerId) httpParams = httpParams.set('customerId', params.customerId);
+    if (params.quoteStatus) httpParams = httpParams.set('quoteStatus', params.quoteStatus);
+    if (params.search) httpParams = httpParams.set('search', params.search);
+    if (params.createdFrom) httpParams = httpParams.set('createdFrom', params.createdFrom);
+    if (params.createdTo) httpParams = httpParams.set('createdTo', params.createdTo);
+
     return this.http.get<BookingQuoteRequestsResponse>(
       `${this.baseUrl}/quote-requests`,
       { params: httpParams }

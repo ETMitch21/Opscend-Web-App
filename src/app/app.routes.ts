@@ -58,6 +58,12 @@ export const routes: Routes = [
     { path: "forgot", component: ForgotComponent, canActivate: [PublicGuard] },
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [AuthGuard] },
+    {
+        path: "work-queue",
+        loadComponent: () =>
+            import('./features/work-queue/work-queue').then((m) => m.WorkQueue),
+        canActivate: [AuthGuard]
+    },
     { path: "communications", component: CommunicationsInbox, canActivate: [AuthGuard] },
     {
         path: 'settings',
@@ -222,6 +228,11 @@ export const routes: Routes = [
             },
             {
                 path: ':id/edit',
+                redirectTo: ':id',
+                pathMatch: 'full'
+            },
+            {
+                path: ':id',
                 component: EditCustomer
             },
             {

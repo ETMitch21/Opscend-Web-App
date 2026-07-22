@@ -30,6 +30,8 @@ import {
   InboxIcon,
   SmartphoneIcon,
   DollarSignIcon,
+  ListTodo,
+  AlertTriangle,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -42,6 +44,8 @@ import type {
 import { BookingAdminService } from '../../core/booking/service';
 import { CommunicationService } from '../../core/communications/service';
 import { ToastService } from '../../core/toast/toast-service';
+import { WorkQueueService } from '../../core/work-queue/service';
+import type { WorkQueueItem, WorkQueueSummary } from '../../core/work-queue/model';
 
 type NavItem = {
   label: string;
@@ -90,6 +94,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private bookingAdminService = inject(BookingAdminService);
   private communicationService = inject(CommunicationService);
   private toast = inject(ToastService);
+  private workQueueService = inject(WorkQueueService);
 
   readonly bookOpenIcon = BookOpenIcon;
   readonly MenuIcon = MenuIcon;
@@ -115,9 +120,12 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly walletCardsIcon = WalletCardsIcon;
   readonly calendarCogIcon = CalendarCog;
   readonly toolboxIcon = ToolboxIcon;
+  readonly workQueueIcon = ListTodo;
+  readonly workQueueAlertIcon = AlertTriangle;
 
   private readonly notificationPollMs = 15_000;
   private readonly communicationPollMs = 5_000;
+  private readonly workQueuePollMs = 20_000;
   private routerEventsSubscription: Subscription | null = null;
 
   layoutDashboardIcon: LucideIconData = LayoutDashboard;
@@ -135,9 +143,13 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public notifications = signal<InternalNotification[]>([]);
   public unreadNotificationCount = signal(0);
   public unreadCommunicationCount = signal(0);
+  public workQueueMenuOpen = signal(false);
+  public workQueueLoading = signal(false);
+  public workQueueSummary = signal<WorkQueueSummary | null>(null);
 
   private notificationRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private communicationRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private workQueueRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private hasLoadedCommunicationCount = false;
   private lastUnreadCommunicationCount = 0;
   private lastUnreadToastKey: string | null = null;
@@ -157,6 +169,12 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
+    {
+      label: 'Work Queue',
+      route: '/work-queue',
+      icon: this.workQueueIcon,
+      badgeCount: () => this.workQueueSummary()?.counts.attention ?? 0,
+    },
     { label: 'Services', route: '/services', icon: this.toolboxIcon },
     {
       label: 'Products',
@@ -209,9 +227,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
         this.loadInternalNotifications(),
         this.refreshNewQuoteRequestCount(),
         this.refreshUnreadCommunicationCount({ notify: false }),
+        this.refreshWorkQueueSummary(),
       ]);
       this.startNotificationPolling();
       this.startCommunicationPolling();
+      this.startWorkQueuePolling();
     }
 
     this.routerEventsSubscription = this.router.events
@@ -221,6 +241,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
           void this.refreshNotificationsInBackground();
           void this.refreshNewQuoteRequestCount();
           void this.refreshUnreadCommunicationCount({ notify: false });
+          void this.refreshWorkQueueSummary();
         }
       });
   }
@@ -234,6 +255,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
     if (this.communicationRefreshTimer) {
       clearInterval(this.communicationRefreshTimer);
       this.communicationRefreshTimer = null;
+    }
+
+    if (this.workQueueRefreshTimer) {
+      clearInterval(this.workQueueRefreshTimer);
+      this.workQueueRefreshTimer = null;
     }
 
     if (this.searchDebounceTimer) {
@@ -305,10 +331,103 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }
   }
 
+
+  async refreshWorkQueueSummary(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.workQueueService.getSummary(),
+      );
+      this.workQueueSummary.set(response.data);
+    } catch (error) {
+      console.error('Failed to refresh work queue summary.', error);
+    }
+  }
+
+  async toggleWorkQueueMenu(event?: MouseEvent): Promise<void> {
+    event?.stopPropagation();
+
+    const willOpen = !this.workQueueMenuOpen();
+    this.workQueueMenuOpen.set(willOpen);
+    this.notificationMenuOpen.set(false);
+    this.profileMenuOpen.set(false);
+    this.closeSearchDropdown();
+
+    if (!willOpen) return;
+
+    this.workQueueLoading.set(true);
+    try {
+      await this.refreshWorkQueueSummary();
+    } finally {
+      this.workQueueLoading.set(false);
+    }
+  }
+
+  closeWorkQueueMenu(): void {
+    this.workQueueMenuOpen.set(false);
+  }
+
+  goToWorkQueue(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.closeWorkQueueMenu();
+    this.closeNotificationMenu();
+    this.closeProfileMenu();
+    this.closeSearchDropdown();
+    this.closeSidebar();
+    void this.router.navigate(['/work-queue']);
+  }
+
+  openWorkQueueItem(item: WorkQueueItem): void {
+    this.closeWorkQueueMenu();
+    this.closeSidebar();
+
+    if (item.route) {
+      void this.router.navigateByUrl(item.route);
+      return;
+    }
+
+    void this.router.navigate(['/work-queue']);
+  }
+
+  workQueueDueLabel(item: WorkQueueItem): string {
+    if (!item.dueAt) return 'No due date';
+
+    const dueAt = new Date(item.dueAt);
+    const diffMs = dueAt.getTime() - Date.now();
+    const hours = Math.round(Math.abs(diffMs) / 3_600_000);
+
+    if (diffMs < 0) {
+      if (hours < 1) return 'Overdue';
+      if (hours < 24) return `${hours}h overdue`;
+      return `${Math.round(hours / 24)}d overdue`;
+    }
+
+    if (hours < 1) return 'Due soon';
+    if (hours < 24) return `Due in ${hours}h`;
+
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+    }).format(dueAt);
+  }
+
+  workQueueItemClass(item: WorkQueueItem): string {
+    if (item.priority === 'urgent') {
+      return 'bg-rose-50 text-rose-700';
+    }
+
+    if (item.priority === 'high') {
+      return 'bg-amber-50 text-amber-700';
+    }
+
+    return 'bg-app-surface-muted text-app-text-muted';
+  }
+
   goToCommunicationsInbox(event?: MouseEvent): void {
     event?.stopPropagation();
     this.profileMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
     this.closeSidebar();
     this.router.navigate(['/communications']);
@@ -317,6 +436,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   toggleProfileMenu(event?: MouseEvent): void {
     event?.stopPropagation();
     this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
     this.profileMenuOpen.update(open => !open);
   }
 
@@ -403,6 +523,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }, this.communicationPollMs);
   }
 
+  startWorkQueuePolling(): void {
+    if (this.workQueueRefreshTimer) return;
+
+    this.workQueueRefreshTimer = setInterval(() => {
+      void this.refreshWorkQueueSummary();
+    }, this.workQueuePollMs);
+  }
+
   async refreshNotificationsInBackground(): Promise<void> {
     try {
       const unreadResponse = await firstValueFrom(
@@ -462,6 +590,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
     this.notificationMenuOpen.set(willOpen);
     this.profileMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
 
     if (willOpen) {
@@ -981,6 +1110,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   onDocumentClick(): void {
     this.closeProfileMenu();
     this.closeNotificationMenu();
+    this.closeWorkQueueMenu();
     this.closeSearchDropdown();
   }
   @HostListener('document:visibilitychange')
@@ -989,6 +1119,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       void this.refreshNotificationsInBackground();
       void this.refreshNewQuoteRequestCount();
       void this.refreshUnreadCommunicationCount({ notify: true });
+      void this.refreshWorkQueueSummary();
     }
   }
 }

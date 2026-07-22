@@ -15,7 +15,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   catchError,
@@ -226,6 +226,7 @@ export class NewRepair implements OnInit {
   private readonly repairsStore = inject(RepairsStore);
   private readonly appointmentsStore = inject(AppointmentsStore);
   private readonly toastService = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   private readonly shopContext = inject(ShopContextService);
@@ -788,6 +789,26 @@ export class NewRepair implements OnInit {
     void this.loadBookingPaymentSettings();
     void this.loadRepairServices();
     void this.loadDeviceCatalogCategories(false);
+    void this.applyRouteContext();
+  }
+
+  private async applyRouteContext(): Promise<void> {
+    const customerId = this.route.snapshot.queryParamMap.get('customerId')?.trim();
+    if (!customerId) return;
+
+    const customer = await this.customersStore.getById(customerId);
+
+    if (!customer) {
+      this.toastService.error(
+        'Customer could not be selected',
+        'The customer linked from the previous page could not be loaded.',
+      );
+      return;
+    }
+
+    this.selectCustomer(customer);
+    this.currentStep.set('device');
+    this.prepareDeviceStep();
   }
 
   get customerSearchControl(): FormControl<string> {

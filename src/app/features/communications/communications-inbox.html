@@ -401,7 +401,7 @@
                     @if (customer.id) {
                       <a
                         class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-app-border px-3 py-1.5 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
-                        [routerLink]="['/customers', customer.id, 'edit']"
+                        [routerLink]="['/customers', customer.id]"
                       >
                         Open profile
                         <lucide-icon [name]="icons.ExternalLink" class="h-3.5 w-3.5"></lucide-icon>

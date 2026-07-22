@@ -165,21 +165,68 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     await this.loadConversations();
     this.startInboxAutoRefresh();
 
-    const quoteId = this.route.snapshot.queryParamMap.get('quoteId');
-    const conversationId = this.route.snapshot.queryParamMap.get('conversationId');
-
-    if (quoteId) {
-      await this.openQuoteConversation(quoteId);
-      return;
-    }
+    const params = this.route.snapshot.queryParamMap;
+    const conversationId = params.get('conversationId')?.trim();
+    const repairId = params.get('repairId')?.trim();
+    const quoteId = params.get('quoteId')?.trim();
+    const customerId = params.get('customerId')?.trim();
+    const requestedChannel = this.parseRequestedChannel(params.get('channel'));
 
     if (conversationId) {
       await this.openConversationById(conversationId);
+      this.applyRequestedChannel(requestedChannel);
+      return;
+    }
+
+    if (repairId) {
+      await this.openRepairConversation(repairId);
+      this.applyRequestedChannel(requestedChannel);
+      return;
+    }
+
+    if (quoteId) {
+      await this.openQuoteConversation(quoteId);
+      this.applyRequestedChannel(requestedChannel);
+      return;
+    }
+
+    if (customerId) {
+      await this.openCustomerConversation(customerId);
+      this.applyRequestedChannel(requestedChannel);
       return;
     }
 
     const first = this.conversations()[0];
     if (first) await this.openConversation(first);
+  }
+
+  private parseRequestedChannel(
+    value: string | null,
+  ): 'email' | 'sms' | 'note' | null {
+    return value === 'email' || value === 'sms' || value === 'note'
+      ? value
+      : null;
+  }
+
+  private applyRequestedChannel(
+    requestedChannel: 'email' | 'sms' | 'note' | null,
+  ): void {
+    const conversation = this.selectedConversation();
+    if (!conversation || !requestedChannel) return;
+
+    if (requestedChannel === 'note') {
+      this.activeChannel.set('note');
+      return;
+    }
+
+    if (requestedChannel === 'sms' && this.canSendSms(conversation)) {
+      this.activeChannel.set('sms');
+      return;
+    }
+
+    if (requestedChannel === 'email' && this.canSendEmail(conversation)) {
+      this.activeChannel.set('email');
+    }
   }
 
 
@@ -304,6 +351,48 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     } catch (error) {
       console.error(error);
       this.error.set('Could not open the quote conversation.');
+    } finally {
+      this.threadLoading.set(false);
+    }
+  }
+
+  async openRepairConversation(repairId: string): Promise<void> {
+    this.threadLoading.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.communicationApi.ensureRepairConversation(repairId),
+      );
+      this.selectedConversation.set(response.data);
+      this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
+      this.upsertConversation(response.data);
+      this.scheduleScrollToBottom();
+      await this.markSelectedRead();
+    } catch (error) {
+      console.error(error);
+      this.error.set('Could not open the repair conversation.');
+    } finally {
+      this.threadLoading.set(false);
+    }
+  }
+
+  async openCustomerConversation(customerId: string): Promise<void> {
+    this.threadLoading.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.communicationApi.ensureCustomerConversation(customerId),
+      );
+      this.selectedConversation.set(response.data);
+      this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
+      this.upsertConversation(response.data);
+      this.scheduleScrollToBottom();
+      await this.markSelectedRead();
+    } catch (error) {
+      console.error(error);
+      this.error.set('Could not open the customer conversation.');
     } finally {
       this.threadLoading.set(false);
     }

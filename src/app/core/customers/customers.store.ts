@@ -12,6 +12,7 @@ import {
   UpdateCustomerRequest,
 } from './customer.model';
 import { CustomersService } from './customers-services';
+import { CustomerWorkspace } from './customer-workspace.model';
 
 @Injectable({
   providedIn: 'root',
@@ -22,6 +23,7 @@ export class CustomersStore {
   private readonly _items = signal<Customer[]>([]);
   private readonly _selected = signal<Customer | null>(null);
   private readonly _addresses = signal<CustomerAddress[]>([]);
+  private readonly _workspace = signal<CustomerWorkspace | null>(null);
   private readonly _loading = signal(false);
   private readonly _saving = signal(false);
   private readonly _error = signal<string | null>(null);
@@ -31,6 +33,7 @@ export class CustomersStore {
   readonly items = this._items.asReadonly();
   readonly selected = this._selected.asReadonly();
   readonly addresses = this._addresses.asReadonly();
+  readonly workspace = this._workspace.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly saving = this._saving.asReadonly();
   readonly error = this._error.asReadonly();
@@ -117,6 +120,34 @@ export class CustomersStore {
     }
   }
 
+  async loadWorkspace(id: string): Promise<CustomerWorkspace | null> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      const workspace = await firstValueFrom(this.customersService.getWorkspace(id));
+      this._workspace.set(workspace);
+      this._selected.set(workspace.customer);
+
+      this._items.update((items) => {
+        const index = items.findIndex((item) => item.id === workspace.customer.id);
+        if (index === -1) return [workspace.customer, ...items];
+
+        const copy = [...items];
+        copy[index] = workspace.customer;
+        return copy;
+      });
+
+      return workspace;
+    } catch (err: any) {
+      this._workspace.set(null);
+      this._error.set(err?.error?.error ?? 'Failed to load customer workspace.');
+      return null;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
   async create(payload: CreateCustomerRequest): Promise<Customer | null> {
     this._saving.set(true);
     this._error.set(null);
@@ -149,6 +180,12 @@ export class CustomersStore {
         this._selected.set(updated);
       }
 
+      this._workspace.update((workspace) =>
+        workspace?.customer.id === updated.id
+          ? { ...workspace, customer: updated }
+          : workspace
+      );
+
       return updated;
     } catch (err: any) {
       this._error.set(err?.error?.error ?? 'Failed to update customer.');
@@ -168,6 +205,10 @@ export class CustomersStore {
 
       if (this._selected()?.id === id) {
         this._selected.set(null);
+      }
+
+      if (this._workspace()?.customer.id === id) {
+        this._workspace.set(null);
       }
 
       return true;
@@ -338,6 +379,7 @@ export class CustomersStore {
     this._items.set([]);
     this._selected.set(null);
     this._addresses.set([]);
+    this._workspace.set(null);
     this._loading.set(false);
     this._saving.set(false);
     this._error.set(null);

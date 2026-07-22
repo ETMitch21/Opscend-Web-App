@@ -1,0 +1,680 @@
+
+<div class="min-h-full bg-slate-50/70 px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-[1700px] space-y-6">
+    <header class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span>Operations</span>
+          <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+          <span>Work queue</span>
+        </div>
+        <h1 class="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+          Keep the shop moving.
+        </h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Repairs, quotes, orders, appointments, customer messages, and manual follow-ups in one actionable queue.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="refreshing()"
+          (click)="refresh()"
+        >
+          <lucide-icon
+            [name]="icons.RefreshCw"
+            class="h-4 w-4"
+            [class.animate-spin]="refreshing()"
+          ></lucide-icon>
+          Refresh
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-800"
+          (click)="openCreateTask()"
+        >
+          <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+          Add task
+        </button>
+      </div>
+    </header>
+
+    @if (error()) {
+      <div class="flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between">
+        <span>{{ error() }}</span>
+        <button
+          type="button"
+          class="cursor-pointer font-semibold underline underline-offset-4"
+          (click)="loadAll()"
+        >
+          Try again
+        </button>
+      </div>
+    }
+
+    @if (loading()) {
+      <section class="grid min-h-[460px] place-items-center rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div class="text-center">
+          <lucide-icon [name]="icons.Loader2" class="mx-auto h-7 w-7 animate-spin text-slate-400"></lucide-icon>
+          <p class="mt-3 text-sm font-medium text-slate-500">Building your work queue...</p>
+        </div>
+      </section>
+    } @else {
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <button
+          type="button"
+          class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+          (click)="showSummary('open')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+              <lucide-icon [name]="icons.ListTodo" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+              {{ summary()?.counts?.open ?? 0 }}
+            </span>
+          </div>
+          <p class="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Open</p>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer rounded-2xl border border-rose-200 bg-rose-50/70 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-rose-300 hover:shadow-md"
+          (click)="showSummary('open', 'urgent')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+              <lucide-icon [name]="icons.AlertTriangle" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-rose-800">
+              {{ summary()?.counts?.urgent ?? 0 }}
+            </span>
+          </div>
+          <p class="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-rose-600">Urgent</p>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md"
+          (click)="showSummary('open', 'overdue')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <lucide-icon [name]="icons.Clock3" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-amber-800">
+              {{ summary()?.counts?.overdue ?? 0 }}
+            </span>
+          </div>
+          <p class="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-amber-600">Overdue</p>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+          (click)="showSummary('open', 'today')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+              <lucide-icon [name]="icons.CalendarClock" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-blue-800">
+              {{ summary()?.counts?.dueToday ?? 0 }}
+            </span>
+          </div>
+          <p class="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-blue-600">Due today</p>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer rounded-2xl border border-violet-200 bg-violet-50/70 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
+          (click)="showSummary('open', 'unassigned')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+              <lucide-icon [name]="icons.Users" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-violet-800">
+              {{ summary()?.counts?.unassigned ?? 0 }}
+            </span>
+          </div>
+          <p class="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-violet-600">Unassigned</p>
+        </button>
+
+        <button
+          type="button"
+          class="cursor-pointer rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md"
+          (click)="showSummary('snoozed')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+              <lucide-icon [name]="icons.BellRing" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-cyan-800">
+              {{ summary()?.counts?.snoozed ?? 0 }}
+            </span>
+          </div>
+          <p class="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-600">Snoozed</p>
+        </button>
+      </section>
+
+      <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-4 py-4 sm:px-5">
+          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div class="overflow-x-auto">
+              <div class="inline-flex min-w-max rounded-xl bg-slate-100 p-1">
+                @for (view of views; track view.key) {
+                  <button
+                    type="button"
+                    class="cursor-pointer rounded-lg px-3.5 py-2 text-sm font-semibold transition"
+                    [ngClass]="activeView() === view.key ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+                    (click)="setView(view.key)"
+                  >
+                    {{ view.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              {{ resultLabel() }}
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.5fr)_repeat(4,minmax(150px,0.65fr))_auto]">
+            <label class="relative block">
+              <span class="sr-only">Search work queue</span>
+              <lucide-icon
+                [name]="icons.Search"
+                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              ></lucide-icon>
+              <input
+                type="search"
+                class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                placeholder="Search tasks, customers, or sources..."
+                [ngModel]="searchQuery()"
+                (ngModelChange)="onSearchInput($event)"
+              />
+            </label>
+
+            <select
+              class="cursor-pointer h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [ngModel]="priorityFilter()"
+              (ngModelChange)="priorityFilter.set($event); applyFilters()"
+            >
+              @for (option of priorityOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+
+            <select
+              class="cursor-pointer h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [ngModel]="sourceFilter()"
+              (ngModelChange)="sourceFilter.set($event); applyFilters()"
+            >
+              @for (option of sourceOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+
+            <select
+              class="cursor-pointer h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [ngModel]="dueFilter()"
+              (ngModelChange)="dueFilter.set($event); applyFilters()"
+            >
+              @for (option of dueOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+
+            <select
+              class="cursor-pointer h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [ngModel]="assignmentFilter()"
+              (ngModelChange)="assignmentFilter.set($event); applyFilters()"
+              [disabled]="activeView() === 'mine'"
+            >
+              <option value="all">All assignments</option>
+              <option value="unassigned">Unassigned</option>
+              @for (user of assignees(); track user.id) {
+                <option [value]="user.id">{{ user.name }}</option>
+              }
+            </select>
+
+            <button
+              type="button"
+              class="cursor-pointer inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              [disabled]="!hasFilters()"
+              (click)="clearFilters()"
+            >
+              <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4"></lucide-icon>
+              Reset
+            </button>
+          </div>
+        </div>
+
+        @if (items().length) {
+          <div class="divide-y divide-slate-100">
+            @for (item of items(); track trackItem($index, item)) {
+              <article
+                class="group px-4 py-4 transition hover:bg-slate-50/80 sm:px-5"
+                [ngClass]="isOverdue(item) ? 'border-l-4 border-l-rose-500' : 'border-l-4 border-l-transparent'"
+              >
+                <div class="flex flex-col gap-4 2xl:flex-row 2xl:items-center">
+                  <div class="flex min-w-0 flex-1 items-start gap-3">
+                    <div
+                      class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+                      [ngClass]="sourceIconClass(item)"
+                    >
+                      <lucide-icon [name]="itemIcon(item)" class="h-5 w-5"></lucide-icon>
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="min-w-0 truncate text-sm font-semibold text-slate-950 sm:text-base">
+                          {{ item.title }}
+                        </h3>
+                        <span
+                          class="rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]"
+                          [ngClass]="priorityBadgeClass(item.priority)"
+                        >
+                          {{ priorityLabel(item.priority) }}
+                        </span>
+                        @if (item.status !== 'open') {
+                          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600">
+                            {{ statusLabel(item) }}
+                          </span>
+                        }
+                        @if (item.automatic) {
+                          <span class="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-blue-700">
+                            Automatic
+                          </span>
+                        }
+                      </div>
+
+                      @if (item.description) {
+                        <p class="mt-1 line-clamp-2 text-sm leading-5 text-slate-500">
+                          {{ item.description }}
+                        </p>
+                      }
+
+                      <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                        <span>{{ sourceLabel(item.sourceType) }}</span>
+                        @if (item.customerName) {
+                          <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                          <span>{{ item.customerName }}</span>
+                        }
+                        <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                        <span [ngClass]="dueClass(item)">{{ dueLabel(item) }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid gap-2 sm:grid-cols-2 2xl:w-[540px] 2xl:grid-cols-[180px_130px_auto]">
+                    <select
+                      class="cursor-pointer h-10 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                      [ngModel]="item.assignedToUserId || ''"
+                      [disabled]="workingItemId() === item.id || activeView() === 'completed'"
+                      (ngModelChange)="updateAssignment(item, $event)"
+                    >
+                      <option value="">Unassigned</option>
+                      @for (user of assignees(); track user.id) {
+                        <option [value]="user.id">{{ user.name }}</option>
+                      }
+                    </select>
+
+                    <select
+                      class="cursor-pointer h-10 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                      [ngModel]="item.priority"
+                      [disabled]="workingItemId() === item.id || activeView() === 'completed'"
+                      (ngModelChange)="updatePriority(item, $event)"
+                    >
+                      <option value="urgent">Urgent</option>
+                      <option value="high">High</option>
+                      <option value="normal">Normal</option>
+                      <option value="low">Low</option>
+                    </select>
+
+                    <div class="flex flex-wrap justify-start gap-1.5 2xl:justify-end">
+                      @if (workingItemId() === item.id) {
+                        <span class="inline-flex h-10 items-center px-3 text-slate-400">
+                          <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                        </span>
+                      } @else if (activeView() === 'completed') {
+                        <button
+                          type="button"
+                          class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                          (click)="reopenItem(item)"
+                        >
+                          <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4"></lucide-icon>
+                          Reopen
+                        </button>
+                      } @else {
+                        @if (item.status === 'open') {
+                          <button
+                            type="button"
+                            class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                            (click)="startItem(item)"
+                          >
+                            <lucide-icon [name]="icons.CircleDot" class="h-4 w-4"></lucide-icon>
+                            Start
+                          </button>
+                        }
+
+                        @if (item.status === 'snoozed') {
+                          <button
+                            type="button"
+                            class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                            (click)="reopenItem(item)"
+                          >
+                            <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4"></lucide-icon>
+                            Resume
+                          </button>
+                        }
+
+                        @if (item.route) {
+                          <button
+                            type="button"
+                            class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                            title="Open source"
+                            aria-label="Open source"
+                            (click)="openSource(item)"
+                          >
+                            <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon>
+                          </button>
+                        }
+
+                        @if (!item.automatic) {
+                          <button
+                            type="button"
+                            class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                            title="Edit task"
+                            aria-label="Edit task"
+                            (click)="openEditTask(item)"
+                          >
+                            <lucide-icon [name]="icons.Pencil" class="h-4 w-4"></lucide-icon>
+                          </button>
+                        }
+
+                        <div class="relative">
+                          <button
+                            type="button"
+                            class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                            (click)="toggleSnoozeMenu(item)"
+                          >
+                            <lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon>
+                            Snooze
+                          </button>
+
+                          @if (snoozeMenuItemId() === item.id) {
+                            <div class="absolute right-0 top-12 z-20 w-52 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                              <button
+                                type="button"
+                                class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                (click)="snoozeForHours(item, 3)"
+                              >
+                                Later today
+                              </button>
+                              <button
+                                type="button"
+                                class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                (click)="snoozeUntilTomorrow(item)"
+                              >
+                                Tomorrow at 9:00 AM
+                              </button>
+                              <button
+                                type="button"
+                                class="cursor-pointer w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                (click)="snoozeUntilNextWeek(item)"
+                              >
+                                Next week
+                              </button>
+                            </div>
+                          }
+                        </div>
+
+                        <button
+                          type="button"
+                          class="cursor-pointer inline-flex h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                          (click)="openResolutionModal(item)"
+                        >
+                          <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                          Complete
+                        </button>
+
+                        <button
+                          type="button"
+                          class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                          title="Dismiss"
+                          aria-label="Dismiss"
+                          (click)="dismissItem(item)"
+                        >
+                          <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+
+          @if (nextCursor()) {
+            <div class="border-t border-slate-100 px-5 py-4 text-center">
+              <button
+                type="button"
+                class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="loadingMore()"
+                (click)="loadMore()"
+              >
+                @if (loadingMore()) {
+                  <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                }
+                Load more
+              </button>
+            </div>
+          }
+        } @else {
+          <div class="px-6 py-16 text-center">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+              <lucide-icon [name]="icons.CheckCircle2" class="h-6 w-6"></lucide-icon>
+            </div>
+            <h2 class="mt-4 text-lg font-semibold text-slate-950">
+              @if (hasFilters()) {
+                No matching work items
+              } @else if (activeView() === 'snoozed') {
+                Nothing is snoozed
+              } @else if (activeView() === 'completed') {
+                No completed items yet
+              } @else {
+                The queue is clear
+              }
+            </h2>
+            <p class="mx-auto mt-1 max-w-lg text-sm text-slate-500">
+              @if (hasFilters()) {
+                Try clearing the filters or searching for something else.
+              } @else {
+                Automatic items will appear when a repair, quote, order, appointment, or message needs attention.
+              }
+            </p>
+          </div>
+        }
+      </section>
+    }
+  </div>
+</div>
+
+@if (taskModalOpen()) {
+  <div class="fixed inset-0 z-[80] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-6">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-950">
+            {{ editingItem() ? 'Edit manual task' : 'Add manual task' }}
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">Create work that is not tied to an automatic workflow.</p>
+        </div>
+        <button
+          type="button"
+          class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+          aria-label="Close task form"
+          (click)="closeTaskModal()"
+        >
+          <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
+        <label class="block">
+          <span class="text-sm font-semibold text-slate-700">Task title</span>
+          <input
+            type="text"
+            maxlength="180"
+            class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            placeholder="Follow up with customer"
+            [(ngModel)]="taskDraft.title"
+          />
+        </label>
+
+        <label class="block">
+          <span class="text-sm font-semibold text-slate-700">Description</span>
+          <textarea
+            rows="4"
+            maxlength="4000"
+            class="mt-2 w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            placeholder="Add any context the team needs..."
+            [(ngModel)]="taskDraft.description"
+          ></textarea>
+        </label>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block">
+            <span class="text-sm font-semibold text-slate-700">Category</span>
+            <input
+              type="text"
+              maxlength="80"
+              class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [(ngModel)]="taskDraft.category"
+            />
+          </label>
+
+          <label class="block">
+            <span class="text-sm font-semibold text-slate-700">Priority</span>
+            <select
+              class="cursor-pointer mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [(ngModel)]="taskDraft.priority"
+            >
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="normal">Normal</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="text-sm font-semibold text-slate-700">Assign to</span>
+            <select
+              class="cursor-pointer mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [(ngModel)]="taskDraft.assignedToUserId"
+            >
+              <option value="">Unassigned</option>
+              @for (user of assignees(); track user.id) {
+                <option [value]="user.id">{{ user.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="block">
+            <span class="text-sm font-semibold text-slate-700">Due date</span>
+            <input
+              type="datetime-local"
+              class="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              [(ngModel)]="taskDraft.dueAt"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+        <button
+          type="button"
+          class="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="taskSaving()"
+          (click)="closeTaskModal()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="!taskDraft.title.trim() || taskSaving()"
+          (click)="saveTask()"
+        >
+          @if (taskSaving()) {
+            <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+          }
+          {{ editingItem() ? 'Save changes' : 'Create task' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (resolutionModalOpen() && resolvingItem(); as item) {
+  <div class="fixed inset-0 z-[85] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <div class="border-b border-slate-200 px-5 py-5 sm:px-6">
+        <div class="flex items-start gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+            <lucide-icon [name]="icons.CheckCircle2" class="h-5 w-5"></lucide-icon>
+          </span>
+          <div>
+            <h2 class="text-lg font-semibold text-slate-950">Complete work item</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ item.title }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-5 sm:px-6">
+        <label class="block">
+          <span class="text-sm font-semibold text-slate-700">Resolution note</span>
+          <span class="ml-1 text-xs text-slate-400">Optional</span>
+          <textarea
+            rows="4"
+            maxlength="4000"
+            class="mt-2 w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+            placeholder="What was done?"
+            [ngModel]="resolutionNote()"
+            (ngModelChange)="resolutionNote.set($event)"
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+        <button
+          type="button"
+          class="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="resolutionSaving()"
+          (click)="closeResolutionModal()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="resolutionSaving()"
+          (click)="completeItem()"
+        >
+          @if (resolutionSaving()) {
+            <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+          } @else {
+            <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+          }
+          Complete item
+        </button>
+      </div>
+    </div>
+  </div>
+}

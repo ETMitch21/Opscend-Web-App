@@ -1,340 +1,1521 @@
-@if (customer) {
-<div class="mt-4 mx-auto max-w-1/2">
-    <div class="flex items-center justify-between px-6 pt-1 pb-4">
-        <div class="flex justify-between items-center gap-2">
-            <button type="button" class="cursor-pointer text-sm font-medium hover:text-brand" (click)="cancel()">
-                <lucide-icon [name]="leftChevronIcon"></lucide-icon>
-            </button>
-            <h1 class="text-2xl font-semibold text-gray-900">
-                {{ customer.name }}
-            </h1>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-            <button type="button"
-                class="cursor-pointer rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
-                (click)="cancel()">
-                Cancel
-            </button>
-            <button type="button"
-                class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-80 disabled:cursor-not-allowed"
-                [disabled]="!editCustomerForm.valid" (click)="save()">
-                {{ working ? 'Updating...' : 'Update Customer' }}
-            </button>
+@if (loadingWorkspace) {
+<div class="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
+    <div class="animate-pulse space-y-5">
+        <div class="h-8 w-48 rounded-xl bg-slate-200"></div>
+        <div class="h-56 rounded-[28px] bg-slate-200"></div>
+        <div class="h-16 rounded-2xl bg-slate-200"></div>
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @for (_ of [1, 2, 3, 4]; track $index) {
+            <div class="h-32 rounded-3xl bg-slate-200"></div>
+            }
         </div>
     </div>
-
-    <form [formGroup]="editCustomerForm">
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <input type="text" id="name" placeholder=" " formControlName="name"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="name"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Full Name<sup class="text-danger text-xs">*</sup>
-                </label>
-            </div>
-        </div>
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <input type="email" id="email" placeholder=" " formControlName="email"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="email"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Email address<sup class="text-danger text-xs">*</sup>
-                </label>
-            </div>
-            <div class="relative w-full">
-                <input type="tel" id="phone" placeholder=" " formControlName="phone"
-                    class="peer w-full px-4 pt-5 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
-                <label for="phone"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Phone Number<sup class="text-danger text-xs">*</sup>
-                </label>
-            </div>
-        </div>
-        @if (customerIdentityChecking) {
-        <div class="mx-6 mb-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
-            Checking for duplicate contact details...
-        </div>
-        }
-
-        @if (customerIdentityConflicts.length && duplicateCustomer(); as duplicate) {
-        <div class="mx-6 mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-amber-900">Another customer already uses this contact</p>
-                    <p class="mt-1 text-sm text-amber-800">{{ duplicateSummary() }}</p>
-                    <p class="mt-2 truncate text-sm font-medium text-gray-900">{{ duplicate.name }}</p>
-                    <p class="truncate text-xs text-gray-600">
-                        {{ duplicate.email || 'No email' }} · {{ duplicate.phone || 'No phone' }}
-                    </p>
-                </div>
-                <button type="button"
-                    class="cursor-pointer shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm ring-1 ring-amber-200 hover:bg-amber-100"
-                    (click)="openDuplicateCustomer()">
-                    Open customer
-                </button>
-            </div>
-        </div>
-        }
-
-        <div class="border-t border-gray-200 my-2 mx-8"></div>
-        <div class="flex items-center justify-between gap-4 px-6 py-4">
-            <div class="relative w-full">
-                <textarea id="notes" rows="4" placeholder=" " formControlName="notes"
-                    class="peer w-full px-4 pt-6 pb-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"></textarea>
-                <label for="notes"
-                    class="absolute left-4 top-2 text-xs text-gray-500 transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:top-2 peer-focus:text-xs peer-focus:text-orange-500">
-                    Notes
-                </label>
-                <div class="flex justify-between mt-1 me-2 text-xs text-gray-400">
-                    <span></span>
-                    <span>{{ editCustomerForm.controls['notes'].value.length }} / 500</span>
-                </div>
-            </div>
-        </div>
-    </form>
-
-    <div class="border-t border-gray-200 my-4 mx-8"></div>
-
-    <div class="flex items-center justify-between px-6 pt-1 pb-4">
-        <div class="flex justify-between items-center gap-2">
-            <h1 class="text-2xl font-semibold text-gray-900">
-                {{ customer.name.split(' ')[0] }}'s Addresses
-            </h1>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-            <button type="button"
-                class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-80 disabled:cursor-not-allowed"
-                (click)="openNewAddressModal()">
-                Add Address
-            </button>
-        </div>
-    </div>
-
-    <div class="space-y-3 px-6">
-        @if (addresses.length) {
-        @for (address of addresses; track trackByAddressId($index, address)) {
-        <div class="rounded-3xl border border-slate-200 bg-white p-5">
-            <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-lg font-semibold text-slate-900">
-                            {{ address.label || 'Address' }}
-                        </h3>
-
-                        @if (address.isDefault) {
-                        <span
-                            class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                            Default
-                        </span>
-                        }
-                    </div>
-
-                    <div class="mt-2 space-y-1 text-sm text-slate-500">
-                        @for (line of formatAddressLines(address); track $index) {
-                        <p>{{ line }}</p>
-                        }
-                    </div>
-
-                    @if (address.notes) {
-                    <p class="mt-3 text-sm text-slate-500">{{ address.notes }}</p>
-                    }
-                </div>
-
-                <div class="flex items-center gap-2">
-                    @if (!address.isDefault) {
-                    <button type="button"
-                        class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                        (click)="setDefaultAddress(address)">
-                        Set Default
-                    </button>
-                    }
-
-                    <button type="button"
-                        class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                        (click)="openEditAddressModal(address)">
-                        Edit
-                    </button>
-
-                    <button type="button"
-                        class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50"
-                        (click)="deleteAddress(address)">
-                        Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-        }
-        } @else {
-        <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-            <h3 class="text-lg font-semibold text-slate-900">No addresses yet</h3>
-            <p class="mt-1 text-sm text-slate-500">
-                Add an address so on-site repairs can be scheduled to this customer.
-            </p>
-        </div>
-        }
-    </div>
-
-    @if (addressModalOpen) {
-    <div class="fixed inset-0 z-[80] flex items-center justify-center px-4 py-6">
-        <button type="button" class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" (click)="closeAddressModal()"
-            aria-label="Close address modal">
+</div>
+} @else if (customer && workspace) {
+<div class="min-h-full bg-transparent">
+    <div class="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8">
+        <button type="button"
+            class="cursor-pointer mb-4 inline-flex items-center gap-2 text-sm font-semibold text-app-text-muted transition hover:text-brand"
+            (click)="cancel()">
+            <lucide-icon [size]="18" [img]="leftChevronIcon"></lucide-icon>
+            Back to customers
         </button>
 
-        <div class="relative w-full max-w-2xl rounded-[28px] border border-gray-200 bg-white shadow-2xl">
-            <div class="flex items-start justify-between border-b border-gray-100 px-6 py-5 sm:px-7">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        {{ editingAddress ? 'Edit Address' : 'New Address' }}
-                    </h3>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Save an address for this customer.
-                    </p>
-                </div>
+        <section
+            class="overflow-hidden rounded-[30px] border border-app-border bg-app-surface shadow-[0_22px_60px_-42px_rgba(15,23,42,0.55)]">
+            <div class="relative overflow-hidden px-5 py-6 sm:px-7 lg:px-8">
+                <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-brand/10 via-brand/5 to-transparent"></div>
 
-                <button type="button"
-                    class="cursor-pointer flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-                    (click)="closeAddressModal()">
-                    ✕
-                </button>
-            </div>
+                <div class="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+                    <div class="flex min-w-0 items-start gap-4 sm:items-center">
+                        <div
+                            class="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-brand text-xl font-bold text-white shadow-lg shadow-brand/20 sm:h-20 sm:w-20 sm:text-2xl">
+                            {{ customerInitials() }}
+                        </div>
 
-            <div class="px-6 py-6 sm:px-7">
-                <form [formGroup]="addressForm" class="grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <input type="text" formControlName="label" placeholder="Label (Home, Work, Office)"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
-                    </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h1 class="truncate text-2xl font-bold tracking-tight text-app-text sm:text-3xl">
+                                    {{ customer.name }}
+                                </h1>
+                                @if (workspace.health.key !== 'needs_attention') {
+                                <span
+                                    class="rounded-full border px-2.5 py-1 text-xs font-semibold"
+                                    [ngClass]="healthBadgeClass(workspace.health.tone)"
+                                    [title]="workspace.health.description">
+                                    {{ workspace.health.label }}
+                                </span>
+                                }
+                            </div>
 
-                    <div class="sm:col-span-2">
-                        <input type="text" formControlName="line1" placeholder="Address line 1"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
-                    </div>
+                            <p class="mt-1 text-sm text-app-text-muted">
+                                Customer since {{ customerSince() }}
+                                @if (communicationLastActivityAt(); as lastActivityAt) {
+                                <span class="mx-1.5 text-app-border">•</span>
+                                Last activity {{ formatDate(lastActivityAt) }}
+                                }
+                            </p>
 
-                    <div class="sm:col-span-2">
-                        <input type="text" formControlName="line2" placeholder="Address line 2"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
-                    </div>
+                            <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                                @if (customer.phone) {
+                                <a class="inline-flex items-center gap-2 font-medium text-app-text transition hover:text-brand"
+                                    [href]="'tel:' + customer.phone">
+                                    <lucide-icon [size]="16" [img]="phoneIcon"></lucide-icon>
+                                    {{ formatPhone(customer.phone) }}
+                                </a>
+                                }
 
-                    <div>
-                        <input type="text" formControlName="city" placeholder="City"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
-                    </div>
+                                @if (customer.email) {
+                                <a class="inline-flex min-w-0 items-center gap-2 font-medium text-app-text transition hover:text-brand"
+                                    [href]="'mailto:' + customer.email">
+                                    <lucide-icon [size]="16" [img]="mailIcon"></lucide-icon>
+                                    <span class="truncate">{{ customer.email }}</span>
+                                </a>
+                                }
+                            </div>
 
-                    <div>
-                        <select formControlName="state"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand">
-                            <option value="">State</option>
-                            @for (state of states; track state.value) {
-                            <option [value]="state.value">
-                                {{ state.label }}
-                            </option>
+                            @if (visibleCustomerTags().length) {
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @for (tag of visibleCustomerTags(); track tag) {
+                                <span
+                                    class="rounded-full border border-app-border bg-app-surface-muted px-2.5 py-1 text-xs font-semibold text-app-text-muted">
+                                    {{ tag }}
+                                </span>
+                                }
+                            </div>
                             }
-                        </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <input type="text" formControlName="postalCode" placeholder="Postal code"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand" />
+                    <div class="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                        <button type="button"
+                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 sm:w-auto text-sm font-semibold text-app-text transition hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
+                            (click)="openCommunications()">
+                            <lucide-icon [size]="17" [img]="messageIcon"></lucide-icon>
+                            Message
+                            @if (communicationSummary && communicationSummary.unreadCount > 0) {
+                            <span class="rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white">
+                                {{ communicationUnreadLabel() }}
+                            </span>
+                            }
+                        </button>
+                        <button type="button"
+                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 sm:w-auto text-sm font-semibold text-app-text transition hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
+                            (click)="openDeviceModal()">
+                            <lucide-icon [size]="17" [img]="deviceIcon"></lucide-icon>
+                            Add device
+                        </button>
+                        <button type="button"
+                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 sm:w-auto text-sm font-semibold text-white shadow-lg shadow-brand/20 transition hover:opacity-90"
+                            (click)="createRepair()">
+                            <lucide-icon [size]="17" [img]="plusIcon"></lucide-icon>
+                            New repair
+                        </button>
                     </div>
+                </div>
+            </div>
 
-                    <div>
-                        <input type="text" [value]="shopCountry" disabled
-                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none" />
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <textarea rows="3" formControlName="notes" placeholder="Notes"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand resize-none"></textarea>
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="checkbox" formControlName="isDefault" />
-                            Set as default address
-                        </label>
-                    </div>
-                </form>
-
-                <div class="mt-6 flex items-center justify-end gap-2">
+            <nav class="overflow-x-auto border-t border-app-border px-3 sm:px-5" aria-label="Customer workspace tabs">
+                <div class="flex min-w-max gap-1">
+                    @for (tab of tabs; track tab.key) {
                     <button type="button"
-                        class="cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
-                        (click)="closeAddressModal()">
-                        Cancel
+                        class="cursor-pointer relative inline-flex items-center gap-2 px-3.5 py-4 text-sm font-semibold transition"
+                        [ngClass]="activeTab === tab.key ? 'text-brand' : 'text-app-text-muted hover:text-app-text'"
+                        (click)="setActiveTab(tab.key)">
+                        <lucide-icon [size]="16" [img]="tab.icon"></lucide-icon>
+                        {{ tab.label }}
+
+                        @if (tabCount(tab.key); as count) {
+                        <span class="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold text-brand">
+                            {{ count > 999 ? '999+' : count }}
+                        </span>
+                        }
+
+                        @if (activeTab === tab.key) {
+                        <span class="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-brand"></span>
+                        }
+                    </button>
+                    }
+                </div>
+            </nav>
+        </section>
+
+        @if (customerHasImportantNote()) {
+        <button type="button"
+            class="cursor-pointer mt-4 flex w-full items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3.5 text-left shadow-sm transition hover:border-amber-300 hover:bg-amber-50 sm:px-5"
+            (click)="focusInternalNotes()">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <lucide-icon [size]="17" [img]="alertIcon"></lucide-icon>
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block text-xs font-bold uppercase tracking-[0.12em] text-amber-700">Internal customer alert</span>
+                <span class="mt-1 line-clamp-2 block whitespace-pre-line text-sm font-semibold leading-6 text-amber-950">{{ customer.notes }}</span>
+            </span>
+            <span class="shrink-0 text-xs font-bold text-amber-700">Edit</span>
+        </button>
+        }
+
+        <main class="mt-5">
+            @if (activeTab === 'overview') {
+            <div class="space-y-5">
+                <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <div class="rounded-3xl border border-app-border bg-app-surface p-5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                                <lucide-icon [size]="21" [img]="revenueIcon"></lucide-icon>
+                            </div>
+                            <span class="text-xs font-semibold uppercase tracking-[0.12em] text-app-text-muted">Lifetime</span>
+                        </div>
+                        <p class="mt-5 text-2xl font-bold tracking-tight text-app-text">
+                            {{ formatMoney(workspace.stats.lifetimeValueCents) }}
+                        </p>
+                        <p class="mt-1 text-sm text-app-text-muted">Collected revenue</p>
+                    </div>
+
+                    <button type="button"
+                        class="cursor-pointer rounded-3xl border border-app-border bg-app-surface p-5 text-left transition hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-lg"
+                        (click)="setActiveTab('repairs')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                                <lucide-icon [size]="21" [img]="repairIcon"></lucide-icon>
+                            </div>
+                            <lucide-icon [size]="17" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                        </div>
+                        <p class="mt-5 text-2xl font-bold tracking-tight text-app-text">
+                            {{ workspace.stats.totalRepairs }}
+                        </p>
+                        <p class="mt-1 text-sm text-app-text-muted">
+                            {{ workspace.stats.openRepairs }} open · {{ workspace.stats.completedRepairs }} completed
+                        </p>
                     </button>
 
                     <button type="button"
-                        class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:opacity-70"
-                        [disabled]="addressForm.invalid || addressWorking" (click)="saveAddress()">
-                        {{ addressWorking ? 'Saving...' : (editingAddress ? 'Save Address' : 'Create Address') }}
+                        class="cursor-pointer rounded-3xl border border-app-border bg-app-surface p-5 text-left transition hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-lg"
+                        (click)="setActiveTab('orders')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                                <lucide-icon [size]="21" [img]="orderIcon"></lucide-icon>
+                            </div>
+                            <lucide-icon [size]="17" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                        </div>
+                        <p class="mt-5 text-2xl font-bold tracking-tight text-app-text">
+                            {{ workspace.stats.totalOrders }}
+                        </p>
+                        <p class="mt-1 text-sm text-app-text-muted">
+                            {{ formatMoney(workspace.stats.averageOrderValueCents) }} average value
+                        </p>
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    }
 
-    <div class="border-t border-gray-200 my-4 mx-8"></div>
+                    <button type="button"
+                        class="cursor-pointer rounded-3xl border border-app-border bg-app-surface p-5 text-left transition hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-lg"
+                        (click)="setActiveTab('devices')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                                <lucide-icon [size]="21" [img]="deviceIcon"></lucide-icon>
+                            </div>
+                            <lucide-icon [size]="17" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                        </div>
+                        <p class="mt-5 text-2xl font-bold tracking-tight text-app-text">
+                            {{ workspace.stats.totalDevices }}
+                        </p>
+                        <p class="mt-1 text-sm text-app-text-muted">Saved devices</p>
+                    </button>
 
-    <div class="flex items-center justify-between px-6 pt-1 pb-4">
-        <div class="flex justify-between items-center gap-2">
-            <h1 class="text-2xl font-semibold text-gray-900">
-                {{ customer.name.split(' ')[0] }}'s Devices
-            </h1>
-        </div>
+                    <div class="rounded-3xl border border-app-border bg-app-surface p-5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                                <lucide-icon [size]="21" [img]="clockIcon"></lucide-icon>
+                            </div>
+                            <span class="text-xs font-semibold uppercase tracking-[0.12em] text-app-text-muted">Balance</span>
+                        </div>
+                        <p class="mt-5 text-2xl font-bold tracking-tight text-app-text">
+                            {{ formatMoney(workspace.stats.outstandingBalanceCents) }}
+                        </p>
+                        <p class="mt-1 text-sm text-app-text-muted">Outstanding</p>
+                    </div>
+                </section>
 
-        <div class="flex flex-wrap gap-2">
-            <button type="button"
-                class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-80 disabled:cursor-not-allowed"
-                (click)="openDeviceModal()">
-                Add Device
-            </button>
-        </div>
-    </div>
+                <section class="grid gap-5 xl:grid-cols-3">
+                    <div class="rounded-[28px] border border-app-border bg-app-surface">
+                        <div class="flex items-center justify-between border-b border-app-border px-5 py-4">
+                            <div>
+                                <h2 class="text-lg font-bold text-app-text">Recent repairs</h2>
+                                <p class="mt-0.5 text-sm text-app-text-muted">{{ workspace.stats.openRepairs }} currently open</p>
+                            </div>
+                            <button type="button" class="cursor-pointer text-sm font-semibold text-brand hover:opacity-80"
+                                (click)="setActiveTab('repairs')">View all</button>
+                        </div>
+                        @if (workspace.recentRepairs.length) {
+                        <div class="divide-y divide-app-border">
+                            @for (repair of workspace.recentRepairs.slice(0, 3); track trackByRepairId($index, repair)) {
+                            <button type="button"
+                                class="cursor-pointer flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-app-surface-muted"
+                                (click)="openRepair(repair)">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                                    <lucide-icon [size]="18" [img]="repairIcon"></lucide-icon>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate text-sm font-bold text-app-text">{{ repair.problemSummary }}</span>
+                                    <span class="mt-1 block truncate text-xs text-app-text-muted">{{ repairDeviceLabel(repair) }} · {{ formatDate(repair.createdAt) }}</span>
+                                </span>
+                                <span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold" [ngClass]="statusClass(repair.status)">
+                                    {{ statusLabel(repair.status) }}
+                                </span>
+                            </button>
+                            }
+                        </div>
+                        } @else {
+                        <div class="px-6 py-10 text-center">
+                            <p class="font-semibold text-app-text">No repairs yet</p>
+                            <button type="button" class="cursor-pointer mt-2 text-sm font-semibold text-brand" (click)="createRepair()">Create the first repair</button>
+                        </div>
+                        }
+                    </div>
 
-    <div class="space-y-3 px-6">
-        @if (customerDevices.length) {
-        @for (device of customerDevices; track $index) {
-        <div class="rounded-3xl border border-slate-200 bg-white p-5">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h3 class="text-lg font-semibold text-slate-900">{{ device.nickname }}</h3>
-                    @if (device.brand || device.model) { <p class="text-sm text-slate-500">{{ device.brand }} {{
-                        device.model }}</p> }
-                </div>
+                    <div class="rounded-[28px] border border-app-border bg-app-surface">
+                        <div class="flex items-center justify-between border-b border-app-border px-5 py-4">
+                            <div>
+                                <h2 class="text-lg font-bold text-app-text">Recent quotes</h2>
+                                <p class="mt-0.5 text-sm text-app-text-muted">{{ workspace.stats.activeQuotes }} awaiting action</p>
+                            </div>
+                            <button type="button" class="cursor-pointer text-sm font-semibold text-brand hover:opacity-80"
+                                (click)="setActiveTab('quotes')">View all</button>
+                        </div>
+                        @if (workspace.recentQuotes.length) {
+                        <div class="divide-y divide-app-border">
+                            @for (quote of workspace.recentQuotes.slice(0, 3); track trackByQuoteId($index, quote)) {
+                            <button type="button"
+                                class="cursor-pointer flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-app-surface-muted"
+                                (click)="openQuote(quote)">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                                    <lucide-icon [size]="18" [img]="quoteIcon"></lucide-icon>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate text-sm font-bold text-app-text">{{ quote.repairLabel }}</span>
+                                    <span class="mt-1 block truncate text-xs text-app-text-muted">{{ quote.deviceLabel }} · {{ formatDate(quote.createdAt) }}</span>
+                                </span>
+                                <span class="text-right">
+                                    <span class="block text-sm font-bold text-app-text">{{ quote.estimatedTotalCents !== null ? formatMoney(quote.estimatedTotalCents) : 'Pending' }}</span>
+                                    <span class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold" [ngClass]="statusClass(quote.status)">{{ statusLabel(quote.status) }}</span>
+                                </span>
+                            </button>
+                            }
+                        </div>
+                        } @else {
+                        <div class="px-6 py-10 text-center">
+                            <p class="font-semibold text-app-text">No quotes yet</p>
+                            <p class="mt-1 text-sm text-app-text-muted">Customer quotes will appear here.</p>
+                        </div>
+                        }
+                    </div>
 
-                <button (click)="editDevice(device)"
-                    class="cursor-pointer text-sm font-medium text-brand hover:opacity-80">
-                    Edit
-                </button>
-            </div>
+                    <div class="rounded-[28px] border border-app-border bg-app-surface">
+                        <div class="flex items-center justify-between border-b border-app-border px-5 py-4">
+                            <div>
+                                <h2 class="text-lg font-bold text-app-text">Recent orders</h2>
+                                <p class="mt-0.5 text-sm text-app-text-muted">{{ formatMoney(workspace.stats.outstandingBalanceCents) }} outstanding</p>
+                            </div>
+                            <button type="button" class="cursor-pointer text-sm font-semibold text-brand hover:opacity-80"
+                                (click)="setActiveTab('orders')">View all</button>
+                        </div>
+                        @if (workspace.recentOrders.length) {
+                        <div class="divide-y divide-app-border">
+                            @for (order of workspace.recentOrders.slice(0, 3); track trackByOrderId($index, order)) {
+                            <button type="button"
+                                class="cursor-pointer flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-app-surface-muted"
+                                (click)="openOrder(order)">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                                    <lucide-icon [size]="18" [img]="orderIcon"></lucide-icon>
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate text-sm font-bold text-app-text">Order {{ order.orderNumber }}</span>
+                                    <span class="mt-1 block truncate text-xs text-app-text-muted">{{ formatDate(order.createdAt) }} · {{ statusLabel(order.fulfillmentStatus) }}</span>
+                                </span>
+                                <span class="text-right">
+                                    <span class="block text-sm font-bold text-app-text">{{ formatMoney(order.totalCents) }}</span>
+                                    <span class="mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold" [ngClass]="statusClass(order.paymentStatus)">{{ statusLabel(order.paymentStatus) }}</span>
+                                </span>
+                            </button>
+                            }
+                        </div>
+                        } @else {
+                        <div class="px-6 py-10 text-center">
+                            <p class="font-semibold text-app-text">No orders yet</p>
+                            <p class="mt-1 text-sm text-app-text-muted">Orders linked to repairs will appear here.</p>
+                        </div>
+                        }
+                    </div>
+                </section>
 
-            @if (device.brand || device.model || device.imei) {
-            <div class="mt-3 flex flex-wrap gap-2">
-                @if (device.brand) { <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">{{
-                    device.brand }}</span> }
-                @if (device.model) { <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">{{
-                    device.model}}</span> }
-                @if (device.imei) { <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">IMEI ••••
-                    {{ device.imei.slice(-5) }}</span> }
+                <section class="grid items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.75fr)]">
+                    <div class="space-y-5">
+                        <section class="overflow-hidden rounded-[28px] border border-app-border bg-app-surface">
+                            <div class="flex flex-col gap-4 border-b border-app-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                                        <lucide-icon [size]="20" [img]="messageIcon"></lucide-icon>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h2 class="text-lg font-bold text-app-text">Communication hub</h2>
+                                            @if (communicationSummary && communicationSummary.unreadCount > 0) {
+                                            <span class="rounded-full bg-brand/10 px-2.5 py-1 text-xs font-bold text-brand">
+                                                {{ communicationUnreadLabel() }} unread
+                                            </span>
+                                            }
+                                            @if (customerHasDoNotSms()) {
+                                            <span class="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
+                                                Do not SMS
+                                            </span>
+                                            }
+                                        </div>
+                                        <p class="mt-0.5 text-sm text-app-text-muted">Latest customer contact and delivery health</p>
+                                    </div>
+                                </div>
+                                <button type="button"
+                                    class="cursor-pointer inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text transition hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
+                                    (click)="openCommunications()">
+                                    {{ communicationSummary?.hasConversation ? 'Continue conversation' : 'Start conversation' }}
+                                    <lucide-icon [size]="15" [img]="chevronRightIcon"></lucide-icon>
+                                </button>
+                            </div>
+
+                            @if (communicationSummaryLoading) {
+                            <div class="flex items-center justify-center gap-3 px-6 py-12 text-sm font-semibold text-app-text-muted">
+                                <lucide-icon [size]="18" [img]="loaderIcon" class="animate-spin"></lucide-icon>
+                                Loading communication history...
+                            </div>
+                            } @else if (communicationSummaryError) {
+                            <div class="px-6 py-10 text-center">
+                                <p class="font-semibold text-rose-700">{{ communicationSummaryError }}</p>
+                                <button type="button"
+                                    class="cursor-pointer mt-3 rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text transition hover:bg-app-surface-muted"
+                                    (click)="reloadCommunicationSummary()">
+                                    Try again
+                                </button>
+                            </div>
+                            } @else if (communicationSummary; as communication) {
+                            @if (communication.hasConversation) {
+                            <div class="p-5 sm:p-6">
+                                @if (communication.lastMessageAt) {
+                                <button type="button"
+                                    class="cursor-pointer flex w-full items-start gap-4 rounded-2xl border border-app-border bg-app-surface-muted/45 p-4 text-left transition hover:border-brand/30 hover:bg-brand/5"
+                                    (click)="openCommunications()">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                                        [ngClass]="communication.lastMessageDirection === 'inbound' ? 'bg-sky-100 text-sky-700' : 'bg-emerald-100 text-emerald-700'">
+                                        <lucide-icon [size]="18"
+                                            [img]="communication.lastMessageDirection === 'inbound' ? inboundIcon : outboundIcon"></lucide-icon>
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="flex flex-wrap items-center justify-between gap-2">
+                                            <span class="font-bold text-app-text">
+                                                {{ communicationDirectionLabel(communication.lastMessageDirection) }}
+                                                {{ communicationChannelLabel(communication.lastMessageChannel) }}
+                                            </span>
+                                            <span class="text-xs font-medium text-app-text-muted">
+                                                {{ formatDateTime(communication.lastMessageAt) }}
+                                            </span>
+                                        </span>
+                                        <span class="mt-1 line-clamp-2 block text-sm leading-6 text-app-text-muted">
+                                            {{ communication.lastMessagePreview || 'No message preview available.' }}
+                                        </span>
+                                        @if (communication.lastMessageStatus) {
+                                        <span class="mt-3 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                                            [ngClass]="communicationStatusClass(communication.lastMessageStatus)">
+                                            {{ statusLabel(communication.lastMessageStatus) }}
+                                        </span>
+                                        }
+                                    </span>
+                                    <lucide-icon [size]="16" [img]="chevronRightIcon" class="mt-1 shrink-0 text-app-text-muted"></lucide-icon>
+                                </button>
+                                } @else {
+                                <div class="rounded-2xl border border-dashed border-app-border px-5 py-8 text-center">
+                                    <p class="font-semibold text-app-text">Conversation created</p>
+                                    <p class="mt-1 text-sm text-app-text-muted">No customer messages have been sent or received yet.</p>
+                                </div>
+                                }
+
+                                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                                    <div class="rounded-2xl border border-app-border p-4">
+                                        <p class="text-xs font-bold uppercase tracking-[0.1em] text-app-text-muted">Last inbound</p>
+                                        <p class="mt-2 text-sm font-bold text-app-text">{{ communication.lastInboundAt ? formatDateTime(communication.lastInboundAt) : 'No inbound contact' }}</p>
+                                    </div>
+                                    <div class="rounded-2xl border border-app-border p-4">
+                                        <p class="text-xs font-bold uppercase tracking-[0.1em] text-app-text-muted">Last outbound</p>
+                                        <p class="mt-2 text-sm font-bold text-app-text">{{ communication.lastOutboundAt ? formatDateTime(communication.lastOutboundAt) : 'No outbound contact' }}</p>
+                                    </div>
+                                    <div class="rounded-2xl border border-app-border p-4">
+                                        <p class="text-xs font-bold uppercase tracking-[0.1em] text-app-text-muted">Unread</p>
+                                        <p class="mt-2 text-sm font-bold text-app-text">{{ communication.unreadCount }} message{{ communication.unreadCount === 1 ? '' : 's' }}</p>
+                                    </div>
+                                </div>
+
+                                @if (communication.latestDeliveryWarning; as warning) {
+                                <button type="button"
+                                    class="cursor-pointer mt-4 flex w-full items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/70 p-4 text-left transition hover:border-rose-300 hover:bg-rose-50"
+                                    (click)="openCommunicationConversation(warning.conversationId)">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+                                        <lucide-icon [size]="17" [img]="alertIcon"></lucide-icon>
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block text-sm font-bold text-rose-800">
+                                            {{ communication.deliveryWarningCount }} delivery issue{{ communication.deliveryWarningCount === 1 ? '' : 's' }}
+                                        </span>
+                                        <span class="mt-1 block text-sm text-rose-700">
+                                            {{ communicationChannelLabel(warning.channel) }} {{ statusLabel(warning.status) }}
+                                            @if (warning.errorMessage) {
+                                            <span> · {{ warning.errorMessage }}</span>
+                                            }
+                                        </span>
+                                    </span>
+                                    <span class="shrink-0 text-xs font-semibold text-rose-700">{{ formatDate(warning.occurredAt) }}</span>
+                                </button>
+                                }
+                            </div>
+                            } @else {
+                            <div class="px-6 py-12 text-center">
+                                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                                    <lucide-icon [size]="24" [img]="messageIcon"></lucide-icon>
+                                </div>
+                                <h3 class="mt-4 text-lg font-bold text-app-text">No conversation yet</h3>
+                                <p class="mx-auto mt-1 max-w-lg text-sm text-app-text-muted">Start an SMS or email and future customer contact will be summarized here.</p>
+                                <button type="button"
+                                    class="cursor-pointer mt-4 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand/20"
+                                    (click)="openCommunications()">
+                                    Start conversation
+                                    <lucide-icon [size]="15" [img]="chevronRightIcon"></lucide-icon>
+                                </button>
+                            </div>
+                            }
+                            }
+                        </section>
+
+                        <div class="self-start overflow-hidden rounded-[28px] border border-app-border bg-app-surface">
+                        <div class="flex items-center justify-between gap-4 border-b border-app-border px-5 py-4 sm:px-6">
+                            <div>
+                                <h2 class="text-lg font-bold text-app-text">Recent activity</h2>
+                                <p class="mt-0.5 text-sm text-app-text-muted">The latest customer milestones</p>
+                            </div>
+                            <button type="button"
+                                class="cursor-pointer text-sm font-semibold text-brand hover:opacity-80"
+                                (click)="setActiveTab('timeline')">
+                                View timeline
+                            </button>
+                        </div>
+
+                        @if (customerTimeline().length) {
+                        <div class="max-h-[22rem] divide-y divide-app-border overflow-y-auto overscroll-contain">
+                            @for (item of customerTimeline(); track trackByTimelineId($index, item)) {
+                            <button type="button"
+                                class="cursor-pointer flex w-full items-start gap-4 px-5 py-4 text-left transition hover:bg-app-surface-muted sm:px-6 disabled:cursor-default disabled:hover:bg-transparent"
+                                [disabled]="!item.route" (click)="openTimelineItem(item)">
+                                <span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ring-4"
+                                    [ngClass]="timelineDotClass(item)"></span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="flex flex-wrap items-center justify-between gap-2">
+                                        <span class="font-semibold text-app-text">{{ item.title }}</span>
+                                        <span class="text-xs text-app-text-muted">{{ formatDateTime(item.occurredAt) }}</span>
+                                    </span>
+                                    @if (item.detail) {
+                                    <span class="mt-1 block truncate text-sm text-app-text-muted">{{ item.detail }}</span>
+                                    }
+                                </span>
+                                @if (item.route) {
+                                <lucide-icon [size]="16" [img]="chevronRightIcon"
+                                    class="mt-1 shrink-0 text-app-text-muted"></lucide-icon>
+                                }
+                            </button>
+                            }
+                        </div>
+                        } @else {
+                        <div class="px-6 py-12 text-center">
+                            <p class="font-semibold text-app-text">No activity yet</p>
+                            <p class="mt-1 text-sm text-app-text-muted">New repairs, quotes, orders, and messages will appear here.</p>
+                        </div>
+                        }
+                        </div>
+                    </div>
+
+                    <aside class="space-y-5">
+                        @if (workspace.nextAppointment; as nextAppointment) {
+                        <button type="button"
+                            class="cursor-pointer w-full rounded-[28px] border border-sky-200 bg-sky-50/70 p-5 text-left transition hover:border-sky-300 hover:bg-sky-50 sm:p-6"
+                            (click)="openNextAppointment()">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+                                        <lucide-icon [size]="19" [img]="calendarIcon"></lucide-icon>
+                                    </span>
+                                    <span class="min-w-0">
+                                        <span class="block text-xs font-bold uppercase tracking-[0.12em] text-sky-700">Next appointment</span>
+                                        <span class="mt-2 block font-bold text-app-text">{{ formatDateTime(nextAppointment.appointment.startAt) }}</span>
+                                        <span class="mt-1 block truncate text-sm text-app-text-muted">{{ nextAppointment.deviceLabel }} · {{ nextAppointment.problemSummary }}</span>
+                                        @if (nextAppointment.assignedTo) {
+                                        <span class="mt-1 block text-xs font-semibold text-app-text-muted">Assigned to {{ nextAppointment.assignedTo }}</span>
+                                        }
+                                    </span>
+                                </div>
+                                <lucide-icon [size]="17" [img]="chevronRightIcon" class="mt-1 shrink-0 text-sky-700"></lucide-icon>
+                            </div>
+                        </button>
+                        }
+
+                        <div class="rounded-[28px] border border-app-border bg-app-surface p-5 sm:p-6">
+                            <h2 class="text-lg font-bold text-app-text">Customer details</h2>
+                            <dl class="mt-4 space-y-4 text-sm">
+                                <div>
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.1em] text-app-text-muted">Phone</dt>
+                                    <dd class="mt-1 font-semibold text-app-text">{{ formatPhone(customer.phone) }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.1em] text-app-text-muted">Email</dt>
+                                    <dd class="mt-1 break-all font-semibold text-app-text">{{ customer.email || 'No email' }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs font-semibold uppercase tracking-[0.1em] text-app-text-muted">Default address</dt>
+                                    <dd class="mt-1 font-semibold text-app-text">
+                                        @if (addresses.length) {
+                                        {{ formatAddressShort(addresses[0]) }}
+                                        } @else {
+                                        No saved address
+                                        }
+                                    </dd>
+                                </div>
+                            </dl>
+                        </div>
+                        <div id="customer-internal-notes" class="rounded-[28px] border border-app-border bg-app-surface p-5 sm:p-6">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h2 class="text-lg font-bold text-app-text">Internal notes</h2>
+                                        <span class="rounded-full border border-app-border bg-app-surface-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-app-text-muted">Internal only</span>
+                                    </div>
+                                    <p class="mt-1 text-xs text-app-text-muted">Customer record updated {{ formatDateTime(customer.updatedAt) }}</p>
+                                </div>
+                                @if (!internalNotesEditing) {
+                                <button type="button"
+                                    class="cursor-pointer shrink-0 text-sm font-semibold text-brand transition hover:opacity-80"
+                                    (click)="beginInternalNotesEdit()">
+                                    {{ customer.notes ? 'Edit' : 'Add note' }}
+                                </button>
+                                }
+                            </div>
+
+                            @if (internalNotesEditing) {
+                            <div class="mt-4">
+                                <textarea rows="6" maxlength="2000"
+                                    class="w-full resize-y rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm leading-6 text-app-text outline-none transition placeholder:text-app-text-muted focus:border-brand focus:ring-2 focus:ring-brand/15"
+                                    placeholder="Add service context, preferences, or anything staff should know..."
+                                    [ngModel]="internalNotesDraft"
+                                    (ngModelChange)="internalNotesDraft = $event"></textarea>
+                                <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <label class="inline-flex items-center gap-2 text-xs font-semibold text-app-text-muted">
+                                        <input type="checkbox"
+                                            class="h-4 w-4 rounded border-app-border text-brand focus:ring-brand"
+                                            [ngModel]="pinInternalNoteAsAlert"
+                                            (ngModelChange)="pinInternalNoteAsAlert = $event" />
+                                        Pin this note as a customer alert
+                                    </label>
+                                    <span class="text-xs text-app-text-muted">{{ internalNotesDraft.length }} / 2000</span>
+                                </div>
+                                <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                    <button type="button"
+                                        class="cursor-pointer inline-flex w-full items-center justify-center rounded-xl border border-app-border px-4 py-2.5 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                                        [disabled]="internalNotesWorking"
+                                        (click)="cancelInternalNotesEdit()">
+                                        Cancel
+                                    </button>
+                                    <button type="button"
+                                        class="cursor-pointer inline-flex w-full items-center justify-center rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                                        [disabled]="internalNotesWorking || customerFlagsWorking || !internalNotesDirty()"
+                                        (click)="saveInternalNotes()">
+                                        {{ internalNotesWorking ? 'Saving...' : 'Save note' }}
+                                    </button>
+                                </div>
+                            </div>
+                            } @else if (customer.notes) {
+                            <p class="mt-4 whitespace-pre-line text-sm leading-6 text-app-text-muted">{{ customer.notes }}</p>
+                            } @else {
+                            <button type="button"
+                                class="cursor-pointer mt-4 w-full rounded-2xl border border-dashed border-app-border bg-app-surface-muted/35 px-4 py-5 text-left transition hover:border-brand/30 hover:bg-brand/5"
+                                (click)="beginInternalNotesEdit()">
+                                <span class="block text-sm font-semibold text-app-text">No internal note yet</span>
+                                <span class="mt-1 block text-xs leading-5 text-app-text-muted">Add service context or preferences for staff.</span>
+                            </button>
+                            }
+
+                            <div class="mt-5 border-t border-app-border pt-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-sm font-bold text-app-text">Customer flags</h3>
+                                        <p class="mt-0.5 text-xs text-app-text-muted">Click a flag to turn it on or off.</p>
+                                    </div>
+                                    @if (customerFlagsWorking) {
+                                    <lucide-icon [size]="16" [img]="loaderIcon" class="animate-spin text-app-text-muted"></lucide-icon>
+                                    }
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    @for (flag of quickFlags; track flag.key) {
+                                    <button type="button"
+                                        class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                                        [ngClass]="customerFlagClass(flag)"
+                                        [disabled]="customerFlagsWorking || internalNotesWorking"
+                                        [title]="flag.description"
+                                        [attr.aria-pressed]="hasCustomerFlag(flag.key)"
+                                        (click)="toggleCustomerFlag(flag.key)">
+                                        {{ flag.label }}
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-[28px] border border-app-border bg-app-surface p-5 sm:p-6">
+                            <h2 class="text-lg font-bold text-app-text">Quick actions</h2>
+                            <div class="mt-4 grid gap-2">
+                                <button type="button"
+                                    class="cursor-pointer flex items-center justify-between rounded-2xl border border-app-border px-4 py-3 text-left transition hover:border-brand/30 hover:bg-brand/5"
+                                    (click)="createRepair()">
+                                    <span class="flex items-center gap-3 text-sm font-semibold text-app-text">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                                            <lucide-icon [size]="17" [img]="repairIcon"></lucide-icon>
+                                        </span>
+                                        Start a repair
+                                    </span>
+                                    <lucide-icon [size]="16" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                                </button>
+                                <button type="button"
+                                    class="cursor-pointer flex items-center justify-between rounded-2xl border border-app-border px-4 py-3 text-left transition hover:border-brand/30 hover:bg-brand/5"
+                                    (click)="openCommunications()">
+                                    <span class="flex items-center gap-3 text-sm font-semibold text-app-text">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                                            <lucide-icon [size]="17" [img]="messageIcon"></lucide-icon>
+                                        </span>
+                                        Open communications
+                                        @if (communicationSummary && communicationSummary.unreadCount > 0) {
+                                        <span class="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold text-brand">
+                                            {{ communicationUnreadLabel() }}
+                                        </span>
+                                        }
+                                    </span>
+                                    <lucide-icon [size]="16" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                                </button>
+                                <button type="button"
+                                    class="cursor-pointer flex items-center justify-between rounded-2xl border border-app-border px-4 py-3 text-left transition hover:border-brand/30 hover:bg-brand/5"
+                                    (click)="openDeviceModal()">
+                                    <span class="flex items-center gap-3 text-sm font-semibold text-app-text">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                                            <lucide-icon [size]="17" [img]="deviceIcon"></lucide-icon>
+                                        </span>
+                                        Add a device
+                                    </span>
+                                    <lucide-icon [size]="16" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                                </button>
+                                <button type="button"
+                                    class="cursor-pointer flex items-center justify-between rounded-2xl border border-app-border px-4 py-3 text-left transition hover:border-brand/30 hover:bg-brand/5"
+                                    (click)="openNewAddressModal()">
+                                    <span class="flex items-center gap-3 text-sm font-semibold text-app-text">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                                            <lucide-icon [size]="17" [img]="addressIcon"></lucide-icon>
+                                        </span>
+                                        Add an address
+                                    </span>
+                                    <lucide-icon [size]="16" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                                </button>
+                                <button type="button"
+                                    class="cursor-pointer flex items-center justify-between rounded-2xl border border-app-border px-4 py-3 text-left transition hover:border-brand/30 hover:bg-brand/5"
+                                    (click)="setActiveTab('settings')">
+                                    <span class="flex items-center gap-3 text-sm font-semibold text-app-text">
+                                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                                            <lucide-icon [size]="17" [img]="settingsIcon"></lucide-icon>
+                                        </span>
+                                        Edit customer
+                                    </span>
+                                    <lucide-icon [size]="16" [img]="chevronRightIcon" class="text-app-text-muted"></lucide-icon>
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (workspace.openItems.length) {
+                        <div class="rounded-[28px] border border-app-border bg-app-surface p-5 sm:p-6">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h2 class="text-lg font-bold text-app-text">Needs attention</h2>
+                                    <p class="mt-0.5 text-sm text-app-text-muted">Open items worth reviewing</p>
+                                </div>
+                                <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
+                                    {{ workspace.openItems.length }}
+                                </span>
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 border-t border-app-border pt-3 text-[11px] font-semibold text-app-text-muted" aria-label="Attention color key">
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                                    Payment or waiting
+                                </span>
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-sky-400"></span>
+                                    Active work
+                                </span>
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                                    Ready or approved
+                                </span>
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="h-2 w-2 rounded-full bg-rose-400"></span>
+                                    Urgent issue
+                                </span>
+                            </div>
+
+                            <div class="mt-4 max-h-80 space-y-2 overflow-y-auto overscroll-contain pr-1">
+                                @for (item of workspace.openItems; track item.id) {
+                                <button type="button"
+                                    class="cursor-pointer flex w-full items-start justify-between gap-3 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5"
+                                    [ngClass]="attentionCardClass(item.tone)"
+                                    [disabled]="!item.route"
+                                    (click)="openOpenItem(item)">
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-sm font-bold text-app-text">{{ item.title }}</span>
+                                        <span class="mt-1 block truncate text-xs text-app-text-muted">{{ item.detail }}</span>
+                                    </span>
+                                    @if (item.amountCents !== null) {
+                                    <span class="shrink-0 text-sm font-bold text-app-text">{{ formatMoney(item.amountCents) }}</span>
+                                    } @else if (item.route) {
+                                    <lucide-icon [size]="15" [img]="chevronRightIcon" class="mt-0.5 shrink-0 text-app-text-muted"></lucide-icon>
+                                    }
+                                </button>
+                                }
+                            </div>
+                        </div>
+                        }
+
+                    </aside>
+                </section>
+
             </div>
             }
 
-            @if (device.notes) { <p class="mt-3 text-sm text-slate-500">{{ device.notes }}</p> }
-        </div>
-        }
-        } @else {
-        <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-            <h3 class="text-lg font-semibold text-slate-900">No devices yet</h3>
-            <p class="mt-1 text-sm text-slate-500">
-                Add this customer's first device to start tracking repairs and notes.
-            </p>
-        </div>
-        }
-    </div>
+            @if (activeTab === 'timeline') {
+            <section class="rounded-[28px] border border-app-border bg-app-surface">
+                <div class="border-b border-app-border px-5 py-5 sm:px-7">
+                    <h2 class="text-xl font-bold text-app-text">Customer timeline</h2>
+                    <p class="mt-1 text-sm text-app-text-muted">Major milestones across repairs, quotes, orders, and customer messages.</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        @for (filter of timelineFilters; track filter.key) {
+                        <button type="button"
+                            class="cursor-pointer rounded-xl border px-3 py-2 text-xs font-semibold transition"
+                            [ngClass]="timelineFilter === filter.key ? 'border-brand bg-brand/10 text-brand' : 'border-app-border bg-app-surface text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'"
+                            (click)="setTimelineFilter(filter.key)">
+                            {{ filter.label }}
+                            <span class="ml-1 opacity-70">{{ timelineFilterCount(filter.key) }}</span>
+                        </button>
+                        }
+                    </div>
+                </div>
 
+                @if (filteredTimeline().length) {
+                <div class="max-h-[65vh] overflow-y-auto overscroll-contain px-5 py-2 sm:px-7">
+                    @for (item of filteredTimeline(); track trackByTimelineId($index, item); let last = $last) {
+                    <div class="relative flex gap-4 py-5">
+                        @if (!last) {
+                        <span class="absolute bottom-0 left-[5px] top-8 w-px bg-app-border"></span>
+                        }
+                        <span class="relative mt-1.5 h-3 w-3 shrink-0 rounded-full ring-4"
+                            [ngClass]="timelineDotClass(item)"></span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="font-bold text-app-text">{{ item.title }}</h3>
+                                        @if (item.status) {
+                                        <span class="rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+                                            [ngClass]="statusClass(item.status)">
+                                            {{ statusLabel(item.status) }}
+                                        </span>
+                                        }
+                                    </div>
+                                    @if (item.detail) {
+                                    <p class="mt-1 text-sm text-app-text-muted">{{ item.detail }}</p>
+                                    }
+                                </div>
+                                <span class="shrink-0 text-xs font-medium text-app-text-muted">
+                                    {{ formatDateTime(item.occurredAt) }}
+                                </span>
+                            </div>
+                            @if (item.route) {
+                            <button type="button"
+                                class="cursor-pointer mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:opacity-80"
+                                (click)="openTimelineItem(item)">
+                                Open details
+                                <lucide-icon [size]="14" [img]="externalLinkIcon"></lucide-icon>
+                            </button>
+                            }
+                        </div>
+                    </div>
+                    }
+                </div>
+                } @else {
+                <div class="px-6 py-16 text-center">
+                    <p class="font-semibold text-app-text">No matching timeline activity</p>
+                    <p class="mt-1 text-sm text-app-text-muted">Try a different activity filter.</p>
+                </div>
+                }
+            </section>
+            }
+
+            @if (activeTab === 'repairs') {
+            <section class="overflow-hidden rounded-[28px] border border-app-border bg-app-surface">
+                <div class="border-b border-app-border px-5 py-5 sm:px-7">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-app-text">Repair history</h2>
+                            <p class="mt-1 text-sm text-app-text-muted">
+                                {{ filteredRepairHistory().length }} shown · {{ repairHistory.length }} total repairs loaded
+                            </p>
+                        </div>
+                        <button type="button"
+                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white sm:w-auto"
+                            (click)="createRepair()">
+                            <lucide-icon [size]="17" [img]="plusIcon"></lucide-icon>
+                            New repair
+                        </button>
+                    </div>
+
+                    <div class="mt-5 grid gap-3 rounded-2xl border border-app-border bg-app-surface-muted/40 p-3 sm:p-4 lg:grid-cols-[minmax(280px,1fr)_220px_180px_auto]">
+                        <label class="relative block min-w-0">
+                            <span class="sr-only">Search customer history</span>
+                            <lucide-icon [size]="19" [img]="searchIcon"
+                                class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-app-text-muted"></lucide-icon>
+                            <input type="search"
+                                class="h-12 w-full appearance-none rounded-2xl border border-app-border bg-app-surface pl-12 pr-4 text-base text-app-text outline-none transition placeholder:text-app-text-muted/80 focus:border-brand focus:ring-2 focus:ring-brand/15 sm:text-sm"
+                                placeholder="Search repairs..."
+                                [ngModel]="repairHistorySearch"
+                                (ngModelChange)="updateRepairHistorySearch($event)" />
+                        </label>
+
+                        <select
+                            class="h-12 cursor-pointer rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            [ngModel]="repairHistoryStatus"
+                            (ngModelChange)="updateRepairHistoryStatus($event)">
+                            @for (option of repairStatusOptions; track option.key) {
+                            <option [ngValue]="option.key">{{ option.label }}</option>
+                            }
+                        </select>
+
+                        <select
+                            class="h-12 cursor-pointer rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            [ngModel]="repairHistoryDate"
+                            (ngModelChange)="updateRepairHistoryDate($event)">
+                            @for (option of historyDateOptions; track option.key) {
+                            <option [ngValue]="option.key">{{ option.label }}</option>
+                            }
+                        </select>
+
+                        <button type="button"
+                            class="h-12 cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-40"
+                            [disabled]="!hasRepairHistoryFilters()"
+                            (click)="clearRepairHistoryFilters()">
+                            <lucide-icon [size]="16" [img]="resetIcon"></lucide-icon>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                @if (repairHistoryLoading) {
+                <div class="flex items-center justify-center gap-3 px-6 py-16 text-sm font-semibold text-app-text-muted">
+                    <lucide-icon [size]="18" [img]="loaderIcon" class="animate-spin"></lucide-icon>
+                    Loading complete repair history...
+                </div>
+                } @else if (repairHistoryError) {
+                <div class="px-6 py-14 text-center">
+                    <p class="font-semibold text-rose-700">{{ repairHistoryError }}</p>
+                    <button type="button"
+                        class="cursor-pointer mt-3 rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text hover:bg-app-surface-muted"
+                        (click)="reloadRepairHistory()">
+                        Try again
+                    </button>
+                </div>
+                } @else if (filteredRepairHistory().length) {
+                <div class="max-h-[65vh] divide-y divide-app-border overflow-y-auto overscroll-contain">
+                    @for (repair of filteredRepairHistory(); track trackByHistoryRepairId($index, repair)) {
+                    <button type="button"
+                        class="cursor-pointer grid w-full gap-4 px-5 py-5 text-left transition hover:bg-app-surface-muted sm:px-7 lg:grid-cols-[minmax(0,1fr)_190px_150px_32px] lg:items-center"
+                        (click)="openHistoryRepair(repair)">
+                        <span class="min-w-0">
+                            <span class="block truncate text-base font-bold text-app-text">{{ repair.problemSummary }}</span>
+                            <span class="mt-1 block truncate text-sm text-app-text-muted">
+                                {{ historyRepairDeviceLabel(repair) }} · {{ statusLabel(repair.serviceMode) }} · {{ formatDate(repair.createdAt) }}
+                            </span>
+                        </span>
+                        <span>
+                            @if (repair.appointment) {
+                            <span class="inline-flex items-center gap-2 text-sm font-medium text-app-text">
+                                <lucide-icon [size]="16" [img]="calendarIcon" class="text-app-text-muted"></lucide-icon>
+                                {{ formatDateTime(repair.appointment.startAt) }}
+                            </span>
+                            } @else {
+                            <span class="text-sm text-app-text-muted">No appointment</span>
+                            }
+                        </span>
+                        <span class="inline-flex w-fit rounded-full border px-2.5 py-1 text-xs font-semibold"
+                            [ngClass]="statusClass(repair.status)">
+                            {{ statusLabel(repair.status) }}
+                        </span>
+                        <lucide-icon [size]="17" [img]="chevronRightIcon" class="hidden text-app-text-muted lg:block"></lucide-icon>
+                    </button>
+                    }
+                </div>
+                } @else {
+                <div class="px-6 py-16 text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                        <lucide-icon [size]="24" [img]="repairIcon"></lucide-icon>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-app-text">
+                        {{ repairHistory.length ? 'No repairs match these filters' : 'No repairs yet' }}
+                    </h3>
+                    <p class="mt-1 text-sm text-app-text-muted">
+                        {{ repairHistory.length ? 'Reset the filters to see the full repair history.' : 'Start this customer’s first repair.' }}
+                    </p>
+                </div>
+                }
+            </section>
+            }
+
+            @if (activeTab === 'quotes') {
+            <section class="overflow-hidden rounded-[28px] border border-app-border bg-app-surface">
+                <div class="border-b border-app-border px-5 py-5 sm:px-7">
+                    <div>
+                        <h2 class="text-xl font-bold text-app-text">Quote history</h2>
+                        <p class="mt-1 text-sm text-app-text-muted">
+                            {{ filteredQuoteHistory().length }} shown · {{ quoteHistory.length }} total quotes loaded
+                        </p>
+                    </div>
+
+                    <div class="mt-5 grid gap-3 rounded-2xl border border-app-border bg-app-surface-muted/40 p-3 sm:p-4 lg:grid-cols-[minmax(280px,1fr)_220px_180px_auto]">
+                        <label class="relative block min-w-0">
+                            <span class="sr-only">Search customer history</span>
+                            <lucide-icon [size]="19" [img]="searchIcon"
+                                class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-app-text-muted"></lucide-icon>
+                            <input type="search"
+                                class="h-12 w-full appearance-none rounded-2xl border border-app-border bg-app-surface pl-12 pr-4 text-base text-app-text outline-none transition placeholder:text-app-text-muted/80 focus:border-brand focus:ring-2 focus:ring-brand/15 sm:text-sm"
+                                placeholder="Search quotes..."
+                                [ngModel]="quoteHistorySearch"
+                                (ngModelChange)="updateQuoteHistorySearch($event)" />
+                        </label>
+
+                        <select
+                            class="h-12 cursor-pointer rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            [ngModel]="quoteHistoryStatus"
+                            (ngModelChange)="updateQuoteHistoryStatus($event)">
+                            @for (option of quoteStatusOptions; track option.key) {
+                            <option [ngValue]="option.key">{{ option.label }}</option>
+                            }
+                        </select>
+
+                        <select
+                            class="h-12 cursor-pointer rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            [ngModel]="quoteHistoryDate"
+                            (ngModelChange)="updateQuoteHistoryDate($event)">
+                            @for (option of historyDateOptions; track option.key) {
+                            <option [ngValue]="option.key">{{ option.label }}</option>
+                            }
+                        </select>
+
+                        <button type="button"
+                            class="h-12 cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-40"
+                            [disabled]="!hasQuoteHistoryFilters()"
+                            (click)="clearQuoteHistoryFilters()">
+                            <lucide-icon [size]="16" [img]="resetIcon"></lucide-icon>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                @if (quoteHistoryLoading) {
+                <div class="flex items-center justify-center gap-3 px-6 py-16 text-sm font-semibold text-app-text-muted">
+                    <lucide-icon [size]="18" [img]="loaderIcon" class="animate-spin"></lucide-icon>
+                    Loading complete quote history...
+                </div>
+                } @else if (quoteHistoryError) {
+                <div class="px-6 py-14 text-center">
+                    <p class="font-semibold text-rose-700">{{ quoteHistoryError }}</p>
+                    <button type="button"
+                        class="cursor-pointer mt-3 rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text hover:bg-app-surface-muted"
+                        (click)="reloadQuoteHistory()">
+                        Try again
+                    </button>
+                </div>
+                } @else if (filteredQuoteHistory().length) {
+                <div class="max-h-[65vh] divide-y divide-app-border overflow-y-auto overscroll-contain">
+                    @for (quote of filteredQuoteHistory(); track trackByHistoryQuoteId($index, quote)) {
+                    <button type="button"
+                        class="cursor-pointer grid w-full gap-4 px-5 py-5 text-left transition hover:bg-app-surface-muted sm:px-7 lg:grid-cols-[minmax(0,1fr)_150px_150px_32px] lg:items-center"
+                        (click)="openHistoryQuote(quote)">
+                        <span class="min-w-0">
+                            <span class="block truncate text-base font-bold text-app-text">{{ historyQuoteRepairLabel(quote) }}</span>
+                            <span class="mt-1 block truncate text-sm text-app-text-muted">
+                                {{ historyQuoteDeviceLabel(quote) }} · {{ formatDate(quote.createdAt) }}
+                            </span>
+                        </span>
+                        <span class="font-bold text-app-text">
+                            {{ quote.estimatedTotalCents !== null ? formatMoney(quote.estimatedTotalCents) : 'Pending' }}
+                        </span>
+                        <span class="inline-flex w-fit rounded-full border px-2.5 py-1 text-xs font-semibold"
+                            [ngClass]="statusClass(quote.quoteStatus)">
+                            {{ statusLabel(quote.quoteStatus) }}
+                        </span>
+                        <lucide-icon [size]="17" [img]="chevronRightIcon" class="hidden text-app-text-muted lg:block"></lucide-icon>
+                    </button>
+                    }
+                </div>
+                } @else {
+                <div class="px-6 py-16 text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                        <lucide-icon [size]="24" [img]="quoteIcon"></lucide-icon>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-app-text">
+                        {{ quoteHistory.length ? 'No quotes match these filters' : 'No quotes yet' }}
+                    </h3>
+                    <p class="mt-1 text-sm text-app-text-muted">
+                        {{ quoteHistory.length ? 'Reset the filters to see the full quote history.' : 'Quotes linked to this customer will appear here.' }}
+                    </p>
+                </div>
+                }
+            </section>
+            }
+
+            @if (activeTab === 'orders') {
+            <section class="overflow-hidden rounded-[28px] border border-app-border bg-app-surface">
+                <div class="border-b border-app-border px-5 py-5 sm:px-7">
+                    <div>
+                        <h2 class="text-xl font-bold text-app-text">Order history</h2>
+                        <p class="mt-1 text-sm text-app-text-muted">
+                            {{ filteredOrderHistory().length }} shown · {{ orderHistory.length }} total orders loaded
+                        </p>
+                    </div>
+
+                    <div class="mt-5 grid gap-3 rounded-2xl border border-app-border bg-app-surface-muted/40 p-3 sm:p-4 xl:grid-cols-[minmax(280px,1fr)_200px_200px_170px_auto]">
+                        <label class="relative block min-w-0">
+                            <span class="sr-only">Search customer history</span>
+                            <lucide-icon [size]="19" [img]="searchIcon"
+                                class="pointer-events-none absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2 text-app-text-muted"></lucide-icon>
+                            <input type="search"
+                                class="h-12 w-full appearance-none rounded-2xl border border-app-border bg-app-surface pl-12 pr-4 text-base text-app-text outline-none transition placeholder:text-app-text-muted/80 focus:border-brand focus:ring-2 focus:ring-brand/15 sm:text-sm"
+                                placeholder="Search orders..."
+                                [ngModel]="orderHistorySearch"
+                                (ngModelChange)="updateOrderHistorySearch($event)" />
+                        </label>
+
+                        <select
+                            class="h-12 cursor-pointer rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            [ngModel]="orderPaymentStatus"
+                            (ngModelChange)="updateOrderPaymentStatus($event)">
+                            @for (option of orderPaymentStatusOptions; track option.key) {
+                            <option [ngValue]="option.key">{{ option.label }}</option>
+                            }
+                        </select>
+
+                        <select
+                            class="h-12 cursor-pointer rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            [ngModel]="orderFulfillmentStatus"
+                            (ngModelChange)="updateOrderFulfillmentStatus($event)">
+                            @for (option of orderFulfillmentStatusOptions; track option.key) {
+                            <option [ngValue]="option.key">{{ option.label }}</option>
+                            }
+                        </select>
+
+                        <select
+                            class="h-12 cursor-pointer rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+                            [ngModel]="orderHistoryDate"
+                            (ngModelChange)="updateOrderHistoryDate($event)">
+                            @for (option of historyDateOptions; track option.key) {
+                            <option [ngValue]="option.key">{{ option.label }}</option>
+                            }
+                        </select>
+
+                        <button type="button"
+                            class="h-12 cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-40"
+                            [disabled]="!hasOrderHistoryFilters()"
+                            (click)="clearOrderHistoryFilters()">
+                            <lucide-icon [size]="16" [img]="resetIcon"></lucide-icon>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                @if (orderHistoryLoading) {
+                <div class="flex items-center justify-center gap-3 px-6 py-16 text-sm font-semibold text-app-text-muted">
+                    <lucide-icon [size]="18" [img]="loaderIcon" class="animate-spin"></lucide-icon>
+                    Loading complete order history...
+                </div>
+                } @else if (orderHistoryError) {
+                <div class="px-6 py-14 text-center">
+                    <p class="font-semibold text-rose-700">{{ orderHistoryError }}</p>
+                    <button type="button"
+                        class="cursor-pointer mt-3 rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text hover:bg-app-surface-muted"
+                        (click)="reloadOrderHistory()">
+                        Try again
+                    </button>
+                </div>
+                } @else if (filteredOrderHistory().length) {
+                <div class="max-h-[65vh] divide-y divide-app-border overflow-y-auto overscroll-contain">
+                    @for (order of filteredOrderHistory(); track trackByHistoryOrderId($index, order)) {
+                    <button type="button"
+                        class="cursor-pointer grid w-full gap-4 px-5 py-5 text-left transition hover:bg-app-surface-muted sm:px-7 lg:grid-cols-[minmax(0,1fr)_130px_130px_130px_32px] lg:items-center"
+                        (click)="openHistoryOrder(order)">
+                        <span class="min-w-0">
+                            <span class="block text-base font-bold text-app-text">Order {{ order.orderNumber }}</span>
+                            <span class="mt-1 block truncate text-sm text-app-text-muted">
+                                {{ formatDateTime(order.createdAt) }}
+                                @if (historyOrderBalance(order) > 0) {
+                                · {{ formatMoney(historyOrderBalance(order)) }} outstanding
+                                }
+                            </span>
+                        </span>
+                        <span class="font-bold text-app-text">{{ formatMoney(historyOrderTotal(order)) }}</span>
+                        <span class="inline-flex w-fit rounded-full border px-2.5 py-1 text-xs font-semibold"
+                            [ngClass]="statusClass(order.paymentStatus)">
+                            {{ statusLabel(order.paymentStatus) }}
+                        </span>
+                        <span class="inline-flex w-fit rounded-full border px-2.5 py-1 text-xs font-semibold"
+                            [ngClass]="statusClass(order.fulfillmentStatus)">
+                            {{ statusLabel(order.fulfillmentStatus) }}
+                        </span>
+                        <lucide-icon [size]="17" [img]="chevronRightIcon" class="hidden text-app-text-muted lg:block"></lucide-icon>
+                    </button>
+                    }
+                </div>
+                } @else {
+                <div class="px-6 py-16 text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                        <lucide-icon [size]="24" [img]="orderIcon"></lucide-icon>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-app-text">
+                        {{ orderHistory.length ? 'No orders match these filters' : 'No orders yet' }}
+                    </h3>
+                    <p class="mt-1 text-sm text-app-text-muted">
+                        {{ orderHistory.length ? 'Reset the filters to see the full order history.' : 'Orders assigned to this customer will appear here.' }}
+                    </p>
+                </div>
+                }
+            </section>
+            }
+
+            @if (activeTab === 'devices') {
+            <section class="rounded-[28px] border border-app-border bg-app-surface">
+                <div class="flex flex-col gap-3 border-b border-app-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                    <div>
+                        <h2 class="text-xl font-bold text-app-text">{{ customerFirstName() }}'s devices</h2>
+                        <p class="mt-1 text-sm text-app-text-muted">Track devices, identifiers, and customer-specific notes.</p>
+                    </div>
+                    <button type="button"
+                        class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white sm:w-auto"
+                        (click)="openDeviceModal()">
+                        <lucide-icon [size]="17" [img]="plusIcon"></lucide-icon>
+                        Add device
+                    </button>
+                </div>
+
+                @if (customerDevices.length) {
+                <div class="grid max-h-[65vh] gap-4 overflow-y-auto overscroll-contain p-5 sm:grid-cols-2 sm:p-7 xl:grid-cols-3">
+                    @for (device of customerDevices; track device.id) {
+                    <div class="rounded-3xl border border-app-border bg-app-surface p-5 transition hover:border-brand/30 hover:shadow-lg">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex min-w-0 gap-3">
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                                    <lucide-icon [size]="20" [img]="deviceIcon"></lucide-icon>
+                                </span>
+                                <div class="min-w-0">
+                                    <h3 class="truncate text-base font-bold text-app-text">{{ device.nickname }}</h3>
+                                    <p class="mt-1 truncate text-sm text-app-text-muted">
+                                        {{ deviceDisplayLabel(device) }}
+                                    </p>
+                                </div>
+                            </div>
+                            <button type="button"
+                                class="cursor-pointer shrink-0 text-sm font-semibold text-brand hover:opacity-80"
+                                (click)="editDevice(device)">
+                                Edit
+                            </button>
+                        </div>
+
+                        @if (device.imei) {
+                        <p class="mt-4 rounded-xl bg-app-surface-muted px-3 py-2 text-xs font-medium text-app-text-muted">
+                            IMEI ending in {{ device.imei.slice(-5) }}
+                        </p>
+                        }
+                        @if (device.notes) {
+                        <p class="mt-3 line-clamp-3 text-sm text-app-text-muted">{{ device.notes }}</p>
+                        }
+                    </div>
+                    }
+                </div>
+                } @else {
+                <div class="px-6 py-16 text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                        <lucide-icon [size]="24" [img]="deviceIcon"></lucide-icon>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-app-text">No devices yet</h3>
+                    <p class="mt-1 text-sm text-app-text-muted">Add the customer's first device to track repairs and notes.</p>
+                </div>
+                }
+            </section>
+            }
+
+            @if (activeTab === 'addresses') {
+            <section class="rounded-[28px] border border-app-border bg-app-surface">
+                <div class="flex flex-col gap-3 border-b border-app-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                    <div>
+                        <h2 class="text-xl font-bold text-app-text">{{ customerFirstName() }}'s addresses</h2>
+                        <p class="mt-1 text-sm text-app-text-muted">Saved locations for on-site service.</p>
+                    </div>
+                    <button type="button"
+                        class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white sm:w-auto"
+                        (click)="openNewAddressModal()">
+                        <lucide-icon [size]="17" [img]="plusIcon"></lucide-icon>
+                        Add address
+                    </button>
+                </div>
+
+                @if (addresses.length) {
+                <div class="grid max-h-[65vh] gap-4 overflow-y-auto overscroll-contain p-5 sm:p-7 xl:grid-cols-2">
+                    @for (address of addresses; track trackByAddressId($index, address)) {
+                    <div class="rounded-3xl border border-app-border bg-app-surface p-5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex min-w-0 gap-3">
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                                    <lucide-icon [size]="20" [img]="addressIcon"></lucide-icon>
+                                </span>
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-bold text-app-text">{{ address.label || 'Address' }}</h3>
+                                        @if (address.isDefault) {
+                                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Default</span>
+                                        }
+                                    </div>
+                                    <div class="mt-2 space-y-0.5 text-sm text-app-text-muted">
+                                        @for (line of formatAddressLines(address); track $index) {
+                                        <p>{{ line }}</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (address.notes) {
+                        <p class="mt-4 rounded-xl bg-app-surface-muted px-3 py-2 text-sm text-app-text-muted">{{ address.notes }}</p>
+                        }
+
+                        <div class="mt-5 flex flex-wrap gap-2 border-t border-app-border pt-4">
+                            @if (!address.isDefault) {
+                            <button type="button"
+                                class="cursor-pointer rounded-xl border border-app-border px-3 py-2 text-xs font-semibold text-app-text transition hover:bg-app-surface-muted"
+                                (click)="setDefaultAddress(address)">
+                                Set default
+                            </button>
+                            }
+                            <button type="button"
+                                class="cursor-pointer rounded-xl border border-app-border px-3 py-2 text-xs font-semibold text-app-text transition hover:bg-app-surface-muted"
+                                (click)="openEditAddressModal(address)">
+                                Edit
+                            </button>
+                            <button type="button"
+                                class="cursor-pointer rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
+                                (click)="deleteAddress(address)">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    }
+                </div>
+                } @else {
+                <div class="px-6 py-16 text-center">
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                        <lucide-icon [size]="24" [img]="addressIcon"></lucide-icon>
+                    </div>
+                    <h3 class="mt-4 text-lg font-bold text-app-text">No addresses yet</h3>
+                    <p class="mt-1 text-sm text-app-text-muted">Add an address to schedule on-site repairs.</p>
+                </div>
+                }
+            </section>
+            }
+
+            @if (activeTab === 'settings') {
+            <section class="mx-auto max-w-4xl rounded-[28px] border border-app-border bg-app-surface">
+                <div class="flex flex-col gap-3 border-b border-app-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                    <div>
+                        <h2 class="text-xl font-bold text-app-text">Customer settings</h2>
+                        <p class="mt-1 text-sm text-app-text-muted">Update contact information, tags, and internal notes.</p>
+                    </div>
+                    <button type="button"
+                        class="cursor-pointer w-full rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                        [disabled]="editCustomerForm.invalid || working || customerIdentityChecking"
+                        (click)="save()">
+                        {{ working ? 'Saving...' : 'Save changes' }}
+                    </button>
+                </div>
+
+                <form [formGroup]="editCustomerForm" class="space-y-5 p-5 sm:p-7">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="relative sm:col-span-2">
+                            <input type="text" id="name" placeholder=" " formControlName="name"
+                                class="peer w-full rounded-xl border border-app-border bg-app-surface px-4 pb-2 pt-5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15" />
+                            <label for="name"
+                                class="absolute left-4 top-2 text-xs text-app-text-muted transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-brand">
+                                Full name<sup class="text-danger">*</sup>
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="email" id="email" placeholder=" " formControlName="email"
+                                class="peer w-full rounded-xl border border-app-border bg-app-surface px-4 pb-2 pt-5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15" />
+                            <label for="email"
+                                class="absolute left-4 top-2 text-xs text-app-text-muted transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-brand">
+                                Email address<sup class="text-danger">*</sup>
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="tel" id="phone" placeholder=" " formControlName="phone"
+                                class="peer w-full rounded-xl border border-app-border bg-app-surface px-4 pb-2 pt-5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15" />
+                            <label for="phone"
+                                class="absolute left-4 top-2 text-xs text-app-text-muted transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-brand">
+                                Phone number<sup class="text-danger">*</sup>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="relative">
+                            <input type="text" id="tags" placeholder=" " formControlName="tags"
+                                class="peer w-full rounded-xl border border-app-border bg-app-surface px-4 pb-2 pt-5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15" />
+                            <label for="tags"
+                                class="absolute left-4 top-2 text-xs text-app-text-muted transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-brand">
+                                Customer tags
+                            </label>
+                        </div>
+                        <p class="mt-1.5 text-xs text-app-text-muted">Separate tags with commas. Spaces are saved as hyphens.</p>
+                    </div>
+
+                    @if (customerIdentityChecking) {
+                    <div class="rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm text-app-text-muted">
+                        Checking for duplicate contact details...
+                    </div>
+                    }
+
+                    @if (customerIdentityConflicts.length && duplicateCustomer(); as duplicate) {
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-amber-900">Another customer already uses this contact</p>
+                                <p class="mt-1 text-sm text-amber-800">{{ duplicateSummary() }}</p>
+                                <p class="mt-2 truncate text-sm font-semibold text-app-text">{{ duplicate.name }}</p>
+                                <p class="truncate text-xs text-app-text-muted">{{ duplicate.email || 'No email' }} · {{ duplicate.phone || 'No phone' }}</p>
+                            </div>
+                            <button type="button"
+                                class="cursor-pointer shrink-0 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-100"
+                                (click)="openDuplicateCustomer()">
+                                Open customer
+                            </button>
+                        </div>
+                    </div>
+                    }
+
+                    <div class="relative">
+                        <textarea id="notes" rows="6" maxlength="2000" placeholder=" " formControlName="notes"
+                            class="peer w-full resize-none rounded-xl border border-app-border bg-app-surface px-4 pb-2 pt-6 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"></textarea>
+                        <label for="notes"
+                            class="absolute left-4 top-2 text-xs text-app-text-muted transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-focus:top-2 peer-focus:text-xs peer-focus:text-brand">
+                            Internal notes
+                        </label>
+                        <div class="mt-1 text-right text-xs text-app-text-muted">
+                            {{ editCustomerForm.controls.notes.value.length }} / 2000
+                        </div>
+                    </div>
+                </form>
+            </section>
+            }
+        </main>
+    </div>
 </div>
+
+@if (addressModalOpen) {
+<div class="fixed inset-0 z-[80] flex items-center justify-center px-4 py-6">
+    <button type="button" class="cursor-pointer absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+        (click)="closeAddressModal()" aria-label="Close address modal"></button>
+
+    <div class="relative w-full max-w-2xl rounded-[28px] border border-app-border bg-app-surface shadow-2xl">
+        <div class="flex items-start justify-between border-b border-app-border px-6 py-5 sm:px-7">
+            <div>
+                <h3 class="text-lg font-bold text-app-text">{{ editingAddress ? 'Edit address' : 'New address' }}</h3>
+                <p class="mt-1 text-sm text-app-text-muted">Save an address for this customer.</p>
+            </div>
+            <button type="button"
+                class="cursor-pointer flex h-10 w-10 items-center justify-center rounded-full text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                (click)="closeAddressModal()" aria-label="Close address modal">
+                ✕
+            </button>
+        </div>
+
+        <div class="px-6 py-6 sm:px-7">
+            <form [formGroup]="addressForm" class="grid gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <input type="text" formControlName="label" placeholder="Label (Home, Work, Office)"
+                        class="w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text outline-none focus:border-brand" />
+                </div>
+                <div class="sm:col-span-2">
+                    <input type="text" formControlName="line1" placeholder="Address line 1"
+                        class="w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text outline-none focus:border-brand" />
+                </div>
+                <div class="sm:col-span-2">
+                    <input type="text" formControlName="line2" placeholder="Address line 2"
+                        class="w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text outline-none focus:border-brand" />
+                </div>
+                <div>
+                    <input type="text" formControlName="city" placeholder="City"
+                        class="w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text outline-none focus:border-brand" />
+                </div>
+                <div>
+                    <select formControlName="state"
+                        class="w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text outline-none focus:border-brand">
+                        <option value="">State</option>
+                        @for (state of states; track state.value) {
+                        <option [value]="state.value">{{ state.label }}</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <input type="text" formControlName="postalCode" placeholder="Postal code"
+                        class="w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text outline-none focus:border-brand" />
+                </div>
+                <div>
+                    <input type="text" [value]="shopCountry" disabled
+                        class="w-full rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm text-app-text-muted outline-none" />
+                </div>
+                <div class="sm:col-span-2">
+                    <textarea rows="3" formControlName="notes" placeholder="Notes"
+                        class="w-full resize-none rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text outline-none focus:border-brand"></textarea>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="inline-flex items-center gap-2 text-sm font-medium text-app-text">
+                        <input type="checkbox" formControlName="isDefault" />
+                        Set as default address
+                    </label>
+                </div>
+            </form>
+
+            <div class="mt-6 flex items-center justify-end gap-2">
+                <button type="button"
+                    class="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                    (click)="closeAddressModal()">
+                    Cancel
+                </button>
+                <button type="button"
+                    class="cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    [disabled]="addressForm.invalid || addressWorking" (click)="saveAddress()">
+                    {{ addressWorking ? 'Saving...' : (editingAddress ? 'Save address' : 'Create address') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+}
 }

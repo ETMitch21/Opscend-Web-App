@@ -70,6 +70,18 @@ export interface OrderListResponse {
   nextCursor: string | null;
 }
 
+export interface OrderListParams {
+  limit?: number;
+  cursor?: string | null;
+  customerId?: string;
+  paymentStatus?: PaymentStatus;
+  fulfillmentStatus?: FulfillmentStatus;
+  tag?: string;
+  search?: string;
+  createdFrom?: string;
+  createdTo?: string;
+}
+
 export interface CreateOrderItemPayload {
   type: OrderItemType;
   productId?: string | null;

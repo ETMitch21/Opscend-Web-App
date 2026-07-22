@@ -9,6 +9,7 @@ import {
   CreateStripePaymentIntentResponse,
   CreateStripeRefundPayload,
   Order,
+  OrderListParams,
   OrderListResponse,
   PatchOrderPayload,
   RecordStripePaymentPayload,
@@ -32,20 +33,18 @@ export class OrdersService {
     return this.http.get<Order>(`${this.baseUrl}/${orderId}`);
   }
 
-  list(params?: {
-    limit?: number;
-    cursor?: string | null;
-    paymentStatus?: string;
-    fulfillmentStatus?: string;
-    tag?: string;
-  }): Observable<OrderListResponse> {
+  list(params: OrderListParams = {}): Observable<OrderListResponse> {
     let httpParams = new HttpParams();
 
     if (params?.limit != null) httpParams = httpParams.set('limit', params.limit);
     if (params?.cursor) httpParams = httpParams.set('cursor', params.cursor);
     if (params?.paymentStatus) httpParams = httpParams.set('paymentStatus', params.paymentStatus);
     if (params?.fulfillmentStatus) httpParams = httpParams.set('fulfillmentStatus', params.fulfillmentStatus);
-    if (params?.tag) httpParams = httpParams.set('tag', params.tag);
+    if (params.tag) httpParams = httpParams.set('tag', params.tag);
+    if (params.customerId) httpParams = httpParams.set('customerId', params.customerId);
+    if (params.search) httpParams = httpParams.set('search', params.search);
+    if (params.createdFrom) httpParams = httpParams.set('createdFrom', params.createdFrom);
+    if (params.createdTo) httpParams = httpParams.set('createdTo', params.createdTo);
 
     return this.http.get<OrderListResponse>(this.baseUrl, { params: httpParams });
   }

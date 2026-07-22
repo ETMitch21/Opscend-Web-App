@@ -351,6 +351,11 @@ export interface BookingQuoteRequestsResponse {
 export interface BookingQuoteRequestsListParams {
   limit?: number;
   cursor?: string | null;
+  customerId?: string;
+  quoteStatus?: BookingQuoteWorkflowStatus;
+  search?: string;
+  createdFrom?: string;
+  createdTo?: string;
 }
 
 export interface BookingQuoteRequestPatch {
