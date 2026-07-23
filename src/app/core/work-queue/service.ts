@@ -12,6 +12,8 @@ import {
   WorkQueueItem,
   WorkQueueListParams,
   WorkQueueListResponse,
+  WorkQueueReportRange,
+  WorkQueueReportResponse,
   WorkQueueSummaryResponse,
 } from './model';
 
@@ -66,6 +68,14 @@ export class WorkQueueService {
 
   getSummary(): Observable<WorkQueueSummaryResponse> {
     return this.http.get<WorkQueueSummaryResponse>(`${this.baseUrl}/summary`);
+  }
+
+  getReport(
+    range: WorkQueueReportRange = '30d',
+  ): Observable<WorkQueueReportResponse> {
+    return this.http.get<WorkQueueReportResponse>(`${this.baseUrl}/reporting`, {
+      params: new HttpParams().set('range', range),
+    });
   }
 
   listAssignees(): Observable<WorkQueueAssigneeListResponse> {

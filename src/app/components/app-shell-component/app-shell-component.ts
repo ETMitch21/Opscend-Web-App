@@ -7,6 +7,7 @@ import {
   CalendarClockIcon,
   CircleUserRoundIcon,
   LayoutDashboard,
+  BarChart3,
   LogOutIcon,
   LucideAngularModule,
   LucideIconData,
@@ -121,6 +122,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly calendarCogIcon = CalendarCog;
   readonly toolboxIcon = ToolboxIcon;
   readonly workQueueIcon = ListTodo;
+  readonly analyticsIcon = BarChart3;
   readonly workQueueAlertIcon = AlertTriangle;
 
   private readonly notificationPollMs = 15_000;
@@ -169,6 +171,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
+    { label: 'Analytics', route: '/analytics', icon: this.analyticsIcon },
     {
       label: 'Work Queue',
       route: '/work-queue',

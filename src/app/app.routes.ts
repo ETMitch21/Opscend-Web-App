@@ -59,6 +59,12 @@ export const routes: Routes = [
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [AuthGuard] },
     {
+        path: "analytics",
+        loadComponent: () =>
+            import('./features/analytics/analytics').then((m) => m.Analytics),
+        canActivate: [AuthGuard]
+    },
+    {
         path: "work-queue",
         loadComponent: () =>
             import('./features/work-queue/work-queue').then((m) => m.WorkQueue),

@@ -47,15 +47,18 @@ import { OrdersService } from '../../core/orders/orders-service';
 import {
   CreateWorkQueueItemPayload,
   WorkQueueAssignee,
+  WorkQueueHistoryEntry,
   WorkQueueItem,
   WorkQueueListParams,
   WorkQueuePriority,
+  WorkQueueReport,
+  WorkQueueReportRange,
   WorkQueueSourceType,
   WorkQueueSummary,
 } from '../../core/work-queue/model';
 import { WorkQueueService } from '../../core/work-queue/service';
 
-type QueueView = 'open' | 'mine' | 'snoozed' | 'completed';
+type QueueView = 'open' | 'mine' | 'snoozed' | 'completed' | 'performance';
 type QueuePriorityFilter = 'all' | WorkQueuePriority;
 type QueueSourceFilter = 'all' | WorkQueueSourceType;
 type QueueAssignmentFilter = 'all' | 'unassigned' | string;
@@ -122,6 +125,7 @@ export class WorkQueue implements OnInit, OnDestroy {
     { key: 'mine', label: 'Assigned to me' },
     { key: 'snoozed', label: 'Snoozed' },
     { key: 'completed', label: 'Completed' },
+    { key: 'performance', label: 'Performance' },
   ];
 
   readonly priorityOptions: ReadonlyArray<{
@@ -148,6 +152,16 @@ export class WorkQueue implements OnInit, OnDestroy {
     { value: 'communication', label: 'Communications' },
   ];
 
+  readonly reportRangeOptions: ReadonlyArray<{
+    value: WorkQueueReportRange;
+    label: string;
+  }> = [
+    { value: '7d', label: '7 days' },
+    { value: '30d', label: '30 days' },
+    { value: '90d', label: '90 days' },
+    { value: '365d', label: '1 year' },
+  ];
+
   readonly dueOptions: ReadonlyArray<{
     value: QueueDueFilter;
     label: string;
@@ -160,6 +174,10 @@ export class WorkQueue implements OnInit, OnDestroy {
   readonly items = signal<WorkQueueItem[]>([]);
   readonly assignees = signal<WorkQueueAssignee[]>([]);
   readonly summary = signal<WorkQueueSummary | null>(null);
+  readonly report = signal<WorkQueueReport | null>(null);
+  readonly reportLoading = signal(false);
+  readonly reportError = signal<string | null>(null);
+  readonly reportRange = signal<WorkQueueReportRange>('30d');
   readonly loading = signal(true);
   readonly refreshing = signal(false);
   readonly error = signal<string | null>(null);
@@ -202,6 +220,10 @@ export class WorkQueue implements OnInit, OnDestroy {
 
   readonly activeCount = computed(() => this.summary()?.counts.open ?? 0);
   readonly resultLabel = computed(() => {
+    if (this.activeView() === 'performance') {
+      return `Last ${this.report()?.range.days ?? 30} days`;
+    }
+
     const count = this.items().length;
     return `${count} item${count === 1 ? '' : 's'}`;
   });
@@ -266,10 +288,13 @@ export class WorkQueue implements OnInit, OnDestroy {
     this.refreshing.set(true);
 
     try {
-      const [summary, list] = await Promise.all([
-        firstValueFrom(this.workQueueService.getSummary()),
-        this.loadItems(),
-      ]);
+      const summaryPromise = firstValueFrom(this.workQueueService.getSummary());
+      const contentPromise =
+        this.activeView() === 'performance'
+          ? this.loadReport()
+          : this.loadItems();
+
+      const [summary] = await Promise.all([summaryPromise, contentPromise]);
       this.summary.set(summary.data);
     } catch (error) {
       console.error('Work queue refresh failed.', error);
@@ -283,7 +308,19 @@ export class WorkQueue implements OnInit, OnDestroy {
     this.activeView.set(view);
     this.snoozeMenuItemId.set(null);
     this.actionMenuItemId.set(null);
+
+    if (view === 'performance') {
+      await this.loadReport();
+      return;
+    }
+
     await this.loadItems();
+  }
+
+  async setReportRange(range: WorkQueueReportRange): Promise<void> {
+    if (this.reportRange() === range && this.report() && !this.reportError()) return;
+    this.reportRange.set(range);
+    await this.loadReport();
   }
 
   onSearchInput(value: string): void {
@@ -571,6 +608,106 @@ export class WorkQueue implements OnInit, OnDestroy {
       default:
         return 'border-slate-200 bg-slate-50';
     }
+  }
+
+  reportDailyMax(): number {
+    return Math.max(1, ...(this.report()?.daily.map((point) => point.closed) ?? [1]));
+  }
+
+  reportDailyBarHeight(closed: number): number {
+    if (closed <= 0) return 0;
+    return Math.max(4, Math.round((closed / this.reportDailyMax()) * 100));
+  }
+
+  reportDateLabel(value: string): string {
+    const date = new Date(`${value}T12:00:00`);
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  }
+
+  reportDateTickVisible(index: number, total: number): boolean {
+    if (total <= 14) return true;
+    const interval = total <= 31 ? 5 : total <= 100 ? 15 : 60;
+    return index === 0 || index === total - 1 || index % interval === 0;
+  }
+
+  formatDuration(totalSeconds: number): string {
+    const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0) return `${minutes}m`;
+    return `${safeSeconds}s`;
+  }
+
+  workloadMax(): number {
+    return Math.max(1, ...(this.report()?.workload.map((row) => row.active) ?? [1]));
+  }
+
+  workloadWidth(active: number): number {
+    if (active <= 0) return 0;
+    return Math.max(3, Math.round((active / this.workloadMax()) * 100));
+  }
+
+  sourceTotal(sourceType: WorkQueueSourceType): number {
+    const source = this.report()?.sources.find((row) => row.sourceType === sourceType);
+    return (source?.active ?? 0) + (source?.closed ?? 0);
+  }
+
+  sourceMax(): number {
+    return Math.max(
+      1,
+      ...(this.report()?.sources.map((row) => row.active + row.closed) ?? [1]),
+    );
+  }
+
+  sourceWidth(sourceType: WorkQueueSourceType): number {
+    const total = this.sourceTotal(sourceType);
+    if (total <= 0) return 0;
+    return Math.max(3, Math.round((total / this.sourceMax()) * 100));
+  }
+
+  historyStatusLabel(outcome: WorkQueueHistoryEntry['outcome']): string {
+    switch (outcome) {
+      case 'completed':
+        return 'Completed';
+      case 'dismissed':
+        return 'Dismissed';
+      case 'resolved':
+        return 'Auto-resolved';
+      default:
+        return 'Closed';
+    }
+  }
+
+  historyStatusClass(item: WorkQueueHistoryEntry): string {
+    switch (item.outcome) {
+      case 'completed':
+        return 'bg-emerald-50 text-emerald-700';
+      case 'dismissed':
+        return 'bg-slate-100 text-slate-600';
+      case 'resolved':
+        return 'bg-blue-50 text-blue-700';
+      default:
+        return 'bg-slate-100 text-slate-600';
+    }
+  }
+
+  historyClosedLabel(item: WorkQueueHistoryEntry): string {
+    return this.formatDateTime(item.closedAt);
+  }
+
+  historyTimingLabel(item: WorkQueueHistoryEntry): string {
+    if (item.wasLate == null) return 'No due-time comparison';
+    return item.wasLate ? 'Late' : 'On time';
+  }
+
+  historyTimingClass(item: WorkQueueHistoryEntry): string {
+    if (item.wasLate == null) return 'text-slate-400';
+    return item.wasLate ? 'text-rose-700' : 'text-emerald-700';
   }
 
   isAppointmentDisposition(item: WorkQueueItem): boolean {
@@ -910,12 +1047,12 @@ export class WorkQueue implements OnInit, OnDestroy {
     await this.snoozeUntil(item, until);
   }
 
-  async openSource(item: WorkQueueItem): Promise<void> {
+  async openSource(item: Pick<WorkQueueItem, 'route'>): Promise<void> {
     if (!item.route) return;
     await this.router.navigateByUrl(item.route);
   }
 
-  itemIcon(item: WorkQueueItem): LucideIconData {
+  itemIcon(item: Pick<WorkQueueItem, 'sourceType' | 'kind'>): LucideIconData {
     switch (item.sourceType) {
       case 'repair':
         return this.icons.Wrench;
@@ -970,7 +1107,7 @@ export class WorkQueue implements OnInit, OnDestroy {
     }
   }
 
-  sourceIconClass(item: WorkQueueItem): string {
+  sourceIconClass(item: Pick<WorkQueueItem, 'sourceType' | 'kind'>): string {
     switch (item.sourceType) {
       case 'repair':
         return 'bg-blue-50 text-blue-700';
@@ -1126,6 +1263,25 @@ export class WorkQueue implements OnInit, OnDestroy {
       due: dueFilter === 'all' ? undefined : dueFilter,
       q: this.searchQuery().trim() || undefined,
     };
+  }
+
+  private async loadReport(): Promise<void> {
+    if (this.reportLoading()) return;
+
+    this.reportLoading.set(true);
+    this.reportError.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.workQueueService.getReport(this.reportRange()),
+      );
+      this.report.set(response.data);
+    } catch (error) {
+      console.error('Work queue report could not be loaded.', error);
+      this.reportError.set('Performance reporting could not be loaded.');
+    } finally {
+      this.reportLoading.set(false);
+    }
   }
 
   private async loadItems(): Promise<void> {

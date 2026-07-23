@@ -179,12 +179,28 @@
               </div>
             </div>
 
-            <div class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-              {{ resultLabel() }}
-            </div>
+            @if (activeView() === 'performance') {
+              <div class="inline-flex flex-wrap rounded-xl bg-slate-100 p-1">
+                @for (option of reportRangeOptions; track option.value) {
+                  <button
+                    type="button"
+                    class="cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold transition"
+                    [ngClass]="reportRange() === option.value ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
+                    (click)="setReportRange(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                {{ resultLabel() }}
+              </div>
+            }
           </div>
 
-          <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.5fr)_repeat(4,minmax(150px,0.65fr))_auto]">
+          @if (activeView() !== 'performance') {
+            <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.5fr)_repeat(4,minmax(150px,0.65fr))_auto]">
             <label class="relative block">
               <span class="sr-only">Search work queue</span>
               <lucide-icon
@@ -252,10 +268,253 @@
               <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4"></lucide-icon>
               Reset
             </button>
-          </div>
+            </div>
+          }
         </div>
 
-        @if (items().length) {
+        @if (activeView() === 'performance') {
+          @if (reportLoading()) {
+            <div class="grid min-h-[420px] place-items-center px-6 py-16">
+              <div class="text-center">
+                <lucide-icon [name]="icons.Loader2" class="mx-auto h-7 w-7 animate-spin text-slate-400"></lucide-icon>
+                <p class="mt-3 text-sm font-medium text-slate-500">Building performance reporting...</p>
+              </div>
+            </div>
+          } @else if (reportError()) {
+            <div class="px-6 py-16 text-center">
+              <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+                <lucide-icon [name]="icons.AlertTriangle" class="h-6 w-6"></lucide-icon>
+              </div>
+              <h2 class="mt-4 text-lg font-semibold text-slate-950">Reporting could not be loaded</h2>
+              <p class="mx-auto mt-1 max-w-lg text-sm text-slate-500">{{ reportError() }}</p>
+              <button
+                type="button"
+                class="cursor-pointer mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                (click)="setReportRange(reportRange())"
+              >
+                <lucide-icon [name]="icons.RefreshCw" class="h-4 w-4"></lucide-icon>
+                Try again
+              </button>
+            </div>
+          } @else if (report(); as report) {
+            <div class="space-y-5 bg-slate-50/60 p-4 sm:p-5">
+              <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-start justify-between gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                      <lucide-icon [name]="icons.CheckCircle2" class="h-5 w-5"></lucide-icon>
+                    </span>
+                    <span class="text-2xl font-semibold tracking-[-0.04em] text-slate-950">{{ report.totals.closed }}</span>
+                  </div>
+                  <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Items closed</p>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">
+                    {{ report.totals.completed }} completed · {{ report.totals.autoResolved }} auto-resolved · {{ report.totals.dismissed }} dismissed
+                  </p>
+                </article>
+
+                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-start justify-between gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                      <lucide-icon [name]="icons.CalendarClock" class="h-5 w-5"></lucide-icon>
+                    </span>
+                    <span class="text-2xl font-semibold tracking-[-0.04em] text-slate-950">{{ report.totals.dueDatedClosed ? report.totals.onTimeRate + '%' : '—' }}</span>
+                  </div>
+                  <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Closed on time</p>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">
+                    {{ report.totals.completedOnTime }} on time · {{ report.totals.completedLate }} late from {{ report.totals.dueDatedClosed }} due-dated items
+                  </p>
+                </article>
+
+                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-start justify-between gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                      <lucide-icon [name]="icons.Clock3" class="h-5 w-5"></lucide-icon>
+                    </span>
+                    <span class="text-2xl font-semibold tracking-[-0.04em] text-slate-950">{{ formatDuration(report.totals.averageTrackedSeconds) }}</span>
+                  </div>
+                  <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Average tracked time</p>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">
+                    {{ report.totals.trackedItems }} manual task{{ report.totals.trackedItems === 1 ? '' : 's' }} · {{ formatDuration(report.totals.totalTrackedSeconds) }} total
+                  </p>
+                </article>
+
+                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div class="flex items-start justify-between gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                      <lucide-icon [name]="icons.ListTodo" class="h-5 w-5"></lucide-icon>
+                    </span>
+                    <span class="text-2xl font-semibold tracking-[-0.04em] text-slate-950">{{ report.totals.active }}</span>
+                  </div>
+                  <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Active workload</p>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">
+                    {{ report.totals.overdueActive }} currently overdue
+                  </p>
+                </article>
+              </section>
+
+              <section class="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.75fr)]">
+                <article class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 class="text-base font-semibold text-slate-950">Closed work trend</h2>
+                      <p class="mt-1 text-xs leading-5 text-slate-500">Daily closed volume. A rose marker indicates at least one late item.</p>
+                    </div>
+                    <span class="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">{{ report.range.days }} days</span>
+                  </div>
+
+                  <div class="mt-6 overflow-x-auto pb-2">
+                    <div class="flex h-56 min-w-[680px] items-end gap-1.5 border-b border-slate-200 px-1">
+                      @for (point of report.daily; track point.date; let index = $index) {
+                        <div class="flex min-w-[14px] flex-1 flex-col items-center justify-end gap-1">
+                          <div class="relative flex h-40 w-full items-end justify-center">
+                            <div
+                              class="relative w-full max-w-5 rounded-t-md bg-slate-900/85 transition hover:bg-slate-700"
+                              [style.height.%]="reportDailyBarHeight(point.closed)"
+                              [attr.title]="reportDateLabel(point.date) + ': ' + point.closed + ' closed'"
+                            >
+                              @if (point.late > 0) {
+                                <span class="absolute -top-2 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+                              }
+                            </div>
+                          </div>
+                          <span class="h-5 text-[9px] font-medium text-slate-400">
+                            @if (reportDateTickVisible(index, report.daily.length)) {
+                              {{ reportDateLabel(point.date) }}
+                            }
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </article>
+
+                <article class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                  <div>
+                    <h2 class="text-base font-semibold text-slate-950">Work by source</h2>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">Active and closed work represented in this report.</p>
+                  </div>
+
+                  <div class="mt-5 space-y-4">
+                    @for (source of report.sources; track source.sourceType) {
+                      <div>
+                        <div class="flex items-center justify-between gap-3 text-xs">
+                          <span class="font-semibold text-slate-700">{{ sourceLabel(source.sourceType) }}</span>
+                          <span class="tabular-nums text-slate-400">{{ source.active }} active · {{ source.closed }} closed</span>
+                        </div>
+                        <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            class="h-full rounded-full bg-slate-800"
+                            [style.width.%]="sourceWidth(source.sourceType)"
+                          ></div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </article>
+              </section>
+
+              <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-4 py-4 sm:px-5">
+                  <h2 class="text-base font-semibold text-slate-950">Workload by assignee</h2>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">Current ownership compared with work closed during the selected period.</p>
+                </div>
+
+                @if (report.workload.length) {
+                  <div class="divide-y divide-slate-100">
+                    @for (row of report.workload; track row.assigneeId || 'unassigned') {
+                      <div class="grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(180px,0.9fr)_minmax(220px,1.4fr)_repeat(3,minmax(90px,0.45fr))] lg:items-center">
+                        <div>
+                          <p class="text-sm font-semibold text-slate-900">{{ row.assigneeName }}</p>
+                          <p class="mt-0.5 text-xs text-slate-400">{{ row.assigneeId ? 'Team member' : 'Needs assignment' }}</p>
+                        </div>
+
+                        <div>
+                          <div class="flex items-center justify-between text-[11px] font-medium text-slate-500">
+                            <span>Active workload</span>
+                            <span>{{ row.active }}</span>
+                          </div>
+                          <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div class="h-full rounded-full bg-blue-600" [style.width.%]="workloadWidth(row.active)"></div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Overdue</p>
+                          <p class="mt-1 text-sm font-semibold tabular-nums" [ngClass]="row.overdue ? 'text-rose-700' : 'text-slate-800'">{{ row.overdue }}</p>
+                        </div>
+
+                        <div>
+                          <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Closed</p>
+                          <p class="mt-1 text-sm font-semibold tabular-nums text-slate-800">{{ row.closed }}</p>
+                        </div>
+
+                        <div>
+                          <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Tracked</p>
+                          <p class="mt-1 text-sm font-semibold tabular-nums text-slate-800">{{ formatDuration(row.trackedSeconds) }}</p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="px-5 py-10 text-center text-sm text-slate-500">No workload history is available for this range.</div>
+                }
+              </section>
+
+              <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-4 py-4 sm:px-5">
+                  <h2 class="text-base font-semibold text-slate-950">Recent history</h2>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">The most recently completed, dismissed, or automatically resolved queue items.</p>
+                </div>
+
+                @if (report.recent.length) {
+                  <div class="divide-y divide-slate-100">
+                    @for (item of report.recent; track item.id) {
+                      <article class="flex flex-col gap-3 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" [ngClass]="sourceIconClass(item)">
+                            <lucide-icon [name]="itemIcon(item)" class="h-4 w-4"></lucide-icon>
+                          </span>
+                          <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                              <h3 class="truncate text-sm font-semibold text-slate-900">{{ item.title }}</h3>
+                              <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]" [ngClass]="historyStatusClass(item)">
+                                {{ historyStatusLabel(item.outcome) }}
+                              </span>
+                            </div>
+                            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+                              <span>{{ sourceLabel(item.sourceType) }}</span>
+                              <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                              <span>{{ historyClosedLabel(item) }}</span>
+                              <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                              <span [ngClass]="historyTimingClass(item)">{{ historyTimingLabel(item) }}</span>
+                              @if (item.elapsedSeconds > 0) {
+                                <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                                <span>{{ formatDuration(item.elapsedSeconds) }} tracked</span>
+                              }
+                            </div>
+                          </div>
+                        </div>
+
+                        @if (item.route) {
+                          <button
+                            type="button"
+                            class="cursor-pointer inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                            (click)="openSource(item)"
+                          >
+                            <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon>
+                            Open source
+                          </button>
+                        }
+                      </article>
+                    }
+                  </div>
+                } @else {
+                  <div class="px-5 py-10 text-center text-sm text-slate-500">No closed work is available for this range.</div>
+                }
+              </section>
+            </div>
+          }
+        } @else if (items().length) {
           <div class="divide-y divide-slate-100">
             @for (item of items(); track trackItem($index, item)) {
               <article
