@@ -1,10 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { TenantService } from './core/tenant/tenant.service';
 import { NgxSonnerToaster } from 'ngx-sonner';
 import { AuthService } from './core/auth/auth.service';
 import { AppShellComponent } from "./components/app-shell-component/app-shell-component";
-import { filter, switchMap } from 'rxjs';
+import { filter, Subscription, switchMap } from 'rxjs';
 import { ShopContextService } from './core/shop/shop-context.store';
 
 @Component({
@@ -13,12 +13,15 @@ import { ShopContextService } from './core/shop/shop-context.store';
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements OnInit {
+export class App implements OnInit, OnDestroy {
   private tenantService = inject(TenantService);
   shopContext = inject(ShopContextService);
   private auth = inject(AuthService);
+  private router = inject(Router);
+  private routerSubscription: Subscription | null = null;
 
   public userIsLoggedIn: boolean = false;
+  public standalonePublicRoute: boolean = false;
 
   protected readonly toastOptions = {
     unstyled: true,
@@ -46,6 +49,11 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.tenantService.init();
+    this.updateStandalonePublicRoute(this.router.url);
+
+    this.routerSubscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => this.updateStandalonePublicRoute(event.urlAfterRedirects));
 
     this.auth.bootstrap().then(() => {
       this.auth.accessToken$.subscribe((token: string | null) => {
@@ -59,5 +67,17 @@ export class App implements OnInit {
         )
         .subscribe();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.routerSubscription?.unsubscribe();
+    this.routerSubscription = null;
+  }
+
+  private updateStandalonePublicRoute(url: string): void {
+    const path = String(url || '').split('?')[0] || '';
+    this.standalonePublicRoute =
+      path === '/portal' ||
+      path.startsWith('/portal/');
   }
 }

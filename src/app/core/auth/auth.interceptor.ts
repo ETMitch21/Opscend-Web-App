@@ -41,7 +41,12 @@ export class AuthInterceptor implements HttpInterceptor {
       req.url.includes("/auth/magic") ||
       req.url.includes("/auth/password");
 
-    const shouldAttachToken = !!token && isApiRequest && !isAuthCall;
+    // Customer portal sessions use their own shop-scoped `Portal` token.
+    // Never replace it with an admin/staff bearer token.
+    const isCustomerPortalCall = req.url.includes("/public/portal/");
+
+    const shouldAttachToken =
+      !!token && isApiRequest && !isAuthCall && !isCustomerPortalCall;
 
     const authedReq = shouldAttachToken
       ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
@@ -54,7 +59,8 @@ export class AuthInterceptor implements HttpInterceptor {
           (err.status === 401 || err.status === 403) &&
           token &&
           isApiRequest &&
-          !isAuthCall
+          !isAuthCall &&
+          !isCustomerPortalCall
         ) {
           return this.auth.refresh().pipe(
             switchMap(() => {

@@ -1,5 +1,5 @@
 
-@if (userIsLoggedIn) {
+@if (userIsLoggedIn && !standalonePublicRoute) {
     <app-shell></app-shell>
 } @else {
     <router-outlet />

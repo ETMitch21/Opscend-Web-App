@@ -41,6 +41,16 @@ import { RepairPricingSettings } from './features/settings/repair-pricing/repair
 
 export const routes: Routes = [
     {
+        path: 'portal/:shopSlug/verify',
+        loadComponent: () =>
+            import('./features/public/customer-portal/customer-portal').then((m) => m.CustomerPortal)
+    },
+    {
+        path: 'portal/:shopSlug',
+        loadComponent: () =>
+            import('./features/public/customer-portal/customer-portal').then((m) => m.CustomerPortal)
+    },
+    {
         path: 'track/:token',
         component: RepairTracking
     },

@@ -1,0 +1,906 @@
+<div class="min-h-screen bg-slate-50 text-slate-950" [style.--portal-brand]="brandColor()">
+  @if (loading()) {
+    <div class="grid min-h-screen place-items-center px-6">
+      <div class="text-center">
+        <lucide-icon [name]="icons.Loader2" class="mx-auto h-8 w-8 animate-spin text-slate-400"></lucide-icon>
+        <p class="mt-4 text-sm font-medium text-slate-500">
+          {{ verifyingLink() ? 'Signing you in securely...' : 'Loading customer portal...' }}
+        </p>
+      </div>
+    </div>
+  } @else if (configError()) {
+    <div class="grid min-h-screen place-items-center px-6 py-12">
+      <div class="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+          <lucide-icon [name]="icons.XCircle" class="h-6 w-6"></lucide-icon>
+        </div>
+        <h1 class="mt-5 text-2xl font-semibold tracking-tight">Portal unavailable</h1>
+        <p class="mt-2 text-sm leading-6 text-slate-500">{{ configError() }}</p>
+      </div>
+    </div>
+  } @else if (screen() === 'login' || screen() === 'link-sent') {
+    <div class="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
+      <div
+        class="pointer-events-none absolute inset-x-0 top-0 h-80 opacity-70"
+        [style.background]="'linear-gradient(180deg, ' + brandTint() + ', transparent)'"
+      ></div>
+
+      <div class="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center justify-center">
+        <div class="grid w-full overflow-hidden rounded-[2.25rem] border border-slate-200 bg-white shadow-[0_28px_90px_-45px_rgba(15,23,42,0.45)] lg:grid-cols-[1.05fr_0.95fr]">
+          <section class="hidden min-h-[620px] flex-col justify-between bg-slate-950 p-10 text-white lg:flex">
+            <div>
+              <div class="flex items-center gap-3">
+                @if (displayShop()?.logoUrl) {
+                  <img [src]="displayShop()?.logoUrl" [alt]="displayShop()?.name || 'Shop'" class="h-12 w-12 rounded-2xl bg-white object-contain p-1.5" />
+                } @else {
+                  <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-lg font-semibold">
+                    {{ (displayShop()?.name || 'S').charAt(0) }}
+                  </div>
+                }
+                <div>
+                  <p class="text-sm font-semibold">{{ displayShop()?.name }}</p>
+                  <p class="mt-0.5 text-xs text-white/55">Customer portal</p>
+                </div>
+              </div>
+
+              <div class="mt-24 max-w-md">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">Everything in one place</p>
+                <h1 class="mt-4 text-4xl font-semibold tracking-[-0.045em]">
+                  Follow your repairs without chasing updates.
+                </h1>
+                <p class="mt-5 text-sm leading-7 text-white/65">
+                  Review quotes, pay balances, check appointments, message the shop, and see your complete service history.
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <lucide-icon [name]="icons.ShieldCheck" class="h-5 w-5 text-white/70"></lucide-icon>
+                <p class="mt-3 text-sm font-semibold">Secure access</p>
+                <p class="mt-1 text-xs leading-5 text-white/50">Passwordless sign-in links expire after 15 minutes.</p>
+              </div>
+              <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <lucide-icon [name]="icons.MessageCircle" class="h-5 w-5 text-white/70"></lucide-icon>
+                <p class="mt-3 text-sm font-semibold">Stay connected</p>
+                <p class="mt-1 text-xs leading-5 text-white/50">Message the shop directly from each repair.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="flex min-h-[620px] items-center px-6 py-10 sm:px-10 lg:px-12">
+            <div class="mx-auto w-full max-w-md">
+              <div class="flex items-center gap-3 lg:hidden">
+                @if (displayShop()?.logoUrl) {
+                  <img [src]="displayShop()?.logoUrl" [alt]="displayShop()?.name || 'Shop'" class="h-11 w-11 rounded-2xl border border-slate-200 bg-white object-contain p-1.5" />
+                } @else {
+                  <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
+                    {{ (displayShop()?.name || 'S').charAt(0) }}
+                  </div>
+                }
+                <div>
+                  <p class="text-sm font-semibold">{{ displayShop()?.name }}</p>
+                  <p class="text-xs text-slate-500">Customer portal</p>
+                </div>
+              </div>
+
+              @if (screen() === 'login') {
+                <div class="mt-10 lg:mt-0">
+                  <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Welcome back</p>
+                  <h2 class="mt-3 text-3xl font-semibold tracking-[-0.04em]">Sign in to your portal</h2>
+                  <p class="mt-3 text-sm leading-6 text-slate-500">
+                    Enter the email address you use with {{ displayShop()?.name }}. We’ll send you a secure sign-in link.
+                  </p>
+                </div>
+
+                @if (actionError()) {
+                  <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {{ actionError() }}
+                  </div>
+                }
+
+                <form class="mt-7 space-y-5" (ngSubmit)="requestMagicLink()">
+                  <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">Email address</span>
+                    <div class="relative mt-2">
+                      <lucide-icon [name]="icons.Mail" class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></lucide-icon>
+                      <input
+                        type="email"
+                        autocomplete="email"
+                        required
+                        [ngModel]="email()"
+                        (ngModelChange)="setEmail($event)"
+                        name="portalEmail"
+                        placeholder="you@example.com"
+                        class="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                      />
+                    </div>
+                  </label>
+
+                  <button
+                    type="submit"
+                    class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    [style.background-color]="brandColor()"
+                    [disabled]="requestingLink() || !email().trim()"
+                  >
+                    @if (requestingLink()) {
+                      <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                      Sending link...
+                    } @else {
+                      Email me a sign-in link
+                      <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
+                    }
+                  </button>
+                </form>
+
+                <p class="mt-6 text-center text-xs leading-5 text-slate-400">
+                  Your portal account is specific to {{ displayShop()?.name }}. Accounts and records from other Opscend shops remain completely separate.
+                </p>
+              } @else {
+                <div class="text-center">
+                  <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-700">
+                    <lucide-icon [name]="icons.Mail" class="h-7 w-7"></lucide-icon>
+                  </div>
+                  <h2 class="mt-6 text-3xl font-semibold tracking-[-0.04em]">Check your email</h2>
+                  <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-500">
+                    We sent a secure sign-in link to <span class="font-semibold text-slate-700">{{ email() }}</span> when that address is connected to a customer account at this shop.
+                  </p>
+
+                  <div class="mt-8 rounded-2xl bg-slate-50 p-4 text-left text-sm leading-6 text-slate-500 ring-1 ring-slate-100">
+                    <p class="font-semibold text-slate-700">The link expires in 15 minutes.</p>
+                    <p class="mt-1">You may need to check your spam or promotions folder.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="mt-7 inline-flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
+                    (click)="backToLogin()"
+                  >
+                    <lucide-icon [name]="icons.ArrowLeft" class="h-4 w-4"></lucide-icon>
+                    Use a different email
+                  </button>
+                </div>
+              }
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  } @else if (dashboard(); as portal) {
+    <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+      <div class="mx-auto flex h-16 max-w-[1500px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div class="flex min-w-0 items-center gap-3">
+          @if (portal.shop.logoUrl) {
+            <img [src]="portal.shop.logoUrl" [alt]="portal.shop.name" class="h-10 w-10 shrink-0 rounded-2xl border border-slate-200 bg-white object-contain p-1" />
+          } @else {
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white" [style.background-color]="brandColor()">
+              {{ portal.shop.name.charAt(0) }}
+            </div>
+          }
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold text-slate-950">{{ portal.shop.name }}</p>
+            <p class="truncate text-xs text-slate-500">Customer portal</p>
+          </div>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex cursor-pointer h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="refreshing()"
+            (click)="loadDashboard(true)"
+            aria-label="Refresh portal"
+          >
+            <lucide-icon [name]="icons.RefreshCw" class="h-4 w-4" [class.animate-spin]="refreshing()"></lucide-icon>
+          </button>
+
+          <div class="hidden items-center gap-3 rounded-full border border-slate-200 bg-white py-1.5 pl-2 pr-3 sm:flex">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white" [style.background-color]="brandColor()">
+              {{ customerInitials() }}
+            </div>
+            <div class="max-w-40">
+              <p class="truncate text-xs font-semibold text-slate-900">{{ portal.customer.name || 'Customer' }}</p>
+              <p class="truncate text-[11px] text-slate-400">{{ portal.customer.email }}</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex cursor-pointer h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+            (click)="logout()"
+            aria-label="Sign out"
+          >
+            <lucide-icon [name]="icons.LogOut" class="h-4 w-4"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+      @if (notice()) {
+        <div class="mb-5 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <lucide-icon [name]="icons.CheckCircle2" class="h-5 w-5 shrink-0"></lucide-icon>
+          <span>{{ notice() }}</span>
+        </div>
+      }
+
+      @if (actionError()) {
+        <div class="mb-5 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <lucide-icon [name]="icons.XCircle" class="h-5 w-5 shrink-0"></lucide-icon>
+          <span>{{ actionError() }}</span>
+        </div>
+      }
+
+      <section class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+        <div class="relative overflow-hidden px-5 py-7 sm:px-8 sm:py-9">
+          <div class="pointer-events-none absolute inset-0" [style.background]="'linear-gradient(120deg, ' + brandTint() + ', transparent 60%)'"></div>
+          <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Your customer portal</p>
+              <h1 class="mt-2 text-3xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-4xl">
+                Hi {{ firstName() }}, here’s what’s happening.
+              </h1>
+              <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+                Track repairs, manage quotes and payments, and stay connected with {{ portal.shop.name }}.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+              @if (portal.shop.phone) {
+                <a [href]="'tel:' + portal.shop.phone" class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-semibold transition hover:bg-slate-200">
+                  {{ portal.shop.phone }}
+                </a>
+              }
+              @if (portal.shop.email) {
+                <a [href]="'mailto:' + portal.shop.email" class="inline-flex cursor-pointer items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-semibold transition hover:bg-slate-200">
+                  {{ portal.shop.email }}
+                </a>
+              }
+            </div>
+          </div>
+        </div>
+
+        <nav class="overflow-x-auto border-t border-slate-100 px-3 sm:px-5">
+          <div class="flex min-w-max gap-1 py-2">
+            @for (tab of tabs; track tab.key) {
+              <button
+                type="button"
+                class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+                [ngClass]="activeTab() === tab.key ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'"
+                (click)="selectTab(tab.key)"
+              >
+                <lucide-icon [name]="tab.icon" class="h-4 w-4"></lucide-icon>
+                {{ tab.label }}
+                @if (tab.key === 'repairs' && portal.summary.unreadMessages > 0) {
+                  <span class="rounded-full px-1.5 py-0.5 text-[10px] font-bold" [ngClass]="activeTab() === tab.key ? 'bg-white text-slate-950' : 'bg-rose-600 text-white'">
+                    {{ portal.summary.unreadMessages > 9 ? '9+' : portal.summary.unreadMessages }}
+                  </span>
+                }
+              </button>
+            }
+          </div>
+        </nav>
+      </section>
+
+      @if (activeTab() === 'overview') {
+        <div class="mt-6 space-y-6">
+          <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
+              </div>
+              <p class="mt-5 text-3xl font-semibold tracking-tight">{{ portal.summary.activeRepairs }}</p>
+              <p class="mt-1 text-sm font-medium text-slate-500">Active repairs</p>
+            </article>
+            <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                <lucide-icon [name]="icons.CalendarDays" class="h-5 w-5"></lucide-icon>
+              </div>
+              <p class="mt-5 text-3xl font-semibold tracking-tight">{{ portal.summary.upcomingAppointments }}</p>
+              <p class="mt-1 text-sm font-medium text-slate-500">Appointments</p>
+            </article>
+            <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                <lucide-icon [name]="icons.FileText" class="h-5 w-5"></lucide-icon>
+              </div>
+              <p class="mt-5 text-3xl font-semibold tracking-tight">{{ portal.summary.quotesNeedingAttention }}</p>
+              <p class="mt-1 text-sm font-medium text-slate-500">Quotes to review</p>
+            </article>
+            <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+                <lucide-icon [name]="icons.CircleDollarSign" class="h-5 w-5"></lucide-icon>
+              </div>
+              <p class="mt-5 text-2xl font-semibold tracking-tight">{{ money(portal.summary.balanceDueCents) }}</p>
+              <p class="mt-1 text-sm font-medium text-slate-500">Balance due</p>
+            </article>
+            <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:col-span-2 xl:col-span-1">
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <lucide-icon [name]="icons.MessageCircle" class="h-5 w-5"></lucide-icon>
+              </div>
+              <p class="mt-5 text-3xl font-semibold tracking-tight">{{ portal.summary.unreadMessages }}</p>
+              <p class="mt-1 text-sm font-medium text-slate-500">Unread messages</p>
+            </article>
+          </section>
+
+          <section class="grid gap-6 xl:grid-cols-12">
+            <article class="rounded-3xl border border-slate-200 bg-white shadow-sm xl:col-span-7">
+              <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div>
+                  <h2 class="text-lg font-semibold">Active repairs</h2>
+                  <p class="mt-1 text-sm text-slate-500">Current work and the latest shop update.</p>
+                </div>
+                <button type="button" class="cursor-pointer text-sm font-semibold text-slate-500 transition hover:text-slate-950" (click)="selectTab('repairs')">View all</button>
+              </div>
+
+              <div class="divide-y divide-slate-100 px-5 sm:px-6">
+                @for (repair of portal.activeRepairs.slice(0, 4); track repair.id) {
+                  <button type="button" class="group flex w-full cursor-pointer items-center gap-4 py-5 text-left" (click)="openRepair(repair)">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                      <lucide-icon [name]="icons.Smartphone" class="h-5 w-5"></lucide-icon>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="truncate text-sm font-semibold text-slate-950">{{ deviceName(repair) }}</p>
+                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="statusClass(repair.status)">{{ repair.statusLabel }}</span>
+                        @if (repair.unreadMessageCount > 0) {
+                          <span class="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">{{ repair.unreadMessageCount }} new</span>
+                        }
+                      </div>
+                      <p class="mt-1 truncate text-sm text-slate-500">{{ repair.problemSummary }}</p>
+                      <p class="mt-1 text-xs text-slate-400">Updated {{ relativeDate(repair.updatedAt) }}</p>
+                    </div>
+                    <lucide-icon [name]="icons.ChevronRight" class="h-5 w-5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-600"></lucide-icon>
+                  </button>
+                } @empty {
+                  <div class="py-12 text-center">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                      <lucide-icon [name]="icons.CheckCircle2" class="h-5 w-5"></lucide-icon>
+                    </div>
+                    <p class="mt-4 text-sm font-semibold">No active repairs</p>
+                    <p class="mt-1 text-sm text-slate-500">New work will appear here automatically.</p>
+                  </div>
+                }
+              </div>
+            </article>
+
+            <div class="space-y-6 xl:col-span-5">
+              <article class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+                  <h2 class="text-lg font-semibold">Upcoming appointments</h2>
+                  <p class="mt-1 text-sm text-slate-500">Your next scheduled visits.</p>
+                </div>
+                <div class="divide-y divide-slate-100 px-5 sm:px-6">
+                  @for (repair of upcomingAppointments().slice(0, 3); track repair.id) {
+                    <button type="button" class="flex w-full cursor-pointer items-center gap-4 py-4 text-left" (click)="openRepair(repair)">
+                      <div class="w-14 shrink-0 text-center">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ date(repair.appointment?.startAt) }}</p>
+                      </div>
+                      <div class="h-10 w-px bg-slate-100"></div>
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-semibold">{{ deviceName(repair) }}</p>
+                        <p class="mt-1 text-xs text-slate-500">{{ dateTime(repair.appointment?.startAt) }} · {{ serviceModeLabel(repair.serviceMode) }}</p>
+                      </div>
+                    </button>
+                  } @empty {
+                    <div class="py-9 text-center text-sm text-slate-500">No upcoming appointments.</div>
+                  }
+                </div>
+              </article>
+
+              @if (quotesNeedingAction().length > 0) {
+                <article class="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm sm:p-6">
+                  <div class="flex items-start gap-4">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm">
+                      <lucide-icon [name]="icons.FileText" class="h-5 w-5"></lucide-icon>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h2 class="text-base font-semibold text-amber-950">A quote needs your attention</h2>
+                      <p class="mt-1 text-sm leading-6 text-amber-800/80">Review pricing, approve the work, or pay a required deposit.</p>
+                      <button type="button" class="mt-4 cursor-pointer rounded-xl bg-amber-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-900" (click)="selectTab('quotes')">Review quotes</button>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+        </div>
+      }
+
+      @if (activeTab() === 'repairs') {
+        <div class="mt-6 grid gap-6 xl:grid-cols-2">
+          <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+              <h2 class="text-lg font-semibold">Active repairs</h2>
+              <p class="mt-1 text-sm text-slate-500">Open a repair to view status, appointments, billing, and messages.</p>
+            </div>
+            <div class="divide-y divide-slate-100 px-5 sm:px-6">
+              @for (repair of portal.activeRepairs; track repair.id) {
+                <button type="button" class="group flex w-full cursor-pointer items-center gap-4 py-5 text-left" (click)="openRepair(repair)">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                    <lucide-icon [name]="icons.Smartphone" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <p class="truncate text-sm font-semibold">{{ deviceName(repair) }}</p>
+                      <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="statusClass(repair.status)">{{ repair.statusLabel }}</span>
+                      @if (repair.unreadMessageCount > 0) {
+                        <span class="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">{{ repair.unreadMessageCount }} new</span>
+                      }
+                    </div>
+                    <p class="mt-1 truncate text-sm text-slate-500">{{ repair.problemSummary }}</p>
+                    @if (repair.appointment) {
+                      <p class="mt-1 text-xs text-slate-400">Appointment: {{ dateTime(repair.appointment.startAt) }}</p>
+                    }
+                  </div>
+                  <lucide-icon [name]="icons.ChevronRight" class="h-5 w-5 text-slate-300 transition group-hover:text-slate-600"></lucide-icon>
+                </button>
+              } @empty {
+                <div class="py-12 text-center text-sm text-slate-500">No active repairs.</div>
+              }
+            </div>
+          </section>
+
+          <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+              <h2 class="text-lg font-semibold">Repair history</h2>
+              <p class="mt-1 text-sm text-slate-500">Completed and canceled service records.</p>
+            </div>
+            <div class="divide-y divide-slate-100 px-5 sm:px-6">
+              @for (repair of portal.repairHistory; track repair.id) {
+                <button type="button" class="group flex w-full cursor-pointer items-center gap-4 py-5 text-left" (click)="openRepair(repair)">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                    <lucide-icon [name]="icons.History" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <p class="truncate text-sm font-semibold">{{ deviceName(repair) }}</p>
+                      <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="statusClass(repair.status)">{{ repair.statusLabel }}</span>
+                    </div>
+                    <p class="mt-1 truncate text-sm text-slate-500">{{ repair.problemSummary }}</p>
+                    <p class="mt-1 text-xs text-slate-400">Last updated {{ date(repair.updatedAt) }}</p>
+                  </div>
+                  <lucide-icon [name]="icons.ChevronRight" class="h-5 w-5 text-slate-300 transition group-hover:text-slate-600"></lucide-icon>
+                </button>
+              } @empty {
+                <div class="py-12 text-center text-sm text-slate-500">No repair history yet.</div>
+              }
+            </div>
+          </section>
+        </div>
+      }
+
+      @if (activeTab() === 'quotes') {
+        <section class="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+            <h2 class="text-lg font-semibold">Quotes</h2>
+            <p class="mt-1 text-sm text-slate-500">Review estimates, decisions, deposits, and converted work.</p>
+          </div>
+
+          <div class="grid gap-4 p-4 sm:p-6 lg:grid-cols-2">
+            @for (quote of portal.quotes; track quote.id) {
+              <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <p class="truncate text-base font-semibold">{{ quoteDevice(quote) }}</p>
+                    <p class="mt-1 text-sm text-slate-500">{{ quote.repairNeed?.label || 'Repair quote' }}</p>
+                  </div>
+                  <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="statusClass(quote.status)">{{ quote.statusLabel }}</span>
+                </div>
+
+                <div class="mt-5 grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-4">
+                  <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Quote total</p>
+                    <p class="mt-1 text-lg font-semibold">{{ money(quote.estimatedTotalCents) }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Deposit</p>
+                    <p class="mt-1 text-lg font-semibold">{{ quote.depositRequired ? money(quote.depositAmountCents) : 'Not required' }}</p>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between gap-3 text-xs text-slate-400">
+                  <span>Updated {{ relativeDate(quote.updatedAt) }}</span>
+                  @if (quote.depositPaidAt) {
+                    <span class="font-semibold text-emerald-700">Deposit paid</span>
+                  }
+                </div>
+
+                @if (quote.publicApprovalToken) {
+                  <a
+                    [routerLink]="['/quote', quote.publicApprovalToken]"
+                    class="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                    [style.background-color]="brandColor()"
+                  >
+                    {{ quoteActionLabel(quote) }}
+                    <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
+                  </a>
+                }
+              </article>
+            } @empty {
+              <div class="py-16 text-center text-sm text-slate-500 lg:col-span-2">No quotes are connected to your account.</div>
+            }
+          </div>
+        </section>
+      }
+
+      @if (activeTab() === 'billing') {
+        <div class="mt-6 space-y-6">
+          @if (outstandingOrders().length > 0) {
+            <section class="rounded-3xl border border-rose-200 bg-rose-50 p-5 shadow-sm sm:p-6">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-[0.14em] text-rose-600">Outstanding balance</p>
+                  <p class="mt-2 text-3xl font-semibold tracking-tight text-rose-950">{{ money(portal.summary.balanceDueCents) }}</p>
+                  <p class="mt-1 text-sm text-rose-800/75">Across {{ outstandingOrders().length }} order{{ outstandingOrders().length === 1 ? '' : 's' }}.</p>
+                </div>
+                <lucide-icon [name]="icons.CreditCard" class="h-8 w-8 text-rose-700"></lucide-icon>
+              </div>
+            </section>
+          }
+
+          <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+              <h2 class="text-lg font-semibold">Orders and receipts</h2>
+              <p class="mt-1 text-sm text-slate-500">Payment history, line items, and remaining balances.</p>
+            </div>
+
+            <div class="divide-y divide-slate-100 px-5 sm:px-6">
+              @for (order of portal.orders; track order.id) {
+                <article class="py-6">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-base font-semibold">{{ order.orderNumber }}</p>
+                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="statusClass(order.paymentStatus)">{{ order.paymentStatus }}</span>
+                      </div>
+                      <p class="mt-1 text-sm text-slate-500">Created {{ date(order.createdAt) }}</p>
+                    </div>
+                    <div class="text-left sm:text-right">
+                      <p class="text-2xl font-semibold tracking-tight">{{ money(order.totalCents) }}</p>
+                      @if (order.balanceCents > 0) {
+                        <p class="mt-1 text-sm font-semibold text-rose-700">{{ money(order.balanceCents) }} due</p>
+                      } @else {
+                        <p class="mt-1 text-sm font-semibold text-emerald-700">Paid</p>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="mt-5 overflow-hidden rounded-2xl border border-slate-100">
+                    @for (item of order.items; track item.id) {
+                      <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-4 py-3 last:border-b-0">
+                        <div class="min-w-0">
+                          <p class="truncate text-sm font-medium">{{ item.name }}</p>
+                          <p class="mt-0.5 text-xs text-slate-400">{{ item.quantity }} × {{ money(item.unitPriceCents) }}</p>
+                        </div>
+                        <p class="shrink-0 text-sm font-semibold">{{ money(item.lineTotalCents) }}</p>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="mt-4 flex flex-wrap items-center gap-3">
+                    @if (order.canPayOnline && order.balanceCents > 0) {
+                      <button
+                        type="button"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                        [style.background-color]="brandColor()"
+                        (click)="openPayment(order)"
+                      >
+                        <lucide-icon [name]="icons.CreditCard" class="h-4 w-4"></lucide-icon>
+                        Pay {{ money(order.balanceCents) }}
+                      </button>
+                    }
+                    @if (!order.canPayOnline && order.balanceCents > 0) {
+                      <span class="text-sm text-slate-500">Contact the shop to pay this balance.</span>
+                    }
+                    @if (order.payments.length > 0) {
+                      <span class="text-xs text-slate-400">{{ order.payments.length }} payment record{{ order.payments.length === 1 ? '' : 's' }}</span>
+                    }
+                  </div>
+                </article>
+              } @empty {
+                <div class="py-16 text-center text-sm text-slate-500">No orders or receipts yet.</div>
+              }
+            </div>
+          </section>
+        </div>
+      }
+
+      @if (activeTab() === 'devices') {
+        <section class="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+            <h2 class="text-lg font-semibold">Saved devices</h2>
+            <p class="mt-1 text-sm text-slate-500">Devices connected to your service history at this shop.</p>
+          </div>
+
+          <div class="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+            @for (device of portal.devices; track device.id) {
+              <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-4">
+                  <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                    <lucide-icon [name]="icons.Smartphone" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-base font-semibold">{{ deviceLabel(device) }}</p>
+                    <p class="mt-1 text-sm text-slate-500">{{ deviceModelLabel(device) }}</p>
+                  </div>
+                </div>
+
+                <div class="mt-5 grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-4">
+                  <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Repairs</p>
+                    <p class="mt-1 text-lg font-semibold">{{ device.repairCount }}</p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Added</p>
+                    <p class="mt-1 text-sm font-semibold">{{ date(device.createdAt) }}</p>
+                  </div>
+                </div>
+
+                @if (device.latestRepair; as latest) {
+                  <button
+                    type="button"
+                    class="mt-4 flex w-full cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50"
+                    (click)="openLatestRepair(latest.id)"
+                  >
+                    <div class="min-w-0">
+                      <p class="truncate text-xs font-semibold text-slate-700">Latest: {{ latest.problemSummary }}</p>
+                      <p class="mt-1 text-[11px] text-slate-400">{{ latest.statusLabel }}</p>
+                    </div>
+                    <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 shrink-0 text-slate-300"></lucide-icon>
+                  </button>
+                }
+              </article>
+            } @empty {
+              <div class="py-16 text-center text-sm text-slate-500 sm:col-span-2 xl:col-span-3">No saved devices yet.</div>
+            }
+          </div>
+        </section>
+      }
+
+      <footer class="mt-8 border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+        <p>{{ portal.shop.name }} · {{ shopAddress(portal.shop) }}</p>
+        <p class="mt-1">Secure customer portal powered by Opscend</p>
+      </footer>
+    </div>
+  }
+
+  @if (selectedRepair(); as repair) {
+    <div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-6" (click)="closeRepair()">
+      <section class="max-h-[96vh] w-full max-w-5xl overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-[2rem]" (click)="$event.stopPropagation()">
+        <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 sm:px-7">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="truncate text-xl font-semibold tracking-tight">{{ deviceName(repair) }}</p>
+              <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="statusClass(repair.status)">{{ repair.statusLabel }}</span>
+            </div>
+            <p class="mt-1 text-sm text-slate-500">{{ repair.problemSummary }}</p>
+          </div>
+          <button type="button" class="inline-flex cursor-pointer h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-950" (click)="closeRepair()" aria-label="Close repair">
+            <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+          </button>
+        </header>
+
+        @if (repairDetailLoading()) {
+          <div class="grid min-h-96 place-items-center">
+            <lucide-icon [name]="icons.Loader2" class="h-7 w-7 animate-spin text-slate-400"></lucide-icon>
+          </div>
+        } @else {
+          <div class="max-h-[calc(90vh-85px)] overflow-y-auto p-5 sm:p-7">
+            <div class="grid gap-6 lg:grid-cols-12">
+              <div class="space-y-6 lg:col-span-7">
+                <section class="rounded-3xl border border-slate-200 p-5">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 class="text-base font-semibold">Repair progress</h3>
+                      <p class="mt-1 text-sm text-slate-500">Status changes shared by the shop.</p>
+                    </div>
+                    <lucide-icon [name]="icons.Wrench" class="h-5 w-5 text-slate-400"></lucide-icon>
+                  </div>
+
+                  <div class="mt-6 space-y-0">
+                    @for (item of repair.timeline; track item.id; let last = $last) {
+                      <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                          <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-950 text-white">
+                            <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                          </div>
+                          @if (!last) {
+                            <div class="h-full min-h-8 w-px bg-slate-200"></div>
+                          }
+                        </div>
+                        <div class="pb-6">
+                          <p class="text-sm font-semibold">{{ item.label }}</p>
+                          @if (item.message) {
+                            <p class="mt-1 text-sm leading-6 text-slate-500">{{ item.message }}</p>
+                          }
+                          <p class="mt-1 text-xs text-slate-400">{{ dateTime(item.createdAt) }}</p>
+                        </div>
+                      </div>
+                    } @empty {
+                      <div class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No status history is available yet.</div>
+                    }
+                  </div>
+                </section>
+
+                <section class="rounded-3xl border border-slate-200 p-5">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 class="text-base font-semibold">Messages</h3>
+                      <p class="mt-1 text-sm text-slate-500">Talk directly with the team handling this repair.</p>
+                    </div>
+                    <lucide-icon [name]="icons.MessageCircle" class="h-5 w-5 text-slate-400"></lucide-icon>
+                  </div>
+
+                  <div class="mt-5 max-h-80 space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-4">
+                    @for (message of repairMessages(); track message.id) {
+                      <div class="flex" [class.justify-end]="message.role === 'customer'">
+                        <div class="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm" [ngClass]="message.role === 'customer' ? 'bg-slate-950 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200'">
+                          <p>{{ message.message }}</p>
+                          <p class="mt-1 text-[10px]" [ngClass]="message.role === 'customer' ? 'text-white/55' : 'text-slate-400'">{{ relativeDate(message.createdAt) }}</p>
+                        </div>
+                      </div>
+                    } @empty {
+                      <div class="py-8 text-center text-sm text-slate-500">No messages yet. Start the conversation below.</div>
+                    }
+                  </div>
+
+                  <form class="mt-4 flex gap-3" (ngSubmit)="sendMessage()">
+                    <textarea
+                      rows="2"
+                      [ngModel]="messageDraft()"
+                      (ngModelChange)="setMessageDraft($event)"
+                      name="repairMessage"
+                      placeholder="Write a message..."
+                      class="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+                    ></textarea>
+                    <button
+                      type="submit"
+                      class="inline-flex cursor-pointer h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      [style.background-color]="brandColor()"
+                      [disabled]="sendingMessage() || !messageDraft().trim()"
+                      aria-label="Send message"
+                    >
+                      <lucide-icon [name]="sendingMessage() ? icons.Loader2 : icons.Send" class="h-5 w-5" [class.animate-spin]="sendingMessage()"></lucide-icon>
+                    </button>
+                  </form>
+                </section>
+              </div>
+
+              <aside class="space-y-5 lg:col-span-5">
+                @if (repair.appointment) {
+                  <section class="rounded-3xl border border-blue-200 bg-blue-50 p-5">
+                    <div class="flex items-start gap-4">
+                      <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
+                        <lucide-icon [name]="icons.CalendarDays" class="h-5 w-5"></lucide-icon>
+                      </div>
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-blue-600">Appointment</p>
+                        <p class="mt-2 text-base font-semibold text-blue-950">{{ dateTime(repair.appointment.startAt) }}</p>
+                        <p class="mt-1 text-sm text-blue-800/75">{{ serviceModeLabel(repair.serviceMode) }} · {{ repair.appointment.status }}</p>
+                      </div>
+                    </div>
+                  </section>
+                }
+
+                @if (repair.order; as order) {
+                  <section class="rounded-3xl border border-slate-200 p-5">
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Order</p>
+                        <p class="mt-1 text-base font-semibold">{{ order.orderNumber }}</p>
+                      </div>
+                      <lucide-icon [name]="icons.ReceiptText" class="h-5 w-5 text-slate-400"></lucide-icon>
+                    </div>
+
+                    <div class="mt-5 space-y-3 text-sm">
+                      <div class="flex items-center justify-between gap-4"><span class="text-slate-500">Total</span><span class="font-semibold">{{ money(order.totalCents) }}</span></div>
+                      <div class="flex items-center justify-between gap-4"><span class="text-slate-500">Paid</span><span class="font-semibold">{{ money(order.paidCents - order.refundedCents) }}</span></div>
+                      <div class="flex items-center justify-between gap-4 border-t border-slate-100 pt-3"><span class="font-semibold">Balance</span><span class="font-semibold" [class.text-rose-700]="order.balanceCents > 0">{{ money(order.balanceCents) }}</span></div>
+                    </div>
+
+                    @if (order.canPayOnline && order.balanceCents > 0) {
+                      <button type="button" class="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90" [style.background-color]="brandColor()" (click)="openPayment(order)">
+                        <lucide-icon [name]="icons.CreditCard" class="h-4 w-4"></lucide-icon>
+                        Pay {{ money(order.balanceCents) }}
+                      </button>
+                    }
+                  </section>
+                }
+
+                @if (repair.quote?.publicApprovalToken) {
+                  <section class="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">Related quote</p>
+                    <p class="mt-2 text-lg font-semibold text-amber-950">{{ money(repair.quote?.estimatedTotalCents) }}</p>
+                    <p class="mt-1 text-sm text-amber-800/75">{{ repair.quote?.statusLabel }}</p>
+                    <a [routerLink]="['/quote', repair.quote?.publicApprovalToken]" class="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-amber-950 hover:underline">
+                      View quote
+                      <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
+                    </a>
+                  </section>
+                }
+
+                <section class="rounded-3xl bg-slate-950 p-5 text-white">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-white/45">Need help?</p>
+                  <p class="mt-2 text-base font-semibold">
+                    Contact {{ displayShop()?.name || 'the shop' }}
+                  </p>
+                  <div class="mt-4 space-y-2 text-sm text-white/65">
+                    @if (displayShop()?.phone; as phone) {
+                      <a
+                        [href]="'tel:' + phone"
+                        class="block cursor-pointer hover:text-white"
+                      >
+                        {{ phone }}
+                      </a>
+                    }
+                    @if (displayShop()?.email; as shopEmail) {
+                      <a
+                        [href]="'mailto:' + shopEmail"
+                        class="block cursor-pointer hover:text-white"
+                      >
+                        {{ shopEmail }}
+                      </a>
+                    }
+                  </div>
+                </section>
+              </aside>
+            </div>
+          </div>
+        }
+      </section>
+    </div>
+  }
+
+  @if (paymentOrder(); as order) {
+    <div class="fixed inset-0 z-[60] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm" (click)="closePayment()">
+      <section class="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl sm:p-7" (click)="$event.stopPropagation()">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Secure payment</p>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight">Pay {{ money(order.balanceCents) }}</h2>
+            <p class="mt-1 text-sm text-slate-500">Order {{ order.orderNumber }}</p>
+          </div>
+          <button type="button" class="inline-flex cursor-pointer h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100" (click)="closePayment()" aria-label="Close payment">
+            <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+          </button>
+        </div>
+
+        @if (paymentError()) {
+          <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ paymentError() }}</div>
+        }
+
+        @if (paymentLoading()) {
+          <div class="grid min-h-40 place-items-center">
+            <lucide-icon [name]="icons.Loader2" class="h-7 w-7 animate-spin text-slate-400"></lucide-icon>
+          </div>
+        } @else if (paymentIntent()) {
+          <div class="mt-6">
+            <label class="text-sm font-semibold text-slate-700">Card details</label>
+            <div #cardMount class="mt-2 min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-inner"></div>
+          </div>
+
+          <div class="mt-5 flex items-start gap-3 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500">
+            <lucide-icon [name]="icons.ShieldCheck" class="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"></lucide-icon>
+            <p>Your card details are securely processed by Stripe and are never stored by Opscend or the shop.</p>
+          </div>
+
+          <button
+            type="button"
+            class="mt-6 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            [style.background-color]="brandColor()"
+            [disabled]="paymentSubmitting()"
+            (click)="submitPayment()"
+          >
+            @if (paymentSubmitting()) {
+              <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+              Processing payment...
+            } @else {
+              <lucide-icon [name]="icons.CreditCard" class="h-4 w-4"></lucide-icon>
+              Pay {{ money(order.balanceCents) }}
+            }
+          </button>
+        }
+      </section>
+    </div>
+  }
+</div>
