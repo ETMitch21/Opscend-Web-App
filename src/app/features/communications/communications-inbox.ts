@@ -1,8 +1,8 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
+import { Subscription, firstValueFrom } from 'rxjs';
 import {
   Archive,
   ArchiveRestore,
@@ -52,6 +52,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
   private readonly communicationApi = inject(CommunicationService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   readonly icons = {
@@ -85,6 +86,9 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly threadLoading = signal(false);
   readonly sending = signal(false);
   readonly conversationActionRunning = signal(false);
+  readonly bulkActionRunning = signal(false);
+  readonly selectedConversationIds = signal<ReadonlySet<string>>(new Set<string>());
+  readonly requestedConversationId = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly searchTerm = signal('');
   readonly conversationStatusFilter = signal<'open' | 'archived' | 'all'>('open');
@@ -157,15 +161,47 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     this.conversations().reduce((total, conversation) => total + (conversation.unreadForShopCount || 0), 0),
   );
 
+  readonly bulkSelectedConversations = computed(() => {
+    const selectedIds = this.selectedConversationIds();
+    return this.conversations().filter((conversation) => selectedIds.has(conversation.id));
+  });
+  readonly selectedConversationCount = computed(() => this.bulkSelectedConversations().length);
+  readonly selectedUnreadCount = computed(() =>
+    this.bulkSelectedConversations().filter((conversation) => conversation.unreadForShopCount > 0).length,
+  );
+  readonly selectedOpenCount = computed(() =>
+    this.bulkSelectedConversations().filter((conversation) => conversation.status !== 'archived').length,
+  );
+  readonly selectedArchivedCount = computed(() =>
+    this.bulkSelectedConversations().filter((conversation) => conversation.status === 'archived').length,
+  );
+  readonly allVisibleSelected = computed(() => {
+    const conversations = this.conversations();
+    const selectedIds = this.selectedConversationIds();
+    return conversations.length > 0 && conversations.every((conversation) => selectedIds.has(conversation.id));
+  });
+  readonly someVisibleSelected = computed(() => {
+    const selectedCount = this.selectedConversationCount();
+    return selectedCount > 0 && !this.allVisibleSelected();
+  });
+
   private readonly inboxPollMs = 4_000;
   private inboxRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private routeParamsSubscription: Subscription | null = null;
   private backgroundRefreshRunning = false;
+  private threadRequestVersion = 0;
+  private readonly markReadInFlight = new Set<string>();
 
   async ngOnInit(): Promise<void> {
     await this.loadConversations();
     this.startInboxAutoRefresh();
 
-    const params = this.route.snapshot.queryParamMap;
+    this.routeParamsSubscription = this.route.queryParamMap.subscribe((params) => {
+      void this.handleRouteSelection(params);
+    });
+  }
+
+  private async handleRouteSelection(params: ParamMap): Promise<void> {
     const conversationId = params.get('conversationId')?.trim();
     const repairId = params.get('repairId')?.trim();
     const quoteId = params.get('quoteId')?.trim();
@@ -173,31 +209,41 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     const requestedChannel = this.parseRequestedChannel(params.get('channel'));
 
     if (conversationId) {
-      await this.openConversationById(conversationId);
-      this.applyRequestedChannel(requestedChannel);
+      this.requestedConversationId.set(conversationId);
+
+      if (this.selectedConversation()?.id === conversationId) {
+        this.applyRequestedChannel(requestedChannel);
+        await this.markSelectedRead();
+        return;
+      }
+
+      await this.openConversationById(conversationId, true, requestedChannel);
       return;
     }
 
     if (repairId) {
-      await this.openRepairConversation(repairId);
-      this.applyRequestedChannel(requestedChannel);
+      await this.openRepairConversation(repairId, requestedChannel);
       return;
     }
 
     if (quoteId) {
-      await this.openQuoteConversation(quoteId);
-      this.applyRequestedChannel(requestedChannel);
+      await this.openQuoteConversation(quoteId, requestedChannel);
       return;
     }
 
     if (customerId) {
-      await this.openCustomerConversation(customerId);
-      this.applyRequestedChannel(requestedChannel);
+      await this.openCustomerConversation(customerId, requestedChannel);
       return;
     }
 
+    this.requestedConversationId.set(null);
+    this.threadRequestVersion += 1;
+    this.selectedConversation.set(null);
+
     const first = this.conversations()[0];
-    if (first) await this.openConversation(first);
+    if (first) {
+      await this.navigateToConversation(first.id, true, requestedChannel);
+    }
   }
 
   private parseRequestedChannel(
@@ -229,12 +275,36 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     }
   }
 
+  private async navigateToConversation(
+    conversationId: string | null,
+    replaceUrl = false,
+    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+  ): Promise<void> {
+    const queryParams: Record<string, string | null> = {
+      conversationId,
+      repairId: null,
+      quoteId: null,
+      customerId: null,
+    };
+
+    if (requestedChannel) queryParams['channel'] = requestedChannel;
+
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge',
+      replaceUrl,
+    });
+  }
 
   ngOnDestroy(): void {
     if (this.inboxRefreshTimer) {
       clearInterval(this.inboxRefreshTimer);
       this.inboxRefreshTimer = null;
     }
+
+    this.routeParamsSubscription?.unsubscribe();
+    this.routeParamsSubscription = null;
   }
 
   private startInboxAutoRefresh(): void {
@@ -246,7 +316,12 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   private async refreshInBackground(): Promise<void> {
-    if (this.backgroundRefreshRunning || this.sending()) return;
+    if (
+      this.backgroundRefreshRunning ||
+      this.sending() ||
+      this.bulkActionRunning() ||
+      this.conversationActionRunning()
+    ) return;
 
     this.backgroundRefreshRunning = true;
 
@@ -260,14 +335,23 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       );
 
       this.reconcileConversationList(response.data ?? []);
+      this.pruneBulkSelectionToVisible();
       this.nextCursor.set(response.nextCursor ?? null);
 
-      const selectedId = this.selectedConversation()?.id;
-      if (!selectedId) return;
+      const selectedId = this.requestedConversationId();
+      if (!selectedId || this.threadLoading()) return;
 
+      const requestVersion = this.threadRequestVersion;
       const threadResponse = await firstValueFrom(
         this.communicationApi.getConversation(selectedId),
       );
+
+      if (
+        this.requestedConversationId() !== selectedId ||
+        this.threadRequestVersion !== requestVersion
+      ) {
+        return;
+      }
 
       const previousThreadSignature = this.conversationThreadSignature(
         this.selectedConversation(),
@@ -290,7 +374,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
         if (this.activeChannel() === 'sms' && !this.canSendSms(threadResponse.data)) {
           this.activeChannel.set('email');
         }
-        if (this.activeChannel() === 'email' && !this.canSendEmail(threadResponse.data) && this.canSendSms(threadResponse.data)) {
+        if (
+          this.activeChannel() === 'email' &&
+          !this.canSendEmail(threadResponse.data) &&
+          this.canSendSms(threadResponse.data)
+        ) {
           this.activeChannel.set('sms');
         }
       }
@@ -307,9 +395,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   async refresh(): Promise<void> {
     this.nextCursor.set(null);
     await this.loadConversations();
-
-    const selectedId = this.selectedConversation()?.id;
-    if (selectedId) await this.openConversationById(selectedId, false);
+    await this.syncConversationSelectionAfterListChange();
   }
 
   async loadConversations(): Promise<void> {
@@ -326,114 +412,159 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       );
 
       this.conversations.set(response.data ?? []);
+      this.pruneBulkSelectionToVisible();
       this.nextCursor.set(response.nextCursor ?? null);
     } catch (error) {
       console.error(error);
       this.error.set('Could not load conversations.');
       this.conversations.set([]);
+      this.selectedConversationIds.set(new Set<string>());
       this.nextCursor.set(null);
     } finally {
       this.loading.set(false);
     }
   }
 
-  async openQuoteConversation(quoteId: string): Promise<void> {
-    this.threadLoading.set(true);
-    this.error.set(null);
-
-    try {
-      const response = await firstValueFrom(this.communicationApi.ensureQuoteConversation(quoteId));
-      this.selectedConversation.set(response.data);
-      this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
-      this.upsertConversation(response.data);
-      this.scheduleScrollToBottom();
-      await this.markSelectedRead();
-    } catch (error) {
-      console.error(error);
-      this.error.set('Could not open the quote conversation.');
-    } finally {
-      this.threadLoading.set(false);
-    }
+  async openQuoteConversation(
+    quoteId: string,
+    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+  ): Promise<void> {
+    await this.openEnsuredConversation(
+      () => this.communicationApi.ensureQuoteConversation(quoteId),
+      'Could not open the quote conversation.',
+      requestedChannel,
+    );
   }
 
-  async openRepairConversation(repairId: string): Promise<void> {
-    this.threadLoading.set(true);
-    this.error.set(null);
-
-    try {
-      const response = await firstValueFrom(
-        this.communicationApi.ensureRepairConversation(repairId),
-      );
-      this.selectedConversation.set(response.data);
-      this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
-      this.upsertConversation(response.data);
-      this.scheduleScrollToBottom();
-      await this.markSelectedRead();
-    } catch (error) {
-      console.error(error);
-      this.error.set('Could not open the repair conversation.');
-    } finally {
-      this.threadLoading.set(false);
-    }
+  async openRepairConversation(
+    repairId: string,
+    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+  ): Promise<void> {
+    await this.openEnsuredConversation(
+      () => this.communicationApi.ensureRepairConversation(repairId),
+      'Could not open the repair conversation.',
+      requestedChannel,
+    );
   }
 
-  async openCustomerConversation(customerId: string): Promise<void> {
+  async openCustomerConversation(
+    customerId: string,
+    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+  ): Promise<void> {
+    await this.openEnsuredConversation(
+      () => this.communicationApi.ensureCustomerConversation(customerId),
+      'Could not open the customer conversation.',
+      requestedChannel,
+    );
+  }
+
+  private async openEnsuredConversation(
+    request: () => ReturnType<CommunicationService['getConversation']>,
+    errorMessage: string,
+    requestedChannel: 'email' | 'sms' | 'note' | null,
+  ): Promise<void> {
+    const requestVersion = ++this.threadRequestVersion;
     this.threadLoading.set(true);
     this.error.set(null);
 
     try {
-      const response = await firstValueFrom(
-        this.communicationApi.ensureCustomerConversation(customerId),
-      );
-      this.selectedConversation.set(response.data);
-      this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
-      this.upsertConversation(response.data);
-      this.scheduleScrollToBottom();
+      const response = await firstValueFrom(request());
+      if (requestVersion !== this.threadRequestVersion) return;
+
+      this.requestedConversationId.set(response.data.id);
+      this.setOpenedConversation(response.data, requestedChannel);
+      await this.navigateToConversation(response.data.id, true, requestedChannel);
       await this.markSelectedRead();
     } catch (error) {
+      if (requestVersion !== this.threadRequestVersion) return;
       console.error(error);
-      this.error.set('Could not open the customer conversation.');
+      this.error.set(errorMessage);
     } finally {
-      this.threadLoading.set(false);
+      if (requestVersion === this.threadRequestVersion) {
+        this.threadLoading.set(false);
+      }
     }
   }
 
   async openConversation(conversation: CommunicationConversation): Promise<void> {
-    await this.openConversationById(conversation.id);
+    if (this.requestedConversationId() === conversation.id) {
+      await this.markSelectedRead();
+      return;
+    }
+
+    await this.navigateToConversation(conversation.id);
   }
 
-  async openConversationById(id: string, showLoading = true): Promise<void> {
+  async openConversationById(
+    id: string,
+    showLoading = true,
+    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+  ): Promise<void> {
+    const requestVersion = ++this.threadRequestVersion;
+    this.requestedConversationId.set(id);
     if (showLoading) this.threadLoading.set(true);
     this.error.set(null);
 
     try {
       const response = await firstValueFrom(this.communicationApi.getConversation(id));
-      this.selectedConversation.set(response.data);
-      this.activeChannel.set(this.canSendSms(response.data) ? 'sms' : 'email');
-      this.upsertConversation(response.data);
-      this.scheduleScrollToBottom();
+
+      if (
+        requestVersion !== this.threadRequestVersion ||
+        this.requestedConversationId() !== id
+      ) {
+        return;
+      }
+
+      this.setOpenedConversation(response.data, requestedChannel);
       await this.markSelectedRead();
     } catch (error) {
+      if (requestVersion !== this.threadRequestVersion) return;
       console.error(error);
       this.error.set('Could not open this conversation.');
     } finally {
-      if (showLoading) this.threadLoading.set(false);
+      if (showLoading && requestVersion === this.threadRequestVersion) {
+        this.threadLoading.set(false);
+      }
     }
+  }
+
+  private setOpenedConversation(
+    conversation: CommunicationConversation,
+    requestedChannel: 'email' | 'sms' | 'note' | null,
+  ): void {
+    this.selectedConversation.set(conversation);
+    this.activeChannel.set(this.canSendSms(conversation) ? 'sms' : 'email');
+    this.applyRequestedChannel(requestedChannel);
+    this.upsertConversation(conversation);
+    this.scheduleScrollToBottom();
   }
 
   async markSelectedRead(): Promise<void> {
     const selected = this.selectedConversation();
-    if (!selected || selected.unreadForShopCount <= 0) return;
+    if (
+      !selected ||
+      selected.unreadForShopCount <= 0 ||
+      this.markReadInFlight.has(selected.id)
+    ) return;
+
+    const selectedId = selected.id;
+    this.markReadInFlight.add(selectedId);
 
     try {
       const response = await firstValueFrom(
-        this.communicationApi.markConversationRead(selected.id),
+        this.communicationApi.markConversationRead(selectedId),
       );
-      this.selectedConversation.set(response.data);
+
       this.upsertConversation(response.data);
-      this.scheduleScrollToBottom();
+
+      if (this.requestedConversationId() === selectedId) {
+        this.selectedConversation.set(response.data);
+        this.scheduleScrollToBottom();
+      }
     } catch (error) {
       console.error(error);
+    } finally {
+      this.markReadInFlight.delete(selectedId);
     }
   }
 
@@ -536,22 +667,188 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     this.searchTerm.set(value);
   }
 
+  async applySearch(): Promise<void> {
+    this.clearBulkSelection();
+    this.nextCursor.set(null);
+    await this.loadConversations();
+    await this.syncConversationSelectionAfterListChange();
+  }
+
   async clearSearch(): Promise<void> {
     if (!this.searchTerm().trim()) return;
     this.searchTerm.set('');
-    await this.loadConversations();
+    await this.applySearch();
   }
 
   async setConversationStatusFilter(status: 'open' | 'archived' | 'all'): Promise<void> {
     if (this.conversationStatusFilter() === status) return;
 
     this.conversationStatusFilter.set(status);
+    this.clearBulkSelection();
     this.selectedConversation.set(null);
+    this.threadRequestVersion += 1;
     this.nextCursor.set(null);
     await this.loadConversations();
+    await this.syncConversationSelectionAfterListChange();
+  }
 
-    const first = this.conversations()[0];
-    if (first) await this.openConversation(first);
+  isConversationBulkSelected(conversationId: string): boolean {
+    return this.selectedConversationIds().has(conversationId);
+  }
+
+  toggleConversationSelection(conversationId: string, checked: boolean): void {
+    this.selectedConversationIds.update((current) => {
+      const next = new Set(current);
+      if (checked) next.add(conversationId);
+      else next.delete(conversationId);
+      return next;
+    });
+  }
+
+  toggleSelectAllVisible(checked: boolean): void {
+    if (!checked) {
+      this.clearBulkSelection();
+      return;
+    }
+
+    this.selectedConversationIds.set(
+      new Set(this.conversations().map((conversation) => conversation.id)),
+    );
+  }
+
+  clearBulkSelection(): void {
+    if (this.selectedConversationIds().size === 0) return;
+    this.selectedConversationIds.set(new Set<string>());
+  }
+
+  async bulkMarkRead(): Promise<void> {
+    const targets = this.bulkSelectedConversations().filter(
+      (conversation) => conversation.unreadForShopCount > 0,
+    );
+    if (targets.length === 0 || this.bulkActionRunning()) return;
+
+    this.bulkActionRunning.set(true);
+    this.error.set(null);
+
+    try {
+      const results = await Promise.allSettled(
+        targets.map((conversation) =>
+          firstValueFrom(this.communicationApi.markConversationRead(conversation.id)),
+        ),
+      );
+
+      let succeeded = 0;
+      results.forEach((result) => {
+        if (result.status !== 'fulfilled') return;
+        succeeded += 1;
+        this.upsertConversation(result.value.data);
+        if (this.requestedConversationId() === result.value.data.id) {
+          this.selectedConversation.set(result.value.data);
+        }
+      });
+
+      this.clearBulkSelection();
+      this.showBulkResult('marked read', succeeded, targets.length);
+    } finally {
+      this.bulkActionRunning.set(false);
+    }
+  }
+
+  async bulkArchive(): Promise<void> {
+    const targets = this.bulkSelectedConversations().filter(
+      (conversation) => conversation.status !== 'archived',
+    );
+    if (targets.length === 0 || this.bulkActionRunning()) return;
+
+    const confirmed = window.confirm(
+      `Archive ${targets.length} conversation${targets.length === 1 ? '' : 's'}?`,
+    );
+    if (!confirmed) return;
+
+    await this.runBulkMoveAction(
+      targets.map((conversation) => conversation.id),
+      (id) => this.communicationApi.archiveConversation(id),
+      'archived',
+    );
+  }
+
+  async bulkReopen(): Promise<void> {
+    const targets = this.bulkSelectedConversations().filter(
+      (conversation) => conversation.status === 'archived',
+    );
+    if (targets.length === 0 || this.bulkActionRunning()) return;
+
+    await this.runBulkMoveAction(
+      targets.map((conversation) => conversation.id),
+      (id) => this.communicationApi.reopenConversation(id),
+      'reopened',
+    );
+  }
+
+  async bulkDelete(): Promise<void> {
+    const targets = this.bulkSelectedConversations();
+    if (targets.length === 0 || this.bulkActionRunning()) return;
+
+    const confirmed = window.confirm(
+      `Delete ${targets.length} conversation${targets.length === 1 ? '' : 's'} and all message history? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    this.bulkActionRunning.set(true);
+    this.error.set(null);
+
+    try {
+      const results = await Promise.allSettled(
+        targets.map((conversation) =>
+          firstValueFrom(this.communicationApi.deleteConversation(conversation.id)),
+        ),
+      );
+      const succeeded = results.filter((result) => result.status === 'fulfilled').length;
+
+      this.clearBulkSelection();
+      await this.loadConversations();
+      await this.syncConversationSelectionAfterListChange();
+      this.showBulkResult('deleted', succeeded, targets.length);
+    } finally {
+      this.bulkActionRunning.set(false);
+    }
+  }
+
+  private async runBulkMoveAction(
+    ids: string[],
+    action: (id: string) => ReturnType<CommunicationService['archiveConversation']>,
+    actionLabel: 'archived' | 'reopened',
+  ): Promise<void> {
+    this.bulkActionRunning.set(true);
+    this.error.set(null);
+
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => firstValueFrom(action(id))),
+      );
+      const succeeded = results.filter((result) => result.status === 'fulfilled').length;
+
+      this.clearBulkSelection();
+      await this.loadConversations();
+      await this.syncConversationSelectionAfterListChange();
+      this.showBulkResult(actionLabel, succeeded, ids.length);
+    } finally {
+      this.bulkActionRunning.set(false);
+    }
+  }
+
+  private showBulkResult(actionLabel: string, succeeded: number, attempted: number): void {
+    if (succeeded === attempted) {
+      this.toast.success(
+        `${succeeded} conversation${succeeded === 1 ? '' : 's'} ${actionLabel}`,
+      );
+      return;
+    }
+
+    this.toast.error(
+      'Some conversations were not updated',
+      `${succeeded} of ${attempted} conversations were ${actionLabel}.`,
+    );
   }
 
   async archiveSelectedConversation(): Promise<void> {
@@ -566,7 +863,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     try {
       await firstValueFrom(this.communicationApi.archiveConversation(conversation.id));
-      await this.removeConversationFromCurrentList(conversation.id);
+      await this.loadConversations();
+      await this.syncConversationSelectionAfterListChange();
       this.toast.success('Conversation archived', 'It was moved out of the open Inbox.');
     } catch (error) {
       console.error(error);
@@ -586,7 +884,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     try {
       await firstValueFrom(this.communicationApi.reopenConversation(conversation.id));
-      await this.removeConversationFromCurrentList(conversation.id);
+      await this.loadConversations();
+      await this.syncConversationSelectionAfterListChange();
       this.toast.success('Conversation reopened', 'It was moved back to the open Inbox.');
     } catch (error) {
       console.error(error);
@@ -611,7 +910,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     try {
       await firstValueFrom(this.communicationApi.deleteConversation(conversation.id));
-      await this.removeConversationFromCurrentList(conversation.id);
+      await this.loadConversations();
+      await this.syncConversationSelectionAfterListChange();
       this.toast.success('Conversation deleted', 'The conversation was removed from the inbox.');
     } catch (error) {
       console.error(error);
@@ -636,6 +936,12 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
   setChannel(channel: 'email' | 'sms' | 'note'): void {
     this.activeChannel.set(channel);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { channel },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   canSendEmail(conversation: CommunicationConversation): boolean {
@@ -971,16 +1277,40 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     });
   }
 
-  private async removeConversationFromCurrentList(conversationId: string): Promise<void> {
-    const current = this.conversations();
-    const nextConversations = current.filter((item) => item.id !== conversationId);
-    const nextSelected = nextConversations[0] ?? null;
+  private async syncConversationSelectionAfterListChange(): Promise<void> {
+    const requestedId = this.requestedConversationId();
+    const requestedStillVisible = Boolean(
+      requestedId && this.conversations().some((conversation) => conversation.id === requestedId),
+    );
 
-    this.conversations.set(nextConversations);
+    if (requestedId && requestedStillVisible) {
+      await this.openConversationById(
+        requestedId,
+        false,
+        this.parseRequestedChannel(this.route.snapshot.queryParamMap.get('channel')),
+      );
+      return;
+    }
+
+    this.threadRequestVersion += 1;
     this.selectedConversation.set(null);
+    this.requestedConversationId.set(null);
 
-    if (nextSelected) {
-      await this.openConversation(nextSelected);
+    const first = this.conversations()[0];
+    await this.navigateToConversation(
+      first?.id ?? null,
+      true,
+      this.parseRequestedChannel(this.route.snapshot.queryParamMap.get('channel')),
+    );
+  }
+
+  private pruneBulkSelectionToVisible(): void {
+    const visibleIds = new Set(this.conversations().map((conversation) => conversation.id));
+    const current = this.selectedConversationIds();
+    const next = new Set([...current].filter((id) => visibleIds.has(id)));
+
+    if (next.size !== current.size) {
+      this.selectedConversationIds.set(next);
     }
   }
 
@@ -1043,8 +1373,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     conversations: CommunicationConversation[],
   ): CommunicationConversation[] {
     return [...conversations].sort((a, b) => {
-      const aDate = new Date(a.lastMessageAt || a.updatedAt || a.createdAt).getTime();
-      const bDate = new Date(b.lastMessageAt || b.updatedAt || b.createdAt).getTime();
+      const aDate = new Date(a.lastMessageAt || a.createdAt || a.updatedAt).getTime();
+      const bDate = new Date(b.lastMessageAt || b.createdAt || b.updatedAt).getTime();
       return bDate - aDate;
     });
   }
