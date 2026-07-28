@@ -137,66 +137,133 @@
 
                     <div class="w-full flex-1">
                         <div class="flex items-center gap-4">
-                            <div class="relative w-full max-w-xl" (click)="$event.stopPropagation()">
+                            <div class="relative w-full max-w-2xl" (click)="$event.stopPropagation()">
                                 <lucide-icon [img]="searchIcon" size="16"
-                                    class="absolute left-3 top-1/2 -translate-y-1/2 text-app-text-muted">
+                                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-app-text-muted">
                                 </lucide-icon>
 
-                                <input [value]="searchQuery()" (input)="onSearchInput($event)"
+                                <input #globalSearchInput [value]="searchQuery()" (input)="onSearchInput($event)"
                                     (focus)="onSearchFocus(); openSearchDropdown()" (keydown)="onSearchKeydown($event)"
-                                    placeholder="Search customers, repairs, appointments..."
-                                    class="w-full rounded-2xl border border-app-border bg-app-surface py-3 pl-10 pr-4 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20" />
+                                    [attr.aria-expanded]="searchOpen()" aria-label="Search Opscend"
+                                    autocomplete="off" placeholder="Search across Opscend..."
+                                    class="w-full rounded-2xl border border-app-border bg-app-surface py-3 pl-10 pr-24 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20" />
+
+                                <div class="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+                                    @if (searchQuery()) {
+                                    <button type="button"
+                                        class="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-xl text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                                        (click)="clearSearch()" aria-label="Clear search">
+                                        <lucide-icon [img]="xIcon" size="15"></lucide-icon>
+                                    </button>
+                                    } @else {
+                                    <span
+                                        class="hidden rounded-lg border border-app-border bg-app-surface-muted px-2 py-1 text-[10px] font-semibold text-app-text-muted sm:inline-flex">
+                                        {{ searchShortcutLabel() }}
+                                    </span>
+                                    }
+                                </div>
 
                                 @if (searchOpen()) {
                                 <div
-                                    class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-xl shadow-black/5">
+                                    class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-[0_24px_70px_-32px_rgba(15,23,42,0.55)] ring-1 ring-black/5">
                                     @if (showKeepTypingState()) {
-                                    <div class="px-4 py-4 text-sm text-app-text-muted">
-                                        Keep typing to search...
+                                    <div class="px-5 py-5">
+                                        <p class="text-sm font-medium text-app-text">Keep typing to search</p>
+                                        <p class="mt-1 text-xs text-app-text-muted">
+                                            Search by customer, phone, email, device, repair, quote, order, form, SKU, or message text.
+                                        </p>
                                     </div>
                                     } @else if (searchLoading()) {
-                                    <div class="px-4 py-4 text-sm text-app-text-muted">
-                                        Searching...
+                                    <div class="flex items-center gap-3 px-5 py-5 text-sm text-app-text-muted">
+                                        <span class="h-4 w-4 animate-spin rounded-full border-2 border-app-border border-t-brand"></span>
+                                        Searching across Opscend...
+                                    </div>
+                                    } @else if (showSearchErrorState()) {
+                                    <div class="px-5 py-5">
+                                        <p class="text-sm font-semibold text-app-text">Search could not be loaded</p>
+                                        <p class="mt-1 text-xs text-app-text-muted">Try again in a moment.</p>
                                     </div>
                                     } @else if (showEmptyState()) {
-                                    <div class="px-4 py-4 text-sm text-app-text-muted">
-                                        No results found.
+                                    <div class="px-5 py-5">
+                                        <p class="text-sm font-semibold text-app-text">No matches found</p>
+                                        <p class="mt-1 text-xs text-app-text-muted">
+                                            Try a customer name, phone number, device, order number, SKU, or shorter phrase.
+                                        </p>
                                     </div>
                                     } @else {
-                                    @for (section of searchSections(); track section.key) {
-                                    <div class="border-b border-app-border last:border-b-0">
-                                        <div
-                                            class="px-4 pt-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-app-text-muted">
-                                            {{ section.label }}
+                                    <div class="max-h-[70vh] overflow-y-auto overscroll-contain">
+                                        <div class="border-b border-app-border px-5 py-3">
+                                            <p class="text-xs font-medium text-app-text-muted">
+                                                {{ totalSearchResults() }} matching records
+                                            </p>
                                         </div>
 
-                                        @for (item of section.items; track item.id) {
-                                        <button type="button"
-                                            class="cursor-pointer flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition"
-                                            [ngClass]="isRowActive(section.key, item.id) ? 'bg-brand/8' : 'hover:bg-app-surface-muted'"
-                                            (mouseenter)="setActiveSearchRow(section.key, item.id)"
-                                            (click)="navigateFromSearch(item.route)">
-                                            <div class="flex min-w-0 flex-1 flex-col">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="truncate text-sm font-medium text-app-text">
-                                                        {{ item.title }}
-                                                    </span>
-                                                    <span
-                                                        class="shrink-0 rounded-full border border-app-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-app-text-muted">
-                                                        {{ typeLabel(item.type) }}
-                                                    </span>
-                                                </div>
-
-                                                @if (item.subtitle) {
-                                                <span class="mt-1 truncate text-xs text-app-text-muted">
-                                                    {{ item.subtitle }}
+                                        @for (section of searchSections(); track section.key) {
+                                        <div class="border-b border-app-border last:border-b-0">
+                                            <div class="flex items-center justify-between px-5 pb-2 pt-4">
+                                                <p
+                                                    class="text-[10px] font-bold uppercase tracking-[0.14em] text-app-text-muted">
+                                                    {{ section.label }}
+                                                </p>
+                                                <span
+                                                    class="rounded-full bg-app-surface-muted px-2 py-0.5 text-[10px] font-semibold text-app-text-muted">
+                                                    {{ section.items.length }}
                                                 </span>
-                                                }
                                             </div>
-                                        </button>
+
+                                            @for (item of section.items; track item.id) {
+                                            <button type="button"
+                                                class="cursor-pointer flex w-full items-center gap-3 px-5 py-3 text-left transition"
+                                                [ngClass]="isRowActive(section.key, item.id) ? 'bg-brand/8' : 'hover:bg-app-surface-muted'"
+                                                (mouseenter)="setActiveSearchRow(section.key, item.id)"
+                                                (click)="navigateFromSearch(item.route)">
+                                                <span
+                                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-text-muted">
+                                                    <lucide-icon [img]="searchItemIcon(item.type)" size="16"></lucide-icon>
+                                                </span>
+
+                                                <span class="min-w-0 flex-1">
+                                                    <span class="flex min-w-0 items-center gap-2">
+                                                        <span class="truncate text-sm font-semibold text-app-text">
+                                                            {{ item.title }}
+                                                        </span>
+                                                        <span
+                                                            class="shrink-0 rounded-full border border-app-border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">
+                                                            {{ typeLabel(item.type) }}
+                                                        </span>
+                                                    </span>
+
+                                                    @if (item.subtitle) {
+                                                    <span class="mt-1 block truncate text-xs text-app-text-muted">
+                                                        {{ item.subtitle }}
+                                                    </span>
+                                                    }
+                                                </span>
+
+                                                <span class="hidden shrink-0 text-right sm:block">
+                                                    @if (item.badge) {
+                                                    <span
+                                                        class="block max-w-32 truncate rounded-full bg-app-surface-muted px-2 py-1 text-[10px] font-semibold text-app-text-muted">
+                                                        {{ item.badge }}
+                                                    </span>
+                                                    }
+                                                    @if (item.meta) {
+                                                    <span class="mt-1 block text-[10px] text-app-text-muted">
+                                                        {{ item.meta }}
+                                                    </span>
+                                                    }
+                                                </span>
+                                            </button>
+                                            }
+                                        </div>
                                         }
                                     </div>
-                                    }
+
+                                    <div
+                                        class="flex items-center justify-between border-t border-app-border bg-app-surface-muted/60 px-5 py-2.5 text-[10px] font-medium text-app-text-muted">
+                                        <span>↑↓ Navigate · Enter Open</span>
+                                        <span>Esc Close</span>
+                                    </div>
                                     }
                                 </div>
                                 }

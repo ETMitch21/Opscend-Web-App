@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, firstValueFrom, Subscription } from 'rxjs';
 import {
@@ -64,7 +64,17 @@ type NavItem = {
 };
 
 type SearchSection = {
-  key: 'customers' | 'repairs' | 'appointments';
+  key:
+    | 'customers'
+    | 'repairs'
+    | 'devices'
+    | 'quotes'
+    | 'orders'
+    | 'conversations'
+    | 'forms'
+    | 'products'
+    | 'purchaseOrders'
+    | 'appointments';
   label: string;
   items: SearchItem[];
 };
@@ -91,6 +101,8 @@ type FlatSearchRow =
   styleUrl: './app-shell-component.scss',
 })
 export class AppShellComponent implements OnInit, OnDestroy {
+  @ViewChild('globalSearchInput') private globalSearchInput?: ElementRef<HTMLInputElement>;
+
   private auth = inject(AuthService);
   private router = inject(Router);
   private searchService = inject(SearchService);
@@ -165,10 +177,18 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public searchOpen = signal(false);
   public searchLoading = signal(false);
   public searchTouched = signal(false);
+  public searchFailed = signal(false);
 
   public searchResults = signal<GlobalSearchResponse>({
     customers: [],
     repairs: [],
+    devices: [],
+    quotes: [],
+    orders: [],
+    conversations: [],
+    forms: [],
+    products: [],
+    purchaseOrders: [],
     appointments: [],
   });
 
@@ -723,6 +743,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     const value = (event.target as HTMLInputElement).value ?? '';
     this.searchTouched.set(true);
     this.searchQuery.set(value);
+    this.searchFailed.set(false);
 
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
@@ -858,26 +879,37 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.searchQuery.set('');
     this.searchTouched.set(false);
     this.searchLoading.set(false);
+    this.searchFailed.set(false);
     this.searchOpen.set(false);
     this.activeSearchIndex.set(-1);
     this.clearResultsOnly();
     this.lastRequestedQuery = '';
+    this.lastCompletedQuery = '';
   }
 
   clearResultsOnly(): void {
     this.searchResults.set({
       customers: [],
       repairs: [],
+      devices: [],
+      quotes: [],
+      orders: [],
+      conversations: [],
+      forms: [],
+      products: [],
+      purchaseOrders: [],
       appointments: [],
     });
   }
 
   resetSearchUi(): void {
     this.searchLoading.set(false);
+    this.searchFailed.set(false);
     this.searchOpen.set(false);
     this.activeSearchIndex.set(-1);
     this.clearResultsOnly();
     this.lastRequestedQuery = '';
+    this.lastCompletedQuery = '';
   }
 
   runSearch(trimmedQuery: string): void {
@@ -894,7 +926,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.lastRequestedQuery = trimmedQuery;
     const currentRequestId = ++this.requestSequence;
 
-    this.searchService.search(trimmedQuery, 5).subscribe({
+    this.searchService.search(trimmedQuery, 4).subscribe({
       next: (results) => {
         if (currentRequestId !== this.requestSequence) {
           return;
@@ -905,6 +937,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
         }
 
         this.searchResults.set(results);
+        this.searchFailed.set(false);
         this.searchLoading.set(false);
         this.searchOpen.set(true);
         this.activeSearchIndex.set(this.flatSearchRows().length > 0 ? 0 : -1);
@@ -916,9 +949,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
         }
 
         this.clearResultsOnly();
+        this.searchFailed.set(true);
         this.searchLoading.set(false);
         this.searchOpen.set(true);
         this.activeSearchIndex.set(-1);
+        this.lastRequestedQuery = '';
       },
     });
   }
@@ -934,6 +969,13 @@ export class AppShellComponent implements OnInit, OnDestroy {
     return (
       results.customers.length +
       results.repairs.length +
+      results.devices.length +
+      results.quotes.length +
+      results.orders.length +
+      results.conversations.length +
+      results.forms.length +
+      results.products.length +
+      results.purchaseOrders.length +
       results.appointments.length
     );
   }
@@ -944,6 +986,13 @@ export class AppShellComponent implements OnInit, OnDestroy {
     const sections: SearchSection[] = [
       { key: 'customers', label: 'Customers', items: results.customers },
       { key: 'repairs', label: 'Repairs', items: results.repairs },
+      { key: 'devices', label: 'Devices', items: results.devices },
+      { key: 'quotes', label: 'Quotes', items: results.quotes },
+      { key: 'orders', label: 'Orders', items: results.orders },
+      { key: 'conversations', label: 'Inbox', items: results.conversations },
+      { key: 'forms', label: 'Forms & Checklists', items: results.forms },
+      { key: 'products', label: 'Products', items: results.products },
+      { key: 'purchaseOrders', label: 'Purchase Orders', items: results.purchaseOrders },
       { key: 'appointments', label: 'Appointments', items: results.appointments },
     ];
 
@@ -990,6 +1039,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     return (
       this.searchOpen() &&
       !this.searchLoading() &&
+      !this.searchFailed() &&
       this.searchQuery().trim().length >= 2 &&
       this.totalSearchResults() === 0
     );
@@ -1003,9 +1053,64 @@ export class AppShellComponent implements OnInit, OnDestroy {
         return 'Repair';
       case 'appointment':
         return 'Appointment';
+      case 'device':
+        return 'Device';
+      case 'quote':
+        return 'Quote';
+      case 'order':
+        return 'Order';
+      case 'conversation':
+        return 'Inbox';
+      case 'form':
+        return 'Form';
+      case 'product':
+        return 'Product';
+      case 'purchase_order':
+        return 'Purchase order';
       default:
         return '';
     }
+  }
+
+  searchItemIcon(type: SearchItem['type']): LucideIconData {
+    switch (type) {
+      case 'customer':
+        return this.usersIcon;
+      case 'repair':
+        return this.wrenchIcon;
+      case 'appointment':
+        return this.calendarClockIcon;
+      case 'device':
+        return this.deviceCatalogIcon;
+      case 'quote':
+        return this.messageSquareQuoteIcon;
+      case 'order':
+        return this.walletCardsIcon;
+      case 'conversation':
+        return this.inboxIcon;
+      case 'form':
+        return this.formsIcon;
+      case 'product':
+        return this.boxesIcon;
+      case 'purchase_order':
+        return this.shoppingCartIcon;
+      default:
+        return this.searchIcon;
+    }
+  }
+
+  showSearchErrorState(): boolean {
+    return (
+      this.searchOpen() &&
+      !this.searchLoading() &&
+      this.searchFailed() &&
+      this.searchQuery().trim().length >= 2
+    );
+  }
+
+  searchShortcutLabel(): string {
+    if (typeof navigator === 'undefined') return 'Ctrl K';
+    return /Mac|iPhone|iPad/i.test(navigator.platform) ? '⌘K' : 'Ctrl K';
   }
 
   toggleNavSection(label: string): void {
@@ -1137,6 +1242,26 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   get userDisplayEmail(): string {
     return this.auth.getCurrentUser()?.email ?? '';
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  focusGlobalSearch(event: KeyboardEvent): void {
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return;
+
+    event.preventDefault();
+    this.profileMenuOpen.set(false);
+    this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
+
+    queueMicrotask(() => {
+      const input = this.globalSearchInput?.nativeElement;
+      input?.focus();
+      input?.select();
+
+      if (this.searchQuery().trim().length > 0) {
+        this.searchOpen.set(true);
+      }
+    });
   }
 
   @HostListener('document:click')
