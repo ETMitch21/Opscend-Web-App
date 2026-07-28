@@ -72,6 +72,7 @@ type SearchSection = {
     | 'orders'
     | 'conversations'
     | 'forms'
+    | 'knowledgeArticles'
     | 'products'
     | 'purchaseOrders'
     | 'appointments';
@@ -187,6 +188,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     orders: [],
     conversations: [],
     forms: [],
+    knowledgeArticles: [],
     products: [],
     purchaseOrders: [],
     appointments: [],
@@ -199,6 +201,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     { label: 'Analytics', route: '/analytics', icon: this.analyticsIcon },
     { label: 'Automations', route: '/automations', icon: this.automationIcon },
     { label: 'Forms', route: '/forms', icon: this.formsIcon },
+    { label: 'Knowledge Base', route: '/knowledge-base', icon: this.bookOpenIcon },
     {
       label: 'Work Queue',
       route: '/work-queue',
@@ -896,6 +899,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       orders: [],
       conversations: [],
       forms: [],
+      knowledgeArticles: [],
       products: [],
       purchaseOrders: [],
       appointments: [],
@@ -974,6 +978,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       results.orders.length +
       results.conversations.length +
       results.forms.length +
+      results.knowledgeArticles.length +
       results.products.length +
       results.purchaseOrders.length +
       results.appointments.length
@@ -991,6 +996,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       { key: 'orders', label: 'Orders', items: results.orders },
       { key: 'conversations', label: 'Inbox', items: results.conversations },
       { key: 'forms', label: 'Forms & Checklists', items: results.forms },
+      { key: 'knowledgeArticles', label: 'Knowledge Base', items: results.knowledgeArticles },
       { key: 'products', label: 'Products', items: results.products },
       { key: 'purchaseOrders', label: 'Purchase Orders', items: results.purchaseOrders },
       { key: 'appointments', label: 'Appointments', items: results.appointments },
@@ -1063,6 +1069,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
         return 'Inbox';
       case 'form':
         return 'Form';
+      case 'knowledge_article':
+        return 'Article';
       case 'product':
         return 'Product';
       case 'purchase_order':
@@ -1090,6 +1098,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
         return this.inboxIcon;
       case 'form':
         return this.formsIcon;
+      case 'knowledge_article':
+        return this.bookOpenIcon;
       case 'product':
         return this.boxesIcon;
       case 'purchase_order':

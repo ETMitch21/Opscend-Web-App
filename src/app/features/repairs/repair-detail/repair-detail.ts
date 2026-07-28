@@ -20,6 +20,7 @@ import { firstValueFrom, Subscription } from 'rxjs';
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Check,
   Clipboard,
   ChevronDown,
@@ -203,6 +204,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly icons = {
     ArrowLeft,
     ArrowRight,
+    BookOpen,
     Clipboard,
     Copy,
     DollarSign,

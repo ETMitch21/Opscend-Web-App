@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   AlertTriangle,
   BellRing,
+  BookOpen,
   CalendarClock,
   Check,
   CheckCircle2,
@@ -96,6 +97,7 @@ export class WorkQueue implements OnInit, OnDestroy {
   readonly icons = {
     AlertTriangle,
     BellRing,
+    BookOpen,
     CalendarClock,
     Check,
     CheckCircle2,
@@ -1050,6 +1052,13 @@ export class WorkQueue implements OnInit, OnDestroy {
   async openSource(item: Pick<WorkQueueItem, 'route'>): Promise<void> {
     if (!item.route) return;
     await this.router.navigateByUrl(item.route);
+  }
+
+  async openKnowledge(item: Pick<WorkQueueItem, 'id'>): Promise<void> {
+    this.actionMenuItemId.set(null);
+    await this.router.navigate(['/knowledge-base'], {
+      queryParams: { workQueueItemId: item.id },
+    });
   }
 
   itemIcon(item: Pick<WorkQueueItem, 'sourceType' | 'kind'>): LucideIconData {

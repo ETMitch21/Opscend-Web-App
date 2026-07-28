@@ -13,7 +13,8 @@ export type SearchItemType =
   | 'conversation'
   | 'form'
   | 'product'
-  | 'purchase_order';
+  | 'purchase_order'
+  | 'knowledge_article';
 
 export type SearchItem = {
   id: string;
@@ -33,6 +34,7 @@ export type GlobalSearchResponse = {
   orders: SearchItem[];
   conversations: SearchItem[];
   forms: SearchItem[];
+  knowledgeArticles: SearchItem[];
   products: SearchItem[];
   purchaseOrders: SearchItem[];
   appointments: SearchItem[];

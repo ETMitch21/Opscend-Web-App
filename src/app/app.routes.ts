@@ -75,6 +75,12 @@ export const routes: Routes = [
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [AuthGuard] },
     {
+        path: "knowledge-base",
+        loadComponent: () =>
+            import('./features/knowledge-base/knowledge-base').then((m) => m.KnowledgeBase),
+        canActivate: [AuthGuard]
+    },
+    {
         path: "analytics",
         loadComponent: () =>
             import('./features/analytics/analytics').then((m) => m.Analytics),

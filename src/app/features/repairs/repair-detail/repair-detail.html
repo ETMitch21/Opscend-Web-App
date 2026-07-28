@@ -10,6 +10,16 @@
             </h1>
         </div>
         <div class="flex shrink-0 items-center gap-2">
+            @if (repair(); as currentRepair) {
+            <a
+                class="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
+                [routerLink]="['/knowledge-base']"
+                [queryParams]="{ repairId: currentRepair.id }"
+            >
+                <lucide-icon [name]="icons.BookOpen" class="h-4 w-4"></lucide-icon>
+                Knowledge
+            </a>
+            }
             <div class="relative status-menu-wrap">
                 <button type="button" (click)="toggleStatusMenu()"
                     class="cursor-pointer flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-center font-medium text-gray-700 shadow-sm transition hover:border-gray-300 focus:border-brand focus:ring-2 focus:ring-brand/20">
