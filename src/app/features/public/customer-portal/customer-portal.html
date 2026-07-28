@@ -276,6 +276,11 @@
                     {{ portal.summary.unreadMessages > 9 ? '9+' : portal.summary.unreadMessages }}
                   </span>
                 }
+                @if (tab.key === 'forms' && portal.summary.pendingForms > 0) {
+                  <span class="rounded-full px-1.5 py-0.5 text-[10px] font-bold" [ngClass]="activeTab() === tab.key ? 'bg-white text-slate-950' : 'bg-amber-500 text-white'">
+                    {{ portal.summary.pendingForms > 9 ? '9+' : portal.summary.pendingForms }}
+                  </span>
+                }
               </button>
             }
           </div>
@@ -284,7 +289,7 @@
 
       @if (activeTab() === 'overview') {
         <div class="mt-6 space-y-6">
-          <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
             <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                 <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
@@ -320,6 +325,17 @@
               <p class="mt-5 text-3xl font-semibold tracking-tight">{{ portal.summary.unreadMessages }}</p>
               <p class="mt-1 text-sm font-medium text-slate-500">Unread messages</p>
             </article>
+            <button
+              type="button"
+              class="cursor-pointer rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md"
+              (click)="selectTab('forms')"
+            >
+              <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                <lucide-icon [name]="icons.ClipboardList" class="h-5 w-5"></lucide-icon>
+              </div>
+              <p class="mt-5 text-3xl font-semibold tracking-tight">{{ portal.summary.pendingForms }}</p>
+              <p class="mt-1 text-sm font-medium text-slate-500">Forms to complete</p>
+            </button>
           </section>
 
           <section class="grid gap-6 xl:grid-cols-12">
@@ -603,6 +619,81 @@
             </div>
           </section>
         </div>
+      }
+
+      @if (activeTab() === 'forms') {
+        <section class="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <h2 class="text-lg font-semibold">Forms and acknowledgments</h2>
+              <p class="mt-1 text-sm text-slate-500">Complete forms requested by {{ portal.shop.name }} and review finished submissions.</p>
+            </div>
+            @if (portal.summary.pendingForms > 0) {
+              <span class="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                {{ portal.summary.pendingForms }} awaiting completion
+              </span>
+            }
+          </div>
+
+          <div class="divide-y divide-slate-100 px-5 sm:px-6">
+            @for (form of portal.forms; track form.id) {
+              <article class="flex flex-col gap-4 py-5 sm:flex-row sm:items-center">
+                <div class="flex min-w-0 flex-1 items-start gap-4">
+                  <div
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                    [ngClass]="form.status === 'completed' ? 'bg-emerald-50 text-emerald-700' : form.status === 'canceled' ? 'bg-slate-100 text-slate-500' : 'bg-amber-50 text-amber-700'"
+                  >
+                    <lucide-icon [name]="form.status === 'completed' ? icons.CheckCircle2 : icons.ClipboardList" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h3 class="truncate text-sm font-semibold text-slate-950">{{ form.title }}</h3>
+                      <span
+                        class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        [ngClass]="form.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : form.status === 'canceled' ? 'bg-slate-100 text-slate-600' : 'bg-amber-100 text-amber-800'"
+                      >
+                        {{ form.status === 'in_progress' ? 'In progress' : (form.status | titlecase) }}
+                      </span>
+                    </div>
+                    @if (form.templateDescription) {
+                      <p class="mt-1 text-sm text-slate-500">{{ form.templateDescription }}</p>
+                    }
+                    <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                      @if (form.deviceName) { <span>{{ form.deviceName }}</span> }
+                      @if (form.dueAt && form.status !== 'completed') { <span>Due {{ dateTime(form.dueAt) }}</span> }
+                      @if (form.completedAt) { <span>Completed {{ dateTime(form.completedAt) }}</span> }
+                      @if (!form.dueAt && !form.completedAt) { <span>Sent {{ relativeDate(form.createdAt) }}</span> }
+                    </div>
+                  </div>
+                </div>
+
+                @if (form.status === 'pending' || form.status === 'in_progress') {
+                  <a
+                    [routerLink]="['/form', form.publicToken]"
+                    class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-95"
+                    [style.background]="brandColor()"
+                  >
+                    Complete form
+                    <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
+                  </a>
+                } @else if (form.status === 'completed') {
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                    <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                    Submitted
+                  </span>
+                }
+              </article>
+            } @empty {
+              <div class="py-16 text-center">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                  <lucide-icon [name]="icons.CheckCircle2" class="h-5 w-5"></lucide-icon>
+                </div>
+                <p class="mt-4 text-sm font-semibold">No forms waiting</p>
+                <p class="mt-1 text-sm text-slate-500">Forms requested by the shop will appear here.</p>
+              </div>
+            }
+          </div>
+        </section>
       }
 
       @if (activeTab() === 'devices') {

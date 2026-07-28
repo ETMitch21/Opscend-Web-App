@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleDollarSign,
+  ClipboardList,
   Clock3,
   CreditCard,
   FileText,
@@ -63,6 +64,7 @@ type CustomerPortalTab =
   | 'repairs'
   | 'quotes'
   | 'billing'
+  | 'forms'
   | 'devices';
 
 type CustomerPortalScreen = 'login' | 'link-sent' | 'portal';
@@ -89,6 +91,7 @@ export class CustomerPortal implements OnInit, OnDestroy {
     CheckCircle2,
     ChevronRight,
     CircleDollarSign,
+    ClipboardList,
     Clock3,
     CreditCard,
     FileText,
@@ -196,6 +199,7 @@ export class CustomerPortal implements OnInit, OnDestroy {
     { key: 'repairs', label: 'Repairs', icon: Wrench },
     { key: 'quotes', label: 'Quotes', icon: FileText },
     { key: 'billing', label: 'Billing', icon: WalletCards },
+    { key: 'forms', label: 'Forms', icon: ClipboardList },
     { key: 'devices', label: 'Devices', icon: Smartphone },
   ];
 
@@ -434,8 +438,8 @@ export class CustomerPortal implements OnInit, OnDestroy {
       const cardResult = await this.stripeService.createCardElement({
         stripeAccountId: intent.stripeAccountId,
       });
+      cardResult.card.mount(mount);
       this.paymentCard = cardResult.card;
-      this.paymentCard.mount(mount);
     } catch {
       this.paymentError.set('The secure payment form could not be loaded.');
     }

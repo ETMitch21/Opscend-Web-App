@@ -80,7 +80,9 @@ import type {
 import { RepairsService } from '../../../core/repairs/repairs-service';
 import { ContractorPayoutsService } from '../../../core/contractor-payout/contractor-payouts.service';
 import { CommunicationService } from '../../../core/communications/service';
-import type { ContractorPayout } from '../../../core/contractor-payout/contractor-payout.model'; 
+import type { ContractorPayout } from '../../../core/contractor-payout/contractor-payout.model';
+import { FormsService } from '../../../core/forms/service';
+import type { FormAssignment, FormRepairGateStatus } from '../../../core/forms/model';
 
 interface ShopListResponse {
   data: Array<{
@@ -127,6 +129,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly repairsService = inject(RepairsService);
   private readonly contractorPayoutsService = inject(ContractorPayoutsService);
   private readonly communicationApi = inject(CommunicationService);
+  private readonly formsApi = inject(FormsService);
 
   public shopCountry = 'US';
 
@@ -243,6 +246,10 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly contractorPayoutsLoading = signal(false);
   readonly contractorPayoutsError = signal<string | null>(null);
 
+  readonly repairForms = signal<FormAssignment[]>([]);
+  readonly repairFormsLoading = signal(false);
+  readonly repairFormsError = signal<string | null>(null);
+
   readonly repairId = signal<string | null>(null);
   readonly accessoriesList = signal<string[]>([]);
   readonly accessoryInput = signal('');
@@ -283,6 +290,12 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly notes = this.store.selectedRepairNotes;
   readonly attachments = this.store.selectedRepairAttachments;
 
+  readonly incompleteRequiredRepairForms = computed(() =>
+    this.repairForms().filter((assignment) =>
+      ['pending', 'in_progress'].includes(assignment.status) &&
+      Boolean(assignment.template?.requiredBeforeRepairStatus),
+    ),
+  );
 
   readonly contractorDocumentation = computed(() => this.repair()?.documentation ?? null);
 
@@ -605,6 +618,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     await this.loadRepairNotifications(id);
     await this.loadRepairMessages(id);
     await this.loadRepairPayouts(id);
+    await this.loadRepairForms(id);
 
     const confirmed$ =
       (this.schedulingModalService as any).selectionConfirmed ??
@@ -739,6 +753,26 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
   }
 
+  async loadRepairForms(repairId = this.repairId()): Promise<void> {
+    if (!repairId) return;
+
+    this.repairFormsLoading.set(true);
+    this.repairFormsError.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.formsApi.listAssignments({ repairId, limit: 200 })
+      );
+      this.repairForms.set(response.data ?? []);
+    } catch (error) {
+      console.error('Failed to load repair forms.', error);
+      this.repairFormsError.set('Unable to load forms connected to this repair.');
+      this.repairForms.set([]);
+    } finally {
+      this.repairFormsLoading.set(false);
+    }
+  }
+
   async markRepairMessagesRead(repairId = this.repairId()): Promise<void> {
     if (!repairId) return;
 
@@ -855,6 +889,7 @@ export class RepairDetail implements OnInit, OnDestroy {
       await this.loadRepairNotifications(id);
       await this.loadRepairMessages(id);
       await this.loadRepairPayouts(id);
+      await this.loadRepairForms(id);
       this.toast.success('Repair updated', 'Changes saved successfully.');
     } else {
       this.toast.error(
@@ -1221,10 +1256,21 @@ export class RepairDetail implements OnInit, OnDestroy {
     const id = this.repairId();
     if (!id) return;
 
+    const blockingForms = this.formsBlockingStatus(status);
+    if (blockingForms.length > 0) {
+      this.repairForm.patchValue({ status: this.repair()?.status ?? 'intake' }, { emitEvent: false });
+      this.toast.error(
+        'Complete required forms',
+        `${blockingForms.map((assignment) => assignment.title).join(', ')} must be completed before moving this repair to ${this.prettyStatus(status)}.`
+      );
+      return;
+    }
+
     const updated = await this.store.updateRepairStatus(id, status);
     if (updated) {
       await this.loadRepairNotifications(id);
       await this.loadRepairMessages(id);
+      await this.loadRepairForms(id);
 
       this.toast.success(
         'Status updated',
@@ -1783,6 +1829,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     await this.loadRepairNotifications(id);
     await this.loadRepairMessages(id);
     await this.loadRepairPayouts(id);
+    await this.loadRepairForms(id);
     await this.loadRepairPayouts(id);
 
     this.toast.success(
@@ -2195,12 +2242,75 @@ export class RepairDetail implements OnInit, OnDestroy {
     return user.id;
   }
 
+  formStatusLabel(status: string): string {
+    switch (status) {
+      case 'in_progress': return 'In Progress';
+      case 'completed': return 'Completed';
+      case 'canceled': return 'Canceled';
+      default: return 'Pending';
+    }
+  }
+
+  formStatusClasses(status: string): string {
+    switch (status) {
+      case 'completed': return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      case 'in_progress': return 'border-blue-200 bg-blue-50 text-blue-700';
+      case 'canceled': return 'border-gray-200 bg-gray-100 text-gray-500';
+      default: return 'border-amber-200 bg-amber-50 text-amber-700';
+    }
+  }
+
+  formRequirementLabel(status: FormRepairGateStatus | null | undefined): string | null {
+    return status ? `Required before ${this.prettyStatus(status as RepairStatus)}` : null;
+  }
+
+  formatFormDueDate(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  formsBlockingStatus(status: RepairStatus): FormAssignment[] {
+    if (status === 'canceled') return [];
+
+    const nextIndex = this.statuses.indexOf(status);
+    if (nextIndex < 0) return [];
+
+    return this.incompleteRequiredRepairForms().filter((assignment) => {
+      const gateStatus = assignment.template?.requiredBeforeRepairStatus as RepairStatus | null | undefined;
+      if (!gateStatus) return false;
+      const gateIndex = this.statuses.indexOf(gateStatus);
+      return gateIndex >= 0 && nextIndex >= gateIndex;
+    });
+  }
+
+  isStatusBlockedByForms(status: RepairStatus): boolean {
+    return this.formsBlockingStatus(status).length > 0;
+  }
+
   toggleStatusMenu(): void {
     this.statusMenuOpen.update((v) => !v);
   }
 
   selectStatus(status: RepairStatus): void {
     this.statusMenuOpen.set(false);
+
+    const blockingForms = this.formsBlockingStatus(status);
+    if (blockingForms.length > 0) {
+      this.toast.error(
+        'Complete required forms',
+        `${blockingForms.map((assignment) => assignment.title).join(', ')} must be completed before moving this repair to ${this.prettyStatus(status)}.`
+      );
+      return;
+    }
+
     this.repairForm.patchValue({ status });
     void this.quickStatusChange(status);
   }

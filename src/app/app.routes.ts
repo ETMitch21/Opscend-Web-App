@@ -3,6 +3,7 @@ import { LoginComponent } from './features/auth/login-component/login-component'
 import { PublicGuard } from './core/auth/public.guard';
 import { DashboardComponent } from './features/dashboard/dashboard';
 import { AuthGuard } from './core/auth/auth.guard';
+import { OwnerGuard } from './core/auth/owner.guard';
 import { ForgotComponent } from './features/auth/forgot-component/forgot-component';
 import { ResetComponent } from './features/auth/reset-component/reset-component';
 import { Repairs } from './features/repairs/repairs';
@@ -41,6 +42,11 @@ import { RepairPricingSettings } from './features/settings/repair-pricing/repair
 
 export const routes: Routes = [
     {
+        path: 'form/:token',
+        loadComponent: () =>
+            import('./features/public/form-completion/form-completion').then((m) => m.FormCompletion)
+    },
+    {
         path: 'portal/:shopSlug/verify',
         loadComponent: () =>
             import('./features/public/customer-portal/customer-portal').then((m) => m.CustomerPortal)
@@ -72,6 +78,23 @@ export const routes: Routes = [
         path: "analytics",
         loadComponent: () =>
             import('./features/analytics/analytics').then((m) => m.Analytics),
+        canActivate: [AuthGuard]
+    },
+    {
+        path: "payouts",
+        redirectTo: "settings/shop/payouts",
+        pathMatch: "full"
+    },
+    {
+        path: "forms",
+        loadComponent: () =>
+            import('./features/forms/forms').then((m) => m.FormsPage),
+        canActivate: [AuthGuard]
+    },
+    {
+        path: "automations",
+        loadComponent: () =>
+            import('./features/automations/automations').then((m) => m.Automations),
         canActivate: [AuthGuard]
     },
     {
@@ -114,6 +137,12 @@ export const routes: Routes = [
                     {
                         path: 'repair-pricing',
                         component: RepairPricingSettings
+                    },
+                    {
+                        path: 'payouts',
+                        loadComponent: () =>
+                            import('./features/settings/payouts/payouts').then((m) => m.Payouts),
+                        canActivate: [OwnerGuard]
                     },
                     {
                         path: '',

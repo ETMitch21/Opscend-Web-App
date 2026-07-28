@@ -33,6 +33,8 @@ import {
   DollarSignIcon,
   ListTodo,
   AlertTriangle,
+  Zap,
+  ClipboardList,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -53,6 +55,7 @@ type NavItem = {
   route?: string;
   icon: LucideIconData;
   badgeCount?: () => number;
+  ownerOnly?: boolean;
   children?: {
     label: string;
     route: string;
@@ -123,6 +126,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly toolboxIcon = ToolboxIcon;
   readonly workQueueIcon = ListTodo;
   readonly analyticsIcon = BarChart3;
+  readonly automationIcon = Zap;
+  readonly formsIcon = ClipboardList;
   readonly workQueueAlertIcon = AlertTriangle;
 
   private readonly notificationPollMs = 15_000;
@@ -172,6 +177,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
     { label: 'Analytics', route: '/analytics', icon: this.analyticsIcon },
+    { label: 'Automations', route: '/automations', icon: this.automationIcon },
+    { label: 'Forms', route: '/forms', icon: this.formsIcon },
     {
       label: 'Work Queue',
       route: '/work-queue',
@@ -214,6 +221,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
     },
     { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
   ];
+
+  get visibleNavItems(): NavItem[] {
+    const role = String(this.auth.getCurrentUser()?.role ?? '').toLowerCase();
+    return this.navItems.filter((item) => !item.ownerOnly || role === 'owner');
+  }
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private lastRequestedQuery = '';
@@ -487,6 +499,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.router.navigate(['/settings/integrations']);
   }
 
+  goToShopPayouts(): void {
+    this.closeProfileMenu();
+    this.router.navigate(['/settings/shop/payouts']);
+  }
+
   goToShopUsers(): void {
     this.closeProfileMenu();
     this.router.navigate(['/settings/shop/users']);
@@ -653,6 +670,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
     if (notification.repairId) {
       this.router.navigate(['/repairs/detail', notification.repairId]);
+      return;
+    }
+
+    if (String(notification.event) === 'form_assigned') {
+      this.router.navigate(['/forms']);
     }
   }
 
@@ -660,6 +682,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
     switch (String(event)) {
       case 'device_catalog_update_available':
         return 'Device Catalog Update Available';
+      case 'automation_action':
+        return 'Automation Alert';
+      case 'form_assigned':
+        return 'Form Assigned';
       case 'repair_assigned':
         return 'Repair Assigned';
       case 'repair_unassigned':
@@ -1091,6 +1117,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
       `New ${channelLabel} from ${customerLabel}`,
       preview ? preview.slice(0, 180) : 'Open Inbox to view the conversation.',
     );
+  }
+
+  get isOwner(): boolean {
+    return String(this.auth.getCurrentUser()?.role ?? '').toLowerCase() === 'owner';
   }
 
   get userDisplaySubtext(): string {

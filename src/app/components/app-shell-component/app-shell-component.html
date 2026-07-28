@@ -36,7 +36,7 @@
             <nav class="flex flex-1 flex-col overflow-hidden" [ngClass]="isCompactSidebarRoute() ? 'p-2' : 'p-4'">
                 <div class="space-y-1 overflow-y-auto" [ngClass]="isCompactSidebarRoute() ? 'px-0' : ''">
                     @if (isCompactSidebarRoute()) {
-                    @for (item of navItems; track item.label) {
+                    @for (item of visibleNavItems; track item.label) {
                     <a [routerLink]="compactNavRoute(item)" [title]="item.label"
                         class="relative flex h-11 cursor-pointer items-center justify-center rounded-2xl border border-transparent text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
                         [ngClass]="compactNavActive(item)
@@ -54,7 +54,7 @@
                     </a>
                     }
                     } @else {
-                    @for (item of navItems; track item.label) {
+                    @for (item of visibleNavItems; track item.label) {
                     @if (item.children?.length) {
                     <div>
                         <button type="button"
@@ -524,6 +524,15 @@
                                 <lucide-icon [size]="18" [img]="blocksIcon"></lucide-icon>
                                 <span>Shop Integrations</span>
                             </button>
+
+                            @if (isOwner) {
+                            <button type="button"
+                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
+                                (click)="goToShopPayouts()">
+                                <lucide-icon [size]="18" [img]="walletCardsIcon"></lucide-icon>
+                                <span>Payouts</span>
+                            </button>
+                            }
 
                             <button type="button"
                                 class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"

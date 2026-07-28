@@ -22,12 +22,18 @@
                 <div class="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg">
                     @for (status of statuses; track status) {
                     <button type="button" (click)="selectStatus(status)"
-                        class="flex w-full items-center justify-between px-4 py-2 text-sm hover:bg-gray-50" [ngClass]="{
-            'text-brand font-medium': repairForm.controls.status.value === status
+                        class="cursor-pointer flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50" [ngClass]="{
+            'text-brand font-medium': repairForm.controls.status.value === status,
+            'bg-amber-50/70 text-amber-800': isStatusBlockedByForms(status)
           }">
-                        {{ prettyStatus(status) }}
+                        <span>{{ prettyStatus(status) }}</span>
 
-                        @if (repairForm.controls.status.value === status) {
+                        @if (isStatusBlockedByForms(status)) {
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                            <lucide-icon [name]="icons.Clipboard" class="h-3.5 w-3.5"></lucide-icon>
+                            Form required
+                        </span>
+                        } @else if (repairForm.controls.status.value === status) {
                         <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
                         }
                     </button>
@@ -1426,6 +1432,91 @@
             </div>
             }
 
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                            <lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-semibold text-gray-900">Forms & Checklists</h2>
+                            <p class="mt-1 text-xs leading-5 text-gray-500">Assignments connected to this repair.</p>
+                        </div>
+                    </div>
+
+                    <a [routerLink]="['/forms']"
+                        class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5 hover:text-brand-soft">
+                        Manage
+                    </a>
+                </div>
+
+                @if (incompleteRequiredRepairForms().length > 0) {
+                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-800">
+                    <span class="font-semibold">{{ incompleteRequiredRepairForms().length }} required {{ incompleteRequiredRepairForms().length === 1 ? 'form is' : 'forms are' }} incomplete.</span>
+                    Repair progress may be blocked until completion.
+                </div>
+                }
+
+                <div class="mt-4 space-y-3">
+                    @if (repairFormsLoading()) {
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-500">
+                        Loading forms...
+                    </div>
+                    } @else if (repairFormsError()) {
+                    <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                        {{ repairFormsError() }}
+                    </div>
+                    } @else {
+                    @for (assignment of repairForms(); track assignment.id) {
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="truncate text-sm font-semibold text-gray-900">{{ assignment.title }}</p>
+                                    <span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                                        [ngClass]="formStatusClasses(assignment.status)">
+                                        {{ formStatusLabel(assignment.status) }}
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    {{ assignment.audience === 'staff' ? 'Staff checklist' : 'Customer form' }}
+                                    @if (assignment.assignedToUser?.name) { · {{ assignment.assignedToUser?.name }} }
+                                </p>
+                            </div>
+
+                            <a [routerLink]="['/forms']" [queryParams]="{ assignment: assignment.id }"
+                                class="cursor-pointer shrink-0 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-brand hover:text-brand">
+                                {{ assignment.status === 'completed' ? 'View' : assignment.audience === 'staff' ? 'Complete' : 'Manage' }}
+                            </a>
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
+                            @if (formRequirementLabel(assignment.template?.requiredBeforeRepairStatus); as requirement) {
+                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">
+                                {{ requirement }}
+                            </span>
+                            }
+                            @if (formatFormDueDate(assignment.dueAt); as dueDate) {
+                            <span class="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 font-medium text-gray-600">
+                                Due {{ dueDate }}
+                            </span>
+                            }
+                            @if (assignment.completedByCustomer) {
+                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+                                Completed by customer
+                            </span>
+                            }
+                        </div>
+                    </div>
+                    } @empty {
+                    <div class="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">
+                        No forms are connected to this repair yet.
+                    </div>
+                    }
+                    }
+                </div>
+            </div>
+
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
@@ -1457,13 +1548,13 @@
 
                             <div class="flex items-center gap-2">
                                 <button type="button"
-                                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
+                                    class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
                                     (click)="downloadAttachment(attachment)">
                                     Download
                                 </button>
 
                                 <button type="button"
-                                    class="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                                    class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
                                     (click)="deleteAttachment(attachment)">
                                     Delete
                                 </button>

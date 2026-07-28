@@ -1,0 +1,373 @@
+<div class="min-h-full bg-slate-50">
+  <header class="border-b border-slate-200 bg-white">
+    <div class="mx-auto flex max-w-[1500px] flex-col gap-5 px-4 py-6 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
+            <lucide-icon [name]="icons.ClipboardList" class="h-5 w-5"></lucide-icon>
+          </div>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Operations</p>
+            <h1 class="text-2xl font-semibold tracking-[-0.03em] text-slate-950">Forms + Checklists</h1>
+          </div>
+        </div>
+        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-500">Build reusable intake, authorization, diagnostic, inspection, and quality-control workflows for staff and customers.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50" (click)="load()">
+          <lucide-icon [name]="icons.RefreshCw" class="h-4 w-4"></lucide-icon>
+          Refresh
+        </button>
+        <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800" (click)="activeTab() === 'templates' ? openCreateTemplate() : openAssign()">
+          <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+          {{ activeTab() === 'templates' ? 'New template' : 'Assign form' }}
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+    @if (loading()) {
+      <div class="flex min-h-[420px] items-center justify-center rounded-3xl border border-slate-200 bg-white">
+        <div class="text-center text-slate-500">
+          <lucide-icon [name]="icons.Loader2" class="mx-auto h-7 w-7 animate-spin"></lucide-icon>
+          <p class="mt-3 text-sm font-medium">Loading forms…</p>
+        </div>
+      </div>
+    } @else {
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Assignments</p>
+          <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{{ summary().total }}</p>
+          <p class="mt-1 text-sm text-slate-500">All form assignments</p>
+        </article>
+        <article class="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Open</p>
+          <p class="mt-3 text-3xl font-semibold tracking-tight text-amber-950">{{ summary().pending }}</p>
+          <p class="mt-1 text-sm text-amber-800/75">Pending or in progress</p>
+        </article>
+        <article class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Completed</p>
+          <p class="mt-3 text-3xl font-semibold tracking-tight text-emerald-950">{{ summary().completed }}</p>
+          <p class="mt-1 text-sm text-emerald-800/75">Submitted responses</p>
+        </article>
+        <article class="rounded-3xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-rose-700">Overdue</p>
+          <p class="mt-3 text-3xl font-semibold tracking-tight text-rose-950">{{ summary().overdue }}</p>
+          <p class="mt-1 text-sm text-rose-800/75">Needs follow-up</p>
+        </article>
+      </section>
+
+      <section class="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <nav class="flex flex-wrap gap-1 border-b border-slate-100 px-4 py-3 sm:px-6">
+          <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition" [ngClass]="activeTab() === 'templates' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'" (click)="selectTab('templates')">
+            <lucide-icon [name]="icons.LayoutTemplate" class="h-4 w-4"></lucide-icon>
+            Templates
+            <span class="rounded-full px-2 py-0.5 text-[10px]" [ngClass]="activeTab() === 'templates' ? 'bg-white/15' : 'bg-slate-100'">{{ templates().length }}</span>
+          </button>
+          <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition" [ngClass]="activeTab() === 'assignments' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'" (click)="selectTab('assignments')">
+            <lucide-icon [name]="icons.Send" class="h-4 w-4"></lucide-icon>
+            Assignments
+          </button>
+          <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition" [ngClass]="activeTab() === 'responses' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'" (click)="selectTab('responses')">
+            <lucide-icon [name]="icons.CheckCircle2" class="h-4 w-4"></lucide-icon>
+            Responses
+            <span class="rounded-full px-2 py-0.5 text-[10px]" [ngClass]="activeTab() === 'responses' ? 'bg-white/15' : 'bg-slate-100'">{{ completedAssignments().length }}</span>
+          </button>
+        </nav>
+
+        @if (activeTab() === 'templates') {
+          <div class="border-b border-slate-100 p-4 sm:p-6">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <input [ngModel]="templateSearch()" (ngModelChange)="templateSearch.set($event)" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-slate-400 md:max-w-md" placeholder="Search form templates" />
+              <select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400">
+                <option value="all">All categories</option>
+                @for (category of categories(); track category) { <option [value]="category">{{ category }}</option> }
+              </select>
+            </div>
+          </div>
+          <div class="grid gap-4 p-4 sm:p-6 lg:grid-cols-2 2xl:grid-cols-3">
+            @for (template of filteredTemplates(); track template.id) {
+              <article class="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                      <lucide-icon [name]="icons.ClipboardList" class="h-5 w-5"></lucide-icon>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="truncate text-base font-semibold text-slate-950">{{ template.name }}</h3>
+                        @if (template.starterKey) { <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 ring-1 ring-violet-200">Starter</span> }
+                      </div>
+                      <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ template.category }}</p>
+                    </div>
+                  </div>
+                  <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="template.status === 'active' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200'">{{ template.status }}</span>
+                </div>
+                <p class="mt-4 min-h-12 text-sm leading-6 text-slate-500">{{ template.description || 'No description added.' }}</p>
+                @if (template.requiredBeforeRepairStatus) {
+                  <div class="mt-4 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-800">
+                    <lucide-icon [name]="icons.ClipboardCheck" class="mt-0.5 h-4 w-4 shrink-0"></lucide-icon>
+                    <span><strong>Repair gate:</strong> must be completed before a connected repair can reach {{ repairGateStatusLabel(template.requiredBeforeRepairStatus) }}.</span>
+                  </div>
+                }
+                <div class="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-slate-50 p-3 text-center">
+                  <div><p class="text-lg font-semibold">{{ template.fields.length }}</p><p class="text-[11px] text-slate-400">Fields</p></div>
+                  <div><p class="text-lg font-semibold">{{ template.assignmentCount }}</p><p class="text-[11px] text-slate-400">Assigned</p></div>
+                  <div><p class="text-sm font-semibold">{{ audienceLabel(template.audience) }}</p><p class="text-[11px] text-slate-400">Audience</p></div>
+                </div>
+                <div class="mt-5 flex flex-wrap gap-2">
+                  <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40" [disabled]="template.status !== 'active'" (click)="openAssign(template)"><lucide-icon [name]="icons.Send" class="h-3.5 w-3.5"></lucide-icon>Assign</button>
+                  <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" (click)="editTemplate(template)"><lucide-icon [name]="icons.Pencil" class="h-3.5 w-3.5"></lucide-icon>Edit</button>
+                  <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50" (click)="duplicateTemplate(template)"><lucide-icon [name]="icons.Copy" class="h-3.5 w-3.5"></lucide-icon>Duplicate</button>
+                  <button type="button" class="ml-auto inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600" title="Archive template" (click)="archiveTemplate(template)"><lucide-icon [name]="icons.Archive" class="h-4 w-4"></lucide-icon></button>
+                </div>
+              </article>
+            } @empty {
+              <div class="py-16 text-center text-sm text-slate-500 lg:col-span-2 2xl:col-span-3">No templates match your filters.</div>
+            }
+          </div>
+        }
+
+        @if (activeTab() === 'assignments') {
+          <div class="border-b border-slate-100 p-4 sm:p-6">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <input [ngModel]="assignmentSearch()" (ngModelChange)="assignmentSearch.set($event)" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-slate-400 md:max-w-md" placeholder="Search customer, device, or form" />
+              <select [ngModel]="assignmentStatus()" (ngModelChange)="assignmentStatus.set($event)" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400">
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In progress</option>
+                <option value="completed">Completed</option>
+                <option value="canceled">Canceled</option>
+              </select>
+            </div>
+          </div>
+          <div class="divide-y divide-slate-100 px-4 sm:px-6">
+            @for (assignment of filteredAssignments(); track assignment.id) {
+              <article class="flex flex-col gap-4 py-5 xl:flex-row xl:items-center">
+                <div class="flex min-w-0 flex-1 items-start gap-4">
+                  <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl" [ngClass]="assignment.audience === 'customer' ? 'bg-blue-50 text-blue-700' : 'bg-violet-50 text-violet-700'">
+                    <lucide-icon [name]="assignment.audience === 'customer' ? icons.UserRound : icons.ClipboardCheck" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h3 class="truncate text-sm font-semibold text-slate-950">{{ assignment.title }}</h3>
+                      <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1" [ngClass]="statusClass(assignment.status)">{{ assignment.status.replace('_', ' ') }}</span>
+                    </div>
+                    <p class="mt-1 truncate text-sm text-slate-500">
+                      {{ assignment.customer?.name || assignment.assignedToUser?.name || 'Unassigned' }}
+                      @if (assignment.device?.displayName) { · {{ assignment.device?.displayName }} }
+                    </p>
+                    <p class="mt-1 text-xs text-slate-400">Assigned {{ date(assignment.createdAt) }} @if (assignment.dueAt) { · Due {{ date(assignment.dueAt) }} }</p>
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                  @if (assignment.status === 'completed') {
+                    <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50" (click)="openResponse(assignment)"><lucide-icon [name]="icons.Eye" class="h-3.5 w-3.5"></lucide-icon>View response</button>
+                  } @else if (assignment.audience === 'staff' && assignment.status !== 'canceled') {
+                    <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800" (click)="openComplete(assignment)"><lucide-icon [name]="icons.ClipboardCheck" class="h-3.5 w-3.5"></lucide-icon>Complete</button>
+                  }
+                  @if (assignment.audience === 'customer' && assignment.status !== 'canceled') {
+                    <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50" (click)="copyLink(assignment)"><lucide-icon [name]="icons.Copy" class="h-3.5 w-3.5"></lucide-icon>Copy link</button>
+                    @if (assignment.status !== 'completed') { <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50" (click)="resend(assignment)"><lucide-icon [name]="icons.Mail" class="h-3.5 w-3.5"></lucide-icon>Send</button> }
+                  }
+                  @if (!['completed', 'canceled'].includes(assignment.status)) {
+                    <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600" title="Cancel assignment" (click)="cancelAssignment(assignment)"><lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon></button>
+                  }
+                </div>
+              </article>
+            } @empty { <div class="py-16 text-center text-sm text-slate-500">No assignments match your filters.</div> }
+          </div>
+        }
+
+        @if (activeTab() === 'responses') {
+          <div class="divide-y divide-slate-100 px-4 sm:px-6">
+            @for (assignment of completedAssignments(); track assignment.id) {
+              <button type="button" class="group flex w-full cursor-pointer items-center gap-4 py-5 text-left" (click)="openResponse(assignment)">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><lucide-icon [name]="icons.CheckCircle2" class="h-5 w-5"></lucide-icon></div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold text-slate-950">{{ assignment.title }}</p>
+                  <p class="mt-1 truncate text-sm text-slate-500">{{ assignment.customer?.name || assignment.assignedToUser?.name || 'Staff response' }} @if (assignment.device?.displayName) { · {{ assignment.device?.displayName }} }</p>
+                  <p class="mt-1 text-xs text-slate-400">Submitted {{ date(assignment.completedAt) }} by {{ assignment.submission?.submittedByType }}</p>
+                </div>
+                <lucide-icon [name]="icons.Eye" class="h-5 w-5 text-slate-300 transition group-hover:text-slate-600"></lucide-icon>
+              </button>
+            } @empty { <div class="py-16 text-center text-sm text-slate-500">Completed form responses will appear here.</div> }
+          </div>
+        }
+      </section>
+    }
+  </main>
+</div>
+
+@if (builderOpen()) {
+  <div class="fixed inset-0 z-[80] flex items-stretch justify-end bg-slate-950/45 backdrop-blur-sm">
+    <div class="flex h-full w-full max-w-6xl flex-col bg-slate-50 shadow-2xl">
+      <header class="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
+        <div><p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Form builder</p><h2 class="mt-1 text-xl font-semibold text-slate-950">{{ editingTemplateId() ? 'Edit template' : 'Create template' }}</h2></div>
+        <div class="flex items-center gap-2">
+          <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="saving()" (click)="saveTemplate()"><lucide-icon [name]="saving() ? icons.Loader2 : icons.Save" class="h-4 w-4" [class.animate-spin]="saving()"></lucide-icon>Save template</button>
+          <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 text-slate-500 hover:bg-slate-50" (click)="closeBuilder()"><lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon></button>
+        </div>
+      </header>
+      <div class="grid min-h-0 flex-1 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside class="overflow-y-auto border-r border-slate-200 bg-white p-4">
+          <p class="px-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Add fields</p>
+          <div class="mt-3 grid gap-2">
+            @for (type of fieldTypes; track type.value) {
+              <button type="button" class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 p-3 text-left transition hover:border-slate-300 hover:bg-slate-50" (click)="addField(type.value)">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600"><lucide-icon [name]="type.icon" class="h-4 w-4"></lucide-icon></div>
+                <div><p class="text-sm font-semibold text-slate-800">{{ type.label }}</p><p class="text-xs text-slate-400">{{ type.description }}</p></div>
+              </button>
+            }
+          </div>
+        </aside>
+        <div class="min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="grid gap-4 md:grid-cols-2">
+              <label class="md:col-span-2"><span class="text-sm font-semibold text-slate-700">Template name</span><input [(ngModel)]="draft.name" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" placeholder="Device intake" /></label>
+              <label><span class="text-sm font-semibold text-slate-700">Category</span><input [(ngModel)]="draft.category" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" placeholder="Intake" /></label>
+              <label><span class="text-sm font-semibold text-slate-700">Audience</span><select [(ngModel)]="draft.audience" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option value="staff">Staff</option><option value="customer">Customer</option><option value="both">Staff + customer</option></select></label>
+              <label><span class="text-sm font-semibold text-slate-700">Status</span><select [(ngModel)]="draft.status" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option value="draft">Draft</option><option value="active">Active</option></select></label>
+              <label class="md:col-span-2"><span class="text-sm font-semibold text-slate-700">Description</span><textarea [(ngModel)]="draft.description" rows="3" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" placeholder="Explain when this form should be used."></textarea></label>
+              <label class="md:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <span class="text-sm font-semibold text-amber-950">Repair status requirement</span>
+                <p class="mt-1 text-xs leading-5 text-amber-700">Optional. When this form is assigned to a repair, the repair cannot reach the selected status or any later status until the assignment is completed.</p>
+                <select [(ngModel)]="draft.requiredBeforeRepairStatus" class="mt-3 w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400">
+                  <option [ngValue]="null">Do not block repair progress</option>
+                  @for (status of repairGateStatuses; track status.value) { <option [ngValue]="status.value">Required before {{ status.label }}</option> }
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="mt-5" cdkDropList [cdkDropListData]="draft.fields" (cdkDropListDropped)="dropField($event)">
+            @for (field of draft.fields; track field.key; let index = $index) {
+              <article cdkDrag class="mb-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                  <button type="button" cdkDragHandle class="mt-1 inline-flex cursor-pointer cursor-grab items-center justify-center rounded-lg p-1.5 text-slate-300 hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing"><lucide-icon [name]="icons.GripVertical" class="h-5 w-5"></lucide-icon></button>
+                  <div class="min-w-0 flex-1">
+                    <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+                      <label><span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Label</span><input [(ngModel)]="field.label" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none focus:border-slate-400" /></label>
+                      <label><span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Field type</span><select [(ngModel)]="field.type" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400">@for (type of fieldTypes; track type.value) { <option [value]="type.value">{{ type.label }}</option> }</select></label>
+                    </div>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                      <label><span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Field key</span><input [(ngModel)]="field.key" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-mono text-xs outline-none focus:border-slate-400" /></label>
+                      <label><span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Placeholder</span><input [(ngModel)]="field.placeholder" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400" /></label>
+                      <label class="md:col-span-2"><span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Help text or instructions</span><textarea [(ngModel)]="field.helpText" rows="2" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400"></textarea></label>
+                    </div>
+
+                    @if (['select', 'radio', 'checkbox_group'].includes(field.type)) {
+                      <div class="mt-4 rounded-2xl bg-slate-50 p-4">
+                        <div class="flex items-center justify-between"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Options</p><button type="button" class="cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white" (click)="addOption(field)">Add option</button></div>
+                        <div class="mt-3 space-y-2">
+                          @for (option of field.options; track $index; let optionIndex = $index) {
+                            <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_36px] gap-2">
+                              <input [(ngModel)]="option.label" (blur)="updateOptionValue(option)" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400" placeholder="Label" />
+                              <input [(ngModel)]="option.value" class="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs outline-none focus:border-slate-400" placeholder="value" />
+                              <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600" (click)="removeOption(field, optionIndex)"><lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon></button>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    <div class="mt-4 flex flex-wrap items-center gap-4">
+                      @if (!['heading', 'paragraph'].includes(field.type)) {
+                        <label class="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600"><input type="checkbox" [(ngModel)]="field.required" class="h-4 w-4 rounded border-slate-300" />Required</label>
+                      }
+                      <button type="button" class="cursor-pointer text-sm font-semibold text-slate-500 hover:text-slate-950" (click)="toggleConditional(field)">{{ field.conditionalLogic ? 'Remove condition' : 'Add conditional logic' }}</button>
+                    </div>
+                    @if (field.conditionalLogic) {
+                      <div class="mt-3 grid gap-2 rounded-2xl border border-violet-100 bg-violet-50 p-3 md:grid-cols-3">
+                        <select [(ngModel)]="field.conditionalLogic.fieldKey" class="rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none">@for (candidate of draft.fields; track candidate.key) { @if (candidate.key !== field.key) { <option [value]="candidate.key">{{ candidate.label }}</option> } }</select>
+                        <select [(ngModel)]="field.conditionalLogic.operator" class="rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none"><option value="equals">equals</option><option value="not_equals">does not equal</option><option value="contains">contains</option><option value="is_checked">is checked</option><option value="is_not_checked">is not checked</option></select>
+                        @if (!['is_checked', 'is_not_checked'].includes(field.conditionalLogic.operator)) { <input [(ngModel)]="field.conditionalLogic.value" class="rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none" placeholder="Value" /> }
+                      </div>
+                    }
+                  </div>
+                  <div class="flex shrink-0 flex-col gap-1">
+                    <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" title="Duplicate field" (click)="duplicateField(index)"><lucide-icon [name]="icons.Copy" class="h-4 w-4"></lucide-icon></button>
+                    <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600" title="Delete field" (click)="removeField(index)"><lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon></button>
+                  </div>
+                </div>
+              </article>
+            } @empty {
+              <div class="rounded-3xl border-2 border-dashed border-slate-200 bg-white px-6 py-16 text-center"><lucide-icon [name]="icons.FilePlus2" class="mx-auto h-8 w-8 text-slate-300"></lucide-icon><p class="mt-4 text-sm font-semibold text-slate-700">Add your first field</p><p class="mt-1 text-sm text-slate-400">Choose a field type from the left panel.</p></div>
+            }
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+@if (assignmentOpen()) {
+  <div class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+      <header class="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6"><div><p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">New assignment</p><h2 class="mt-1 text-xl font-semibold">Assign a form</h2></div><button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-slate-100" (click)="closeAssign()"><lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon></button></header>
+      <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+        <label class="sm:col-span-2"><span class="text-sm font-semibold text-slate-700">Template</span><select [(ngModel)]="assignmentDraft.templateId" (ngModelChange)="onTemplateSelected($event)" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option value="">Choose a template</option>@for (template of activeTemplates(); track template.id) { <option [value]="template.id">{{ template.name }}</option> }</select></label>
+        <label class="sm:col-span-2"><span class="text-sm font-semibold text-slate-700">Assignment title</span><input [(ngModel)]="assignmentDraft.title" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" /></label>
+        <label><span class="text-sm font-semibold text-slate-700">Audience</span><select [(ngModel)]="assignmentDraft.audience" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option value="customer">Customer</option><option value="staff">Staff</option></select></label>
+        <label><span class="text-sm font-semibold text-slate-700">Due date</span><input type="datetime-local" [(ngModel)]="assignmentDraft.dueAt" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" /></label>
+        <label class="sm:col-span-2"><span class="text-sm font-semibold text-slate-700">Connect to repair</span><select [(ngModel)]="assignmentDraft.repairId" (ngModelChange)="onRepairSelected($event)" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option [ngValue]="null">No repair selected</option>@for (repair of repairs(); track repair.id) { <option [ngValue]="repair.id">{{ repair.customerName }} · {{ repair.deviceName }} · {{ repair.problemSummary }}</option> }</select></label>
+        @if (!assignmentDraft.repairId) {
+          <label class="sm:col-span-2"><span class="text-sm font-semibold text-slate-700">Customer</span><select [(ngModel)]="assignmentDraft.customerId" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option [ngValue]="null">No customer selected</option>@for (customer of customers(); track customer.id) { <option [ngValue]="customer.id">{{ customer.name || customer.email || customer.phone }}</option> }</select></label>
+        }
+        @if (assignmentDraft.audience === 'staff') {
+          <label class="sm:col-span-2"><span class="text-sm font-semibold text-slate-700">Assign to team member</span><select [(ngModel)]="assignmentDraft.assignedToUserId" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option [ngValue]="null">Unassigned</option>@for (user of users(); track user.id) { <option [ngValue]="user.id">{{ user.name }}</option> }</select><span class="mt-2 block text-xs leading-5 text-slate-400">When shop notifications are enabled, the selected team member receives an in-app alert and the configured internal notification email.</span></label>
+        } @else {
+          <label class="sm:col-span-2 inline-flex cursor-pointer items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4"><input type="checkbox" [(ngModel)]="assignmentDraft.sendEmail" class="mt-1 h-4 w-4 rounded border-blue-300" /><span><span class="block text-sm font-semibold text-blue-950">Email the secure form link now</span><span class="mt-1 block text-xs leading-5 text-blue-700">The assignment will also appear in the customer portal.</span></span></label>
+        }
+      </div>
+      <footer class="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4 sm:px-6"><button type="button" class="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100" (click)="closeAssign()">Cancel</button><button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="saving()" (click)="createAssignment()"><lucide-icon [name]="saving() ? icons.Loader2 : icons.Send" class="h-4 w-4" [class.animate-spin]="saving()"></lucide-icon>Assign form</button></footer>
+    </div>
+  </div>
+}
+
+@if (completionOpen() && selectedAssignment(); as assignment) {
+  <div class="fixed inset-0 z-[90] overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div class="mx-auto my-6 w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <header class="flex items-start justify-between border-b border-slate-100 px-5 py-5 sm:px-7"><div><p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Staff checklist</p><h2 class="mt-1 text-2xl font-semibold tracking-tight">{{ assignment.title }}</h2><p class="mt-2 text-sm text-slate-500">{{ assignment.customer?.name }} @if (assignment.device?.displayName) { · {{ assignment.device?.displayName }} }</p></div><button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-slate-100" (click)="closeComplete()"><lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon></button></header>
+      <div class="space-y-6 p-5 sm:p-7">
+        @for (field of assignment.template?.fields || []; track field.key) {
+          @if (visibleField(field)) {
+            @if (field.type === 'heading') { <h3 class="border-b border-slate-100 pb-2 text-lg font-semibold text-slate-950">{{ field.label }}</h3> }
+            @else if (field.type === 'paragraph') { <div class="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600"><p class="font-semibold text-slate-800">{{ field.label }}</p>@if (field.helpText) { <p class="mt-1">{{ field.helpText }}</p> }</div> }
+            @else {
+              <div>
+                <label class="text-sm font-semibold text-slate-800">{{ field.label }} @if (field.required) { <span class="text-rose-600">*</span> }</label>
+                @if (field.helpText) { <p class="mt-1 text-xs leading-5 text-slate-400">{{ field.helpText }}</p> }
+                @if (['text', 'email', 'phone', 'date', 'number'].includes(field.type)) { <input [type]="field.type === 'phone' ? 'tel' : field.type" [(ngModel)]="responses[field.key]" [placeholder]="field.placeholder || ''" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" /> }
+                @if (field.type === 'textarea') { <textarea [(ngModel)]="responses[field.key]" rows="4" [placeholder]="field.placeholder || ''" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"></textarea> }
+                @if (field.type === 'select') { <select [(ngModel)]="responses[field.key]" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400"><option value="">Choose an option</option>@for (option of field.options; track option.value) { <option [value]="option.value">{{ option.label }}</option> }</select> }
+                @if (field.type === 'radio') { <div class="mt-2 grid gap-2">@for (option of field.options; track option.value) { <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm hover:bg-slate-50"><input type="radio" [name]="field.key" [value]="option.value" [(ngModel)]="responses[field.key]" /><span>{{ option.label }}</span></label> }</div> }
+                @if (field.type === 'checkbox') { <label class="mt-2 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm hover:bg-slate-50"><input type="checkbox" [(ngModel)]="responses[field.key]" class="mt-0.5 h-4 w-4 rounded border-slate-300" /><span>{{ field.helpText || field.label }}</span></label> }
+                @if (field.type === 'checkbox_group') { <div class="mt-2 grid gap-2 sm:grid-cols-2">@for (option of field.options; track option.value) { <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm hover:bg-slate-50"><input type="checkbox" [checked]="checkboxGroupChecked(field, option.value)" (change)="toggleCheckboxGroup(field, option.value, $any($event.target).checked)" /><span>{{ option.label }}</span></label> }</div> }
+                @if (field.type === 'photo') { <div class="mt-2"><input type="file" accept="image/*" capture="environment" class="block w-full cursor-pointer rounded-xl border border-slate-200 p-3 text-sm" (change)="capturePhoto(field, $event)" />@if (isImageValue(responses[field.key])) { <img [src]="$any(responses[field.key])" class="mt-3 max-h-64 rounded-2xl border border-slate-200 object-contain" /> }</div> }
+                @if (field.type === 'signature') { <div class="mt-2"><app-signature-pad [value]="$any(responses[field.key])" (valueChange)="responses[field.key] = $event"></app-signature-pad></div> }
+              </div>
+            }
+          }
+        }
+      </div>
+      <footer class="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4 sm:px-7"><button type="button" class="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100" (click)="closeComplete()">Cancel</button><button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50" [disabled]="saving()" (click)="submitStaffForm()"><lucide-icon [name]="saving() ? icons.Loader2 : icons.CheckCircle2" class="h-4 w-4" [class.animate-spin]="saving()"></lucide-icon>Complete form</button></footer>
+    </div>
+  </div>
+}
+
+@if (responseOpen() && selectedAssignment(); as assignment) {
+  <div class="fixed inset-0 z-[90] overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm">
+    <div class="mx-auto my-6 w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <header class="flex items-start justify-between border-b border-slate-100 px-5 py-5 sm:px-7"><div><p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-600">Completed response</p><h2 class="mt-1 text-2xl font-semibold tracking-tight">{{ assignment.title }}</h2><p class="mt-2 text-sm text-slate-500">Submitted {{ date(assignment.completedAt) }} by {{ assignment.submission?.submittedByType }}</p></div><button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-slate-100" (click)="closeResponse()"><lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon></button></header>
+      <div class="space-y-4 p-5 sm:p-7">
+        @for (field of assignment.template?.fields || []; track field.key) {
+          @if (!['heading', 'paragraph'].includes(field.type)) {
+            <article class="rounded-2xl border border-slate-200 p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ field.label }}</p>@if (isImageValue(responseValue(assignment, field))) { <img [src]="$any(responseValue(assignment, field))" class="mt-3 max-h-72 rounded-xl border border-slate-200 object-contain" /> } @else { <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">{{ responseDisplay(responseValue(assignment, field)) }}</p> }</article>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}

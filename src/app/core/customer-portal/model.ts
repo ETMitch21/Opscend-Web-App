@@ -162,6 +162,21 @@ export interface CustomerPortalRepair {
   unreadMessageCount: number;
 }
 
+export interface CustomerPortalFormAssignment {
+  id: string;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'canceled';
+  dueAt: string | null;
+  completedAt: string | null;
+  publicToken: string;
+  templateName: string;
+  templateDescription: string | null;
+  repairId: string | null;
+  deviceName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CustomerPortalDevice {
   id: string;
   displayName: string;
@@ -188,6 +203,7 @@ export interface CustomerPortalSummary {
   balanceDueCents: number;
   unreadMessages: number;
   savedDevices: number;
+  pendingForms: number;
 }
 
 export interface CustomerPortalDashboard {
@@ -199,6 +215,7 @@ export interface CustomerPortalDashboard {
   quotes: CustomerPortalQuote[];
   orders: CustomerPortalOrder[];
   devices: CustomerPortalDevice[];
+  forms: CustomerPortalFormAssignment[];
   generatedAt: string;
 }
 

@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { loadStripe } from '@stripe/stripe-js';
+import { loadConnectAndInitialize } from '@stripe/connect-js/pure';
 import type {
   Stripe,
   StripeCardElement,
@@ -12,6 +13,7 @@ import type {
 import {
   StripeConnectResponse,
   StripeDisconnectResponse,
+  StripePayoutsAccountSessionResponse,
   StripeStatusResponse,
 } from './stripe-model';
 import { AppConfigService } from '../app-config/app-config.service';
@@ -23,6 +25,10 @@ export class StripeService {
   private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);
   private readonly stripePromises = new Map<string, Promise<Stripe | null>>();
+  private readonly connectInstances = new Map<
+    string,
+    ReturnType<typeof loadConnectAndInitialize>
+  >();
 
   private get apiBase(): string {
     return this.appConfig.config.apiBase;
@@ -76,6 +82,48 @@ export class StripeService {
 
   disconnect(): Observable<StripeDisconnectResponse> {
     return this.http.delete<StripeDisconnectResponse>(this.baseUrl);
+  }
+
+  createPayoutsAccountSession(): Observable<StripePayoutsAccountSessionResponse> {
+    return this.http.post<StripePayoutsAccountSessionResponse>(
+      `${this.baseUrl}/connect/payouts/account-session`,
+      {},
+    );
+  }
+
+  getConnectInstance(stripeAccountId: string) {
+    if (!stripeAccountId) {
+      throw new Error('Missing Stripe connected account id.');
+    }
+
+    const existing = this.connectInstances.get(stripeAccountId);
+    if (existing) return existing;
+
+    const instance = loadConnectAndInitialize({
+      publishableKey: this.stripePublishableKey,
+      fetchClientSecret: async () => {
+        const response = await firstValueFrom(
+          this.createPayoutsAccountSession(),
+        );
+
+        if (!response?.clientSecret) {
+          throw new Error('Stripe did not return a payouts session.');
+        }
+
+        return response.clientSecret;
+      },
+      appearance: {
+        overlays: 'dialog',
+        variables: {
+          colorPrimary: '#2563eb',
+          borderRadius: '14px',
+          fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+        },
+      },
+    });
+
+    this.connectInstances.set(stripeAccountId, instance);
+    return instance;
   }
 
   async getStripe(stripeAccountId: string): Promise<Stripe | null> {

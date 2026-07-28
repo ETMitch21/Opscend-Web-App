@@ -457,13 +457,20 @@ export class RepairsStore {
 
     private handleError(error: unknown, fallbackMessage: string): void {
         console.error(error);
+
+        const responseBody =
+            typeof error === 'object' && error !== null && 'error' in error
+                ? (error as { error?: unknown }).error
+                : null;
+
         const message =
-            typeof error === 'object' &&
-                error !== null &&
-                'error' in error &&
-                typeof (error as { error?: unknown }).error === 'string'
-                ? (error as { error: string }).error
-                : fallbackMessage;
+            typeof responseBody === 'string'
+                ? responseBody
+                : typeof responseBody === 'object' && responseBody !== null && 'message' in responseBody && typeof (responseBody as { message?: unknown }).message === 'string'
+                    ? (responseBody as { message: string }).message
+                    : typeof responseBody === 'object' && responseBody !== null && 'error' in responseBody && typeof (responseBody as { error?: unknown }).error === 'string'
+                        ? (responseBody as { error: string }).error
+                        : fallbackMessage;
 
         this._error.set(message);
     }

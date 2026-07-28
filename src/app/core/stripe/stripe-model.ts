@@ -18,6 +18,11 @@ export interface StripeConnectResponse {
   url: string;
 }
 
+export interface StripePayoutsAccountSessionResponse {
+  ok: true;
+  clientSecret: string;
+}
+
 export interface StripeDisconnectResponse {
   ok: boolean;
   disconnected: boolean;

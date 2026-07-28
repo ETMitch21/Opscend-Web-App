@@ -1,0 +1,965 @@
+<div class="min-h-full bg-app-bg px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-[1500px] space-y-5">
+    <header class="overflow-hidden rounded-[28px] border border-app-border bg-app-surface shadow-sm">
+      <div class="flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand">
+            <lucide-icon [size]="22" [img]="zapIcon"></lucide-icon>
+          </div>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-2xl font-semibold tracking-tight text-app-text">Automations</h1>
+              <span class="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-violet-700">
+                Rules engine
+              </span>
+            </div>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-app-text-muted">
+              Turn shop events into messages, tasks, notifications, assignments, status updates, and delayed follow-ups.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button"
+            class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-2xl border border-app-border bg-app-surface px-4 text-sm font-semibold text-app-text transition hover:bg-app-surface-muted"
+            (click)="loadBootstrap()">
+            <lucide-icon [size]="16" [img]="refreshIcon"></lucide-icon>
+            Refresh
+          </button>
+          <button type="button"
+            class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-2xl bg-brand px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-95"
+            (click)="openNewBuilder()">
+            <lucide-icon [size]="16" [img]="plusIcon"></lucide-icon>
+            New automation
+          </button>
+        </div>
+      </div>
+
+      <div class="grid border-t border-app-border sm:grid-cols-3 lg:grid-cols-6">
+        <div class="border-b border-app-border px-5 py-4 sm:border-r lg:border-b-0">
+          <p class="text-2xl font-semibold text-app-text">{{ summary().active }}</p>
+          <p class="mt-1 text-xs font-medium text-app-text-muted">Active</p>
+        </div>
+        <div class="border-b border-app-border px-5 py-4 sm:border-r lg:border-b-0">
+          <p class="text-2xl font-semibold text-app-text">{{ summary().draft }}</p>
+          <p class="mt-1 text-xs font-medium text-app-text-muted">Drafts</p>
+        </div>
+        <div class="border-b border-app-border px-5 py-4 lg:border-b-0 lg:border-r">
+          <p class="text-2xl font-semibold text-app-text">{{ summary().paused }}</p>
+          <p class="mt-1 text-xs font-medium text-app-text-muted">Paused</p>
+        </div>
+        <div class="border-b border-app-border px-5 py-4 sm:border-b-0 sm:border-r">
+          <p class="text-2xl font-semibold text-app-text">{{ summary().runsToday }}</p>
+          <p class="mt-1 text-xs font-medium text-app-text-muted">Runs today</p>
+        </div>
+        <div class="border-b border-app-border px-5 py-4 sm:border-b-0 sm:border-r">
+          <p class="text-2xl font-semibold" [ngClass]="summary().failuresToday ? 'text-rose-600' : 'text-app-text'">
+            {{ summary().failuresToday }}
+          </p>
+          <p class="mt-1 text-xs font-medium text-app-text-muted">Issues today</p>
+        </div>
+        <div class="px-5 py-4">
+          <p class="text-2xl font-semibold text-app-text">{{ summary().pendingActions }}</p>
+          <p class="mt-1 text-xs font-medium text-app-text-muted">Scheduled</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-app-border bg-app-surface p-1.5 shadow-sm">
+      <button type="button"
+        class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+        [ngClass]="activeTab() === 'automations' ? 'bg-brand text-white' : 'text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'"
+        (click)="setTab('automations')">
+        <lucide-icon [size]="16" [img]="zapIcon"></lucide-icon>
+        My automations
+      </button>
+      <button type="button"
+        class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+        [ngClass]="activeTab() === 'templates' ? 'bg-brand text-white' : 'text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'"
+        (click)="setTab('templates')">
+        <lucide-icon [size]="16" [img]="templatesIcon"></lucide-icon>
+        Templates
+      </button>
+      <button type="button"
+        class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+        [ngClass]="activeTab() === 'history' ? 'bg-brand text-white' : 'text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'"
+        (click)="setTab('history')">
+        <lucide-icon [size]="16" [img]="historyIcon"></lucide-icon>
+        Execution history
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="rounded-[28px] border border-app-border bg-app-surface px-6 py-16 text-center shadow-sm">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
+          <lucide-icon [size]="21" [img]="zapIcon"></lucide-icon>
+        </div>
+        <p class="mt-4 text-sm font-semibold text-app-text">Loading automation engine...</p>
+      </div>
+    } @else if (activeTab() === 'automations') {
+      <section class="space-y-4">
+        <div class="flex flex-col gap-3 rounded-2xl border border-app-border bg-app-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-1 flex-col gap-2 sm:flex-row">
+            <input type="search" [(ngModel)]="search" placeholder="Search automations..."
+              class="h-10 w-full rounded-xl border border-app-border bg-app-surface px-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15 sm:max-w-sm" />
+            <select [(ngModel)]="statusFilter"
+              class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-sm font-medium text-app-text outline-none focus:border-brand">
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="paused">Paused</option>
+            </select>
+          </div>
+          <p class="text-xs font-medium text-app-text-muted">
+            Rules are checked every 30 seconds. Delayed actions survive deployments.
+          </p>
+        </div>
+
+        @for (rule of filteredRules(); track rule.id) {
+          <article class="overflow-hidden rounded-[24px] border border-app-border bg-app-surface shadow-sm transition hover:border-brand/25">
+            <div class="flex flex-col gap-5 px-5 py-5 lg:flex-row lg:items-center">
+              <div class="flex min-w-0 flex-1 items-start gap-4">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+                  [ngClass]="rule.status === 'active' ? 'bg-emerald-50 text-emerald-700' : rule.status === 'paused' ? 'bg-amber-50 text-amber-700' : 'bg-app-surface-muted text-app-text-muted'">
+                  <lucide-icon [size]="19" [img]="zapIcon"></lucide-icon>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="truncate text-base font-semibold text-app-text">{{ rule.name }}</h2>
+                    <span class="rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em]"
+                      [ngClass]="statusClass(rule.status)">
+                      {{ statusLabel(rule.status) }}
+                    </span>
+                    @if (rule.testMode) {
+                      <span class="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-violet-700">
+                        Test mode
+                      </span>
+                    }
+                  </div>
+                  @if (rule.description) {
+                    <p class="mt-1 line-clamp-2 text-sm leading-5 text-app-text-muted">{{ rule.description }}</p>
+                  }
+                  <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-app-text-muted">
+                    <span class="inline-flex items-center gap-1.5">
+                      <span class="h-1.5 w-1.5 rounded-full bg-brand"></span>
+                      When: {{ triggerLabel(rule.triggerType) }}
+                    </span>
+                    <span>Then: {{ ruleActionSummary(rule) }}</span>
+                    <span>{{ rule.executionCount ?? 0 }} runs</span>
+                    <span>Last run: {{ formatRelative(rule.lastTriggeredAt) }}</span>
+                  </div>
+                  @if (rule.disabledReason && rule.status === 'paused') {
+                    <p class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                      {{ rule.disabledReason }}
+                    </p>
+                  }
+                </div>
+              </div>
+
+              <div class="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
+                <button type="button"
+                  class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl border border-app-border px-3 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                  (click)="testRule(rule)">
+                  <lucide-icon [size]="15" [img]="testIcon"></lucide-icon>
+                  Test
+                </button>
+                <button type="button"
+                  class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl border border-app-border px-3 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                  (click)="editRule(rule)">
+                  <lucide-icon [size]="15" [img]="editIcon"></lucide-icon>
+                  Edit
+                </button>
+                <button type="button"
+                  class="cursor-pointer inline-flex h-9 w-9 items-center justify-center rounded-xl border border-app-border text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                  title="Duplicate automation" (click)="duplicateRule(rule)">
+                  <lucide-icon [size]="15" [img]="copyIcon"></lucide-icon>
+                </button>
+                <button type="button"
+                  class="cursor-pointer inline-flex h-9 w-9 items-center justify-center rounded-xl border border-app-border text-app-text-muted transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                  title="Archive automation" (click)="archiveRule(rule)">
+                  <lucide-icon [size]="15" [img]="trashIcon"></lucide-icon>
+                </button>
+                <button type="button"
+                  class="cursor-pointer inline-flex h-9 min-w-24 items-center justify-center gap-2 rounded-xl px-3 text-xs font-semibold transition"
+                  [ngClass]="rule.status === 'active' ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-emerald-600 text-white hover:bg-emerald-700'"
+                  (click)="toggleRule(rule)">
+                  <lucide-icon [size]="15" [img]="rule.status === 'active' ? pauseIcon : playIcon"></lucide-icon>
+                  {{ rule.status === 'active' ? 'Pause' : 'Enable' }}
+                </button>
+              </div>
+            </div>
+          </article>
+        } @empty {
+          <div class="rounded-[28px] border border-dashed border-app-border bg-app-surface px-6 py-16 text-center">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand">
+              <lucide-icon [size]="23" [img]="sparklesIcon"></lucide-icon>
+            </div>
+            <h2 class="mt-4 text-lg font-semibold text-app-text">Put repetitive work on autopilot</h2>
+            <p class="mx-auto mt-2 max-w-lg text-sm leading-6 text-app-text-muted">
+              Start with a ready-made template or build a custom trigger, condition, and action workflow.
+            </p>
+            <div class="mt-5 flex flex-wrap justify-center gap-2">
+              <button type="button"
+                class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-xl border border-app-border px-4 text-sm font-semibold text-app-text transition hover:bg-app-surface-muted"
+                (click)="setTab('templates')">
+                Browse templates
+              </button>
+              <button type="button"
+                class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white hover:brightness-95"
+                (click)="openNewBuilder()">
+                <lucide-icon [size]="16" [img]="plusIcon"></lucide-icon>
+                Build custom automation
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+    } @else if (activeTab() === 'templates') {
+      <section class="space-y-4">
+        <div class="flex flex-wrap items-center gap-2 rounded-2xl border border-app-border bg-app-surface p-3 shadow-sm">
+          @for (category of templateCategories(); track category) {
+            <button type="button"
+              class="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold transition"
+              [ngClass]="templateCategory === category ? 'bg-brand text-white' : 'text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'"
+              (click)="templateCategory = category">
+              {{ category === 'all' ? 'All templates' : category }}
+            </button>
+          }
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          @for (template of filteredTemplates(); track template.key) {
+            <article class="flex min-h-64 flex-col rounded-[24px] border border-app-border bg-app-surface p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/25 hover:shadow-md">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
+                  <lucide-icon [size]="19" [img]="sparklesIcon"></lucide-icon>
+                </div>
+                <span class="rounded-full bg-app-surface-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-app-text-muted">
+                  {{ template.category }}
+                </span>
+              </div>
+              <h2 class="mt-5 text-base font-semibold text-app-text">{{ template.name }}</h2>
+              <p class="mt-2 flex-1 text-sm leading-6 text-app-text-muted">{{ template.description }}</p>
+              <div class="mt-4 rounded-2xl bg-app-surface-muted p-3">
+                <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-app-text-muted">Workflow</p>
+                <p class="mt-1 text-xs font-semibold text-app-text">
+                  {{ triggerLabel(template.rule.triggerType) }} → {{ template.rule.actions.length }} action{{ template.rule.actions.length === 1 ? '' : 's' }}
+                </p>
+              </div>
+              <button type="button"
+                class="cursor-pointer mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-brand text-sm font-semibold text-white transition hover:brightness-95"
+                (click)="createFromTemplate(template)">
+                <lucide-icon [size]="16" [img]="plusIcon"></lucide-icon>
+                Use template
+              </button>
+            </article>
+          }
+        </div>
+      </section>
+    } @else {
+      <section class="overflow-hidden rounded-[24px] border border-app-border bg-app-surface shadow-sm">
+        <div class="flex flex-col gap-3 border-b border-app-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-app-text">Execution history</h2>
+            <p class="mt-1 text-xs text-app-text-muted">See what ran, what was skipped, and which action failed.</p>
+          </div>
+          <button type="button"
+            class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl border border-app-border px-3 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+            (click)="loadHistory()">
+            <lucide-icon [size]="15" [img]="refreshIcon"></lucide-icon>
+            Refresh history
+          </button>
+        </div>
+
+        @if (historyLoading()) {
+          <div class="px-6 py-16 text-center text-sm font-medium text-app-text-muted">Loading execution history...</div>
+        } @else {
+          <div class="divide-y divide-app-border">
+            @for (execution of executions(); track execution.id) {
+              <button type="button"
+                class="cursor-pointer flex w-full items-start gap-4 px-5 py-4 text-left transition hover:bg-app-surface-muted"
+                (click)="selectExecution(execution)">
+                <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                  [ngClass]="execution.status === 'failed' ? 'bg-rose-50 text-rose-700' : execution.status === 'partial' ? 'bg-amber-50 text-amber-700' : execution.status === 'test' ? 'bg-violet-50 text-violet-700' : execution.status === 'skipped' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700'">
+                  <lucide-icon [size]="16" [img]="execution.status === 'failed' ? errorIcon : checkIcon"></lucide-icon>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="truncate text-sm font-semibold text-app-text">{{ execution.ruleName || 'Automation' }}</p>
+                    <span class="rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]"
+                      [ngClass]="statusClass(execution.status)">
+                      {{ statusLabel(execution.status) }}
+                    </span>
+                  </div>
+                  <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-app-text-muted">
+                    <span>{{ triggerLabel(execution.triggerType) }}</span>
+                    <span>{{ execution.sourceType }} · {{ execution.sourceId }}</span>
+                    <span>{{ formatRelative(execution.createdAt) }}</span>
+                  </div>
+                  @if (selectedExecution()?.id === execution.id) {
+                    <div class="mt-4 space-y-3 rounded-2xl border border-app-border bg-app-surface p-4">
+                      @if (execution.errorMessage) {
+                        <div class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800">
+                          {{ execution.errorMessage }}
+                        </div>
+                      }
+                      <div>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-app-text-muted">Actions</p>
+                        <div class="mt-2 space-y-2">
+                          @for (result of executionActionResults(execution); track $index) {
+                            <div class="flex items-start justify-between gap-3 rounded-xl bg-app-surface-muted px-3 py-2.5">
+                              <div>
+                                <p class="text-xs font-semibold text-app-text">{{ actionLabel($any(result)['type']) }}</p>
+                                @if ($any(result)['message']) {
+                                  <p class="mt-1 text-xs text-app-text-muted">{{ $any(result)['message'] }}</p>
+                                }
+                              </div>
+                              <span class="rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
+                                [ngClass]="statusClass($any(result)['status'])">
+                                {{ statusLabel($any(result)['status']) }}
+                              </span>
+                            </div>
+                          } @empty {
+                            <p class="text-xs text-app-text-muted">No actions were performed.</p>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+                <lucide-icon [size]="16" [img]="selectedExecution()?.id === execution.id ? chevronUpIcon : chevronDownIcon" class="mt-1 text-app-text-muted"></lucide-icon>
+              </button>
+            } @empty {
+              <div class="px-6 py-16 text-center">
+                <lucide-icon [size]="22" [img]="historyIcon" class="mx-auto text-app-text-muted"></lucide-icon>
+                <p class="mt-3 text-sm font-semibold text-app-text">No automation runs yet</p>
+                <p class="mt-1 text-sm text-app-text-muted">Test or enable an automation to start building history.</p>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+</div>
+
+@if (builderOpen()) {
+  <div class="fixed inset-0 z-[80] bg-black/35 backdrop-blur-[1px]" (click)="closeBuilder()"></div>
+  <aside class="fixed inset-y-0 right-0 z-[90] flex w-full max-w-3xl flex-col border-l border-app-border bg-app-bg shadow-2xl"
+    (click)="$event.stopPropagation()">
+    <header class="flex shrink-0 items-center justify-between gap-4 border-b border-app-border bg-app-surface px-5 py-4 sm:px-6">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+            <lucide-icon [size]="17" [img]="zapIcon"></lucide-icon>
+          </div>
+          <div>
+            <h2 class="text-base font-semibold text-app-text">{{ editingRuleId() ? 'Edit automation' : 'New automation' }}</h2>
+            <p class="text-xs text-app-text-muted">When this happens → check conditions → do these actions</p>
+          </div>
+        </div>
+      </div>
+      <button type="button"
+        class="cursor-pointer inline-flex h-9 w-9 items-center justify-center rounded-xl border border-app-border text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+        (click)="closeBuilder()" aria-label="Close automation builder">
+        <lucide-icon [size]="17" [img]="closeIcon"></lucide-icon>
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+      <div class="space-y-5">
+        <section class="rounded-[22px] border border-app-border bg-app-surface p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-xs font-bold text-white">1</span>
+            <div>
+              <h3 class="text-sm font-semibold text-app-text">Name the automation</h3>
+              <p class="text-xs text-app-text-muted">Use a clear name your team will recognize.</p>
+            </div>
+          </div>
+          <div class="mt-4 grid gap-4">
+            <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+              Name
+              <input [(ngModel)]="draft.name" maxlength="160" placeholder="Ready-for-pickup notification"
+                class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm font-medium text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15" />
+            </label>
+            <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+              Description
+              <textarea [(ngModel)]="draft.description" rows="2" maxlength="4000" placeholder="What this automation handles..."
+                class="resize-none rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm leading-5 text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="rounded-[22px] border border-app-border bg-app-surface p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-xs font-bold text-white">2</span>
+            <div>
+              <h3 class="text-sm font-semibold text-app-text">Choose the trigger</h3>
+              <p class="text-xs text-app-text-muted">This event starts the workflow.</p>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-4">
+            <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+              Trigger
+              <select [(ngModel)]="draft.triggerType" (ngModelChange)="onTriggerChanged()"
+                class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm font-medium text-app-text outline-none focus:border-brand">
+                @for (option of triggerOptions; track option.value) {
+                  <option [ngValue]="option.value">{{ option.group }} — {{ option.label }}</option>
+                }
+              </select>
+            </label>
+
+            @if (draft.triggerType === 'repair_status_changed') {
+              <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                New repair status
+                <select [(ngModel)]="triggerStatus"
+                  class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand">
+                  @for (status of repairStatuses; track status) {
+                    <option [value]="status">{{ statusLabel(status) }}</option>
+                  }
+                </select>
+              </label>
+            }
+
+            @if (draft.triggerType === 'quote_status_changed') {
+              <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                New quote status
+                <select [(ngModel)]="triggerStatus"
+                  class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand">
+                  @for (status of quoteStatuses; track status) {
+                    <option [value]="status">{{ statusLabel(status) }}</option>
+                  }
+                </select>
+              </label>
+            }
+
+            @if (draft.triggerType === 'appointment_status_changed') {
+              <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                New appointment status
+                <select [(ngModel)]="triggerStatus"
+                  class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand">
+                  @for (status of appointmentStatuses; track status) {
+                    <option [value]="status">{{ statusLabel(status) }}</option>
+                  }
+                </select>
+              </label>
+            }
+
+            @if (draft.triggerType === 'repair_status_stale') {
+              <div class="grid gap-4 sm:grid-cols-2">
+                <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                  Repair status
+                  <select [(ngModel)]="triggerStatus"
+                    class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand">
+                    @for (status of repairStatuses; track status) {
+                      <option [value]="status">{{ statusLabel(status) }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                  Minutes in status
+                  <input type="number" min="1" [(ngModel)]="triggerAmount"
+                    class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand" />
+                </label>
+              </div>
+            }
+
+            @if (draft.triggerType === 'appointment_approaching') {
+              <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                Minutes before appointment
+                <input type="number" min="1" [(ngModel)]="triggerAmount"
+                  class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand" />
+                <span class="font-normal text-app-text-muted">1,440 minutes = 24 hours</span>
+              </label>
+            }
+
+            @if (draft.triggerType === 'inventory_low') {
+              <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                Available quantity threshold
+                <input type="number" min="0" [(ngModel)]="triggerAmount"
+                  class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand" />
+                <span class="font-normal text-app-text-muted">Runs when quantity crosses from at or above this value to below it.</span>
+              </label>
+            }
+
+            @if (draft.triggerType === 'order_balance_due') {
+              <label class="grid gap-1.5 text-xs font-semibold text-app-text-muted">
+                Minimum order age in minutes
+                <input type="number" min="1" [(ngModel)]="triggerAmount"
+                  class="h-11 rounded-xl border border-app-border bg-app-surface px-3 text-sm text-app-text outline-none focus:border-brand" />
+                <span class="font-normal text-app-text-muted">4,320 minutes = 3 days</span>
+              </label>
+            }
+          </div>
+        </section>
+
+        <section class="rounded-[22px] border border-app-border bg-app-surface p-5 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-xs font-bold text-white">3</span>
+              <div>
+                <h3 class="text-sm font-semibold text-app-text">Add conditions</h3>
+                <p class="text-xs text-app-text-muted">Optional filters prevent the rule from running on every matching event.</p>
+              </div>
+            </div>
+            <button type="button"
+              class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl border border-app-border px-3 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+              (click)="addCondition()">
+              <lucide-icon [size]="14" [img]="plusIcon"></lucide-icon>
+              Add condition
+            </button>
+          </div>
+
+          @if (draft.conditions.length) {
+            <div class="mt-4 flex items-center gap-2 rounded-xl bg-app-surface-muted p-2">
+              <span class="px-2 text-xs font-semibold text-app-text-muted">Run when</span>
+              <button type="button"
+                class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+                [ngClass]="draft.conditionMode === 'all' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted'"
+                (click)="draft.conditionMode = 'all'">all</button>
+              <button type="button"
+                class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+                [ngClass]="draft.conditionMode === 'any' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted'"
+                (click)="draft.conditionMode = 'any'">any</button>
+              <span class="text-xs text-app-text-muted">conditions match</span>
+            </div>
+          }
+
+          <div class="mt-4 space-y-3">
+            @for (condition of draft.conditions; track $index; let index = $index) {
+              <div class="grid gap-2 rounded-2xl border border-app-border bg-app-surface-muted/40 p-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+                <label class="grid gap-1 text-[11px] font-semibold text-app-text-muted">
+                  Field
+                  <input [(ngModel)]="condition.field" [attr.list]="'automation-condition-fields-' + index"
+                    class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                  <datalist [id]="'automation-condition-fields-' + index">
+                    @for (field of conditionFields; track field) { <option [value]="field"></option> }
+                  </datalist>
+                </label>
+                <label class="grid gap-1 text-[11px] font-semibold text-app-text-muted">
+                  Operator
+                  <select [(ngModel)]="condition.operator"
+                    class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                    @for (operator of conditionOperators; track operator.value) {
+                      <option [value]="operator.value">{{ operator.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="grid gap-1 text-[11px] font-semibold text-app-text-muted">
+                  Value
+                  <input [(ngModel)]="condition.value"
+                    [disabled]="['is_empty', 'is_not_empty', 'is_true', 'is_false'].includes(condition.operator)"
+                    placeholder="Value or comma-separated list"
+                    class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand disabled:opacity-50" />
+                </label>
+                <button type="button"
+                  class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text-muted transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                  (click)="removeCondition(index)" aria-label="Remove condition">
+                  <lucide-icon [size]="15" [img]="trashIcon"></lucide-icon>
+                </button>
+              </div>
+            } @empty {
+              <div class="rounded-2xl border border-dashed border-app-border px-4 py-8 text-center text-sm text-app-text-muted">
+                No conditions. Every matching trigger can run this automation.
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="rounded-[22px] border border-app-border bg-app-surface p-5 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-xs font-bold text-white">4</span>
+              <div>
+                <h3 class="text-sm font-semibold text-app-text">Configure actions</h3>
+                <p class="text-xs text-app-text-muted">Actions run in order. Add a delay to schedule one for later.</p>
+              </div>
+            </div>
+            <button type="button"
+              class="cursor-pointer inline-flex h-9 items-center gap-2 rounded-xl border border-app-border px-3 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+              (click)="addAction()">
+              <lucide-icon [size]="14" [img]="plusIcon"></lucide-icon>
+              Add action
+            </button>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            @for (action of draft.actions; track $index; let index = $index) {
+              <article class="overflow-hidden rounded-2xl border border-app-border bg-app-surface-muted/35">
+                <div class="flex flex-wrap items-center gap-3 border-b border-app-border bg-app-surface px-4 py-3">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/10 text-xs font-bold text-brand">{{ index + 1 }}</span>
+                  <select [(ngModel)]="action.type" (ngModelChange)="actionTypeChanged(action)"
+                    class="h-9 min-w-52 rounded-xl border border-app-border bg-app-surface px-3 text-xs font-semibold text-app-text outline-none focus:border-brand">
+                    @for (option of actionOptions; track option.value) {
+                      <option [ngValue]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                  <div class="ml-auto flex items-center gap-1">
+                    <button type="button"
+                      class="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:opacity-30"
+                      [disabled]="index === 0" (click)="moveAction(index, -1)" aria-label="Move action up">
+                      <lucide-icon [size]="15" [img]="chevronUpIcon"></lucide-icon>
+                    </button>
+                    <button type="button"
+                      class="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:opacity-30"
+                      [disabled]="index === draft.actions.length - 1" (click)="moveAction(index, 1)" aria-label="Move action down">
+                      <lucide-icon [size]="15" [img]="chevronDownIcon"></lucide-icon>
+                    </button>
+                    <button type="button"
+                      class="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-lg text-app-text-muted transition hover:bg-rose-50 hover:text-rose-700"
+                      (click)="removeAction(index)" aria-label="Remove action">
+                      <lucide-icon [size]="15" [img]="trashIcon"></lucide-icon>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="grid gap-4 p-4">
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Action label
+                      <input [(ngModel)]="action.label"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                    </label>
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Delay in minutes
+                      <input type="number" min="0" [(ngModel)]="action.delayMinutes"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                    </label>
+                  </div>
+
+                  @if (['send_email', 'send_sms', 'internal_notification', 'send_portal_link'].includes(action.type)) {
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Recipient
+                      <select [(ngModel)]="action.config['recipient']"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                        <option value="customer">Customer</option>
+                        <option value="repair_assignee">Repair assignee</option>
+                        <option value="owner">Shop owner</option>
+                        <option value="specific_user">Specific user</option>
+                        <option value="shop">Shop contact</option>
+                        <option value="custom">Custom recipient</option>
+                      </select>
+                    </label>
+                  }
+
+                  @if (action.config['recipient'] === 'specific_user' || action.type === 'assign_repair') {
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Team member
+                      <select [(ngModel)]="action.config['userId']"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                        <option value="">Select a team member</option>
+                        @for (user of users(); track user.id) {
+                          <option [value]="user.id">{{ user.name }} · {{ statusLabel(user.role) }}</option>
+                        }
+                      </select>
+                    </label>
+                  }
+
+                  @if (action.config['recipient'] === 'custom') {
+                    <div class="grid gap-3 sm:grid-cols-3">
+                      <input [(ngModel)]="action.config['toName']" placeholder="Name"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      <input [(ngModel)]="action.config['toEmail']" placeholder="Email"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      <input [(ngModel)]="action.config['toPhone']" placeholder="Phone"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                    </div>
+                  }
+
+                  @if (action.type === 'send_email' || action.type === 'internal_notification') {
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Subject
+                      <input [(ngModel)]="action.config['subject']"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                    </label>
+                  }
+
+                  @if (['send_email', 'send_sms', 'internal_notification', 'add_repair_note'].includes(action.type)) {
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Message
+                      <textarea [(ngModel)]="action.config['body']" rows="4"
+                        class="resize-y rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-xs leading-5 text-app-text outline-none focus:border-brand"></textarea>
+                    </label>
+                    <p class="rounded-xl bg-brand/5 px-3 py-2 text-[11px] leading-5 text-app-text-muted">
+                      Variables: <code>{{ '{{customer.firstName}}' }}</code>, <code>{{ '{{device.displayName}}' }}</code>,
+                      <code>{{ '{{repair.statusLabel}}' }}</code>, <code>{{ '{{appointment.startFormatted}}' }}</code>,
+                      <code>{{ '{{order.balanceFormatted}}' }}</code>, <code>{{ '{{portal.url}}' }}</code>, <code>{{ '{{shop.name}}' }}</code>
+                    </p>
+                  }
+
+                  @if (action.type === 'send_portal_link') {
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Delivery channel
+                      <select [(ngModel)]="action.config['channel']"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                        <option value="email">Email</option>
+                        <option value="sms">SMS</option>
+                      </select>
+                    </label>
+                  }
+
+                  @if (action.type === 'create_work_queue') {
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted sm:col-span-2">
+                        Task title
+                        <input [(ngModel)]="action.config['title']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted sm:col-span-2">
+                        Description
+                        <textarea [(ngModel)]="action.config['description']" rows="3"
+                          class="resize-y rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-xs text-app-text outline-none focus:border-brand"></textarea>
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        Category
+                        <input [(ngModel)]="action.config['category']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        Priority
+                        <select [(ngModel)]="action.config['priority']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                          <option value="low">Low</option>
+                          <option value="normal">Normal</option>
+                          <option value="high">High</option>
+                          <option value="urgent">Urgent</option>
+                        </select>
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        Assign to
+                        <select [(ngModel)]="action.config['assignTo']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                          <option value="unassigned">Unassigned</option>
+                          <option value="repair_assignee">Repair assignee</option>
+                          <option value="specific_user">Specific user</option>
+                        </select>
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        Due in minutes
+                        <input type="number" min="0" [(ngModel)]="action.config['dueMinutes']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      </label>
+                      @if (action.config['assignTo'] === 'specific_user') {
+                        <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted sm:col-span-2">
+                          Team member
+                          <select [(ngModel)]="action.config['userId']"
+                            class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                            <option value="">Select a team member</option>
+                            @for (user of users(); track user.id) { <option [value]="user.id">{{ user.name }}</option> }
+                          </select>
+                        </label>
+                      }
+                    </div>
+                  }
+
+                  @if (action.type === 'add_repair_note') {
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      Visibility
+                      <select [(ngModel)]="action.config['visibility']"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                        <option value="internal">Internal</option>
+                        <option value="customer">Customer visible</option>
+                      </select>
+                    </label>
+                  }
+
+                  @if (action.type === 'change_repair_status') {
+                    <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                      New repair status
+                      <select [(ngModel)]="action.config['status']"
+                        class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                        @for (status of repairStatuses; track status) { <option [value]="status">{{ statusLabel(status) }}</option> }
+                      </select>
+                    </label>
+                  }
+
+                  @if (action.type === 'assign_form') {
+                    <div class="grid gap-3 sm:grid-cols-2">
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted sm:col-span-2">
+                        Form template
+                        <select [(ngModel)]="action.config['templateId']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                          <option value="">Select a form template</option>
+                          @for (template of formTemplates(); track template.id) {
+                            <option [value]="template.id">{{ template.name }} · {{ template.category }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        Audience
+                        <select [(ngModel)]="action.config['audience']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                          <option value="customer">Customer</option>
+                          <option value="staff">Staff</option>
+                        </select>
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        Due in minutes
+                        <input type="number" min="0" [(ngModel)]="action.config['dueMinutes']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted sm:col-span-2">
+                        Assignment title
+                        <input [(ngModel)]="action.config['title']" placeholder="Use the template name"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      </label>
+                      @if (action.config['audience'] === 'staff') {
+                        <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                          Assign to
+                          <select [(ngModel)]="action.config['assignTo']"
+                            class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                            <option value="unassigned">Unassigned</option>
+                            <option value="repair_assignee">Repair assignee</option>
+                            <option value="specific_user">Specific user</option>
+                          </select>
+                        </label>
+                        @if (action.config['assignTo'] === 'specific_user') {
+                          <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                            Team member
+                            <select [(ngModel)]="action.config['userId']"
+                              class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                              <option value="">Select a team member</option>
+                              @for (user of users(); track user.id) { <option [value]="user.id">{{ user.name }}</option> }
+                            </select>
+                          </label>
+                        }
+                      } @else {
+                        <label class="inline-flex cursor-pointer items-center gap-2 self-end pb-2 text-xs font-medium text-app-text-muted">
+                          <input type="checkbox" [(ngModel)]="action.config['sendEmail']"
+                            class="h-4 w-4 rounded border-app-border text-brand" />
+                          Email the form link to the customer
+                        </label>
+                      }
+                    </div>
+                  }
+
+                  @if (action.type === 'webhook') {
+                    <div class="grid gap-3 sm:grid-cols-[120px_1fr]">
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        Method
+                        <select [(ngModel)]="action.config['method']"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand">
+                          <option value="POST">POST</option>
+                          <option value="PUT">PUT</option>
+                          <option value="PATCH">PATCH</option>
+                        </select>
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                        HTTPS URL
+                        <input [(ngModel)]="action.config['url']" placeholder="https://example.com/webhooks/opscend"
+                          class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                      </label>
+                      <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted sm:col-span-2">
+                        JSON body or template
+                        <textarea [(ngModel)]="action.config['body']" rows="4" [placeholder]="webhookBodyPlaceholder"
+                          class="resize-y rounded-xl border border-app-border bg-app-surface px-3 py-2.5 font-mono text-xs text-app-text outline-none focus:border-brand"></textarea>
+                      </label>
+                    </div>
+                  }
+
+                  <div class="flex flex-wrap items-center gap-4 border-t border-app-border pt-3">
+                    <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-app-text-muted">
+                      <input type="checkbox" [(ngModel)]="action.enabled" class="h-4 w-4 rounded border-app-border text-brand" />
+                      Action enabled
+                    </label>
+                    <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-app-text-muted">
+                      <input type="checkbox" [(ngModel)]="action.cancelIfChanged" class="h-4 w-4 rounded border-app-border text-brand" />
+                      Cancel delayed action when the source no longer matches
+                    </label>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+
+        <section class="rounded-[22px] border border-app-border bg-app-surface p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-xs font-bold text-white">5</span>
+            <div>
+              <h3 class="text-sm font-semibold text-app-text">Safety and delivery</h3>
+              <p class="text-xs text-app-text-muted">Prevent loops, protect quiet hours, and pause unhealthy rules.</p>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-app-border p-4">
+              <input type="checkbox" [(ngModel)]="draft.runOncePerSource" class="mt-0.5 h-4 w-4 rounded border-app-border text-brand" />
+              <span>
+                <span class="block text-xs font-semibold text-app-text">Run once per source record</span>
+                <span class="mt-1 block text-xs leading-5 text-app-text-muted">Useful for one-time thank-you or review requests.</span>
+              </span>
+            </label>
+            <label class="grid gap-1.5 rounded-2xl border border-app-border p-4 text-xs font-semibold text-app-text-muted">
+              Cooldown minutes
+              <input type="number" min="0" [(ngModel)]="draft.cooldownMinutes" placeholder="No cooldown"
+                class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+              <span class="font-normal leading-5">Blocks repeat runs on the same source during this window.</span>
+            </label>
+          </div>
+
+          <div class="mt-4 rounded-2xl border border-app-border p-4">
+            <label class="flex cursor-pointer items-start gap-3">
+              <input type="checkbox" [(ngModel)]="draft.quietHoursEnabled" class="mt-0.5 h-4 w-4 rounded border-app-border text-brand" />
+              <span>
+                <span class="block text-xs font-semibold text-app-text">Respect customer communication quiet hours</span>
+                <span class="mt-1 block text-xs leading-5 text-app-text-muted">Email, SMS, and portal-link actions wait until quiet hours end.</span>
+              </span>
+            </label>
+            @if (draft.quietHoursEnabled) {
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                  Quiet hours start
+                  <input type="time" [(ngModel)]="draft.quietHoursStart"
+                    class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                </label>
+                <label class="grid gap-1.5 text-[11px] font-semibold text-app-text-muted">
+                  Quiet hours end
+                  <input type="time" [(ngModel)]="draft.quietHoursEnd"
+                    class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+                </label>
+              </div>
+            }
+          </div>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
+              <input type="checkbox" [(ngModel)]="draft.testMode" class="mt-0.5 h-4 w-4 rounded border-violet-300 text-violet-600" />
+              <span>
+                <span class="block text-xs font-semibold text-violet-900">Keep this rule in test mode</span>
+                <span class="mt-1 block text-xs leading-5 text-violet-700">Executions are recorded, but no action is performed.</span>
+              </span>
+            </label>
+            <label class="grid gap-1.5 rounded-2xl border border-app-border p-4 text-xs font-semibold text-app-text-muted">
+              Pause after consecutive failures
+              <input type="number" min="1" max="50" [(ngModel)]="draft.failureThreshold"
+                class="h-10 rounded-xl border border-app-border bg-app-surface px-3 text-xs text-app-text outline-none focus:border-brand" />
+              <span class="font-normal leading-5">Opscend automatically pauses the rule and notifies the owner.</span>
+            </label>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer class="flex shrink-0 flex-col-reverse gap-2 border-t border-app-border bg-app-surface px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div class="flex items-center gap-2 text-xs text-app-text-muted">
+        <lucide-icon [size]="15" [img]="shieldIcon"></lucide-icon>
+        Shop-scoped, audited, idempotent, and safe across restarts.
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <button type="button"
+          class="cursor-pointer inline-flex h-10 items-center justify-center rounded-xl border border-app-border px-4 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+          (click)="closeBuilder()">
+          Cancel
+        </button>
+        <button type="button"
+          class="cursor-pointer inline-flex h-10 min-w-32 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="saving()" (click)="saveRule()">
+          <lucide-icon [size]="16" [img]="saveIcon"></lucide-icon>
+          {{ saving() ? 'Saving...' : editingRuleId() ? 'Save changes' : 'Create automation' }}
+        </button>
+      </div>
+    </footer>
+  </aside>
+}
