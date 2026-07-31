@@ -16,11 +16,12 @@ import {
 import { UsersStore } from '../../../core/users/users-store';
 import { AuthService } from '../../../core/auth/auth.service';
 import { User } from '../../../core/users/users.model';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 @Component({
   selector: 'app-shop-users-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [SettingsLayoutComponent, CommonModule, ReactiveFormsModule],
   templateUrl: './shop-users.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -284,6 +285,13 @@ export class ShopUsers implements OnInit {
 
     const status = (user.status ?? '').toLowerCase();
     return status === 'archived' || status === 'deleted';
+  }
+
+  protected isActiveStatus(user: User | null | undefined): boolean {
+    if (!user || this.isArchived(user)) return false;
+
+    const status = (user.status ?? 'active').toLowerCase();
+    return status !== 'invited' && status !== 'inactive';
   }
 
   protected isSelf(user: User | null | undefined): boolean {

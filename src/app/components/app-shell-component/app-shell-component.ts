@@ -14,13 +14,11 @@ import {
   MenuIcon,
   SearchIcon,
   UsersIcon,
-  UserIcon,
   WrenchIcon,
   WalletCardsIcon,
   BoxIcon,
   BlocksIcon,
   BellIcon,
-  CalendarCog,
   XIcon,
   ToolboxIcon,
   PackageIcon,
@@ -30,11 +28,12 @@ import {
   MessageSquareQuote,
   InboxIcon,
   SmartphoneIcon,
-  DollarSignIcon,
   ListTodo,
   AlertTriangle,
   Zap,
   ClipboardList,
+  Gauge,
+  Bot,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -49,6 +48,7 @@ import { CommunicationService } from '../../core/communications/service';
 import { ToastService } from '../../core/toast/toast-service';
 import { WorkQueueService } from '../../core/work-queue/service';
 import type { WorkQueueItem, WorkQueueSummary } from '../../core/work-queue/model';
+import { AiAssistant } from '../../features/ai-assistant/ai-assistant';
 
 type NavItem = {
   label: string;
@@ -61,6 +61,19 @@ type NavItem = {
     route: string;
     icon: LucideIconData;
   }[];
+};
+
+type SecondaryNavItem = {
+  label: string;
+  route: string;
+  icon: LucideIconData;
+  description: string;
+  ownerOnly?: boolean;
+};
+
+type SecondaryNavGroup = {
+  label: string;
+  items: SecondaryNavItem[];
 };
 
 type SearchSection = {
@@ -96,7 +109,8 @@ type FlatSearchRow =
     RouterLinkActive,
     RouterOutlet,
     LucideAngularModule,
-    ManageDevicesModalComponent
+    ManageDevicesModalComponent,
+    AiAssistant,
   ],
   templateUrl: './app-shell-component.html',
   styleUrl: './app-shell-component.scss',
@@ -121,7 +135,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly searchIcon = SearchIcon;
   readonly wrenchIcon = WrenchIcon;
   readonly usersIcon = UsersIcon;
-  readonly userIcon = UserIcon;
   readonly boxesIcon = BoxIcon;
   readonly blocksIcon = BlocksIcon;
   readonly calendarClockIcon = CalendarClockIcon;
@@ -133,14 +146,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly messageSquareQuoteIcon = MessageSquareQuote;
   readonly inboxIcon = InboxIcon;
   readonly deviceCatalogIcon = SmartphoneIcon;
-  readonly repairPricingIcon = DollarSignIcon;
   readonly walletCardsIcon = WalletCardsIcon;
-  readonly calendarCogIcon = CalendarCog;
   readonly toolboxIcon = ToolboxIcon;
   readonly workQueueIcon = ListTodo;
   readonly analyticsIcon = BarChart3;
   readonly automationIcon = Zap;
   readonly formsIcon = ClipboardList;
+  readonly technicianDashboardIcon = Gauge;
+  readonly aiAssistantIcon = Bot;
   readonly workQueueAlertIcon = AlertTriangle;
 
   private readonly notificationPollMs = 15_000;
@@ -153,10 +166,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public newQuoteRequestCount = signal(0);
   public sidebarOpen = signal(false);
   public openNavSections = signal<Record<string, boolean>>({
-    Products: true,
-    Contractors: true,
+    Products: false,
   });
+  public moreMenuOpen = signal(false);
   public profileMenuOpen = signal(false);
+  public aiAssistantDrawerOpen = signal(false);
 
   public notificationMenuOpen = signal(false);
   public notificationsLoading = signal(false);
@@ -198,56 +212,109 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   public navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
-    { label: 'Analytics', route: '/analytics', icon: this.analyticsIcon },
-    { label: 'Automations', route: '/automations', icon: this.automationIcon },
-    { label: 'Forms', route: '/forms', icon: this.formsIcon },
-    { label: 'Knowledge Base', route: '/knowledge-base', icon: this.bookOpenIcon },
+    { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
     {
-      label: 'Work Queue',
-      route: '/work-queue',
-      icon: this.workQueueIcon,
-      badgeCount: () => this.workQueueSummary()?.counts.attention ?? 0,
+      label: 'Quotes',
+      route: '/quote-requests',
+      icon: this.messageSquareQuoteIcon,
+      badgeCount: () => this.newQuoteRequestCount(),
     },
+    { label: 'Customers', route: '/customers', icon: this.usersIcon },
     { label: 'Services', route: '/services', icon: this.toolboxIcon },
     {
       label: 'Products',
       icon: this.boxesIcon,
       children: [
         { label: 'All Products', route: '/products/overview', icon: this.boxesIcon },
-        {
-          label: 'Suppliers',
-          route: '/products/inventory/suppliers',
-          icon: this.blocksIcon,
-        },
         { label: 'Inventory', route: '/products/inventory', icon: this.packageIcon },
         {
           label: 'Purchase Orders',
           route: '/products/inventory/purchase-orders',
           icon: this.shoppingCartIcon,
-        }
+        },
+        {
+          label: 'Suppliers',
+          route: '/products/inventory/suppliers',
+          icon: this.blocksIcon,
+        },
+      ],
+    },
+  ];
+
+  public secondaryNavGroups: SecondaryNavGroup[] = [
+    {
+      label: 'Insights',
+      items: [
+        {
+          label: 'Technician Dashboard',
+          route: '/technician-dashboard',
+          icon: this.technicianDashboardIcon,
+          description: 'Assigned work and technician performance.',
+        },
+        {
+          label: 'Analytics',
+          route: '/analytics',
+          icon: this.analyticsIcon,
+          description: 'Trends, reporting, and business performance.',
+        },
       ],
     },
     {
-      label: 'Contractors',
-      icon: this.handshakeIcon,
-      children: [
-        { label: 'All Contractors', route: '/contractors', icon: this.handshakeIcon },
-        { label: 'Payouts', route: '/contractor-payouts', icon: this.walletCardsIcon },
-      ]
+      label: 'Tools',
+      items: [
+        {
+          label: 'Automations',
+          route: '/automations',
+          icon: this.automationIcon,
+          description: 'Rules and actions that keep work moving.',
+        },
+        {
+          label: 'Forms',
+          route: '/forms',
+          icon: this.formsIcon,
+          description: 'Reusable forms, checklists, and submissions.',
+        },
+        {
+          label: 'Knowledge Base',
+          route: '/knowledge-base',
+          icon: this.bookOpenIcon,
+          description: 'Internal articles and shop documentation.',
+        },
+      ],
     },
-    { label: 'Customers', route: '/customers', icon: this.usersIcon },
-    { 
-      label: 'Quotes', 
-      route: '/quote-requests', 
-      icon: this.messageSquareQuoteIcon,
-      badgeCount: () => this.newQuoteRequestCount()
+    {
+      label: 'Team',
+      items: [
+        {
+          label: 'Contractors',
+          route: '/contractors',
+          icon: this.handshakeIcon,
+          description: 'Manage contractor access and assignments.',
+        },
+        {
+          label: 'Contractor Payouts',
+          route: '/contractor-payouts',
+          icon: this.walletCardsIcon,
+          description: 'Review and manage contractor payments.',
+        },
+      ],
     },
-    { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
   ];
 
   get visibleNavItems(): NavItem[] {
     const role = String(this.auth.getCurrentUser()?.role ?? '').toLowerCase();
     return this.navItems.filter((item) => !item.ownerOnly || role === 'owner');
+  }
+
+  get visibleSecondaryNavGroups(): SecondaryNavGroup[] {
+    const role = String(this.auth.getCurrentUser()?.role ?? '').toLowerCase();
+
+    return this.secondaryNavGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !item.ownerOnly || role === 'owner'),
+      }))
+      .filter((group) => group.items.length > 0);
   }
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -275,6 +342,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.routerEventsSubscription = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
+        this.aiAssistantDrawerOpen.set(false);
+        this.moreMenuOpen.set(false);
         if (this.auth.getAccessToken()) {
           void this.refreshNotificationsInBackground();
           void this.refreshNewQuoteRequestCount();
@@ -311,7 +380,35 @@ export class AppShellComponent implements OnInit, OnDestroy {
     }
   }
 
+  openAiAssistantDrawer(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.moreMenuOpen.set(false);
+    this.profileMenuOpen.set(false);
+    this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
+    this.closeSearchDropdown();
+    this.aiAssistantDrawerOpen.set(true);
+  }
+
+  closeAiAssistantDrawer(): void {
+    this.aiAssistantDrawerOpen.set(false);
+  }
+
+  expandAiAssistant(conversationId: string | null): void {
+    this.aiAssistantDrawerOpen.set(false);
+
+    if (conversationId) {
+      void this.router.navigate(['/ai-assistant'], {
+        queryParams: { conversationId },
+      });
+      return;
+    }
+
+    void this.router.navigate(['/ai-assistant']);
+  }
+
   openSidebar(): void {
+    this.closeMoreMenu();
     this.sidebarOpen.set(true);
   }
 
@@ -370,6 +467,33 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
 
+  toggleMoreMenu(event?: MouseEvent): void {
+    event?.stopPropagation();
+
+    const willOpen = !this.moreMenuOpen();
+    this.moreMenuOpen.set(willOpen);
+    this.profileMenuOpen.set(false);
+    this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
+    this.closeSearchDropdown();
+  }
+
+  closeMoreMenu(): void {
+    this.moreMenuOpen.set(false);
+  }
+
+  navigateToSecondaryRoute(route: string): void {
+    this.closeMoreMenu();
+    this.closeSidebar();
+    void this.router.navigateByUrl(route);
+  }
+
+  isMoreMenuActive(): boolean {
+    return this.visibleSecondaryNavGroups.some((group) =>
+      group.items.some((item) => this.isNavRouteActive(item.route)),
+    );
+  }
+
   async refreshWorkQueueSummary(): Promise<void> {
     try {
       const response = await firstValueFrom(
@@ -386,6 +510,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
     const willOpen = !this.workQueueMenuOpen();
     this.workQueueMenuOpen.set(willOpen);
+    this.moreMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.profileMenuOpen.set(false);
     this.closeSearchDropdown();
@@ -407,6 +532,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   goToWorkQueue(event?: MouseEvent): void {
     event?.stopPropagation();
     this.closeWorkQueueMenu();
+    this.closeMoreMenu();
     this.closeNotificationMenu();
     this.closeProfileMenu();
     this.closeSearchDropdown();
@@ -463,18 +589,21 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   goToCommunicationsInbox(event?: MouseEvent): void {
     event?.stopPropagation();
+    this.moreMenuOpen.set(false);
     this.profileMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
     this.closeSidebar();
-    this.router.navigate(['/communications']);
+    void this.router.navigate(['/communications']);
   }
 
   toggleProfileMenu(event?: MouseEvent): void {
     event?.stopPropagation();
+    this.moreMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
+    this.closeSearchDropdown();
     this.profileMenuOpen.update(open => !open);
   }
 
@@ -482,63 +611,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.profileMenuOpen.set(false);
   }
 
-  goToShopNotifications(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/notifications']);
-  }
-
-  goToShopBookings(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/shop-bookings']);
-  }
-
-  goToDeviceCatalog(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/device-catalog']);
-  }
-
-  goToRepairPricing(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/repair-pricing']);
-  }
-
-  goToMyAvailability(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/profile/my-availability']);
-  }
-
-  goToShopAvailability(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/availability']);
-  }
-
   goToShopSettings(): void {
     this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/general']);
-  }
-
-  goToShopIntegrations(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/integrations']);
-  }
-
-  goToShopPayouts(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/payouts']);
-  }
-
-  goToShopUsers(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/shop/users']);
-  }
-
-  goToMyProfile(): void {
-    this.closeProfileMenu();
-    this.router.navigate(['/settings/profile/my-profile']);
+    void this.router.navigate(['/settings/shop/general']);
   }
 
   logout(): void {
     console.log('Component logout called');
+    this.closeMoreMenu();
     this.closeProfileMenu();
     this.auth.logout().subscribe({
       next: () => {
@@ -632,6 +712,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     const willOpen = !this.notificationMenuOpen();
 
     this.notificationMenuOpen.set(willOpen);
+    this.moreMenuOpen.set(false);
     this.profileMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
@@ -782,6 +863,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   onSearchFocus(): void {
+    this.moreMenuOpen.set(false);
+    this.profileMenuOpen.set(false);
+    this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
     this.searchTouched.set(true);
 
     if (this.searchQuery().trim().length > 0) {
@@ -1131,7 +1216,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   isNavSectionOpen(label: string): boolean {
-    return !!this.openNavSections()[label];
+    const item = this.visibleNavItems.find((navItem) => navItem.label === label);
+    return !!this.openNavSections()[label] || (!!item && this.isNavSectionActive(item));
   }
 
   isNavSectionActive(item: NavItem): boolean {
@@ -1178,7 +1264,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
         return url === '/products/inventory/suppliers';
 
       default:
-        return url === route;
+        return url === route || url.startsWith(`${route}/`);
     }
   }
 
@@ -1234,9 +1320,6 @@ export class AppShellComponent implements OnInit, OnDestroy {
     );
   }
 
-  get isOwner(): boolean {
-    return String(this.auth.getCurrentUser()?.role ?? '').toLowerCase() === 'owner';
-  }
 
   get userDisplaySubtext(): string {
     const user = this.auth.getCurrentUser();
@@ -1256,9 +1339,16 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown', ['$event'])
   focusGlobalSearch(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.aiAssistantDrawerOpen()) {
+      event.preventDefault();
+      this.closeAiAssistantDrawer();
+      return;
+    }
+
     if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return;
 
     event.preventDefault();
+    this.moreMenuOpen.set(false);
     this.profileMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
@@ -1276,6 +1366,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   @HostListener('document:click')
   onDocumentClick(): void {
+    this.closeMoreMenu();
     this.closeProfileMenu();
     this.closeNotificationMenu();
     this.closeWorkQueueMenu();

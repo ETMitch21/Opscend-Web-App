@@ -14,6 +14,7 @@ import {
   BookingSettings,
   BookingSettingsPatch,
 } from '../../../core/booking/model';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 type BookingSettingsTab = 'general' | 'pricing' | 'scheduling' | 'embed';
@@ -21,7 +22,7 @@ type BookingSettingsTab = 'general' | 'pricing' | 'scheduling' | 'embed';
 @Component({
   selector: 'app-shop-bookings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [SettingsLayoutComponent, CommonModule, ReactiveFormsModule],
   templateUrl: './shop-bookings.html',
   styleUrl: './shop-bookings.scss',
 })

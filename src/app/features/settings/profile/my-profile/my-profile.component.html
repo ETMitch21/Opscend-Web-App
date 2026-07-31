@@ -1,79 +1,86 @@
-<div class="mx-auto w-full max-w-3xl">
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold tracking-tight text-app-text">My profile</h1>
-        <p class="mt-1 text-sm text-app-text-muted">
-            Update your personal details and contact info.
-        </p>
+<app-settings-layout>
+    <button settings-actions type="button" class="settings-primary-action cursor-pointer"
+        [disabled]="saving() || loading()" (click)="save()">
+        {{ saving() ? 'Saving...' : 'Save changes' }}
+    </button>
+
+    @if (loading()) {
+    <div class="settings-card max-w-4xl">
+        <div class="settings-card-body py-10 text-center text-sm text-app-text-muted">Loading profile...</div>
     </div>
-
-    <div class="rounded-3xl border border-app-border bg-app-surface p-6 shadow-sm">
-        @if (loading()) {
-        <div class="py-10 text-sm text-app-text-muted">
-            Loading profile...
-        </div>
-        } @else {
-        <form [formGroup]="form" class="space-y-6" (ngSubmit)="save()">
-            <div class="grid gap-6 md:grid-cols-2">
-                <div class="md:col-span-2">
-                    <label class="mb-2 block text-sm font-medium text-app-text">Name</label>
-                    <input type="text" formControlName="name"
-                        class="w-full rounded-2xl border border-app-border bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
-                        placeholder="Your name" />
-
-                    @if (form.controls.name.touched && form.controls.name.invalid) {
-                    <p class="mt-2 text-xs text-red-600">
-                        Please enter your name.
-                    </p>
-                    }
-                </div>
-
+    } @else {
+    <form [formGroup]="form" class="grid max-w-5xl items-start gap-3 lg:grid-cols-[1.15fr_0.85fr]"
+        (ngSubmit)="save()">
+        <section class="settings-card">
+            <div class="settings-card-header">
                 <div>
-                    <label class="mb-2 block text-sm font-medium text-app-text">Email</label>
-                    <input type="text" [value]="profile()?.email ?? ''" readonly
-                        class="w-full rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm text-app-text-muted outline-none" />
+                    <h2 class="settings-card-title">Personal details</h2>
+                    <p class="settings-card-description">Information shown to your team and used in assignments.</p>
                 </div>
+                <button type="button" class="cursor-pointer text-[11px] font-semibold text-app-text-muted transition hover:text-app-text"
+                    (click)="loadProfile()" [disabled]="saving()">Reset</button>
+            </div>
 
+            <div class="settings-card-body">
+                <div class="settings-field-grid">
+                    <div class="settings-field is-half">
+                        <label class="settings-label">Display name</label>
+                        <input type="text" formControlName="name" class="settings-control" placeholder="Your name" />
+                        @if (form.controls.name.touched && form.controls.name.invalid) {
+                        <p class="settings-hint text-red-600">Please enter your name.</p>
+                        }
+                    </div>
+
+                    <div class="settings-field is-half">
+                        <label class="settings-label">Phone</label>
+                        <input type="text" formControlName="phone" class="settings-control" placeholder="Phone number" />
+                    </div>
+
+                    <div class="settings-field">
+                        <label class="settings-label">Internal notes</label>
+                        <textarea formControlName="notes" rows="4" class="settings-control"
+                            placeholder="Optional notes about responsibilities, specialties, or work preferences."></textarea>
+                        <p class="settings-hint">Visible internally to people who can manage users.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-card">
+            <div class="settings-card-header">
                 <div>
-                    <label class="mb-2 block text-sm font-medium text-app-text">Role</label>
-                    <input type="text" [value]="profile()?.role ?? ''" readonly
-                        class="w-full rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm capitalize text-app-text-muted outline-none" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-app-text">Phone</label>
-                    <input type="text" formControlName="phone"
-                        class="w-full rounded-2xl border border-app-border bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
-                        placeholder="Phone number" />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-app-text">Status</label>
-                    <input type="text" [value]="profile()?.status ?? ''" readonly
-                        class="w-full rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm capitalize text-app-text-muted outline-none" />
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="mb-2 block text-sm font-medium text-app-text">Notes</label>
-                    <textarea formControlName="notes" rows="4"
-                        class="w-full resize-none rounded-2xl border border-app-border bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
-                        placeholder="Add a few notes about yourself if needed"></textarea>
+                    <h2 class="settings-card-title">Account access</h2>
+                    <p class="settings-card-description">Login identity and permissions are managed by the shop.</p>
                 </div>
             </div>
 
-            <div class="flex items-center justify-end gap-3">
-                <button type="button"
-                    class="cursor-pointer rounded-2xl border border-app-border px-4 py-2.5 text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                    (click)="loadProfile()" [disabled]="saving()">
-                    Reset
-                </button>
+            <div class="settings-card-body divide-y divide-app-border">
+                <div class="flex items-start justify-between gap-4 py-3 first:pt-0">
+                    <div>
+                        <p class="text-[11px] font-medium text-app-text-muted">Email</p>
+                        <p class="mt-1 break-all text-xs font-semibold text-app-text">{{ profile()?.email || 'Not provided' }}</p>
+                    </div>
+                </div>
 
-                <button type="submit"
-                    class="cursor-pointer rounded-2xl bg-brand px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                    [disabled]="saving()">
-                    {{ saving() ? 'Saving...' : 'Save changes' }}
-                </button>
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <p class="text-[11px] font-medium text-app-text-muted">Role</p>
+                    <span class="rounded-full bg-app-surface-muted px-2.5 py-1 text-[10px] font-semibold capitalize text-app-text">
+                        {{ profile()?.role || '—' }}
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
+                    <p class="text-[11px] font-medium text-app-text-muted">Status</p>
+                    <span class="rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
+                        [class.bg-emerald-50]="(profile()?.status || '').toLowerCase() === 'active'"
+                        [class.text-emerald-700]="(profile()?.status || '').toLowerCase() === 'active'"
+                        [class.bg-app-surface-muted]="(profile()?.status || '').toLowerCase() !== 'active'"
+                        [class.text-app-text-muted]="(profile()?.status || '').toLowerCase() !== 'active'">
+                        {{ profile()?.status || '—' }}
+                    </span>
+                </div>
             </div>
-        </form>
-        }
-    </div>
-</div>
+        </section>
+    </form>
+    }
+</app-settings-layout>

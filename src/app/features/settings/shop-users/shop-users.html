@@ -1,419 +1,223 @@
-<div class="space-y-6">
-  <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Users</h1>
-        <p class="mt-1 text-sm text-gray-500">
-          Manage staff access, invitations, roles, and user details.
-        </p>
-      </div>
-
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label
-          class="inline-flex cursor-pointer items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700"
-        >
-          <input
-            type="checkbox"
-            class="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand"
-            [checked]="includeArchived()"
-            (change)="includeArchived.set($any($event.target).checked); onArchivedToggle()"
-          />
-          <span>Show archived</span>
-        </label>
-
-        <button
-          type="button"
-          class="inline-flex items-center justify-center rounded-2xl bg-brand px-4 py-3 text-sm font-medium text-white transition hover:bg-brand/90"
-          (click)="toggleCreate()"
-        >
-          {{ createExpanded() ? 'Close' : 'Add user' }}
-        </button>
-      </div>
-    </div>
+<app-settings-layout>
+  <div settings-actions class="flex items-center gap-2">
+    <label class="cursor-pointer inline-flex min-h-9 items-center gap-2 rounded-[10px] border border-app-border bg-app-surface px-3 text-[11px] font-semibold text-app-text-muted">
+      <input type="checkbox" class="h-3.5 w-3.5 rounded border-app-border text-brand focus:ring-brand"
+        [checked]="includeArchived()" (change)="includeArchived.set($any($event.target).checked); onArchivedToggle()" />
+      Archived
+    </label>
+    <button type="button" class="settings-primary-action cursor-pointer" (click)="toggleCreate()">
+      {{ createExpanded() ? 'Close form' : 'Add user' }}
+    </button>
   </div>
 
-  @if (createExpanded()) {
-    <form
-      [formGroup]="createForm"
-      class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm"
-      (ngSubmit)="createUser()"
-    >
-      <div class="mb-5 flex items-start justify-between gap-4">
+  <div class="space-y-3">
+    @if (createExpanded()) {
+    <form [formGroup]="createForm" class="settings-card" (ngSubmit)="createUser()">
+      <div class="settings-card-header">
         <div>
-          <h2 class="text-lg font-semibold text-gray-900">Create user</h2>
-          <p class="mt-1 text-sm text-gray-500">
-            Add a teammate now, or send them an invite to finish setup.
-          </p>
+          <h2 class="settings-card-title">Add a team member</h2>
+          <p class="settings-card-description">Create an internal user or email an invitation to finish account setup.</p>
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Name</label>
-          <input
-            type="text"
-            formControlName="name"
-            class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-            placeholder="Alex Morgan"
-          />
+      <div class="settings-card-body">
+        <div class="settings-field-grid">
+          <div class="settings-field is-half">
+            <label class="settings-label">Name</label>
+            <input type="text" formControlName="name" class="settings-control" placeholder="Alex Morgan" />
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Email</label>
+            <input type="email" formControlName="email" class="settings-control" placeholder="alex@shop.com" />
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Phone</label>
+            <input type="text" formControlName="phone" class="settings-control" placeholder="(555) 555-5555" />
+          </div>
+          <div class="settings-field is-quarter">
+            <label class="settings-label">Role</label>
+            <select formControlName="role" class="settings-control cursor-pointer">
+              <option value="owner">Owner</option>
+              <option value="manager">Manager</option>
+              <option value="staff">Staff</option>
+              <option value="tech">Tech</option>
+            </select>
+          </div>
+          <div class="settings-field is-quarter">
+            <label class="settings-label">Initial status</label>
+            <select formControlName="status" class="settings-control cursor-pointer">
+              <option value="active">Active</option>
+              <option value="invited">Invited</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Tags</label>
+            <input type="text" formControlName="tagsText" class="settings-control"
+              placeholder="front desk, apple, manager" />
+            <p class="settings-hint">Comma-separated specialties or internal groupings.</p>
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Internal notes</label>
+            <textarea rows="3" formControlName="notes" class="settings-control"
+              placeholder="Responsibilities, access notes, or schedule context."></textarea>
+          </div>
         </div>
 
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Email</label>
-          <input
-            type="email"
-            formControlName="email"
-            class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-            placeholder="alex@shop.com"
-          />
+        <div class="mt-4 flex flex-col gap-3 border-t border-app-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <label class="cursor-pointer inline-flex items-center gap-2 text-[11px] font-medium text-app-text-muted">
+            <input type="checkbox" formControlName="sendInvite"
+              class="h-3.5 w-3.5 rounded border-app-border text-brand focus:ring-brand" />
+            Send an invitation email
+          </label>
+          <button type="submit" class="settings-primary-action cursor-pointer" [disabled]="creatingUser()">
+            {{ creatingUser() ? 'Creating...' : 'Create user' }}
+          </button>
         </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Phone</label>
-          <input
-            type="text"
-            formControlName="phone"
-            class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-            placeholder="(555) 555-5555"
-          />
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Role</label>
-          <select
-            formControlName="role"
-            class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-          >
-            <option value="owner">Owner</option>
-            <option value="manager">Manager</option>
-            <option value="staff">Staff</option>
-            <option value="tech">Tech</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Status</label>
-          <select
-            formControlName="status"
-            class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-          >
-            <option value="active">Active</option>
-            <option value="invited">Invited</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700">Tags</label>
-          <input
-            type="text"
-            formControlName="tagsText"
-            class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-            placeholder="front desk, apple, manager"
-          />
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="mb-2 block text-sm font-medium text-gray-700">Notes</label>
-          <textarea
-            rows="4"
-            formControlName="notes"
-            class="w-full resize-none rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-            placeholder="Optional notes about access, responsibilities, or schedule."
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="mt-5 flex flex-col gap-4 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <label class="inline-flex items-center gap-3 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            formControlName="sendInvite"
-            class="h-4 w-4 rounded border-gray-300 text-brand focus:ring-brand"
-          />
-          <span>Send invite email</span>
-        </label>
-
-        <button
-          type="submit"
-          class="inline-flex items-center justify-center rounded-2xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-          [disabled]="creatingUser()"
-        >
-          {{ creatingUser() ? 'Creating...' : 'Create user' }}
-        </button>
       </div>
     </form>
-  }
+    }
 
-  <div class="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-    <div class="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div class="mb-4">
-        <label class="mb-2 block text-sm font-medium text-gray-700">Search users</label>
-        <input
-          type="text"
-          [value]="search()"
-          (input)="search.set($any($event.target).value)"
-          class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-          placeholder="Search by name, email, role, tag..."
-        />
+    <section class="settings-card">
+      <div class="settings-card-header items-center">
+        <div>
+          <h2 class="settings-card-title">Team directory</h2>
+          <p class="settings-card-description">{{ filteredUsers().length }} team member{{ filteredUsers().length === 1 ? '' : 's' }} shown.</p>
+        </div>
+        <input type="search" [value]="search()" (input)="search.set($any($event.target).value)"
+          class="settings-control max-w-xs" placeholder="Search team..." />
       </div>
 
       @if (error()) {
-        <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {{ error() }}
-        </div>
+      <div class="m-4 settings-alert is-error">{{ error() }}</div>
       }
 
-      <div class="space-y-2">
-        @if (loading() && !users().length) {
-          <div class="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
-            Loading users...
-          </div>
-        } @else if (!filteredUsers().length) {
-          <div class="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500">
-            No team members found.
-          </div>
-        } @else {
+      @if (loading() && !users().length) {
+      <div class="px-5 py-10 text-center text-xs text-app-text-muted">Loading users...</div>
+      } @else if (!filteredUsers().length) {
+      <div class="px-5 py-10 text-center">
+        <p class="text-xs font-semibold text-app-text">No team members found</p>
+        <p class="mt-1 text-[10.5px] text-app-text-muted">Adjust the search or archived filter.</p>
+      </div>
+      } @else {
+      <div class="overflow-x-auto">
+        <div class="min-w-[720px] divide-y divide-app-border">
           @for (user of filteredUsers(); track trackByUserId($index, user)) {
-            <button
-              type="button"
-              class="w-full rounded-2xl border px-4 py-4 text-left transition"
-              [class.border-brand]="selectedUserId() === user.id"
-              [class.bg-brand/5]="selectedUserId() === user.id"
-              [class.border-gray-200]="selectedUserId() !== user.id"
-              [class.hover:border-gray-300]="selectedUserId() !== user.id"
-              (click)="selectUser(user)"
-            >
-              <div class="flex items-start gap-3">
-                <div
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gray-100 text-sm font-semibold text-gray-700"
-                >
-                  {{ initials(user.name) }}
-                </div>
+          <button type="button"
+            class="cursor-pointer grid w-full grid-cols-[minmax(220px,1.3fr)_minmax(180px,1fr)_110px_120px] items-center gap-4 px-4 py-3 text-left transition hover:bg-app-surface-muted/55"
+            [class.bg-brand/5]="selectedUserId() === user.id" (click)="selectUser(user)">
+            <span class="flex min-w-0 items-center gap-3">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-app-surface-muted text-[10px] font-bold text-app-text-muted">
+                {{ initials(user.name) }}
+              </span>
+              <span class="min-w-0">
+                <span class="block truncate text-xs font-semibold text-app-text">{{ user.name }}</span>
+                <span class="mt-0.5 block truncate text-[10.5px] text-app-text-muted">{{ user.phone || 'No phone' }}</span>
+              </span>
+            </span>
 
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <p class="truncate text-sm font-semibold text-gray-900">
-                      {{ user.name }}
-                    </p>
-
-                    @if (isArchived(user)) {
-                      <span class="rounded-full bg-red-50 px-2 py-1 text-[11px] font-medium text-red-600">
-                        Archived
-                      </span>
-                    } @else if ((user.status || '').toLowerCase() === 'invited') {
-                      <span class="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700">
-                        Invited
-                      </span>
-                    } @else if ((user.status || '').toLowerCase() === 'inactive') {
-                      <span class="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-600">
-                        Inactive
-                      </span>
-                    } @else {
-                      <span class="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700">
-                        Active
-                      </span>
-                    }
-                  </div>
-
-                  <p class="mt-1 truncate text-sm text-gray-500">
-                    {{ user.email || 'No email' }}
-                  </p>
-
-                  <div class="mt-2 flex flex-wrap items-center gap-2">
-                    <span class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700">
-                      {{ user.role }}
-                    </span>
-
-                    @for (tag of user.tags.slice(0, 2); track tag) {
-                      <span class="rounded-full bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-500">
-                        {{ tag }}
-                      </span>
-                    }
-                  </div>
-                </div>
-              </div>
-            </button>
+            <span class="truncate text-[11px] text-app-text-muted">{{ user.email || 'No email' }}</span>
+            <span class="text-[10.5px] font-semibold capitalize text-app-text-muted">{{ user.role }}</span>
+            <span class="justify-self-start rounded-full px-2 py-0.5 text-[9px] font-semibold"
+              [class.bg-red-50]="isArchived(user)" [class.text-red-600]="isArchived(user)"
+              [class.bg-amber-50]="!isArchived(user) && (user.status || '').toLowerCase() === 'invited'"
+              [class.text-amber-700]="!isArchived(user) && (user.status || '').toLowerCase() === 'invited'"
+              [class.bg-app-surface-muted]="!isArchived(user) && (user.status || '').toLowerCase() === 'inactive'"
+              [class.text-app-text-muted]="!isArchived(user) && (user.status || '').toLowerCase() === 'inactive'"
+              [class.bg-emerald-50]="isActiveStatus(user)"
+              [class.text-emerald-700]="isActiveStatus(user)">
+              {{ isArchived(user) ? 'Archived' : ((user.status || 'active') | titlecase) }}
+            </span>
+          </button>
           }
+        </div>
+      </div>
+      }
+
+      @if (nextCursor()) {
+      <div class="border-t border-app-border p-3 text-center">
+        <button type="button" class="settings-secondary-action cursor-pointer" (click)="loadMore()" [disabled]="loading()">
+          {{ loading() ? 'Loading...' : 'Load more' }}
+        </button>
+      </div>
+      }
+    </section>
+
+    @if (selectedUser(); as user) {
+    <section class="settings-card">
+      <div class="settings-card-header">
+        <div class="flex min-w-0 items-center gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-app-surface-muted text-[11px] font-bold text-app-text-muted">
+            {{ initials(user.name) }}
+          </span>
+          <div class="min-w-0">
+            <h2 class="settings-card-title truncate">Edit {{ user.name }}</h2>
+            <p class="settings-card-description truncate">{{ user.email || 'No email on file' }} · Created {{ user.createdAt | date:'mediumDate' }}</p>
+          </div>
+        </div>
+
+        @if (isArchived(user)) {
+        <button type="button" class="settings-secondary-action cursor-pointer"
+          (click)="restoreSelectedUser()" [disabled]="actioningUserId() === user.id">
+          {{ actioningUserId() === user.id ? 'Restoring...' : 'Restore user' }}
+        </button>
+        } @else {
+        <button type="button" class="cursor-pointer inline-flex min-h-9 items-center rounded-[10px] border border-red-200 px-3 text-[11px] font-semibold text-red-700 transition hover:bg-red-50"
+          (click)="archiveSelectedUser()" [disabled]="actioningUserId() === user.id">
+          {{ actioningUserId() === user.id ? 'Archiving...' : 'Archive user' }}
+        </button>
         }
       </div>
 
-      @if (nextCursor()) {
-        <div class="mt-4">
-          <button
-            type="button"
-            class="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            (click)="loadMore()"
-            [disabled]="loading()"
-          >
-            {{ loading() ? 'Loading...' : 'Load more' }}
+      <form [formGroup]="editForm" class="settings-card-body" (ngSubmit)="saveSelectedUser()">
+        <div class="settings-field-grid">
+          <div class="settings-field is-half">
+            <label class="settings-label">Name</label>
+            <input type="text" formControlName="name" class="settings-control" />
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Email</label>
+            <input type="email" formControlName="email" class="settings-control" />
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Phone</label>
+            <input type="text" formControlName="phone" class="settings-control" />
+          </div>
+          <div class="settings-field is-quarter">
+            <label class="settings-label">Role</label>
+            <select formControlName="role" class="settings-control cursor-pointer">
+              <option value="owner">Owner</option>
+              <option value="manager">Manager</option>
+              <option value="staff">Staff</option>
+              <option value="tech">Tech</option>
+            </select>
+          </div>
+          <div class="settings-field is-quarter">
+            <label class="settings-label">Status</label>
+            <select formControlName="status" class="settings-control cursor-pointer">
+              <option value="active">Active</option>
+              <option value="invited">Invited</option>
+              <option value="inactive">Inactive</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Tags</label>
+            <input type="text" formControlName="tagsText" class="settings-control" placeholder="comma, separated, tags" />
+          </div>
+          <div class="settings-field is-half">
+            <label class="settings-label">Internal notes</label>
+            <textarea rows="3" formControlName="notes" class="settings-control"></textarea>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-end border-t border-app-border pt-4">
+          <button type="submit" class="settings-primary-action cursor-pointer" [disabled]="savingSelectedUser()">
+            {{ savingSelectedUser() ? 'Saving...' : 'Save changes' }}
           </button>
         </div>
-      }
-    </div>
-
-    <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-      @if (selectedUser(); as user) {
-        <div class="mb-6 flex flex-col gap-4 border-b border-gray-100 pb-6 sm:flex-row sm:items-start sm:justify-between">
-          <div class="flex items-start gap-4">
-            <div
-              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gray-100 text-base font-semibold text-gray-700"
-            >
-              {{ initials(user.name) }}
-            </div>
-
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-xl font-semibold tracking-tight text-gray-900">
-                  {{ user.name }}
-                </h2>
-
-                <span class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700">
-                  {{ user.role }}
-                </span>
-              </div>
-
-              <p class="mt-1 text-sm text-gray-500">
-                {{ user.email || 'No email on file' }}
-              </p>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-2">
-            @if (isArchived(user)) {
-              <button
-                type="button"
-                class="rounded-2xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-                (click)="restoreSelectedUser()"
-                [disabled]="actioningUserId() === user.id"
-              >
-                {{ actioningUserId() === user.id ? 'Restoring...' : 'Restore user' }}
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="rounded-2xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                (click)="archiveSelectedUser()"
-                [disabled]="actioningUserId() === user.id"
-              >
-                {{ actioningUserId() === user.id ? 'Archiving...' : 'Archive user' }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <form [formGroup]="editForm" class="space-y-5" (ngSubmit)="saveSelectedUser()">
-          <div class="grid gap-4 md:grid-cols-2">
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700">Name</label>
-              <input
-                type="text"
-                formControlName="name"
-                class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              />
-            </div>
-
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                formControlName="email"
-                class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              />
-            </div>
-
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700">Phone</label>
-              <input
-                type="text"
-                formControlName="phone"
-                class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              />
-            </div>
-
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700">Role</label>
-              <select
-                formControlName="role"
-                class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              >
-                <option value="owner">Owner</option>
-                <option value="manager">Manager</option>
-                <option value="staff">Staff</option>
-                <option value="tech">Tech</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700">Status</label>
-              <select
-                formControlName="status"
-                class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              >
-                <option value="active">Active</option>
-                <option value="invited">Invited</option>
-                <option value="inactive">Inactive</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700">Tags</label>
-              <input
-                type="text"
-                formControlName="tagsText"
-                class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-                placeholder="comma, separated, tags"
-              />
-            </div>
-
-            <div class="md:col-span-2">
-              <label class="mb-2 block text-sm font-medium text-gray-700">Notes</label>
-              <textarea
-                rows="5"
-                formControlName="notes"
-                class="w-full resize-none rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              ></textarea>
-            </div>
-          </div>
-
-          @if (user.tags.length) {
-            <div>
-              <p class="mb-2 text-sm font-medium text-gray-700">Current tags</p>
-              <div class="flex flex-wrap gap-2">
-                @for (tag of user.tags; track tag) {
-                  <span class="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700">
-                    {{ tag }}
-                  </span>
-                }
-              </div>
-            </div>
-          }
-
-          <div class="flex flex-col gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-            <div class="text-xs text-gray-500">
-              Created {{ user.createdAt | date:'mediumDate' }}
-            </div>
-
-            <button
-              type="submit"
-              class="inline-flex items-center justify-center rounded-2xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-              [disabled]="savingSelectedUser()"
-            >
-              {{ savingSelectedUser() ? 'Saving...' : 'Save changes' }}
-            </button>
-          </div>
-        </form>
-      } @else {
-        <div class="flex min-h-[420px] items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-gray-50 text-center">
-          <div class="max-w-sm px-6">
-            <h2 class="text-lg font-semibold text-gray-900">No user selected</h2>
-            <p class="mt-2 text-sm text-gray-500">
-              Pick a team member from the left to view and edit their details.
-            </p>
-          </div>
-        </div>
-      }
-    </div>
+      </form>
+    </section>
+    }
   </div>
-</div>
+</app-settings-layout>

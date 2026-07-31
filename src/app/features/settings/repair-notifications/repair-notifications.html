@@ -1,276 +1,183 @@
-<div class="mx-auto max-w-7xl px-6 py-6">
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-100 text-gray-700">
-                <lucide-icon [name]="icons.Bell" class="h-5 w-5"></lucide-icon>
-            </div>
-
-            <div>
-                <h1 class="text-2xl font-semibold text-gray-900">Repair Notifications</h1>
-                <p class="mt-1 text-sm text-gray-500">
-                    Manage automated repair emails, templates, and customer update behavior.
-                </p>
-            </div>
-        </div>
-
-        <button type="button"
-            class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-            [disabled]="loading()" (click)="load()">
-            <lucide-icon [name]="icons.RefreshCw" class="h-4 w-4"></lucide-icon>
-            Refresh
-        </button>
-    </div>
+<app-settings-layout>
+    <button settings-actions type="button" class="settings-secondary-action cursor-pointer"
+        [disabled]="loading()" (click)="load()">
+        <lucide-icon [name]="icons.RefreshCw" class="h-3.5 w-3.5"></lucide-icon>
+        Refresh
+    </button>
 
     @if (loading()) {
-    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p class="text-sm text-gray-500">Loading repair notification settings...</p>
+    <div class="settings-card">
+        <div class="settings-card-body py-10 text-center text-sm text-app-text-muted">
+            Loading repair notification settings...
+        </div>
     </div>
     } @else {
-    <div class="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
-        <section class="space-y-6">
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Master Settings</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Global controls for automated repair emails.
-                    </p>
+    <div class="space-y-3">
+        @if (error()) {
+        <div class="settings-alert is-error">{{ error() }}</div>
+        }
+
+        @if (success()) {
+        <div class="settings-alert is-success">{{ success() }}</div>
+        }
+
+        <section class="settings-card">
+            <div class="settings-card-header">
+                <div>
+                    <h2 class="settings-card-title">Email delivery defaults</h2>
+                    <p class="settings-card-description">The master switch and sender identity shared by every automated repair email.</p>
                 </div>
-
-                @if (error()) {
-                <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {{ error() }}
-                </div>
-                }
-
-                @if (success()) {
-                <div
-                    class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    {{ success() }}
-                </div>
-                }
-
-                <div class="rounded-2xl border border-gray-200 p-4 transition"
-                    [class.bg-gray-50]="!repairNotificationsEnabled">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-900">Automated Repair Emails</p>
-
-                            <p class="mt-1 text-xs leading-5 text-gray-500">
-                                @if (repairNotificationsEnabled) {
-                                Customers can receive automated emails when repairs are created, scheduled, or updated.
-                                } @else {
-                                Automated repair emails are turned off for this shop.
-                                }
-                            </p>
-                        </div>
-
-                        <button type="button"
-                            class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition"
-                            [class.bg-brand]="repairNotificationsEnabled"
-                            [class.bg-gray-300]="!repairNotificationsEnabled" [disabled]="savingShopSettings()"
-                            (click)="repairNotificationsEnabled = !repairNotificationsEnabled">
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                [class.translate-x-6]="repairNotificationsEnabled"
-                                [class.translate-x-1]="!repairNotificationsEnabled"></span>
-                        </button>
-                    </div>
-
-                    <div class="mt-4 rounded-xl border border-dashed border-gray-200 bg-white/70 p-3">
-                        <p class="text-xs font-medium text-gray-700">
-                            This is the master switch.
-                        </p>
-                        <p class="mt-1 text-xs leading-5 text-gray-500">
-                            Turning this off skips every automated repair email, even if individual templates are
-                            enabled.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="mt-5 grid gap-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Email From Name
-                        </label>
-                        <input type="text" [(ngModel)]="repairEmailFromName"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            [placeholder]="shopName() || 'Your Shop Name'" />
-                        <p class="mt-1 text-xs text-gray-500">
-                            Optional display name for repair emails.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Reply-To Email
-                        </label>
-                        <input type="email" [(ngModel)]="replyToEmail"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="support@example.com" />
-                        <p class="mt-1 text-xs text-gray-500">
-                            Optional customer reply destination.
-                        </p>
-                    </div>
-                </div>
-
-                <button type="button"
-                    class="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+                <button type="button" class="settings-primary-action cursor-pointer"
                     [disabled]="savingShopSettings()" (click)="saveShopSettings()">
-                    <lucide-icon [name]="icons.Save" class="h-4 w-4"></lucide-icon>
-                    {{ savingShopSettings() ? 'Saving...' : 'Save Master Settings' }}
+                    <lucide-icon [name]="icons.Save" class="h-3.5 w-3.5"></lucide-icon>
+                    {{ savingShopSettings() ? 'Saving...' : 'Save defaults' }}
                 </button>
             </div>
 
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start gap-3">
-                    <div
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                        <lucide-icon [name]="icons.Mail" class="h-5 w-5"></lucide-icon>
+            <div class="settings-card-body">
+                <div class="grid items-start gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+                    <div class="settings-toggle-row lg:pr-3">
+                        <div class="settings-toggle-copy">
+                            <p class="settings-toggle-title">Automated repair emails</p>
+                            <p class="settings-toggle-description">
+                                {{ repairNotificationsEnabled ? 'Enabled templates can send when their repair event occurs.' : 'All automated repair email events are currently skipped.' }}
+                            </p>
+                        </div>
+                        <button type="button" class="settings-switch cursor-pointer"
+                            [class.is-on]="repairNotificationsEnabled" [disabled]="savingShopSettings()"
+                            (click)="repairNotificationsEnabled = !repairNotificationsEnabled"
+                            aria-label="Toggle automated repair emails">
+                            <span class="settings-switch-handle"></span>
+                        </button>
                     </div>
 
                     <div>
-                        <h2 class="text-base font-semibold text-gray-900">Template Summary</h2>
-                        <p class="mt-1 text-sm text-gray-500">
-                            {{ enabledTemplateCount() }} of {{ totalTemplateCount() }} email templates enabled.
-                        </p>
+                        <label class="settings-label">Sender display name</label>
+                        <input type="text" [(ngModel)]="repairEmailFromName" class="settings-control"
+                            [placeholder]="shopName() || 'Your Shop Name'" />
+                        <p class="settings-hint">Shown in the customer’s inbox as the sender name.</p>
                     </div>
-                </div>
 
-                <div class="mt-4 rounded-xl bg-gray-50 p-3 text-xs leading-5 text-gray-500">
-                    <p class="font-medium text-gray-700">Supported variables</p>
-
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                        @for (variable of supportedVariables; track variable) {
-                        <span
-                            class="rounded-md bg-white px-2 py-1 font-mono text-[11px] text-gray-700 ring-1 ring-gray-200">
-                            {{ variable }}
-                        </span>
-                        }
+                    <div>
+                        <label class="settings-label">Reply-to email</label>
+                        <input type="email" [(ngModel)]="replyToEmail" class="settings-control"
+                            placeholder="support@example.com" />
+                        <p class="settings-hint">Customer replies are sent here when provided.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="space-y-4">
-            @for (template of templates(); track template.id) {
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <button type="button" class="min-w-0 flex-1 cursor-pointer text-left"
-                        (click)="toggleExpanded(template.id)">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                                <lucide-icon [name]="icons.Mail" class="h-5 w-5"></lucide-icon>
-                            </div>
+        <section class="flex flex-col gap-3 rounded-[14px] border border-app-border bg-app-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-app-surface-muted text-app-text-muted">
+                    <lucide-icon [name]="icons.Mail" class="h-4 w-4"></lucide-icon>
+                </span>
+                <div>
+                    <p class="text-xs font-semibold text-app-text">{{ enabledTemplateCount() }} of {{ totalTemplateCount() }} templates enabled</p>
+                    <p class="mt-0.5 text-[10.5px] text-app-text-muted">Open a template to change its subject, body, or delivery status.</p>
+                </div>
+            </div>
 
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <h2 class="truncate text-sm font-semibold text-gray-900">
-                                        {{ prettyEvent(template.event) }}
-                                    </h2>
+            <div class="flex max-w-full flex-wrap gap-1.5">
+                @for (variable of supportedVariables; track variable) {
+                <span class="rounded-md bg-app-surface-muted px-2 py-1 font-mono text-[10px] text-app-text-muted">
+                    {{ variable }}
+                </span>
+                }
+            </div>
+        </section>
 
-                                    <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
-                                        [class.border-emerald-200]="template.enabled"
-                                        [class.bg-emerald-50]="template.enabled"
-                                        [class.text-emerald-700]="template.enabled"
-                                        [class.border-gray-200]="!template.enabled"
-                                        [class.bg-gray-50]="!template.enabled"
-                                        [class.text-gray-500]="!template.enabled">
-                                        {{ template.enabled ? 'Enabled' : 'Disabled' }}
-                                    </span>
-                                </div>
-
-                                <p class="mt-1 text-xs leading-5 text-gray-500">
-                                    {{ eventDescription(template.event) }}
-                                </p>
-                            </div>
-                        </div>
-                    </button>
-
+        <section class="settings-card">
+            <div class="divide-y divide-app-border">
+                @for (template of templates(); track template.id) {
+                <div>
                     <button type="button"
-                        class="mt-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                        class="cursor-pointer flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-app-surface-muted/60"
                         (click)="toggleExpanded(template.id)">
-                        <lucide-icon [name]="icons.ChevronDown" class="h-4 w-4 transition"
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-app-surface-muted text-app-text-muted">
+                            <lucide-icon [name]="icons.Mail" class="h-4 w-4"></lucide-icon>
+                        </span>
+
+                        <span class="min-w-0 flex-1">
+                            <span class="flex flex-wrap items-center gap-2">
+                                <span class="truncate text-xs font-semibold text-app-text">{{ prettyEvent(template.event) }}</span>
+                                <span class="rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                                    [class.bg-emerald-50]="template.enabled" [class.text-emerald-700]="template.enabled"
+                                    [class.bg-app-surface-muted]="!template.enabled" [class.text-app-text-muted]="!template.enabled">
+                                    {{ template.enabled ? 'Enabled' : 'Disabled' }}
+                                </span>
+                            </span>
+                            <span class="mt-0.5 block truncate text-[10.5px] text-app-text-muted">
+                                {{ eventDescription(template.event) }}
+                            </span>
+                        </span>
+
+                        <lucide-icon [name]="icons.ChevronDown" class="h-4 w-4 shrink-0 text-app-text-muted transition"
                             [class.rotate-180]="expandedTemplateId() === template.id"></lucide-icon>
                     </button>
-                </div>
 
-                @if (expandedTemplateId() === template.id) {
-                <div class="mt-5 border-t border-gray-100 pt-5">
-                    <div class="mb-4 rounded-2xl border border-gray-200 p-4 transition"
-                        [class.bg-gray-50]="!template.enabled">
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-gray-900">Template Enabled</p>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    @if (template.enabled) {
-                                    This email can be sent automatically.
-                                    } @else {
-                                    This email will be skipped when triggered.
-                                    }
-                                </p>
+                    @if (expandedTemplateId() === template.id) {
+                    <div class="border-t border-app-border bg-app-surface-muted/35 px-4 py-4">
+                        <div class="grid items-start gap-4 xl:grid-cols-[220px_minmax(0,1fr)]">
+                            <div class="space-y-3">
+                                <div class="settings-toggle-row rounded-[11px] border border-app-border bg-app-surface px-3 py-3">
+                                    <div class="settings-toggle-copy">
+                                        <p class="settings-toggle-title">Template active</p>
+                                        <p class="settings-toggle-description">Controls only this repair event.</p>
+                                    </div>
+                                    <button type="button" class="settings-switch cursor-pointer"
+                                        [class.is-on]="template.enabled"
+                                        [disabled]="isTemplateSaving(template.id) || isTemplateResetting(template.id)"
+                                        (click)="toggleTemplate(template)" aria-label="Toggle email template">
+                                        <span class="settings-switch-handle"></span>
+                                    </button>
+                                </div>
+
+                                <button type="button" class="settings-secondary-action cursor-pointer w-full"
+                                    [disabled]="isTemplateSaving(template.id) || isTemplateResetting(template.id)"
+                                    (click)="resetTemplate(template)">
+                                    <lucide-icon [name]="icons.RotateCcw" class="h-3.5 w-3.5"></lucide-icon>
+                                    {{ isTemplateResetting(template.id) ? 'Resetting...' : 'Reset to default' }}
+                                </button>
                             </div>
 
-                            <button type="button"
-                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition"
-                                [class.bg-brand]="template.enabled" [class.bg-gray-300]="!template.enabled"
-                                [disabled]="isTemplateSaving(template.id) || isTemplateResetting(template.id)"
-                                (click)="toggleTemplate(template)">
-                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                    [class.translate-x-6]="template.enabled"
-                                    [class.translate-x-1]="!template.enabled"></span>
-                            </button>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="settings-label">Email subject</label>
+                                    <input type="text" [ngModel]="template.subject"
+                                        (ngModelChange)="updateTemplateSubject(template, $event)"
+                                        class="settings-control" />
+                                </div>
+
+                                <div>
+                                    <label class="settings-label">Email body</label>
+                                    <textarea rows="7" [ngModel]="template.body"
+                                        (ngModelChange)="updateTemplateBody(template, $event)"
+                                        class="settings-control min-h-[150px]"></textarea>
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <button type="button" class="settings-primary-action cursor-pointer"
+                                        [disabled]="isTemplateSaving(template.id) || isTemplateResetting(template.id)"
+                                        (click)="saveTemplate(template)">
+                                        <lucide-icon [name]="icons.Save" class="h-3.5 w-3.5"></lucide-icon>
+                                        {{ isTemplateSaving(template.id) ? 'Saving...' : 'Save template' }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="grid gap-4">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Subject
-                            </label>
-                            <input type="text" [ngModel]="template.subject"
-                                (ngModelChange)="updateTemplateSubject(template, $event)"
-                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-                        </div>
-
-                        <div>
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Body
-                            </label>
-                            <textarea rows="8" [ngModel]="template.body"
-                                (ngModelChange)="updateTemplateBody(template, $event)"
-                                class="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm leading-6 outline-none transition focus:border-brand"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                        <button type="button"
-                            class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            [disabled]="isTemplateSaving(template.id) || isTemplateResetting(template.id)"
-                            (click)="resetTemplate(template)">
-                            <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4"></lucide-icon>
-                            {{ isTemplateResetting(template.id) ? 'Resetting...' : 'Reset Default' }}
-                        </button>
-
-                        <button type="button"
-                            class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-                            [disabled]="isTemplateSaving(template.id) || isTemplateResetting(template.id)"
-                            (click)="saveTemplate(template)">
-                            <lucide-icon [name]="icons.Save" class="h-4 w-4"></lucide-icon>
-                            {{ isTemplateSaving(template.id) ? 'Saving...' : 'Save Template' }}
-                        </button>
-                    </div>
+                    }
+                </div>
+                } @empty {
+                <div class="px-5 py-10 text-center">
+                    <p class="text-xs font-semibold text-app-text">No notification templates found</p>
+                    <p class="mt-1 text-[11px] text-app-text-muted">Seed the default templates for this shop first.</p>
                 </div>
                 }
             </div>
-            } @empty {
-            <div class="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center shadow-sm">
-                <p class="text-sm font-semibold text-gray-800">No templates found.</p>
-                <p class="mt-1 text-sm text-gray-500">
-                    Seed default repair notification templates for this shop first.
-                </p>
-            </div>
-            }
         </section>
     </div>
     }
-</div>
+</app-settings-layout>

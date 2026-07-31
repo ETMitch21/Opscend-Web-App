@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { ArrowRightIcon, LucideAngularModule } from "lucide-angular";
 import { RouterModule } from '@angular/router';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type FulfillmentStatus = 'unfulfilled' | 'fulfilled';
 type ServiceAreaMode = 'radius' | 'zip_codes' | 'custom';
@@ -89,7 +90,7 @@ interface ShopResponse {
 @Component({
   selector: 'app-shop-settings-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, RouterModule],
+  imports: [SettingsLayoutComponent, CommonModule, FormsModule, LucideAngularModule, RouterModule],
   templateUrl: './shop-settings.html',
 })
 export class ShopSettings implements OnInit {

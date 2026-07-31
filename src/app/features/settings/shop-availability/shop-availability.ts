@@ -4,6 +4,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type DayKey = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 type OverrideMode = 'available' | 'unavailable';
@@ -53,7 +54,7 @@ interface DayRow {
 @Component({
   selector: 'app-shop-availability-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [SettingsLayoutComponent, CommonModule, FormsModule],
   templateUrl: './shop-availability.html',
 })
 export class ShopAvailability implements OnInit {

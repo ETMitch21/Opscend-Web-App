@@ -8,10 +8,11 @@ import { StripeService } from "../../../core/stripe/stripe-service";
 import { StripeStatusResponse } from "../../../core/stripe/stripe-model";
 import { ToastService } from "../../../core/toast/toast-service";
 import { CheckIcon, LucideAngularModule } from "lucide-angular";
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 @Component({
   selector: "app-shop-integrations",
-  imports: [CommonModule, LucideAngularModule],
+  imports: [SettingsLayoutComponent, CommonModule, LucideAngularModule],
   templateUrl: "./shop-integrations.html",
   styleUrl: "./shop-integrations.scss",
 })

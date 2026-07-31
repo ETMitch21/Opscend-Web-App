@@ -13,32 +13,23 @@ import { NewCustomer } from './features/customers/new-customer/new-customer';
 import { EditCustomer } from './features/customers/edit-customer/edit-customer';
 import { NewRepair } from './features/repairs/new-repair/new-repair';
 import { RepairDetail } from './features/repairs/repair-detail/repair-detail';
-import { MyAvailabilityComponent } from './features/settings/profile/my-availability/my-availability.component/my-availability.component';
-import { MyProfileComponent } from './features/settings/profile/my-profile/my-profile.component';
-import { ShopAvailability } from './features/settings/shop-availability/shop-availability';
-import { ShopSettings } from './features/settings/shop-settings/shop-settings';
-import { ShopUsers } from './features/settings/shop-users/shop-users';
 import { SignupComponent } from './features/auth/signup-component/signup-component';
 import { AcceptInviteComponent } from './features/auth/accept-invite-component/accept-invite-component';
 import { Products } from './features/products/products';
 import { ProductDetail } from './features/products/product-detail/product-detail';
 import { RepairTracking } from './features/public/repair-tracking/repair-tracking';
-import { RepairNotifications } from './features/settings/repair-notifications/repair-notifications';
 import { Inventory } from './features/inventory/inventory';
 import { PurchaseOrders } from './features/purchase-orders/purchase-orders';
 import { PurchaseOrderDetail } from './features/purchase-orders/purchase-order-detail/purchase-order-detail';
 import { Suppliers } from './features/suppliers/suppliers';
 import { Contractors } from './features/contractors/contractors';
 import { ContractorPayouts } from './features/contractor-payouts/contractor-payouts';
-import { ShopBookingsComponent } from './features/settings/shop-bookings/shop-bookings';
 import { PublicBooking } from './features/public/public-booking/public-booking';
 import { PublicQuoteApproval } from './features/public/public-quote-approval/public-quote-approval';
 import { QuoteRequestsOverview } from './features/bookings/quote-requests/overview/quote-requests-overview';
 import { QuoteRequestDetail } from './features/bookings/quote-requests/detail/quote-request-detail';
 import { Services } from './features/services/services.component';
 import { CommunicationsInbox } from './features/communications/communications-inbox';
-import { DeviceCatalogSettings } from './features/settings/device-catalog/device-catalog';
-import { RepairPricingSettings } from './features/settings/repair-pricing/repair-pricing';
 
 export const routes: Routes = [
     {
@@ -74,6 +65,18 @@ export const routes: Routes = [
     { path: "forgot", component: ForgotComponent, canActivate: [PublicGuard] },
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [AuthGuard] },
+    {
+        path: "ai-assistant",
+        loadComponent: () =>
+            import('./features/ai-assistant/ai-assistant').then((m) => m.AiAssistant),
+        canActivate: [AuthGuard]
+    },
+    {
+        path: "technician-dashboard",
+        loadComponent: () =>
+            import('./features/technician-dashboard/technician-dashboard').then((m) => m.TechnicianDashboard),
+        canActivate: [AuthGuard]
+    },
     {
         path: "knowledge-base",
         loadComponent: () =>
@@ -118,31 +121,38 @@ export const routes: Routes = [
                 children: [
                     {
                         path: 'general',
-                        component: ShopSettings
+                        loadComponent: () =>
+                            import('./features/settings/shop-settings/shop-settings').then((m) => m.ShopSettings)
                     },
                     {
                         path: 'users',
-                        component: ShopUsers
+                        loadComponent: () =>
+                            import('./features/settings/shop-users/shop-users').then((m) => m.ShopUsers)
                     },
                     {
                         path: 'availability',
-                        component: ShopAvailability
+                        loadComponent: () =>
+                            import('./features/settings/shop-availability/shop-availability').then((m) => m.ShopAvailability)
                     },
                     {
                         path: 'notifications',
-                        component: RepairNotifications
+                        loadComponent: () =>
+                            import('./features/settings/repair-notifications/repair-notifications').then((m) => m.RepairNotifications)
                     },
                     {
                         path: 'shop-bookings',
-                        component: ShopBookingsComponent
+                        loadComponent: () =>
+                            import('./features/settings/shop-bookings/shop-bookings').then((m) => m.ShopBookingsComponent)
                     },
                     {
                         path: 'device-catalog',
-                        component: DeviceCatalogSettings
+                        loadComponent: () =>
+                            import('./features/settings/device-catalog/device-catalog').then((m) => m.DeviceCatalogSettings)
                     },
                     {
                         path: 'repair-pricing',
-                        component: RepairPricingSettings
+                        loadComponent: () =>
+                            import('./features/settings/repair-pricing/repair-pricing').then((m) => m.RepairPricingSettings)
                     },
                     {
                         path: 'payouts',
@@ -162,11 +172,13 @@ export const routes: Routes = [
                 children: [
                     {
                         path: 'my-profile',
-                        component: MyProfileComponent
+                        loadComponent: () =>
+                            import('./features/settings/profile/my-profile/my-profile.component').then((m) => m.MyProfileComponent)
                     },
                     {
                         path: 'my-availability',
-                        component: MyAvailabilityComponent
+                        loadComponent: () =>
+                            import('./features/settings/profile/my-availability/my-availability.component/my-availability.component').then((m) => m.MyAvailabilityComponent)
                     },
                     {
                         path: '',

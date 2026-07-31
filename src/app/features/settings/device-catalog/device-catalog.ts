@@ -30,13 +30,14 @@ import {
   TechSpecsService,
 } from '../../../core/techspecs/techspecs.service';
 import { ToastService } from '../../../core/toast/toast-service';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type EditorType = 'category' | 'brand' | 'model';
 
 @Component({
   selector: 'app-device-catalog-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [SettingsLayoutComponent, CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './device-catalog.html',
 })
 export class DeviceCatalogSettings implements OnInit {

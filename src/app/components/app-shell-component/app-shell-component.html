@@ -112,17 +112,6 @@
                     }
                     }
                 </div>
-
-                <div class="mt-auto shrink-0 pt-4">
-                    <a (click)="logout()" title="Logout"
-                        class="cursor-pointer flex items-center rounded-app-md border border-transparent py-2.5 text-sm font-medium text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
-                        [ngClass]="isCompactSidebarRoute() ? 'justify-center px-0' : 'gap-3 px-3'">
-                        <lucide-icon [size]="18" [img]="logoutIcon"></lucide-icon>
-                        @if (!isCompactSidebarRoute()) {
-                        <span>Logout</span>
-                        }
-                    </a>
-                </div>
             </nav>
         </aside>
 
@@ -272,6 +261,77 @@
                     </div>
 
                     <div class="relative flex items-center gap-2" (click)="$event.stopPropagation()">
+                        <div class="relative">
+                            <button type="button"
+                                class="cursor-pointer inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border px-0 text-sm font-semibold transition xl:w-auto xl:px-3"
+                                [ngClass]="isMoreMenuActive() || moreMenuOpen()
+                                    ? 'border-brand/30 bg-brand/8 text-brand'
+                                    : 'border-app-border bg-app-surface text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'"
+                                (click)="toggleMoreMenu($event)" aria-label="Open more navigation"
+                                [attr.aria-expanded]="moreMenuOpen()">
+                                <lucide-icon [size]="18" [img]="blocksIcon"></lucide-icon>
+                                <span class="hidden xl:inline">More</span>
+                                <lucide-icon [size]="14" [img]="chevronDownIcon" class="hidden transition-transform xl:block"
+                                    [ngClass]="moreMenuOpen() ? 'rotate-180' : ''">
+                                </lucide-icon>
+                            </button>
+
+                            @if (moreMenuOpen()) {
+                            <div
+                                class="absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] max-w-[34rem] overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-[0_24px_70px_-32px_rgba(15,23,42,0.55)] ring-1 ring-black/5">
+                                <div class="border-b border-app-border px-5 py-4">
+                                    <p class="text-base font-semibold tracking-tight text-app-text">More</p>
+                                    <p class="mt-1 text-xs text-app-text-muted">
+                                        Reporting, tools, and team management that you use less often.
+                                    </p>
+                                </div>
+
+                                <div class="max-h-[70vh] overflow-y-auto p-3">
+                                    @for (group of visibleSecondaryNavGroups; track group.label) {
+                                    <div class="py-2 first:pt-0 last:pb-0">
+                                        <p class="px-2 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-app-text-muted">
+                                            {{ group.label }}
+                                        </p>
+
+                                        <div class="grid gap-1 sm:grid-cols-2">
+                                            @for (item of group.items; track item.route) {
+                                            <button type="button"
+                                                class="cursor-pointer flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition hover:bg-app-surface-muted"
+                                                [ngClass]="isNavRouteActive(item.route)
+                                                    ? 'border-brand/20 bg-brand/8'
+                                                    : 'border-transparent'"
+                                                (click)="navigateToSecondaryRoute(item.route)">
+                                                <span
+                                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-app-border bg-app-surface-muted text-app-text-muted">
+                                                    <lucide-icon [size]="18" [img]="item.icon"></lucide-icon>
+                                                </span>
+
+                                                <span class="min-w-0">
+                                                    <span class="block text-sm font-semibold text-app-text">
+                                                        {{ item.label }}
+                                                    </span>
+                                                    <span class="mt-1 block text-xs leading-4 text-app-text-muted">
+                                                        {{ item.description }}
+                                                    </span>
+                                                </span>
+                                            </button>
+                                            }
+                                        </div>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                            }
+                        </div>
+
+                        <button type="button"
+                            class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 text-sm font-semibold text-violet-700 transition hover:border-violet-300 hover:bg-violet-100"
+                            (click)="openAiAssistantDrawer($event)" aria-label="Open Opscend AI"
+                            [attr.aria-expanded]="aiAssistantDrawerOpen()">
+                            <lucide-icon [size]="18" [img]="aiAssistantIcon"></lucide-icon>
+                            <span class="hidden sm:inline">AI</span>
+                        </button>
+
                         <div class="relative">
                             <button type="button"
                                 class="cursor-pointer relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-app-surface text-sm font-medium transition hover:bg-app-surface-muted"
@@ -555,7 +615,7 @@
 
                         @if (profileMenuOpen()) {
                         <div
-                            class="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-lg shadow-black/5">
+                            class="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-lg shadow-black/5">
 
                             <div class="flex items-center gap-3 px-4 py-4">
                                 <div
@@ -575,98 +635,30 @@
                                     }
                                 </div>
                             </div>
+                            <div class="border-t border-app-border p-2">
+                                <button type="button"
+                                    class="cursor-pointer flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-app-surface-muted"
+                                    (click)="goToShopSettings()">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-app-surface-muted text-app-text-muted">
+                                        <lucide-icon [size]="18" [img]="wrenchIcon"></lucide-icon>
+                                    </span>
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-semibold text-app-text">Settings</span>
+                                        <span class="mt-0.5 block text-xs leading-4 text-app-text-muted">
+                                            Shop, booking, integrations, payouts, and your account
+                                        </span>
+                                    </span>
+                                </button>
+                            </div>
 
-                            <div class="border-t border-app-border"></div>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToShopSettings()">
-                                <lucide-icon [size]="18" [img]="wrenchIcon"></lucide-icon>
-                                <span>Shop Settings</span>
-                            </button>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToShopIntegrations()">
-                                <lucide-icon [size]="18" [img]="blocksIcon"></lucide-icon>
-                                <span>Shop Integrations</span>
-                            </button>
-
-                            @if (isOwner) {
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToShopPayouts()">
-                                <lucide-icon [size]="18" [img]="walletCardsIcon"></lucide-icon>
-                                <span>Payouts</span>
-                            </button>
-                            }
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToShopUsers()">
-                                <lucide-icon [size]="18" [img]="usersIcon"></lucide-icon>
-                                <span>Manage Users</span>
-                            </button>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToShopAvailability()">
-                                <lucide-icon [size]="18" [img]="calendarClockIcon"></lucide-icon>
-                                <span>Shop Availability</span>
-                            </button>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToShopNotifications()">
-                                <lucide-icon [size]="18" [img]="bellIcon"></lucide-icon>
-                                <span>Shop Notifications</span>
-                            </button>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToShopBookings()">
-                                <lucide-icon [size]="18" [img]="calendarCogIcon"></lucide-icon>
-                                <span>Shop Bookings</span>
-                            </button>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToRepairPricing()">
-                                <lucide-icon [size]="18" [img]="repairPricingIcon"></lucide-icon>
-                                <span>Repair Pricing</span>
-                            </button>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToDeviceCatalog()">
-                                <lucide-icon [size]="18" [img]="deviceCatalogIcon"></lucide-icon>
-                                <span>Device Catalog</span>
-                            </button>
-
-                            <div class="border-t border-app-border"></div>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToMyProfile()">
-                                <lucide-icon [size]="18" [img]="userIcon"></lucide-icon>
-                                <span>My profile</span>
-                            </button>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="goToMyAvailability()">
-                                <lucide-icon [size]="18" [img]="calendarClockIcon"></lucide-icon>
-                                <span>My availability</span>
-                            </button>
-
-                            <div class="border-t border-app-border"></div>
-
-                            <button type="button"
-                                class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-                                (click)="logout()">
+                            <div class="border-t border-app-border p-2">
+                                <button type="button"
+                                    class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
+                                    (click)="logout()">
                                 <lucide-icon [size]="18" [img]="logoutIcon"></lucide-icon>
                                 <span>Logout</span>
-                            </button>
+                                </button>
+                            </div>
                         </div>
                         }
                     </div>
@@ -681,4 +673,33 @@
             </main>
         </div>
     </div>
+
+    @if (aiAssistantDrawerOpen()) {
+    <button type="button"
+        class="cursor-pointer fixed inset-0 z-[70] bg-slate-950/35 backdrop-blur-[1px]"
+        (click)="closeAiAssistantDrawer()" aria-label="Close Opscend AI drawer">
+    </button>
+
+    <section
+        class="fixed inset-y-0 right-0 z-[80] h-screen w-full overflow-hidden border-l border-slate-200 bg-white shadow-[-24px_0_70px_-35px_rgba(15,23,42,0.55)] sm:max-w-[48rem]"
+        role="dialog" aria-modal="true" aria-label="Opscend AI">
+        @defer (when aiAssistantDrawerOpen()) {
+        <app-ai-assistant
+            class="block h-full"
+            [drawerMode]="true"
+            (closeRequested)="closeAiAssistantDrawer()"
+            (expandRequested)="expandAiAssistant($event)">
+        </app-ai-assistant>
+        } @placeholder {
+        <div class="flex h-full items-center justify-center bg-slate-50">
+            <div class="text-center">
+                <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                    <lucide-icon [size]="20" [img]="aiAssistantIcon"></lucide-icon>
+                </span>
+                <p class="mt-3 text-sm font-semibold text-slate-700">Opening Opscend AI...</p>
+            </div>
+        </div>
+        }
+    </section>
+    }
 </div>

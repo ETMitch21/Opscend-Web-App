@@ -9,6 +9,7 @@ import type {
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ToastService } from '../../../../../core/toast/toast-service';
+import { SettingsLayoutComponent } from '../../../settings-layout/settings-layout';
 
 type EditableDay = {
   key: DayOfWeek;
@@ -23,6 +24,7 @@ type EditableDay = {
   selector: 'app-my-availability',
   standalone: true,
   imports: [
+    SettingsLayoutComponent,
     CommonModule,
     FormsModule,
     ReactiveFormsModule

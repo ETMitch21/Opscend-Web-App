@@ -1,479 +1,376 @@
-<div class="mx-auto max-w-full px-6 py-6">
-  <div class="mb-6 flex items-start justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-semibold text-gray-900">Public Booking</h1>
-      <p class="mt-1 text-sm text-gray-500">
-        Manage the public quote flow, device categories, fallback pricing, scheduling, and embed settings.
-      </p>
-    </div>
-
-    <button
-      class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-      type="button"
-      (click)="saveSettings()"
-      [disabled]="saveState() === 'saving'">
-      @if (saveState() === 'saving') {
-      Saving...
-      } @else if (saveState() === 'saved') {
-      Saved
-      } @else {
-      Save Settings
-      }
-    </button>
-  </div>
+<app-settings-layout>
+  <button settings-actions type="button" class="settings-primary-action cursor-pointer"
+    (click)="saveSettings()" [disabled]="saveState() === 'saving' || loading()">
+    @if (saveState() === 'saving') {
+    Saving...
+    } @else if (saveState() === 'saved') {
+    Saved
+    } @else {
+    Save changes
+    }
+  </button>
 
   @if (loading()) {
-  <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-    <p class="text-sm text-gray-500">Loading public booking settings...</p>
+  <div class="settings-card">
+    <div class="settings-card-body py-10 text-center text-sm text-app-text-muted">
+      Loading public booking settings...
+    </div>
   </div>
   } @else {
-  @if (error()) {
-  <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-    {{ error() }}
-  </div>
-  }
+  <div class="space-y-3">
+    @if (error()) {
+    <div class="settings-alert is-error">{{ error() }}</div>
+    }
 
-  @if (saveState() === 'saved') {
-  <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-    Booking settings saved.
-  </div>
-  }
+    @if (saveState() === 'saved') {
+    <div class="settings-alert is-success">Booking settings saved.</div>
+    }
 
-  @if (saveState() === 'error') {
-  <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-    Could not save booking settings.
-  </div>
-  }
+    <div class="settings-segmented" role="tablist" aria-label="Public booking settings sections">
+      <button type="button" class="cursor-pointer" [class.is-active]="activeTab() === 'general'"
+        (click)="setActiveTab('general')">Experience</button>
+      <button type="button" class="cursor-pointer" [class.is-active]="activeTab() === 'pricing'"
+        (click)="setActiveTab('pricing')">Fallback pricing</button>
+      <button type="button" class="cursor-pointer" [class.is-active]="activeTab() === 'scheduling'"
+        (click)="setActiveTab('scheduling')">Scheduling</button>
+      <button type="button" class="cursor-pointer" [class.is-active]="activeTab() === 'embed'"
+        (click)="setActiveTab('embed')">Website embed</button>
+    </div>
 
-  <div class="mb-6 overflow-x-auto border-b border-gray-200">
-    <nav class="flex min-w-max gap-6 text-sm font-medium text-gray-600">
-      <button
-        type="button"
-        class="cursor-pointer border-b-2 pb-3 transition"
-        [class.border-brand]="activeTab() === 'general'"
-        [class.text-brand]="activeTab() === 'general'"
-        [class.border-transparent]="activeTab() !== 'general'"
-        [class.hover:text-gray-900]="activeTab() !== 'general'"
-        (click)="setActiveTab('general')">
-        General
-      </button>
+    <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
+      @if (activeTab() === 'general') {
+      <div class="grid items-start gap-3 xl:grid-cols-[0.9fr_1.1fr]">
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Booking experience</h2>
+              <p class="settings-card-description">Control whether customers can open and embed the public flow.</p>
+            </div>
+          </div>
 
-      <button
-        type="button"
-        class="cursor-pointer border-b-2 pb-3 transition"
-        [class.border-brand]="activeTab() === 'pricing'"
-        [class.text-brand]="activeTab() === 'pricing'"
-        [class.border-transparent]="activeTab() !== 'pricing'"
-        [class.hover:text-gray-900]="activeTab() !== 'pricing'"
-        (click)="setActiveTab('pricing')">
-        Pricing
-      </button>
+          <div class="settings-card-body">
+            <div class="settings-toggle-list">
+              <div class="settings-toggle-row">
+                <div class="settings-toggle-copy">
+                  <p class="settings-toggle-title">Public booking flow</p>
+                  <p class="settings-toggle-description">Customers can select a device, receive pricing, and request or schedule service.</p>
+                </div>
+                <label class="settings-switch cursor-pointer"
+                  [class.is-on]="settingsForm.controls.enabled.value">
+                  <input class="sr-only" type="checkbox" formControlName="enabled" />
+                  <span class="settings-switch-handle"></span>
+                </label>
+              </div>
 
-      <button
-        type="button"
-        class="cursor-pointer border-b-2 pb-3 transition"
-        [class.border-brand]="activeTab() === 'scheduling'"
-        [class.text-brand]="activeTab() === 'scheduling'"
-        [class.border-transparent]="activeTab() !== 'scheduling'"
-        [class.hover:text-gray-900]="activeTab() !== 'scheduling'"
-        (click)="setActiveTab('scheduling')">
-        Scheduling
-      </button>
+              <div class="settings-toggle-row">
+                <div class="settings-toggle-copy">
+                  <p class="settings-toggle-title">Website embedding</p>
+                  <p class="settings-toggle-description">Allow the booking flow to run inside an iframe on an approved website.</p>
+                </div>
+                <label class="settings-switch cursor-pointer"
+                  [class.is-on]="settingsForm.controls.embedEnabled.value">
+                  <input class="sr-only" type="checkbox" formControlName="embedEnabled" />
+                  <span class="settings-switch-handle"></span>
+                </label>
+              </div>
+            </div>
 
-      <button
-        type="button"
-        class="cursor-pointer border-b-2 pb-3 transition"
-        [class.border-brand]="activeTab() === 'embed'"
-        [class.text-brand]="activeTab() === 'embed'"
-        [class.border-transparent]="activeTab() !== 'embed'"
-        [class.hover:text-gray-900]="activeTab() !== 'embed'"
-        (click)="setActiveTab('embed')">
-        Embed
-      </button>
-    </nav>
-  </div>
+            @if (settingsForm.controls.embedEnabled.value) {
+            <div class="settings-subsection">
+              <label class="settings-label">Approved website origins</label>
+              <textarea rows="4" formControlName="allowedEmbedOriginsText" class="settings-control"
+                placeholder="https://www.example.com"></textarea>
+              <p class="settings-hint">Enter one origin per line. Leave blank only while testing.</p>
+            </div>
+            }
+          </div>
+        </section>
 
-  <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
-    @if (activeTab() === 'general') {
-    <div class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-      <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div class="mb-5 flex items-start justify-between gap-4">
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Public device categories</h2>
+              <p class="settings-card-description">Limit the categories customers can browse before selecting a brand and model.</p>
+            </div>
+            <span class="rounded-full bg-app-surface-muted px-2 py-1 text-[10px] font-semibold text-app-text-muted">
+              {{ selectedPublicCatalogCategoryCount() }} selected
+            </span>
+          </div>
+
+          <div class="settings-card-body">
+            <div class="grid gap-2 sm:grid-cols-2">
+              @for (category of techSpecsCategoryOptions; track category) {
+              <button type="button"
+                class="cursor-pointer flex min-h-10 items-center justify-between gap-3 rounded-[10px] border px-3 py-2 text-left text-xs font-semibold transition"
+                [class.border-brand]="isPublicCatalogCategorySelected(category)"
+                [class.bg-brand/8]="isPublicCatalogCategorySelected(category)"
+                [class.text-brand]="isPublicCatalogCategorySelected(category)"
+                [class.border-app-border]="!isPublicCatalogCategorySelected(category)"
+                [class.bg-app-surface]="!isPublicCatalogCategorySelected(category)"
+                [class.text-app-text]="!isPublicCatalogCategorySelected(category)"
+                (click)="togglePublicCatalogCategory(category)">
+                <span>{{ category }}</span>
+                <span class="text-[10px]" [class.text-brand]="isPublicCatalogCategorySelected(category)"
+                  [class.text-app-text-muted]="!isPublicCatalogCategorySelected(category)">
+                  {{ isPublicCatalogCategorySelected(category) ? 'Visible' : 'Hidden' }}
+                </span>
+              </button>
+              }
+            </div>
+            <input type="hidden" formControlName="publicCatalogCategories" />
+            <p class="settings-hint mt-3">Customers only see active, publicly published catalog records inside these categories.</p>
+          </div>
+        </section>
+      </div>
+      }
+
+      @if (activeTab() === 'pricing') {
+      <div class="space-y-3">
+        <section class="flex flex-col gap-3 rounded-[14px] border border-brand/20 bg-brand/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 class="text-base font-semibold text-gray-900">General</h2>
-            <p class="mt-1 text-sm text-gray-500">
-              Turn the public booking quote engine on or off.
-            </p>
+            <p class="text-xs font-semibold text-app-text">Model-specific pricing lives in Repair Pricing</p>
+            <p class="mt-0.5 text-[11px] leading-5 text-app-text-muted">Use this page only for estimates when no exact model option is configured.</p>
           </div>
-        </div>
-
-        <div class="space-y-4">
-          <div class="rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!settingsForm.controls.enabled.value">
-            <div class="flex items-center justify-between gap-4">
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-900">Enable public booking</p>
-                <p class="mt-1 text-xs leading-5 text-gray-500">
-                  Customers can access the embedded pricing and scheduling flow.
-                </p>
-              </div>
-
-              <label class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition"
-                [class.bg-brand]="settingsForm.controls.enabled.value"
-                [class.bg-gray-300]="!settingsForm.controls.enabled.value">
-                <input class="sr-only" type="checkbox" formControlName="enabled" />
-                <span
-                  class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                  [class.translate-x-6]="settingsForm.controls.enabled.value"
-                  [class.translate-x-1]="!settingsForm.controls.enabled.value"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!settingsForm.controls.embedEnabled.value">
-            <div class="flex items-center justify-between gap-4">
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-900">Enable embed</p>
-                <p class="mt-1 text-xs leading-5 text-gray-500">
-                  Allows this flow to be embedded on the shop website.
-                </p>
-              </div>
-
-              <label class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition"
-                [class.bg-brand]="settingsForm.controls.embedEnabled.value"
-                [class.bg-gray-300]="!settingsForm.controls.embedEnabled.value">
-                <input class="sr-only" type="checkbox" formControlName="embedEnabled" />
-                <span
-                  class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                  [class.translate-x-6]="settingsForm.controls.embedEnabled.value"
-                  [class.translate-x-1]="!settingsForm.controls.embedEnabled.value"></span>
-              </label>
-            </div>
-          </div>
-
-          <label class="block">
-            <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-              Allowed embed origins
-            </span>
-            <textarea
-              rows="4"
-              formControlName="allowedEmbedOriginsText"
-              placeholder=""
-              class="w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"></textarea>
-            <p class="mt-1 text-xs text-gray-500">One domain per line. Leave blank while testing.</p>
-          </label>
-        </div>
-      </section>
-
-      <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div class="mb-5">
-          <h2 class="text-base font-semibold text-gray-900">Public Device Categories</h2>
-          <p class="mt-1 text-sm text-gray-500">
-            Choose which TechSpecs categories customers can see in the public quote flow.
-          </p>
-        </div>
-
-        <div class="grid gap-2">
-          @for (category of techSpecsCategoryOptions; track category) {
-          <button
-            type="button"
-            class="flex w-full cursor-pointer items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition hover:shadow-sm"
-            [class.border-brand]="isPublicCatalogCategorySelected(category)"
-            [class.bg-brand]="isPublicCatalogCategorySelected(category)"
-            [class.text-white]="isPublicCatalogCategorySelected(category)"
-            [class.border-gray-200]="!isPublicCatalogCategorySelected(category)"
-            [class.bg-white]="!isPublicCatalogCategorySelected(category)"
-            [class.text-gray-900]="!isPublicCatalogCategorySelected(category)"
-            (click)="togglePublicCatalogCategory(category)">
-            <span class="text-sm font-semibold">{{ category }}</span>
-
-            @if (isPublicCatalogCategorySelected(category)) {
-            <span class="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-white">
-              Selected
-            </span>
-            } @else {
-            <span class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-500">
-              Hidden
-            </span>
-            }
+          <button type="button" class="settings-secondary-action cursor-pointer shrink-0" (click)="goToRepairPricing()">
+            Open Repair Pricing
           </button>
-          }
-        </div>
+        </section>
 
-        <input type="hidden" formControlName="publicCatalogCategories" />
+        <div class="grid items-start gap-3 xl:grid-cols-[1fr_0.85fr]">
+          <section class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <h2 class="settings-card-title">Estimate formula</h2>
+                <p class="settings-card-description">Transforms supplier cost into an estimated customer price.</p>
+              </div>
+            </div>
 
-        <div class="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-          <p class="text-xs font-medium text-gray-700">
-            {{ selectedPublicCatalogCategoryCount() }} public categories selected.
-          </p>
-          <p class="mt-1 text-xs leading-5 text-gray-500">
-            Recommended for Summit Phone Repair: Smartphones, Tablets, Smartwatches, Laptops.
-          </p>
-        </div>
-      </section>
-    </div>
-    }
+            <div class="settings-card-body">
+              <div class="settings-field-grid">
+                <div class="settings-field is-half">
+                  <label class="settings-label">Parts markup</label>
+                  <div class="settings-input-group">
+                    <input type="number" step="0.01" formControlName="defaultMarkupMultiplier" />
+                    <span class="settings-input-affix is-suffix">×</span>
+                  </div>
+                  <p class="settings-hint">Multiplier applied to supplier cost.</p>
+                </div>
 
-    @if (activeTab() === 'pricing') {
-    <div class="space-y-5">
-      <section class="flex flex-col gap-4 rounded-2xl border border-brand/20 bg-brand/5 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 class="text-base font-semibold text-gray-900">Device-specific repair pricing</h2>
-          <p class="mt-1 text-sm leading-6 text-gray-500">
-            Repair types, model prices, and options such as Essential, Premium, or OEM now live in the shared Repair Pricing area.
-          </p>
-        </div>
-        <button
-          type="button"
-          class="cursor-pointer shrink-0 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft"
-          (click)="goToRepairPricing()">
-          Open Repair Pricing
-        </button>
-      </section>
+                <div class="settings-field is-half">
+                  <label class="settings-label">Default labor</label>
+                  <div class="settings-input-group">
+                    <span class="settings-input-affix">$</span>
+                    <input type="number" step="0.01" formControlName="defaultLaborDollars" />
+                  </div>
+                </div>
 
-    <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div class="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <h2 class="text-base font-semibold text-gray-900">Pricing Formula</h2>
-          <p class="mt-1 text-sm text-gray-500">
-            Used for supplier-estimated quotes when a model-specific repair price is not available.
-          </p>
+                <div class="settings-field is-half">
+                  <label class="settings-label">Price rounding</label>
+                  <select formControlName="roundingMode" class="settings-control cursor-pointer">
+                    <option value="nearest_nine">End in $9</option>
+                    <option value="nearest_dollar">Nearest dollar</option>
+                    <option value="none">No rounding</option>
+                  </select>
+                </div>
+
+                <div class="settings-field is-half">
+                  <label class="settings-label">Default appointment length</label>
+                  <div class="settings-input-group">
+                    <input type="number" formControlName="defaultDurationMins" />
+                    <span class="settings-input-affix is-suffix">min</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <h2 class="settings-card-title">Estimate boundaries</h2>
+                <p class="settings-card-description">Optional limits and customer-facing estimate language.</p>
+              </div>
+            </div>
+
+            <div class="settings-card-body">
+              <div class="settings-field-grid">
+                <div class="settings-field is-half">
+                  <label class="settings-label">Minimum retail</label>
+                  <div class="settings-input-group">
+                    <span class="settings-input-affix">$</span>
+                    <input type="number" step="0.01" formControlName="minimumRetailDollars" />
+                  </div>
+                </div>
+
+                <div class="settings-field is-half">
+                  <label class="settings-label">Maximum retail</label>
+                  <div class="settings-input-group">
+                    <span class="settings-input-affix">$</span>
+                    <input type="number" step="0.01" formControlName="maximumRetailDollars" />
+                  </div>
+                </div>
+
+                <div class="settings-field is-third">
+                  <label class="settings-label">Quote validity</label>
+                  <div class="settings-input-group">
+                    <input type="number" formControlName="quoteExpirationHours" />
+                    <span class="settings-input-affix is-suffix">hr</span>
+                  </div>
+                </div>
+
+                <div class="settings-field is-two-thirds">
+                  <label class="settings-label">Estimate disclaimer</label>
+                  <textarea rows="3" formControlName="quoteDisclaimer" class="settings-control"></textarea>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
+      }
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Markup multiplier</span>
-          <input
-            type="number"
-            step="0.01"
-            formControlName="defaultMarkupMultiplier"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Default labor</span>
-          <div class="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-brand">
-            <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-500">$</span>
-            <input
-              type="number"
-              step="0.01"
-              formControlName="defaultLaborDollars"
-              class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" />
-          </div>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Rounding</span>
-          <select
-            formControlName="roundingMode"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-            <option value="nearest_nine">Round to $x9</option>
-            <option value="nearest_dollar">Nearest dollar</option>
-            <option value="none">No rounding</option>
-          </select>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Default repair duration</span>
-          <input
-            type="number"
-            formControlName="defaultDurationMins"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          <p class="mt-1 text-xs text-gray-500">Minutes</p>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Minimum retail</span>
-          <div class="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-brand">
-            <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-500">$</span>
-            <input
-              type="number"
-              step="0.01"
-              formControlName="minimumRetailDollars"
-              class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" />
-          </div>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Maximum retail</span>
-          <div class="flex overflow-hidden rounded-xl border border-gray-200 bg-white focus-within:border-brand">
-            <span class="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-500">$</span>
-            <input
-              type="number"
-              step="0.01"
-              formControlName="maximumRetailDollars"
-              class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" />
-          </div>
-        </label>
-      </div>
-
-      <div class="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-        <p class="text-sm font-semibold text-gray-900">Customer Quote Disclaimer</p>
-        <p class="mt-1 text-sm text-gray-500">
-          Shown when the quote is estimated or requires manual verification.
-        </p>
-
-        <label class="mt-4 block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Disclaimer</span>
-          <textarea
-            rows="4"
-            formControlName="quoteDisclaimer"
-            class="w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"></textarea>
-        </label>
-
-        <label class="mt-4 block max-w-xs">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Quote expiration</span>
-          <input
-            type="number"
-            formControlName="quoteExpirationHours"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          <p class="mt-1 text-xs text-gray-500">Hours</p>
-        </label>
-      </div>
-    </section>
-    </div>
-    }
-
-    @if (activeTab() === 'scheduling') {
-    <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div class="mb-5">
-        <h2 class="text-base font-semibold text-gray-900">Scheduling Rules</h2>
-        <p class="mt-1 text-sm text-gray-500">
-          Control how far out customers can schedule based on stock and quote confidence.
-        </p>
-      </div>
-
-      <div class="mb-5 rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!settingsForm.controls.sameDayEnabled.value">
-        <div class="flex items-center justify-between gap-4">
-          <div class="min-w-0">
-            <p class="text-sm font-medium text-gray-900">Allow same-day scheduling</p>
-            <p class="mt-1 text-xs leading-5 text-gray-500">
-              Only applies when lead time is zero and the cutoff has not passed.
-            </p>
+      @if (activeTab() === 'scheduling') {
+      <div class="grid items-start gap-3 xl:grid-cols-[0.8fr_1.2fr]">
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Same-day scheduling</h2>
+              <p class="settings-card-description">Controls the earliest appointment customers can select today.</p>
+            </div>
           </div>
 
-          <label class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition"
-            [class.bg-brand]="settingsForm.controls.sameDayEnabled.value"
-            [class.bg-gray-300]="!settingsForm.controls.sameDayEnabled.value">
-            <input class="sr-only" type="checkbox" formControlName="sameDayEnabled" />
-            <span
-              class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-              [class.translate-x-6]="settingsForm.controls.sameDayEnabled.value"
-              [class.translate-x-1]="!settingsForm.controls.sameDayEnabled.value"></span>
-          </label>
-        </div>
-      </div>
+          <div class="settings-card-body">
+            <div class="settings-toggle-row">
+              <div class="settings-toggle-copy">
+                <p class="settings-toggle-title">Allow same-day appointments</p>
+                <p class="settings-toggle-description">Only applies when the applicable inventory lead time is zero.</p>
+              </div>
+              <label class="settings-switch cursor-pointer"
+                [class.is-on]="settingsForm.controls.sameDayEnabled.value">
+                <input class="sr-only" type="checkbox" formControlName="sameDayEnabled" />
+                <span class="settings-switch-handle"></span>
+              </label>
+            </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Same-day cutoff</span>
-          <input
-            type="time"
-            formControlName="sameDayCutoffTime"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-        </label>
+            @if (settingsForm.controls.sameDayEnabled.value) {
+            <div class="settings-subsection settings-field-grid">
+              <div class="settings-field is-half">
+                <label class="settings-label">Daily cutoff</label>
+                <input type="time" formControlName="sameDayCutoffTime" class="settings-control" />
+              </div>
 
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Same-day buffer</span>
-          <input
-            type="number"
-            formControlName="sameDayBufferMins"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          <p class="mt-1 text-xs text-gray-500">Minutes from now before first eligible slot.</p>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">In stock lead time</span>
-          <input
-            type="number"
-            formControlName="inStockLeadDays"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          <p class="mt-1 text-xs text-gray-500">Days</p>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Out of stock lead time</span>
-          <input
-            type="number"
-            formControlName="outOfStockLeadDays"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          <p class="mt-1 text-xs text-gray-500">Days</p>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Not carried lead time</span>
-          <input
-            type="number"
-            formControlName="notCarriedLeadDays"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          <p class="mt-1 text-xs text-gray-500">Days</p>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Manual review lead time</span>
-          <input
-            type="number"
-            formControlName="manualReviewLeadDays"
-            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-          <p class="mt-1 text-xs text-gray-500">Days</p>
-        </label>
-      </div>
-    </section>
-    }
-
-    @if (activeTab() === 'embed') {
-    <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div class="mb-5">
-        <h2 class="text-base font-semibold text-gray-900">Embed</h2>
-        <p class="mt-1 text-sm text-gray-500">
-          Add this booking experience to your website once the customer UI is ready.
-        </p>
-      </div>
-
-      <div class="space-y-4">
-        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-          <div class="mb-2 flex items-center justify-between gap-4">
-            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Public booking URL</p>
-          </div>
-
-          @if (publicBookingUrl()) {
-          <code class="block overflow-x-auto rounded-xl bg-white px-4 py-3 text-sm text-gray-800 ring-1 ring-gray-200">
-            {{ publicBookingUrl() }}
-          </code>
-          } @else {
-          <p class="rounded-xl bg-white px-4 py-3 text-sm text-gray-500 ring-1 ring-gray-200">
-            Public booking URL unavailable. Make sure this shop has a slug.
-          </p>
-          }
-        </div>
-
-        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-          <div class="mb-2 flex items-center justify-between gap-4">
-            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Iframe code</p>
-
-            @if (iframeCode()) {
-            <button
-              type="button"
-              class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
-              (click)="copyIframeCode()">
-              Copy
-            </button>
+              <div class="settings-field is-half">
+                <label class="settings-label">Minimum notice</label>
+                <div class="settings-input-group">
+                  <input type="number" formControlName="sameDayBufferMins" />
+                  <span class="settings-input-affix is-suffix">min</span>
+                </div>
+              </div>
+            </div>
             }
           </div>
+        </section>
 
-          @if (iframeCode()) {
-          <code class="block overflow-x-auto whitespace-pre-wrap rounded-xl bg-gray-900 px-4 py-3 text-sm text-white">
-            {{ iframeCode() }}
-          </code>
-          } @else {
-          <p class="rounded-xl bg-white px-4 py-3 text-sm text-gray-500 ring-1 ring-gray-200">
-            Iframe code unavailable until the shop slug is available.
-          </p>
-          }
-        </div>
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Inventory lead times</h2>
+              <p class="settings-card-description">Minimum days before an appointment can be booked for each sourcing state.</p>
+            </div>
+          </div>
+
+          <div class="settings-card-body divide-y divide-app-border">
+            <div class="grid items-center gap-3 py-3 first:pt-0 sm:grid-cols-[1fr_130px]">
+              <div>
+                <p class="text-xs font-semibold text-app-text">In stock</p>
+                <p class="mt-0.5 text-[10.5px] text-app-text-muted">The required part is already available.</p>
+              </div>
+              <div class="settings-input-group">
+                <input type="number" formControlName="inStockLeadDays" />
+                <span class="settings-input-affix is-suffix">days</span>
+              </div>
+            </div>
+
+            <div class="grid items-center gap-3 py-3 sm:grid-cols-[1fr_130px]">
+              <div>
+                <p class="text-xs font-semibold text-app-text">Out of stock</p>
+                <p class="mt-0.5 text-[10.5px] text-app-text-muted">A normally stocked part needs to be reordered.</p>
+              </div>
+              <div class="settings-input-group">
+                <input type="number" formControlName="outOfStockLeadDays" />
+                <span class="settings-input-affix is-suffix">days</span>
+              </div>
+            </div>
+
+            <div class="grid items-center gap-3 py-3 sm:grid-cols-[1fr_130px]">
+              <div>
+                <p class="text-xs font-semibold text-app-text">Not carried</p>
+                <p class="mt-0.5 text-[10.5px] text-app-text-muted">The part is special-order or not normally stocked.</p>
+              </div>
+              <div class="settings-input-group">
+                <input type="number" formControlName="notCarriedLeadDays" />
+                <span class="settings-input-affix is-suffix">days</span>
+              </div>
+            </div>
+
+            <div class="grid items-center gap-3 py-3 last:pb-0 sm:grid-cols-[1fr_130px]">
+              <div>
+                <p class="text-xs font-semibold text-app-text">Manual review</p>
+                <p class="mt-0.5 text-[10.5px] text-app-text-muted">A team member must verify the quote before scheduling.</p>
+              </div>
+              <div class="settings-input-group">
+                <input type="number" formControlName="manualReviewLeadDays" />
+                <span class="settings-input-affix is-suffix">days</span>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
-    }
-  </form>
+      }
 
+      @if (activeTab() === 'embed') {
+      <div class="grid items-start gap-3 xl:grid-cols-2">
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Public booking URL</h2>
+              <p class="settings-card-description">Use this link for buttons, campaigns, or direct customer access.</p>
+            </div>
+          </div>
+          <div class="settings-card-body">
+            @if (publicBookingUrl()) {
+            <code class="block overflow-x-auto rounded-[10px] bg-app-surface-muted px-3 py-2.5 text-xs text-app-text">
+              {{ publicBookingUrl() }}
+            </code>
+            } @else {
+            <div class="settings-inline-note">The public URL is unavailable until the shop has a slug.</div>
+            }
+          </div>
+        </section>
+
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Iframe embed code</h2>
+              <p class="settings-card-description">Paste this code into a custom HTML block on your website.</p>
+            </div>
+            @if (iframeCode()) {
+            <button type="button" class="settings-secondary-action cursor-pointer" (click)="copyIframeCode()">Copy code</button>
+            }
+          </div>
+          <div class="settings-card-body">
+            @if (iframeCode()) {
+            <code class="block max-h-48 overflow-auto whitespace-pre-wrap rounded-[10px] bg-gray-900 px-3 py-2.5 text-xs leading-5 text-white">
+              {{ iframeCode() }}
+            </code>
+            } @else {
+            <div class="settings-inline-note">Embed code is unavailable until the shop has a public slug.</div>
+            }
+          </div>
+        </section>
+      </div>
+      }
+    </form>
+  </div>
   }
-</div>
+</app-settings-layout>

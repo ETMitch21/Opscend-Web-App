@@ -1,0 +1,655 @@
+<div class="min-h-full bg-slate-50/70 px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-[1700px] space-y-6">
+    <header class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <span>Operations</span>
+          <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+          <span>Technician dashboard</span>
+        </div>
+        <h1 class="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+          Your day, in one place.
+        </h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Schedule, assigned repairs, active tasks, forms, blockers, messages, and repair guidance without jumping between screens.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        @if (data(); as dashboard) {
+          <div class="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <button
+              type="button"
+              class="cursor-pointer inline-flex h-10 w-10 items-center justify-center border-r border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-35"
+              [disabled]="isViewingToday()"
+              aria-label="Previous day"
+              (click)="shiftDate(-1)"
+            >
+              <lucide-icon [name]="icons.ChevronLeft" class="h-4 w-4"></lucide-icon>
+            </button>
+            <label class="flex h-10 items-center gap-2 px-3">
+              <lucide-icon [name]="icons.CalendarDays" class="h-4 w-4 text-slate-400"></lucide-icon>
+              <span class="sr-only">Dashboard date</span>
+              <input
+                type="date"
+                class="cursor-pointer min-w-36 border-0 bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                [min]="dashboard.todayDate"
+                [ngModel]="selectedDate()"
+                (ngModelChange)="changeDate($event)"
+              />
+            </label>
+            <button
+              type="button"
+              class="cursor-pointer inline-flex h-10 w-10 items-center justify-center border-l border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+              aria-label="Next day"
+              (click)="shiftDate(1)"
+            >
+              <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
+            </button>
+          </div>
+
+          @if (!isViewingToday()) {
+            <button
+              type="button"
+              class="cursor-pointer inline-flex h-10 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-3 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-100"
+              (click)="goToToday()"
+            >
+              Today
+            </button>
+          }
+
+          @if (dashboard.viewer.canSwitchTechnician) {
+            <label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+              <lucide-icon [name]="icons.UserRound" class="h-4 w-4 text-slate-400"></lucide-icon>
+              <span class="sr-only">View technician</span>
+              <select
+                class="cursor-pointer min-w-48 border-0 bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                [ngModel]="selectedUserId()"
+                (ngModelChange)="switchTechnician($event)"
+              >
+                @for (technician of dashboard.technicians; track technician.id) {
+                  <option [value]="technician.id">{{ technician.name }} · {{ titleCase(technician.role) }}</option>
+                }
+              </select>
+            </label>
+          }
+        }
+
+        <button
+          type="button"
+          class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="refreshing()"
+          (click)="refresh()"
+        >
+          <lucide-icon
+            [name]="icons.RefreshCw"
+            class="h-4 w-4"
+            [class.animate-spin]="refreshing()"
+          ></lucide-icon>
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    @if (loading()) {
+      <section class="grid min-h-[480px] place-items-center rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div class="text-center">
+          <lucide-icon [name]="icons.Loader2" class="mx-auto h-8 w-8 animate-spin text-slate-400"></lucide-icon>
+          <p class="mt-3 text-sm font-medium text-slate-500">Building your technician workspace...</p>
+        </div>
+      </section>
+    } @else if (error()) {
+      <section class="rounded-3xl border border-rose-200 bg-white px-6 py-16 text-center shadow-sm">
+        <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+          <lucide-icon [name]="icons.AlertTriangle" class="h-6 w-6"></lucide-icon>
+        </span>
+        <h2 class="mt-4 text-lg font-semibold text-slate-950">Dashboard could not be loaded</h2>
+        <p class="mx-auto mt-1 max-w-xl text-sm text-slate-500">{{ error() }}</p>
+        <button
+          type="button"
+          class="cursor-pointer mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          (click)="load(selectedUserId())"
+        >
+          <lucide-icon [name]="icons.RefreshCw" class="h-4 w-4"></lucide-icon>
+          Try again
+        </button>
+      </section>
+    } @else if (data(); as dashboard) {
+      <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <article class="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+              <lucide-icon [name]="icons.CalendarClock" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-blue-900">{{ dashboard.summary.appointmentsSelectedDate }}</span>
+          </div>
+          <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-blue-600">{{ appointmentSummaryLabel() }}</p>
+        </article>
+
+        <article class="rounded-2xl border border-violet-200 bg-violet-50/70 p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+              <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-violet-900">{{ dashboard.summary.activeRepairs }}</span>
+          </div>
+          <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-violet-600">Assigned repairs</p>
+        </article>
+
+        <article class="rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+              <lucide-icon [name]="icons.ListTodo" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-cyan-900">{{ dashboard.summary.activeTasks }}</span>
+          </div>
+          <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-cyan-600">Active tasks</p>
+        </article>
+
+        <article class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+              <lucide-icon [name]="icons.ClipboardCheck" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-emerald-900">{{ dashboard.summary.formsDue }}</span>
+          </div>
+          <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-emerald-600">Forms due</p>
+        </article>
+
+        <article class="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <lucide-icon [name]="icons.AlertTriangle" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-amber-900">{{ dashboard.summary.blockedRepairs }}</span>
+          </div>
+          <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-amber-600">Blocked repairs</p>
+        </article>
+
+        <article class="rounded-2xl border border-rose-200 bg-rose-50/70 p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+              <lucide-icon [name]="icons.MessageSquare" class="h-5 w-5"></lucide-icon>
+            </span>
+            <span class="text-2xl font-semibold tracking-[-0.04em] text-rose-900">{{ dashboard.summary.unreadMessages }}</span>
+          </div>
+          <p class="mt-3 text-xs font-bold uppercase tracking-[0.12em] text-rose-600">Unread messages</p>
+        </article>
+      </section>
+
+      <section class="grid gap-6 2xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.75fr)]">
+        <div class="space-y-6">
+          <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <lucide-icon [name]="icons.CalendarClock" class="h-5 w-5 text-blue-600"></lucide-icon>
+                  <h2 class="text-base font-semibold text-slate-950">{{ scheduleHeading() }}</h2>
+                </div>
+                <p class="mt-1 text-xs text-slate-500">Appointments assigned to {{ dashboard.technician.name }}.</p>
+              </div>
+              <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                {{ selectedSchedule().length }} scheduled
+              </span>
+            </div>
+
+            @if (selectedSchedule().length) {
+              <div class="divide-y divide-slate-100">
+                @for (appointment of selectedSchedule(); track appointment.id) {
+                  <button
+                    type="button"
+                    class="cursor-pointer flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
+                    (click)="openRoute(appointment.route)"
+                  >
+                    <div class="w-20 shrink-0">
+                      <p class="text-sm font-semibold text-slate-950">{{ formatTime(appointment.startAt) }}</p>
+                      <p class="mt-0.5 text-xs text-slate-400">{{ formatTime(appointment.endAt) }}</p>
+                    </div>
+                    <span class="h-11 w-1 rounded-full bg-blue-400"></span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="truncate text-sm font-semibold text-slate-900">{{ appointment.customer?.name || 'Customer' }}</p>
+                        @if (appointment.repairStatus) {
+                          <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1" [ngClass]="statusClasses(appointment.repairStatus)">
+                            {{ statusLabel(appointment.repairStatus) }}
+                          </span>
+                        }
+                      </div>
+                      <p class="mt-1 truncate text-sm text-slate-500">{{ appointment.device?.name || 'Device' }} · {{ appointment.problemSummary }}</p>
+                    </div>
+                    <lucide-icon [name]="icons.ChevronRight" class="h-5 w-5 shrink-0 text-slate-300"></lucide-icon>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="px-6 py-12 text-center">
+                <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                  <lucide-icon [name]="icons.CalendarClock" class="h-5 w-5"></lucide-icon>
+                </span>
+                <p class="mt-3 text-sm font-semibold text-slate-700">No appointments scheduled</p>
+                <p class="mt-1 text-xs text-slate-500">Nothing is scheduled for {{ formatDateKey(selectedDate()) }}.</p>
+              </div>
+            }
+
+            @if (upcomingSchedule().length) {
+              <div class="border-t border-slate-200 bg-slate-50/70 px-5 py-4">
+                <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Coming up</p>
+                <div class="mt-3 flex gap-3 overflow-x-auto pb-1">
+                  @for (appointment of upcomingSchedule(); track appointment.id) {
+                    <button
+                      type="button"
+                      class="cursor-pointer min-w-56 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                      (click)="openRoute(appointment.route)"
+                    >
+                      <p class="text-xs font-semibold text-blue-700">{{ formatDate(appointment.startAt) }} · {{ formatTime(appointment.startAt) }}</p>
+                      <p class="mt-2 truncate text-sm font-semibold text-slate-900">{{ appointment.customer?.name || 'Customer' }}</p>
+                      <p class="mt-1 truncate text-xs text-slate-500">{{ appointment.device?.name || appointment.problemSummary }}</p>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </article>
+
+          <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <lucide-icon [name]="icons.Wrench" class="h-5 w-5 text-violet-600"></lucide-icon>
+                  <h2 class="text-base font-semibold text-slate-950">Assigned repairs</h2>
+                </div>
+                <p class="mt-1 text-xs text-slate-500">Open work tied to this technician, their appointments, forms, or queue.</p>
+              </div>
+              <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{{ dashboard.repairs.length }} active</span>
+            </div>
+
+            @if (dashboard.repairs.length) {
+              <div class="divide-y divide-slate-100">
+                @for (repair of dashboard.repairs; track repair.id) {
+                  <div class="px-5 py-4">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-center">
+                      <button
+                        type="button"
+                        class="cursor-pointer min-w-0 flex-1 text-left"
+                        (click)="openRoute(repair.route)"
+                      >
+                        <div class="flex flex-wrap items-center gap-2">
+                          <p class="truncate text-sm font-semibold text-slate-950">{{ repair.customer.name }} · {{ repair.device.name }}</p>
+                          <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1" [ngClass]="statusClasses(repair.status)">
+                            {{ statusLabel(repair.status) }}
+                          </span>
+                          @if (repair.unreadMessages) {
+                            <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-200">
+                              <lucide-icon [name]="icons.MessageSquare" class="h-3 w-3"></lucide-icon>
+                              {{ repair.unreadMessages }} unread
+                            </span>
+                          }
+                        </div>
+                        <p class="mt-1 truncate text-sm text-slate-500">{{ repair.problemSummary }}</p>
+                        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+                          @if (repair.appointment) {
+                            <span>{{ formatDate(repair.appointment.startAt) }} · {{ formatTime(repair.appointment.startAt) }}</span>
+                          }
+                          @if (repair.service) { <span>{{ repair.service.name }}</span> }
+                          <span>{{ titleCase(repair.serviceMode) }}</span>
+                        </div>
+                      </button>
+
+                      <div class="flex flex-col gap-2 sm:flex-row sm:items-center xl:w-[390px] xl:justify-end">
+                        <select
+                          class="cursor-pointer h-10 min-w-48 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                          [(ngModel)]="repairStatusDrafts[repair.id]"
+                          [disabled]="workingRepairId() === repair.id"
+                        >
+                          @for (option of repairStatuses; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                          }
+                        </select>
+                        <button
+                          type="button"
+                          class="cursor-pointer inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                          [disabled]="repairStatusDrafts[repair.id] === repair.status || workingRepairId() === repair.id"
+                          (click)="updateRepairStatus(repair)"
+                        >
+                          @if (workingRepairId() === repair.id) {
+                            <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
+                          } @else {
+                            <lucide-icon [name]="icons.CheckCircle2" class="h-4 w-4"></lucide-icon>
+                          }
+                          Update
+                        </button>
+                      </div>
+                    </div>
+
+                    @if (repair.blockers.length) {
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        @for (blocker of repair.blockers; track blocker.type + blocker.label) {
+                          <span class="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800" [title]="blocker.detail || blocker.label">
+                            <lucide-icon [name]="blockerIcon(blocker.type)" class="h-3.5 w-3.5"></lucide-icon>
+                            {{ blocker.label }}
+                          </span>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="px-6 py-12 text-center">
+                <p class="text-sm font-semibold text-slate-700">No active repairs assigned</p>
+                <p class="mt-1 text-xs text-slate-500">New assignments will appear here automatically.</p>
+              </div>
+            }
+          </article>
+        </div>
+
+        <aside class="space-y-6">
+          <article class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 text-white shadow-lg shadow-slate-200/70">
+            <div class="p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.13em] text-slate-400">
+                    <lucide-icon [name]="icons.Gauge" class="h-4 w-4"></lucide-icon>
+                    Active timer
+                  </div>
+                  @if (dashboard.activeTimer; as timer) {
+                    <h2 class="mt-3 text-lg font-semibold">{{ timer.title }}</h2>
+                    <p class="mt-1 line-clamp-2 text-sm leading-6 text-slate-400">{{ timer.description || timer.customerName || 'Work in progress' }}</p>
+                  } @else {
+                    <h2 class="mt-3 text-lg font-semibold">Nothing running</h2>
+                    <p class="mt-1 text-sm leading-6 text-slate-400">Start a Work Queue item below to begin tracking time.</p>
+                  }
+                </div>
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-cyan-300">
+                  <lucide-icon [name]="dashboard.activeTimer ? icons.Pause : icons.Play" class="h-5 w-5"></lucide-icon>
+                </span>
+              </div>
+
+              @if (dashboard.activeTimer; as timer) {
+                <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="font-mono text-4xl font-semibold tracking-[-0.06em] text-white">{{ formatDuration(activeTimerSeconds(timer)) }}</p>
+                  <div class="mt-4 flex gap-2">
+                    <button
+                      type="button"
+                      class="cursor-pointer inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+                      (click)="openRoute(timer.route)"
+                    >
+                      <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon>
+                      Open task
+                    </button>
+                    <button
+                      type="button"
+                      class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      [disabled]="workingTaskId() === timer.id"
+                      (click)="pauseTask(timer)"
+                    >
+                      <lucide-icon [name]="workingTaskId() === timer.id ? icons.Loader2 : icons.Pause" class="h-4 w-4" [class.animate-spin]="workingTaskId() === timer.id"></lucide-icon>
+                      Pause
+                    </button>
+                    <button
+                      type="button"
+                      class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      [disabled]="workingTaskId() === timer.id"
+                      (click)="completeTask(timer)"
+                    >
+                      <lucide-icon [name]="workingTaskId() === timer.id ? icons.Loader2 : icons.CheckCircle2" class="h-4 w-4" [class.animate-spin]="workingTaskId() === timer.id"></lucide-icon>
+                      Complete
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </article>
+
+          <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div class="flex items-center gap-2">
+                <lucide-icon [name]="icons.AlertTriangle" class="h-5 w-5 text-amber-600"></lucide-icon>
+                <h2 class="text-base font-semibold text-slate-950">Needs attention</h2>
+              </div>
+              <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">{{ blockers().length }}</span>
+            </div>
+
+            @if (blockers().length) {
+              <div class="divide-y divide-slate-100">
+                @for (item of blockers().slice(0, 8); track item.repair.id + item.blocker.type) {
+                  <button
+                    type="button"
+                    class="cursor-pointer flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-slate-50"
+                    (click)="openRoute(item.repair.route)"
+                  >
+                    <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                      <lucide-icon [name]="blockerIcon(item.blocker.type)" class="h-4 w-4"></lucide-icon>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-sm font-semibold text-slate-900">{{ item.blocker.label }}</span>
+                      <span class="mt-0.5 block truncate text-xs text-slate-500">{{ item.repair.customer.name }} · {{ item.repair.device.name }}</span>
+                      @if (item.blocker.detail) { <span class="mt-1 block line-clamp-2 text-xs leading-5 text-slate-400">{{ item.blocker.detail }}</span> }
+                    </span>
+                    <lucide-icon [name]="icons.ChevronRight" class="mt-2 h-4 w-4 shrink-0 text-slate-300"></lucide-icon>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="px-5 py-10 text-center">
+                <lucide-icon [name]="icons.CheckCircle2" class="mx-auto h-7 w-7 text-emerald-500"></lucide-icon>
+                <p class="mt-2 text-sm font-semibold text-slate-700">No blockers</p>
+                <p class="mt-1 text-xs text-slate-500">Assigned repairs are clear to move forward.</p>
+              </div>
+            }
+          </article>
+
+          <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div class="flex items-center gap-2">
+                <lucide-icon [name]="icons.ClipboardCheck" class="h-5 w-5 text-emerald-600"></lucide-icon>
+                <h2 class="text-base font-semibold text-slate-950">Forms & checklists</h2>
+              </div>
+              <button
+                type="button"
+                class="cursor-pointer text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+                (click)="openRoute('/forms')"
+              >
+                View all
+              </button>
+            </div>
+
+            @if (dueForms().length) {
+              <div class="divide-y divide-slate-100">
+                @for (form of dueForms().slice(0, 6); track form.id) {
+                  <button
+                    type="button"
+                    class="cursor-pointer flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-slate-50"
+                    (click)="openRoute(form.route)"
+                  >
+                    <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                      <lucide-icon [name]="icons.ClipboardCheck" class="h-4 w-4"></lucide-icon>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="flex flex-wrap items-center gap-2">
+                        <span class="truncate text-sm font-semibold text-slate-900">{{ form.title }}</span>
+                        @if (form.requiredBeforeRepairStatus) {
+                          <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">Required</span>
+                        }
+                      </span>
+                      <span class="mt-0.5 block truncate text-xs text-slate-500">{{ form.customerName || 'Internal form' }}@if (form.deviceName) { · {{ form.deviceName }} }</span>
+                      <span class="mt-1 block text-xs font-medium" [ngClass]="isOverdue(form.dueAt) ? 'text-rose-600' : 'text-slate-400'">{{ dueLabel(form.dueAt) }}</span>
+                    </span>
+                    <lucide-icon [name]="icons.ChevronRight" class="mt-2 h-4 w-4 shrink-0 text-slate-300"></lucide-icon>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="px-5 py-10 text-center">
+                <p class="text-sm font-semibold text-slate-700">No forms due</p>
+                <p class="mt-1 text-xs text-slate-500">Assigned checklists will appear here.</p>
+              </div>
+            }
+          </article>
+        </aside>
+      </section>
+
+      <section class="grid gap-6 xl:grid-cols-3">
+        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div class="flex items-center gap-2">
+              <lucide-icon [name]="icons.ListTodo" class="h-5 w-5 text-cyan-600"></lucide-icon>
+              <h2 class="text-base font-semibold text-slate-950">Work Queue</h2>
+            </div>
+            <button
+              type="button"
+              class="cursor-pointer text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+              (click)="openRoute('/work-queue')"
+            >
+              View all
+            </button>
+          </div>
+
+          @if (dashboard.tasks.length) {
+            <div class="divide-y divide-slate-100">
+              @for (task of dashboard.tasks.slice(0, 7); track task.id) {
+                <div class="px-5 py-3.5">
+                  <div class="flex items-start gap-3">
+                    <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border" [ngClass]="priorityClasses(task.priority)"></span>
+                    <button type="button" class="cursor-pointer min-w-0 flex-1 text-left" (click)="openRoute(task.route)">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="truncate text-sm font-semibold text-slate-900">{{ task.title }}</p>
+                        <span class="rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" [ngClass]="priorityClasses(task.priority)">{{ task.priority }}</span>
+                      </div>
+                      <p class="mt-1 truncate text-xs text-slate-500">{{ task.customerName || task.category }}</p>
+                      <p class="mt-1 text-xs text-slate-400">{{ dueLabel(task.dueAt) }}</p>
+                    </button>
+                    <div class="flex shrink-0 gap-1">
+                      @if (!task.timerStartedAt) {
+                        <button
+                          type="button"
+                          class="cursor-pointer flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700 disabled:cursor-not-allowed disabled:opacity-40"
+                          title="Start task timer"
+                          [disabled]="workingTaskId() === task.id || !!dashboard.activeTimer || task.automatic || task.sourceType !== 'manual'"
+                          (click)="startTask(task)"
+                        >
+                          <lucide-icon [name]="workingTaskId() === task.id ? icons.Loader2 : icons.Play" class="h-4 w-4" [class.animate-spin]="workingTaskId() === task.id"></lucide-icon>
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="cursor-pointer flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        title="Complete task"
+                        [disabled]="workingTaskId() === task.id"
+                        (click)="completeTask(task)"
+                      >
+                        <lucide-icon [name]="workingTaskId() === task.id ? icons.Loader2 : icons.CheckCircle2" class="h-4 w-4" [class.animate-spin]="workingTaskId() === task.id"></lucide-icon>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="px-5 py-12 text-center">
+              <p class="text-sm font-semibold text-slate-700">Queue is clear</p>
+              <p class="mt-1 text-xs text-slate-500">No active tasks are assigned.</p>
+            </div>
+          }
+        </article>
+
+        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div class="flex items-center gap-2">
+              <lucide-icon [name]="icons.MessageSquare" class="h-5 w-5 text-rose-600"></lucide-icon>
+              <h2 class="text-base font-semibold text-slate-950">Customer messages</h2>
+            </div>
+            <button
+              type="button"
+              class="cursor-pointer text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+              (click)="openRoute('/communications')"
+            >
+              Open inbox
+            </button>
+          </div>
+
+          @if (dashboard.messages.length) {
+            <div class="divide-y divide-slate-100">
+              @for (message of dashboard.messages.slice(0, 7); track message.id) {
+                <button
+                  type="button"
+                  class="cursor-pointer flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-slate-50"
+                  (click)="openRoute(message.route)"
+                >
+                  <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" [ngClass]="message.unreadCount ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-500'">
+                    <lucide-icon [name]="icons.MessageSquare" class="h-4 w-4"></lucide-icon>
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex items-center justify-between gap-2">
+                      <span class="truncate text-sm font-semibold text-slate-900">{{ message.customerName }}</span>
+                      @if (message.unreadCount) {
+                        <span class="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">{{ message.unreadCount }}</span>
+                      }
+                    </span>
+                    <span class="mt-0.5 block truncate text-xs text-slate-500">{{ message.deviceName }} · {{ message.subject }}</span>
+                    <span class="mt-1 block text-xs text-slate-400">{{ formatDateTime(message.lastMessageAt) }}</span>
+                  </span>
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="px-5 py-12 text-center">
+              <p class="text-sm font-semibold text-slate-700">No related messages</p>
+              <p class="mt-1 text-xs text-slate-500">Customer conversations tied to assigned jobs appear here.</p>
+            </div>
+          }
+        </article>
+
+        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div class="flex items-center gap-2">
+              <lucide-icon [name]="icons.BookOpen" class="h-5 w-5 text-indigo-600"></lucide-icon>
+              <h2 class="text-base font-semibold text-slate-950">Repair guidance</h2>
+            </div>
+            <button
+              type="button"
+              class="cursor-pointer text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+              (click)="openRoute('/knowledge-base')"
+            >
+              Knowledge Base
+            </button>
+          </div>
+
+          @if (dashboard.knowledge.length) {
+            <div class="divide-y divide-slate-100">
+              @for (article of dashboard.knowledge.slice(0, 7); track article.id) {
+                <button
+                  type="button"
+                  class="cursor-pointer flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-slate-50"
+                  (click)="openRoute(article.route)"
+                >
+                  <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                    <lucide-icon [name]="icons.BookOpen" class="h-4 w-4"></lucide-icon>
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex flex-wrap items-center gap-2">
+                      <span class="truncate text-sm font-semibold text-slate-900">{{ article.title }}</span>
+                      @if (article.pinned) { <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-700">Pinned</span> }
+                    </span>
+                    <span class="mt-0.5 block truncate text-xs text-slate-500">{{ article.category }} · {{ article.reason }}</span>
+                    @if (article.summary) { <span class="mt-1 block line-clamp-2 text-xs leading-5 text-slate-400">{{ article.summary }}</span> }
+                  </span>
+                  <lucide-icon [name]="icons.ChevronRight" class="mt-2 h-4 w-4 shrink-0 text-slate-300"></lucide-icon>
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="px-5 py-12 text-center">
+              <p class="text-sm font-semibold text-slate-700">No guidance linked yet</p>
+              <p class="mt-1 text-xs text-slate-500">Published articles related to assigned work appear here.</p>
+            </div>
+          }
+        </article>
+      </section>
+
+      <p class="text-center text-xs text-slate-400">
+        Last refreshed {{ formatDateTime(dashboard.generatedAt) }} · {{ dashboard.shop.timezone }}
+      </p>
+    }
+  </div>
+</div>

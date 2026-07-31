@@ -1,0 +1,740 @@
+<div
+  class="relative flex min-h-0 flex-col overflow-hidden bg-slate-50"
+  [ngClass]="drawerMode ? 'h-full' : 'h-[calc(100dvh-4rem)]'"
+>
+  @if (drawerMode) {
+    <header class="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-3 sm:px-4">
+      <button
+        type="button"
+        class="cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+        (click)="sidebarOpen.set(true)"
+        aria-label="Open AI conversations"
+      >
+        <lucide-icon [name]="icons.History" class="h-4 w-4"></lucide-icon>
+      </button>
+
+      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-sm">
+        <lucide-icon [name]="icons.Sparkles" class="h-4 w-4"></lucide-icon>
+      </span>
+
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2">
+          <h1 class="truncate text-sm font-semibold text-slate-950">Opscend AI</h1>
+          @if (status(); as aiStatus) {
+            <span class="hidden rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700 sm:inline-flex">
+              {{ requestsRemaining() }} left today
+            </span>
+          }
+        </div>
+        <p class="truncate text-xs text-slate-500">Shop-aware copilot · actions require approval</p>
+      </div>
+
+      <button
+        type="button"
+        class="cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+        (click)="requestExpand()"
+        aria-label="Expand Opscend AI to full page"
+        title="Expand to full page"
+      >
+        <lucide-icon [name]="icons.Maximize2" class="h-4 w-4"></lucide-icon>
+      </button>
+
+      <button
+        type="button"
+        class="cursor-pointer inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+        (click)="requestClose()"
+        aria-label="Close Opscend AI"
+      >
+        <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+      </button>
+    </header>
+  } @else {
+  <header class="shrink-0 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
+    <div class="mx-auto flex max-w-[1600px] flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div class="flex items-start gap-3">
+        <button
+          type="button"
+          class="cursor-pointer mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 xl:hidden"
+          (click)="sidebarOpen.set(true)"
+          aria-label="Open conversations"
+        >
+          <lucide-icon [name]="icons.History" class="h-5 w-5"></lucide-icon>
+        </button>
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-200">
+          <lucide-icon [name]="icons.Sparkles" class="h-5 w-5"></lucide-icon>
+        </span>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-xl font-semibold tracking-[-0.03em] text-slate-950">Opscend AI</h1>
+            @if (status(); as aiStatus) {
+              <span class="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+                {{ aiStatus.model }}
+              </span>
+            }
+          </div>
+          <p class="mt-1 text-sm text-slate-500">Your shop-aware operations copilot. Suggested actions always require approval.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        @if (status(); as aiStatus) {
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Today</p>
+            <p class="mt-0.5 text-sm font-semibold text-slate-800">
+              {{ aiStatus.usageToday.requestCount }} / {{ aiStatus.dailyRequestLimit }} requests
+            </p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">30 days</p>
+            <p class="mt-0.5 text-sm font-semibold text-slate-800">{{ formatTokens(usage30Days().tokens) }} tokens</p>
+          </div>
+        }
+        <button
+          type="button"
+          class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="loading()"
+          (click)="refresh()"
+        >
+          <lucide-icon [name]="loading() ? icons.Loader2 : icons.RefreshCw" class="h-4 w-4" [class.animate-spin]="loading()"></lucide-icon>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </header>
+  }
+
+  @if (loading()) {
+    <div class="mx-auto flex max-w-[1600px] items-center justify-center px-6" [ngClass]="drawerMode ? 'min-h-0 flex-1' : 'min-h-[600px]'">
+      <div class="text-center">
+        <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+          <lucide-icon [name]="icons.Loader2" class="h-6 w-6 animate-spin"></lucide-icon>
+        </span>
+        <p class="mt-4 text-sm font-semibold text-slate-700">Loading Opscend AI…</p>
+      </div>
+    </div>
+  } @else if (status(); as aiStatus) {
+    @if (!aiStatus.configured) {
+      <main class="mx-auto max-w-3xl px-4 sm:px-6" [ngClass]="drawerMode ? 'min-h-0 flex-1 overflow-y-auto py-8' : 'py-16'">
+        <section class="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm">
+          <div class="bg-gradient-to-br from-amber-50 to-orange-50 px-6 py-8 text-center sm:px-10">
+            <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-100 text-amber-700">
+              <lucide-icon [name]="icons.Bot" class="h-7 w-7"></lucide-icon>
+            </span>
+            <h2 class="mt-5 text-xl font-semibold text-slate-950">Connect the OpenAI API</h2>
+            <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">
+              Opscend AI is installed, but the API service does not have an OpenAI key yet. The key stays server-side and is never exposed to Angular.
+            </p>
+          </div>
+          <div class="space-y-4 px-6 py-6 sm:px-10">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Required Railway variable</p>
+              <code class="mt-2 block rounded-xl bg-slate-950 px-4 py-3 text-sm text-emerald-300">OPENAI_API_KEY=your_server_side_key</code>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Recommended model variable</p>
+              <code class="mt-2 block rounded-xl bg-slate-950 px-4 py-3 text-sm text-sky-300">OPENAI_MODEL={{ aiStatus.model }}</code>
+            </div>
+            <p class="text-xs leading-5 text-slate-500">Restart the API service after adding the variables, then refresh this page.</p>
+          </div>
+        </section>
+      </main>
+    } @else {
+      <main
+        class="relative grid min-h-0 flex-1 overflow-hidden"
+        [ngClass]="drawerMode ? 'grid-cols-1' : 'mx-auto w-full max-w-[1600px] xl:grid-cols-[300px_minmax(0,1fr)_320px]'"
+      >
+        <aside
+          class="h-full min-h-0 overflow-hidden border-r border-slate-200 bg-white transition-transform"
+          [ngClass]="drawerMode
+            ? 'absolute inset-y-0 left-0 z-50 w-[86vw] max-w-[320px] shadow-2xl'
+            : 'fixed inset-y-0 left-0 z-50 w-[300px] xl:static xl:z-auto xl:min-h-[calc(100vh-9rem)] xl:translate-x-0'"
+          [class.translate-x-0]="sidebarOpen()"
+          [class.-translate-x-full]="!sidebarOpen()"
+        >
+          <div class="flex h-full min-h-0 flex-col">
+            <div class="flex items-center justify-between border-b border-slate-200 p-4">
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Conversations</p>
+                <p class="mt-0.5 text-xs text-slate-400">Private to your staff account</p>
+              </div>
+              <button
+                type="button"
+                class="cursor-pointer inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50"
+                [ngClass]="drawerMode ? '' : 'xl:hidden'"
+                (click)="sidebarOpen.set(false)"
+                aria-label="Close conversations"
+              >
+                <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+              </button>
+            </div>
+
+            <div class="p-3">
+              <button
+                type="button"
+                class="cursor-pointer flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="creatingConversation()"
+                (click)="newConversation()"
+              >
+                <lucide-icon [name]="creatingConversation() ? icons.Loader2 : icons.Plus" class="h-4 w-4" [class.animate-spin]="creatingConversation()"></lucide-icon>
+                New conversation
+              </button>
+            </div>
+
+            <div class="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+              @if (conversations().length) {
+                <div class="space-y-1">
+                  @for (conversation of conversations(); track conversation.id) {
+                    <div
+                      class="group flex w-full items-start rounded-xl transition"
+                      [class.bg-violet-50]="activeConversation()?.id === conversation.id"
+                      [class.text-violet-900]="activeConversation()?.id === conversation.id"
+                      [class.hover:bg-slate-50]="activeConversation()?.id !== conversation.id"
+                    >
+                      <button
+                        type="button"
+                        class="cursor-pointer flex min-w-0 flex-1 items-start gap-3 rounded-xl px-3 py-3 text-left"
+                        (click)="loadConversation(conversation.id)"
+                      >
+                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 group-hover:bg-white">
+                          <lucide-icon [name]="icons.MessageSquareText" class="h-4 w-4"></lucide-icon>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block truncate text-sm font-semibold">{{ conversation.title }}</span>
+                          <span class="mt-1 block text-xs text-slate-400">{{ conversation.messageCount }} messages · {{ formatDate(conversation.updatedAt) }}</span>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        class="cursor-pointer mr-2 mt-3 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-300 opacity-0 transition hover:bg-white hover:text-rose-600 group-hover:opacity-100 focus:opacity-100"
+                        (click)="archiveConversation(conversation, $event)"
+                        aria-label="Archive conversation"
+                      >
+                        <lucide-icon [name]="actionWorkingId() === conversation.id ? icons.Loader2 : icons.Archive" class="h-3.5 w-3.5" [class.animate-spin]="actionWorkingId() === conversation.id"></lucide-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="px-4 py-10 text-center">
+                  <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                    <lucide-icon [name]="icons.History" class="h-5 w-5"></lucide-icon>
+                  </span>
+                  <p class="mt-3 text-sm font-semibold text-slate-700">No conversations yet</p>
+                  <p class="mt-1 text-xs leading-5 text-slate-400">Start a chat to build your private history.</p>
+                </div>
+              }
+            </div>
+          </div>
+        </aside>
+
+        @if (sidebarOpen()) {
+          <button
+            type="button"
+            class="cursor-pointer inset-0 z-40 bg-slate-950/30 backdrop-blur-sm"
+            [ngClass]="drawerMode ? 'absolute' : 'fixed xl:hidden'"
+            (click)="sidebarOpen.set(false)"
+            aria-label="Close conversations"
+          ></button>
+        }
+
+        <section
+          class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-white"
+          [ngClass]="drawerMode ? '' : 'border-r border-slate-200'"
+        >
+          @if (error()) {
+            <div class="shrink-0 border-b border-rose-200 bg-rose-50 px-5 py-3 text-sm text-rose-700">
+              {{ error() }}
+            </div>
+          }
+
+          @if (activeConversation(); as conversation) {
+            <div class="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+              <div class="min-w-0">
+                <h2 class="truncate text-sm font-semibold text-slate-900">{{ conversation.title }}</h2>
+                <p class="mt-0.5 text-xs text-slate-400">{{ conversation.messages.length }} messages · {{ requestsRemaining() }} requests remaining today</p>
+              </div>
+              @if (pendingActionCount()) {
+                <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                  {{ pendingActionCount() }} pending {{ pendingActionCount() === 1 ? 'action' : 'actions' }}
+                </span>
+              }
+            </div>
+
+            <div
+              #messageViewport
+              class="ai-thread min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-6"
+            >
+              @if (!conversation.messages.length) {
+                <div class="mx-auto max-w-3xl py-8 text-center">
+                  <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-700">
+                    <lucide-icon [name]="icons.Bot" class="h-7 w-7"></lucide-icon>
+                  </span>
+                  <h3 class="mt-5 text-xl font-semibold tracking-[-0.03em] text-slate-950">What should we work on?</h3>
+                  <p class="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">Ask about operations, a customer, repair, quote, conversation, form, procedure, or technician workload.</p>
+
+                  <div class="mt-7 grid gap-3 text-left sm:grid-cols-2">
+                    @for (prompt of quickPrompts; track prompt) {
+                      <button
+                        type="button"
+                        class="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm leading-5 text-slate-600 shadow-sm transition hover:border-violet-200 hover:bg-violet-50/40 hover:text-violet-800"
+                        (click)="useQuickPrompt(prompt)"
+                      >
+                        <span class="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                          <lucide-icon [name]="icons.Lightbulb" class="h-4 w-4"></lucide-icon>
+                        </span>
+                        {{ prompt }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="mx-auto max-w-4xl space-y-6">
+                @for (message of conversation.messages; track message.id) {
+                  @if (message.role === 'user') {
+                    <div class="flex justify-end gap-3">
+                      <div class="max-w-[85%] rounded-3xl rounded-br-lg bg-slate-900 px-5 py-3.5 text-sm leading-6 text-white shadow-sm">
+                        <p class="whitespace-pre-wrap">{{ message.content }}</p>
+                      </div>
+                      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-slate-200 text-slate-600">
+                        <lucide-icon [name]="icons.UserRound" class="h-4 w-4"></lucide-icon>
+                      </span>
+                    </div>
+                  } @else {
+                    <div class="flex items-start gap-3">
+                      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-sm">
+                        <lucide-icon [name]="icons.Sparkles" class="h-4 w-4"></lucide-icon>
+                      </span>
+                      <div class="min-w-0 max-w-[calc(100%-3rem)] flex-1">
+                        <div class="rounded-3xl rounded-tl-lg border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                          <p class="whitespace-pre-wrap text-sm leading-7 text-slate-700">{{ message.content }}</p>
+
+                          @if (message.sources.length) {
+                            <div class="mt-5 border-t border-slate-100 pt-4">
+                              <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">Sources</p>
+                              <div class="mt-2 flex flex-wrap gap-2">
+                                @for (source of message.sources; track source.type + source.id) {
+                                  <button
+                                    type="button"
+                                    class="cursor-pointer inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-default"
+                                    [disabled]="!source.route"
+                                    [title]="source.excerpt || source.title"
+                                    (click)="openSource(source.route)"
+                                  >
+                                    <lucide-icon [name]="icons.Link2" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
+                                    <span class="truncate">{{ source.title }}</span>
+                                  </button>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+
+                        @if (message.actions.length) {
+                          <div class="mt-3 space-y-3">
+                            @for (action of message.actions; track action.id) {
+                              <article
+                                class="overflow-hidden rounded-2xl border bg-white shadow-sm"
+                                [class.border-amber-200]="action.status === 'pending'"
+                                [class.border-emerald-200]="action.status === 'completed'"
+                                [class.border-slate-200]="action.status === 'dismissed'"
+                                [class.border-rose-200]="action.status === 'failed'"
+                              >
+                                <div class="flex items-start gap-3 p-4">
+                                  <span
+                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                                    [class.bg-amber-100]="action.status === 'pending'"
+                                    [class.text-amber-700]="action.status === 'pending'"
+                                    [class.bg-emerald-100]="action.status === 'completed'"
+                                    [class.text-emerald-700]="action.status === 'completed'"
+                                    [class.bg-slate-100]="action.status === 'dismissed'"
+                                    [class.text-slate-500]="action.status === 'dismissed'"
+                                    [class.bg-rose-100]="action.status === 'failed'"
+                                    [class.text-rose-700]="action.status === 'failed'"
+                                  >
+                                    <lucide-icon [name]="action.status === 'completed' ? icons.CheckCircle2 : actionIcon(action)" class="h-4 w-4"></lucide-icon>
+                                  </span>
+                                  <div class="min-w-0 flex-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                      <h4 class="text-sm font-semibold text-slate-900">{{ action.title }}</h4>
+                                      <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em]"
+                                        [class.bg-amber-100]="action.status === 'pending'"
+                                        [class.text-amber-700]="action.status === 'pending'"
+                                        [class.bg-emerald-100]="action.status === 'completed'"
+                                        [class.text-emerald-700]="action.status === 'completed'"
+                                        [class.bg-slate-100]="action.status === 'dismissed'"
+                                        [class.text-slate-500]="action.status === 'dismissed'"
+                                        [class.bg-rose-100]="action.status === 'failed'"
+                                        [class.text-rose-700]="action.status === 'failed'"
+                                      >{{ action.status }}</span>
+                                    </div>
+                                    @if (action.description) {
+                                      <p class="mt-1 text-xs leading-5 text-slate-500">{{ action.description }}</p>
+                                    }
+
+                                    @if (action.type === 'update_repair_status') {
+                                      <p class="mt-2 text-xs font-semibold text-slate-600">New status: {{ statusLabel(action.payload.status || '') }}</p>
+                                    }
+                                    @if (action.type === 'draft_customer_message' && action.payload.draft) {
+                                      <div class="mt-3 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                                        <p class="mb-1 font-semibold text-slate-700">{{ (action.payload.channel || 'message').toUpperCase() }} draft</p>
+                                        <p class="whitespace-pre-wrap">{{ action.payload.draft }}</p>
+                                      </div>
+                                    }
+                                    @if (action.type === 'create_work_queue_item') {
+                                      <div class="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                                        <span class="rounded-full bg-slate-100 px-2 py-1">{{ action.payload.priority || 'normal' }} priority</span>
+                                        @if (action.payload.dueAt) { <span class="rounded-full bg-slate-100 px-2 py-1">Due {{ formatDate(action.payload.dueAt) }}</span> }
+                                      </div>
+                                    }
+                                  </div>
+                                </div>
+
+                                @if (action.status === 'pending') {
+                                  @if (reviewingActionId() === action.id) {
+                                    <div class="border-t border-amber-200 bg-amber-50 px-4 py-3">
+                                      <p class="text-xs font-semibold text-amber-900">Confirm this action?</p>
+                                      <p class="mt-1 text-xs leading-5 text-amber-700">Opscend will perform exactly the action described above. Customer messages are copied only and are not sent automatically.</p>
+                                      <div class="mt-3 flex flex-wrap gap-2">
+                                        <button
+                                          type="button"
+                                          class="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                          [disabled]="actionWorkingId() === action.id"
+                                          (click)="executeAction(action)"
+                                        >
+                                          <lucide-icon [name]="actionWorkingId() === action.id ? icons.Loader2 : icons.Check" class="h-3.5 w-3.5" [class.animate-spin]="actionWorkingId() === action.id"></lucide-icon>
+                                          Confirm {{ actionLabel(action) }}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          class="cursor-pointer rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+                                          (click)="cancelActionReview()"
+                                        >Cancel</button>
+                                      </div>
+                                    </div>
+                                  } @else {
+                                    <div class="flex flex-wrap gap-2 border-t border-slate-100 px-4 py-3">
+                                      <button
+                                        type="button"
+                                        class="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                                        (click)="reviewAction(action)"
+                                      >
+                                        <lucide-icon [name]="icons.ArrowRight" class="h-3.5 w-3.5"></lucide-icon>
+                                        Review action
+                                      </button>
+                                      <button
+                                        type="button"
+                                        class="cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                                        (click)="dismissAction(action)"
+                                      >Dismiss</button>
+                                    </div>
+                                  }
+                                } @else if (action.error) {
+                                  <div class="border-t border-rose-100 bg-rose-50 px-4 py-3 text-xs text-rose-700">{{ action.error }}</div>
+                                }
+                              </article>
+                            }
+                          </div>
+                        }
+
+                        <div class="mt-2 flex items-center gap-2 px-1 text-[11px] text-slate-400">
+                          @if (message.model) { <span>{{ message.model }}</span> }
+                          @if (message.totalTokens !== null) { <span>· {{ formatTokens(message.totalTokens) }} tokens</span> }
+                          <button
+                            type="button"
+                            class="cursor-pointer ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                            (click)="copyMessage(message)"
+                          >
+                            <lucide-icon [name]="icons.Copy" class="h-3 w-3"></lucide-icon>
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                }
+
+                @if (sending()) {
+                  <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white">
+                      <lucide-icon [name]="icons.Sparkles" class="h-4 w-4"></lucide-icon>
+                    </span>
+                    <div class="rounded-3xl rounded-tl-lg border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                      <div class="flex items-center gap-2 text-sm text-slate-500">
+                        <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin text-violet-600"></lucide-icon>
+                        Reviewing shop context…
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="shrink-0 border-t border-slate-200 bg-white p-4 sm:px-6">
+              <div class="mx-auto max-w-4xl">
+                @if (selectedContexts().length) {
+                  <div class="mb-3 flex flex-wrap gap-2">
+                    @for (context of selectedContexts(); track context.type + context.id) {
+                      <span class="inline-flex max-w-full items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">
+                        <lucide-icon [name]="icons.Link2" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
+                        <span class="max-w-48 truncate">{{ context.title || contextTypeLabel(context.type) }}</span>
+                        <button
+                          type="button"
+                          class="cursor-pointer inline-flex h-5 w-5 items-center justify-center rounded-full transition hover:bg-violet-100"
+                          (click)="removeContext(context)"
+                          aria-label="Remove context"
+                        >
+                          <lucide-icon [name]="icons.X" class="h-3 w-3"></lucide-icon>
+                        </button>
+                      </span>
+                    }
+                  </div>
+                }
+
+                <div class="rounded-2xl border border-slate-300 bg-white p-2 shadow-sm focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-100">
+                  <textarea
+                    #composerInput
+                    [(ngModel)]="draft"
+                    rows="3"
+                    class="max-h-48 min-h-20 w-full resize-none border-0 bg-transparent px-3 py-2 text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="Ask about your shop, a record, a procedure, or the next best action…"
+                    [disabled]="sending()"
+                    (keydown)="handleComposerKeydown($event)"
+                  ></textarea>
+                  <div class="flex items-center justify-between gap-3 px-1 pb-1">
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        class="cursor-pointer inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        [disabled]="selectedContexts().length >= 5"
+                        (click)="openContextSearch()"
+                      >
+                        <lucide-icon [name]="icons.Link2" class="h-4 w-4"></lucide-icon>
+                        Add context
+                      </button>
+                      <span class="hidden text-[11px] text-slate-400 sm:inline">Enter to send · Shift+Enter for a new line</span>
+                    </div>
+                    <button
+                      type="button"
+                      class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      [disabled]="!draft.trim() || sending() || requestsRemaining() <= 0"
+                      (click)="send()"
+                    >
+                      <lucide-icon [name]="sending() ? icons.Loader2 : icons.Send" class="h-4 w-4" [class.animate-spin]="sending()"></lucide-icon>
+                      Send
+                    </button>
+                  </div>
+                </div>
+                <p class="mt-2 text-center text-[11px] text-slate-400">Opscend AI can make mistakes. Review customer-facing drafts and confirm every action.</p>
+              </div>
+            </div>
+          } @else {
+            <div class="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-8">
+              <div class="max-w-md text-center">
+                <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-700">
+                  <lucide-icon [name]="icons.Bot" class="h-7 w-7"></lucide-icon>
+                </span>
+                <h2 class="mt-5 text-lg font-semibold text-slate-950">Start a conversation</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Create a private chat to summarize records, draft messages, find procedures, and plan the next step.</p>
+                <button
+                  type="button"
+                  class="cursor-pointer mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
+                  (click)="newConversation()"
+                >
+                  <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+                  New conversation
+                </button>
+              </div>
+            </div>
+          }
+        </section>
+
+        @if (!drawerMode) {
+        <aside class="hidden h-full min-h-0 overflow-y-auto bg-slate-50 p-5 xl:block">
+          <div class="space-y-5">
+            <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div class="flex items-center gap-2">
+                <lucide-icon [name]="icons.Gauge" class="h-4 w-4 text-violet-600"></lucide-icon>
+                <h3 class="text-sm font-semibold text-slate-900">Usage</h3>
+              </div>
+              <div class="mt-4 grid grid-cols-2 gap-3">
+                <div class="rounded-xl bg-slate-50 p-3">
+                  <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Remaining</p>
+                  <p class="mt-1 text-lg font-semibold text-slate-900">{{ requestsRemaining() }}</p>
+                </div>
+                <div class="rounded-xl bg-slate-50 p-3">
+                  <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">30d requests</p>
+                  <p class="mt-1 text-lg font-semibold text-slate-900">{{ usage30Days().requests }}</p>
+                </div>
+              </div>
+              @if (aiStatus.costTrackingConfigured) {
+                <div class="mt-3 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                  <p class="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-600">Estimated 30d cost</p>
+                  <p class="mt-1 text-lg font-semibold text-emerald-800">{{ formatCost(usage30Days().costMicros) }}</p>
+                </div>
+              } @else {
+                <p class="mt-3 text-xs leading-5 text-slate-400">Set the optional input/output cost variables to estimate API spend.</p>
+              }
+            </section>
+
+            <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <lucide-icon [name]="icons.Link2" class="h-4 w-4 text-violet-600"></lucide-icon>
+                  <h3 class="text-sm font-semibold text-slate-900">Active context</h3>
+                </div>
+                <span class="text-xs font-semibold text-slate-400">{{ selectedContexts().length }}/5</span>
+              </div>
+
+              @if (selectedContexts().length) {
+                <div class="mt-3 space-y-2">
+                  @for (context of selectedContexts(); track context.type + context.id) {
+                    <div class="flex items-start gap-2 rounded-xl bg-slate-50 p-3">
+                      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-violet-600">
+                        <lucide-icon [name]="icons.FileText" class="h-4 w-4"></lucide-icon>
+                      </span>
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate text-xs font-semibold text-slate-800">{{ context.title || context.id }}</p>
+                        <p class="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-slate-400">{{ contextTypeLabel(context.type) }}</p>
+                      </div>
+                      <button
+                        type="button"
+                        class="cursor-pointer inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white hover:text-rose-600"
+                        (click)="removeContext(context)"
+                        aria-label="Remove context"
+                      >
+                        <lucide-icon [name]="icons.X" class="h-3.5 w-3.5"></lucide-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="mt-3 text-xs leading-5 text-slate-500">Add a customer, repair, quote, order, conversation, form, or Knowledge Base article for a focused answer.</p>
+              }
+
+              <button
+                type="button"
+                class="cursor-pointer mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="selectedContexts().length >= 5"
+                (click)="openContextSearch()"
+              >
+                <lucide-icon [name]="icons.Search" class="h-4 w-4"></lucide-icon>
+                Find a record
+              </button>
+            </section>
+
+            <section class="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-4">
+              <div class="flex items-center gap-2 text-violet-800">
+                <lucide-icon [name]="icons.Zap" class="h-4 w-4"></lucide-icon>
+                <h3 class="text-sm font-semibold">What it can do</h3>
+              </div>
+              <ul class="mt-3 space-y-2 text-xs leading-5 text-violet-700">
+                <li>Summarize customers, repairs, quotes, conversations, and workload</li>
+                <li>Answer from your internal Knowledge Base</li>
+                <li>Draft customer SMS and email responses</li>
+                <li>Suggest tasks and repair status updates for approval</li>
+              </ul>
+            </section>
+          </div>
+        </aside>
+        }
+      </main>
+    }
+  } @else {
+    <main class="mx-auto max-w-3xl px-4 sm:px-6" [ngClass]="drawerMode ? 'min-h-0 flex-1 overflow-y-auto py-8' : 'py-16'">
+      <section class="rounded-3xl border border-rose-200 bg-white px-6 py-12 text-center shadow-sm">
+        <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+          <lucide-icon [name]="icons.Bot" class="h-6 w-6"></lucide-icon>
+        </span>
+        <h2 class="mt-4 text-lg font-semibold text-slate-950">Opscend AI could not load</h2>
+        <p class="mx-auto mt-2 max-w-xl text-sm text-slate-500">{{ error() || 'Please try again.' }}</p>
+        <button
+          type="button"
+          class="cursor-pointer mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          (click)="refresh()"
+        >
+          <lucide-icon [name]="icons.RefreshCw" class="h-4 w-4"></lucide-icon>
+          Try again
+        </button>
+      </section>
+    </main>
+  }
+</div>
+
+@if (contextSearchOpen()) {
+  <div class="fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/45 px-4 py-16 backdrop-blur-sm sm:py-24" (click)="closeContextSearch()">
+    <section class="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div>
+          <h2 class="text-base font-semibold text-slate-950">Add shop context</h2>
+          <p class="mt-1 text-xs text-slate-500">Search any record Opscend already knows about.</p>
+        </div>
+        <button
+          type="button"
+          class="cursor-pointer inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50"
+          (click)="closeContextSearch()"
+          aria-label="Close context search"
+        >
+          <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+        </button>
+      </div>
+
+      <div class="p-4">
+        <div class="relative">
+          <lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></lucide-icon>
+          <input
+            type="search"
+            [ngModel]="contextQuery"
+            (ngModelChange)="onContextQueryChange($event)"
+            class="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-10 text-sm text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+            placeholder="Search customers, repairs, quotes, forms, conversations…"
+            autofocus
+          />
+          @if (contextSearching()) {
+            <lucide-icon [name]="icons.Loader2" class="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-violet-600"></lucide-icon>
+          }
+        </div>
+      </div>
+
+      <div class="max-h-[55vh] overflow-y-auto border-t border-slate-100">
+        @if (contextQuery.trim().length < 2) {
+          <div class="px-6 py-12 text-center">
+            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <lucide-icon [name]="icons.Search" class="h-5 w-5"></lucide-icon>
+            </span>
+            <p class="mt-3 text-sm font-semibold text-slate-700">Search your shop</p>
+            <p class="mt-1 text-xs text-slate-400">Enter at least two characters.</p>
+          </div>
+        } @else if (!contextSearching() && !contextResults().length) {
+          <div class="px-6 py-12 text-center">
+            <p class="text-sm font-semibold text-slate-700">No matching records</p>
+            <p class="mt-1 text-xs text-slate-400">Try a customer name, repair ID, order number, serial, or keyword.</p>
+          </div>
+        } @else {
+          <div class="divide-y divide-slate-100">
+            @for (item of contextResults(); track item.type + item.id) {
+              <button
+                type="button"
+                class="cursor-pointer flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-violet-50/50"
+                (click)="addContext(item)"
+              >
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                  <lucide-icon [name]="icons.FileText" class="h-4 w-4"></lucide-icon>
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex flex-wrap items-center gap-2">
+                    <span class="truncate text-sm font-semibold text-slate-900">{{ item.title }}</span>
+                    @if (item.badge) { <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{{ item.badge }}</span> }
+                  </span>
+                  @if (item.subtitle) { <span class="mt-1 block truncate text-xs text-slate-500">{{ item.subtitle }}</span> }
+                  <span class="mt-1 block text-[10px] font-bold uppercase tracking-[0.1em] text-violet-500">{{ contextTypeLabel(item.type) }}</span>
+                </span>
+                <lucide-icon [name]="icons.Plus" class="h-4 w-4 shrink-0 text-slate-300"></lucide-icon>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}

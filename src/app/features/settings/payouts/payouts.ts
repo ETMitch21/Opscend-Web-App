@@ -28,6 +28,7 @@ import {
 
 import { StripeService } from '../../../core/stripe/stripe-service';
 import type { StripeStatusResponse } from '../../../core/stripe/stripe-model';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type PayoutsPageState =
   | 'loading'
@@ -39,7 +40,7 @@ type PayoutsPageState =
 @Component({
   selector: 'app-payouts',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule],
+  imports: [SettingsLayoutComponent, CommonModule, RouterLink, LucideAngularModule],
   templateUrl: './payouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,639 +1,463 @@
-<div class="mx-auto max-w-full px-6 py-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Shop Settings</h1>
-        <p class="mt-1 text-sm text-gray-500">
-            Manage your shop details, booking defaults, and core POS settings.
-        </p>
-    </div>
+<app-settings-layout>
+    <button settings-actions type="button"
+        class="settings-primary-action cursor-pointer"
+        [disabled]="saving() || loading()"
+        (click)="save()">
+        {{ saving() ? 'Saving...' : 'Save changes' }}
+    </button>
 
     @if (loading()) {
-    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p class="text-sm text-gray-500">Loading shop settings...</p>
+    <div class="settings-card">
+        <div class="settings-card-body py-10 text-center text-sm text-app-text-muted">
+            Loading shop settings...
+        </div>
     </div>
     } @else {
-    <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <section class="space-y-6">
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-5 flex items-center justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-semibold text-gray-900">Business Info</h2>
-                        <p class="mt-1 text-sm text-gray-500">
-                            The basics people and systems use to identify your shop.
-                        </p>
-                    </div>
+    <div class="space-y-3">
+        @if (error()) {
+        <div class="settings-alert is-error">{{ error() }}</div>
+        }
 
-                    <button type="button"
-                        class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-                        [disabled]="saving()" (click)="save()">
-                        {{ saving() ? 'Saving...' : 'Save Settings' }}
-                    </button>
-                </div>
+        @if (success()) {
+        <div class="settings-alert is-success">{{ success() }}</div>
+        }
 
-                @if (error()) {
-                <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {{ error() }}
-                </div>
-                }
-
-                @if (success()) {
-                <div
-                    class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    {{ success() }}
-                </div>
-                }
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Shop Name
-                        </label>
-                        <input type="text" [(ngModel)]="name"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="Summit Phone Repair" />
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Legal Name
-                        </label>
-                        <input type="text" [(ngModel)]="legalName"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="Optional" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Timezone
-                        </label>
-                        <select [(ngModel)]="timezone"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-                            @for (tz of timezones; track tz.value) {
-                            <option [value]="tz.value">
-                                {{ tz.label }}
-                            </option>
-                            }
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">
-                            Used for scheduling, availability, and appointments.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Slug
-                        </label>
-                        <input type="text" [ngModel]="slug" disabled
-                            class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 outline-none" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Phone
-                        </label>
-                        <input type="text" [(ngModel)]="phone"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="Optional" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Email
-                        </label>
-                        <input type="email" [(ngModel)]="email"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="Optional" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Address</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Your public or operational address details.
-                    </p>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Address Line 1
-                        </label>
-                        <input type="text" [(ngModel)]="addressLine1"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Address Line 2
-                        </label>
-                        <input type="text" [(ngModel)]="addressLine2"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            City
-                        </label>
-                        <input type="text" [(ngModel)]="addressCity"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            State
-                        </label>
-                        <select [(ngModel)]="addressState"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-
-                            @for (state of states; track state.value) {
-                            <option [value]="state.value">
-                                {{ state.label }}
-                            </option>
-                            }
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Postal Code
-                        </label>
-                        <input type="text" [(ngModel)]="addressPostalCode"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Country
-                        </label>
-                        <select [(ngModel)]="addressCountry"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-
-                            @for (country of countries; track country.value) {
-                            <option [value]="country.value">
-                                {{ country.label }}
-                            </option>
-                            }
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Branding</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Light V1 branding controls for now.
-                    </p>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-[120px_1fr]">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Brand Color
-                        </label>
-                        <div class="flex h-[50px] items-center gap-3 rounded-xl border border-gray-200 bg-white px-3">
-                            <input type="color" [ngModel]="primaryColor || '#000000'"
-                                (ngModelChange)="primaryColor = $event"
-                                class="h-8 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
-                            <input type="text" [(ngModel)]="primaryColor"
-                                class="min-w-0 flex-1 bg-transparent text-sm outline-none" placeholder="#000000" />
+        <div class="grid items-start gap-3 xl:grid-cols-2">
+            <div class="settings-grid">
+                <section class="settings-card">
+                    <div class="settings-card-header">
+                        <div>
+                            <h2 class="settings-card-title">Business identity</h2>
+                            <p class="settings-card-description">How the shop is identified across Opscend and customer experiences.</p>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Logo URL
-                        </label>
-                        <input type="text" [(ngModel)]="logoUrl"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="https://..." />
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="space-y-6">
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4 flex justify-between items-center">
-                    <div class="">
-                        <h2 class="text-base font-semibold text-gray-900">Booking</h2>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Control whether booking is enabled for this shop.
-                        </p>
-                    </div>
-                    <div class="">
-                        <a routerLink="/settings/shop/availability"
-                            class="cursor-pointer group flex items-center gap-1 text-xs font-medium text-brand transition hover:text-brand-soft">
-
-                            <span>{{ bookingEnabled ? 'Edit hours' : 'Set hours' }}</span>
-
-                            <lucide-icon [name]="arrowRight" class="h-3.5 w-3.5 transition group-hover:translate-x-0.5">
-                            </lucide-icon>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!bookingEnabled">
-                    <div class="flex items-center justify-between gap-4">
-                        <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-900">Booking Enabled</p>
-                            <p class="mt-1 text-xs text-gray-500">
-                                {{ bookingEnabled ? 'Customers can book and schedule' : 'Booking is turned off' }}
-                            </p>
-                        </div>
-
-                        <button type="button"
-                            class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
-                            [class.bg-brand]="bookingEnabled" [class.bg-gray-300]="!bookingEnabled"
-                            [disabled]="saving()" (click)="bookingEnabled = !bookingEnabled">
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                [class.translate-x-6]="bookingEnabled" [class.translate-x-1]="!bookingEnabled">
-                            </span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Booking Payments</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Control deposit enforcement and optional pay-in-full savings. Stripe must be connected to collect online payments.
-                    </p>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Staff-created repair deposits
-                        </label>
-                        <select [(ngModel)]="adminDepositEnforcement"
-                            class="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-                            <option value="required">Always require payment before confirmation</option>
-                            <option value="allow_override">Require payment, allow audited staff override</option>
-                            <option value="disabled">Do not enforce deposits internally</option>
-                        </select>
-                        <p class="mt-2 text-xs leading-5 text-gray-500">
-                            Required deposits are emailed as secure Stripe Checkout pages when staff set appointments by phone.
-                        </p>
-                    </div>
-
-                    <div class="rounded-2xl border border-gray-200 p-4 transition"
-                        [class.bg-emerald-50]="fullPrepaymentEnabled">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-gray-900">Offer full prepayment</p>
-                                <p class="mt-1 text-xs leading-5 text-gray-500">
-                                    Let customers pay the entire confirmed repair price during booking and optionally receive a discount.
-                                </p>
-                            </div>
-                            <button type="button"
-                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
-                                [class.bg-brand]="fullPrepaymentEnabled" [class.bg-gray-300]="!fullPrepaymentEnabled"
-                                [disabled]="saving()" (click)="fullPrepaymentEnabled = !fullPrepaymentEnabled">
-                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                    [class.translate-x-6]="fullPrepaymentEnabled" [class.translate-x-1]="!fullPrepaymentEnabled">
-                                </span>
-                            </button>
-                        </div>
-
-                        @if (fullPrepaymentEnabled) {
-                        <div class="mt-4">
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Pay-in-full discount
-                            </label>
-                            <div class="relative">
-                                <input type="number" min="0" max="25" step="0.25"
-                                    [(ngModel)]="fullPrepaymentDiscountPercent"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-10 text-sm outline-none transition focus:border-brand" />
-                                <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-400">%</span>
-                            </div>
-                            <p class="mt-2 text-xs leading-5 text-gray-500">
-                                Applied to the repair subtotal. Trip fees and other pass-through charges remain unchanged. Maximum 25%.
-                            </p>
-                        </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Customer Experience</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Control what customers can access outside of your internal workspace.
-                    </p>
-                </div>
-
-                <div class="rounded-2xl border border-gray-200 p-4 transition"
-                    [class.bg-gray-50]="!publicRepairTrackingEnabled">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-900">Public Repair Tracking</p>
-                            <p class="mt-1 text-xs leading-5 text-gray-500">
-                                {{ publicRepairTrackingEnabled
-                                ? 'Customers can view repair status pages when an individual repair link is enabled.'
-                                : 'Public repair tracking links are disabled for this shop.' }}
-                            </p>
-                        </div>
-
-                        <button type="button"
-                            class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
-                            [class.bg-brand]="publicRepairTrackingEnabled"
-                            [class.bg-gray-300]="!publicRepairTrackingEnabled" [disabled]="saving()"
-                            (click)="publicRepairTrackingEnabled = !publicRepairTrackingEnabled">
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                [class.translate-x-6]="publicRepairTrackingEnabled"
-                                [class.translate-x-1]="!publicRepairTrackingEnabled">
-                            </span>
-                        </button>
-                    </div>
-
-                    <div class="mt-4 rounded-xl border border-dashed border-gray-200 bg-white/70 p-3">
-                        <p class="text-xs font-medium text-gray-700">
-                            When turned off, existing public repair links stop working immediately.
-                        </p>
-                        <p class="mt-1 text-xs leading-5 text-gray-500">
-                            Individual repairs still have their own tracking toggle, but this shop setting is the master
-                            switch.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Communications</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Control customer SMS messaging for this shop. Email messages can still be sent when a customer email is available.
-                    </p>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!smsEnabled">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-gray-900">SMS Messaging</p>
-                                <p class="mt-1 text-xs leading-5 text-gray-500">
-                                    {{ smsEnabled
-                                    ? 'Team members can send SMS from the Inbox using this shop’s Twilio number.'
-                                    : 'SMS is disabled. The Inbox will clearly prevent text messages from being sent.' }}
-                                </p>
+                    <div class="settings-card-body">
+                        <div class="settings-field-grid">
+                            <div class="settings-field is-two-thirds">
+                                <label class="settings-label">Shop name</label>
+                                <input type="text" [(ngModel)]="name" class="settings-control"
+                                    placeholder="Summit Phone Repair" />
                             </div>
 
-                            <button type="button"
-                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
-                                [class.bg-brand]="smsEnabled" [class.bg-gray-300]="!smsEnabled"
-                                [disabled]="saving()" (click)="smsEnabled = !smsEnabled">
-                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                    [class.translate-x-6]="smsEnabled" [class.translate-x-1]="!smsEnabled">
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-
-                    @if (smsEnabled) {
-                    <div class="rounded-2xl border border-gray-200 p-4">
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Twilio SMS Number
-                        </label>
-                        <input type="text" [(ngModel)]="twilioPhoneNumber"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="+18165551234" />
-                        <p class="mt-2 text-xs leading-5 text-gray-500">
-                            Use the exact SMS-capable Twilio number assigned to this shop in E.164 format. Incoming texts are matched to the shop by this number.
-                        </p>
-                    </div>
-                    }
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">On-Site Repairs</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Control whether on-site repairs are available and how service areas are defined.
-                    </p>
-                </div>
-
-                <div class="space-y-4">
-                    <div class="rounded-2xl border border-gray-200 p-4 transition" [class.bg-gray-50]="!onsiteEnabled">
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-gray-900">Enable On-Site Repairs</p>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    {{ onsiteEnabled ? 'On-site jobs can be created.' : 'Only in-shop jobs can be
-                                    created.' }}
-                                </p>
+                            <div class="settings-field is-third">
+                                <label class="settings-label">Public slug</label>
+                                <input type="text" [ngModel]="slug" readonly class="settings-control" />
+                                <p class="settings-hint">Used in public links and cannot be edited here.</p>
                             </div>
 
-                            <button type="button"
-                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
-                                [class.bg-brand]="onsiteEnabled" [class.bg-gray-300]="!onsiteEnabled"
-                                [disabled]="saving()" (click)="onsiteEnabled = !onsiteEnabled; onOnsiteEnabledChange()">
-                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                    [class.translate-x-6]="onsiteEnabled" [class.translate-x-1]="!onsiteEnabled">
-                                </span>
-                            </button>
+                            <div class="settings-field">
+                                <label class="settings-label">Legal business name</label>
+                                <input type="text" [(ngModel)]="legalName" class="settings-control"
+                                    placeholder="Optional legal entity name" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-card">
+                    <div class="settings-card-header">
+                        <div>
+                            <h2 class="settings-card-title">Contact and location</h2>
+                            <p class="settings-card-description">Primary customer contact details and the shop’s operating address.</p>
                         </div>
                     </div>
 
-                    @if (onsiteEnabled) {
-                    <div class="rounded-2xl border border-gray-200 p-4">
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-sm font-medium text-gray-900">Auto-Apply Trip Fee</p>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    Adds a default trip fee to on-site repairs.
-                                </p>
+                    <div class="settings-card-body">
+                        <div class="settings-field-grid">
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Business phone</label>
+                                <input type="text" [(ngModel)]="phone" class="settings-control" placeholder="Optional" />
                             </div>
 
-                            <button type="button"
-                                class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50"
-                                [class.bg-brand]="onsiteTripFeeEnabled" [class.bg-gray-300]="!onsiteTripFeeEnabled"
-                                [disabled]="saving()"
-                                (click)="onsiteTripFeeEnabled = !onsiteTripFeeEnabled; onOnsiteTripFeeEnabledChange()">
-                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition"
-                                    [class.translate-x-6]="onsiteTripFeeEnabled"
-                                    [class.translate-x-1]="!onsiteTripFeeEnabled">
-                                </span>
-                            </button>
-                        </div>
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Business email</label>
+                                <input type="email" [(ngModel)]="email" class="settings-control" placeholder="Optional" />
+                            </div>
 
-                        @if (onsiteTripFeeEnabled) {
-                        <div class="mt-4">
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Default Trip Fee
-                            </label>
-                            <input type="number" [(ngModel)]="onsiteDefaultTripFeeDollars" min="0" step="0.01"
-                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                                placeholder="0.00" />
-                        </div>
-                        }
-                    </div>
+                            <div class="settings-field">
+                                <label class="settings-label">Street address</label>
+                                <input type="text" [(ngModel)]="addressLine1" class="settings-control"
+                                    placeholder="Address line 1" />
+                            </div>
 
-                    <div class="rounded-2xl border border-gray-200 p-4">
-                        <div class="grid gap-4">
-                            <div>
-                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Service Area Mode
-                                </label>
-                                <select [(ngModel)]="onsiteServiceAreaMode" (ngModelChange)="onServiceAreaModeChange()"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-                                    @for (mode of serviceAreaModes; track mode.value) {
-                                    <option [value]="mode.value">
-                                        {{ mode.label }}
-                                    </option>
+                            <div class="settings-field">
+                                <label class="settings-label">Suite, unit, or building</label>
+                                <input type="text" [(ngModel)]="addressLine2" class="settings-control"
+                                    placeholder="Optional" />
+                            </div>
+
+                            <div class="settings-field is-two-thirds">
+                                <label class="settings-label">City</label>
+                                <input type="text" [(ngModel)]="addressCity" class="settings-control" />
+                            </div>
+
+                            <div class="settings-field is-third">
+                                <label class="settings-label">State</label>
+                                <select [(ngModel)]="addressState" class="settings-control cursor-pointer">
+                                    @for (state of states; track state.value) {
+                                    <option [value]="state.value">{{ state.label }}</option>
                                     }
                                 </select>
                             </div>
 
-                            @if (onsiteServiceAreaMode === 'radius') {
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Postal code</label>
+                                <input type="text" [(ngModel)]="addressPostalCode" class="settings-control" />
+                            </div>
+
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Country</label>
+                                <select [(ngModel)]="addressCountry" class="settings-control cursor-pointer">
+                                    @for (country of countries; track country.value) {
+                                    <option [value]="country.value">{{ country.label }}</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-card">
+                    <div class="settings-card-header">
+                        <div>
+                            <h2 class="settings-card-title">Brand and regional defaults</h2>
+                            <p class="settings-card-description">Visual identity and the regional values used for dates, money, and scheduling.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-card-body">
+                        <div class="settings-field-grid">
+                            <div class="settings-field is-third">
+                                <label class="settings-label">Brand color</label>
+                                <div class="settings-input-group">
+                                    <span class="settings-input-affix px-2">
+                                        <input type="color" [ngModel]="primaryColor || '#f58549'"
+                                            (ngModelChange)="primaryColor = $event"
+                                            class="h-6 w-6 cursor-pointer border-0 bg-transparent p-0" />
+                                    </span>
+                                    <input type="text" [(ngModel)]="primaryColor" placeholder="#f58549" />
+                                </div>
+                            </div>
+
+                            <div class="settings-field is-two-thirds">
+                                <label class="settings-label">Logo URL</label>
+                                <input type="text" [(ngModel)]="logoUrl" class="settings-control"
+                                    placeholder="https://..." />
+                            </div>
+
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Timezone</label>
+                                <select [(ngModel)]="timezone" class="settings-control cursor-pointer">
+                                    @for (tz of timezones; track tz.value) {
+                                    <option [value]="tz.value">{{ tz.label }}</option>
+                                    }
+                                </select>
+                                <p class="settings-hint">Controls appointment, availability, and activity timestamps.</p>
+                            </div>
+
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Language code</label>
+                                <input type="text" [(ngModel)]="localeLanguage" class="settings-control" placeholder="en" />
+                            </div>
+
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Currency code</label>
+                                <input type="text" [(ngModel)]="localeCurrency" class="settings-control" placeholder="USD" />
+                            </div>
+
+                            <div class="settings-field is-half">
+                                <label class="settings-label">Locale country</label>
+                                <input type="text" [(ngModel)]="localeCountry" class="settings-control" placeholder="US" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="settings-grid">
+                <section class="settings-card">
+                    <div class="settings-card-header">
+                        <div>
+                            <h2 class="settings-card-title">Customer access</h2>
+                            <p class="settings-card-description">Master controls for public booking and repair tracking.</p>
+                        </div>
+                        <a routerLink="/settings/shop/availability"
+                            class="cursor-pointer text-[11px] font-semibold text-brand transition hover:opacity-80">
+                            Edit shop hours
+                        </a>
+                    </div>
+
+                    <div class="settings-card-body">
+                        <div class="settings-toggle-list">
+                            <div class="settings-toggle-row">
+                                <div class="settings-toggle-copy">
+                                    <p class="settings-toggle-title">Public booking</p>
+                                    <p class="settings-toggle-description">
+                                        {{ bookingEnabled ? 'Customers can request quotes and schedule from your public booking flow.' : 'The public booking flow is unavailable.' }}
+                                    </p>
+                                </div>
+                                <button type="button" class="settings-switch cursor-pointer"
+                                    [class.is-on]="bookingEnabled" [disabled]="saving()"
+                                    (click)="bookingEnabled = !bookingEnabled" aria-label="Toggle public booking">
+                                    <span class="settings-switch-handle"></span>
+                                </button>
+                            </div>
+
+                            <div class="settings-toggle-row">
+                                <div class="settings-toggle-copy">
+                                    <p class="settings-toggle-title">Public repair tracking</p>
+                                    <p class="settings-toggle-description">
+                                        {{ publicRepairTrackingEnabled ? 'Enabled repair links can show customers live status updates.' : 'All public repair tracking links are disabled.' }}
+                                    </p>
+                                </div>
+                                <button type="button" class="settings-switch cursor-pointer"
+                                    [class.is-on]="publicRepairTrackingEnabled" [disabled]="saving()"
+                                    (click)="publicRepairTrackingEnabled = !publicRepairTrackingEnabled"
+                                    aria-label="Toggle public repair tracking">
+                                    <span class="settings-switch-handle"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (!publicRepairTrackingEnabled) {
+                        <div class="settings-inline-note mt-3">
+                            Existing tracking links stop working while this master setting is off.
+                        </div>
+                        }
+                    </div>
+                </section>
+
+                <section class="settings-card">
+                    <div class="settings-card-header">
+                        <div>
+                            <h2 class="settings-card-title">Customer communications</h2>
+                            <p class="settings-card-description">Configure whether the Inbox can send text messages for this shop.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-card-body">
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-copy">
+                                <p class="settings-toggle-title">SMS messaging</p>
+                                <p class="settings-toggle-description">
+                                    {{ smsEnabled ? 'Team members can send and receive SMS using the assigned Twilio number.' : 'Email remains available, but SMS is disabled.' }}
+                                </p>
+                            </div>
+                            <button type="button" class="settings-switch cursor-pointer"
+                                [class.is-on]="smsEnabled" [disabled]="saving()"
+                                (click)="smsEnabled = !smsEnabled" aria-label="Toggle SMS messaging">
+                                <span class="settings-switch-handle"></span>
+                            </button>
+                        </div>
+
+                        @if (smsEnabled) {
+                        <div class="settings-subsection">
+                            <label class="settings-label">Twilio SMS number</label>
+                            <input type="text" [(ngModel)]="twilioPhoneNumber" class="settings-control"
+                                placeholder="+18165551234" />
+                            <p class="settings-hint">Enter the SMS-capable number in E.164 format. Incoming messages are routed by this number.</p>
+                        </div>
+                        }
+                    </div>
+                </section>
+
+                <section class="settings-card">
+                    <div class="settings-card-header">
+                        <div>
+                            <h2 class="settings-card-title">Payments and order defaults</h2>
+                            <p class="settings-card-description">Internal deposit behavior, optional prepayment, and new order numbering.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-card-body space-y-4">
+                        <div>
+                            <label class="settings-label">Staff-created repair deposits</label>
+                            <div class="settings-segmented" role="group" aria-label="Staff-created repair deposits">
+                                <button type="button" class="cursor-pointer"
+                                    [class.is-active]="adminDepositEnforcement === 'required'"
+                                    (click)="adminDepositEnforcement = 'required'">Required</button>
+                                <button type="button" class="cursor-pointer"
+                                    [class.is-active]="adminDepositEnforcement === 'allow_override'"
+                                    (click)="adminDepositEnforcement = 'allow_override'">Override allowed</button>
+                                <button type="button" class="cursor-pointer"
+                                    [class.is-active]="adminDepositEnforcement === 'disabled'"
+                                    (click)="adminDepositEnforcement = 'disabled'">Not enforced</button>
+                            </div>
+                            @if (adminDepositEnforcement === 'required') {
+                            <p class="settings-hint">A required deposit must be paid before a staff-created appointment is confirmed.</p>
+                            } @else if (adminDepositEnforcement === 'allow_override') {
+                            <p class="settings-hint">Deposits are required by default, but authorized staff may use an audited override.</p>
+                            } @else {
+                            <p class="settings-hint">Staff-created repairs can be confirmed without collecting a configured deposit.</p>
+                            }
+                        </div>
+
+                        <div class="settings-subsection">
+                            <div class="settings-toggle-row">
+                                <div class="settings-toggle-copy">
+                                    <p class="settings-toggle-title">Offer full prepayment</p>
+                                    <p class="settings-toggle-description">Allow customers to pay the entire confirmed repair price during booking.</p>
+                                </div>
+                                <button type="button" class="settings-switch cursor-pointer"
+                                    [class.is-on]="fullPrepaymentEnabled" [disabled]="saving()"
+                                    (click)="fullPrepaymentEnabled = !fullPrepaymentEnabled"
+                                    aria-label="Toggle full prepayment">
+                                    <span class="settings-switch-handle"></span>
+                                </button>
+                            </div>
+
+                            @if (fullPrepaymentEnabled) {
+                            <div class="mt-3 max-w-[220px]">
+                                <label class="settings-label">Pay-in-full discount</label>
+                                <div class="settings-input-group">
+                                    <input type="number" min="0" max="25" step="0.25"
+                                        [(ngModel)]="fullPrepaymentDiscountPercent" />
+                                    <span class="settings-input-affix is-suffix">%</span>
+                                </div>
+                                <p class="settings-hint">Applies to the repair subtotal only. Maximum 25%.</p>
+                            </div>
+                            }
+                        </div>
+
+                        <div class="settings-subsection">
+                            <div class="settings-field-grid">
+                                <div class="settings-field is-third">
+                                    <label class="settings-label">Order prefix</label>
+                                    <input type="text" [(ngModel)]="orderPrefix" class="settings-control" placeholder="SPR" />
+                                </div>
+
+                                <div class="settings-field is-third">
+                                    <label class="settings-label">Starting number</label>
+                                    <input type="number" [(ngModel)]="orderStartNumber" class="settings-control" />
+                                </div>
+
+                                <div class="settings-field is-third">
+                                    <label class="settings-label">Number padding</label>
+                                    <input type="number" [(ngModel)]="orderPadding" class="settings-control" />
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="settings-label">New order fulfillment status</label>
+                                <div class="settings-segmented" role="group" aria-label="Default fulfillment status">
+                                    <button type="button" class="cursor-pointer"
+                                        [class.is-active]="defaultFulfillmentStatus === 'unfulfilled'"
+                                        (click)="defaultFulfillmentStatus = 'unfulfilled'">Unfulfilled</button>
+                                    <button type="button" class="cursor-pointer"
+                                        [class.is-active]="defaultFulfillmentStatus === 'fulfilled'"
+                                        (click)="defaultFulfillmentStatus = 'fulfilled'">Fulfilled</button>
+                                </div>
+                                <p class="settings-hint">Use Unfulfilled when inventory should be received or issued manually.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-card">
+                    <div class="settings-card-header">
+                        <div>
+                            <h2 class="settings-card-title">On-site service</h2>
+                            <p class="settings-card-description">Availability, travel charges, and the geographic area your team serves.</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-card-body">
+                        <div class="settings-toggle-row">
+                            <div class="settings-toggle-copy">
+                                <p class="settings-toggle-title">Offer on-site repairs</p>
+                                <p class="settings-toggle-description">
+                                    {{ onsiteEnabled ? 'On-site service can be selected when creating or booking a repair.' : 'Repairs are limited to in-shop service.' }}
+                                </p>
+                            </div>
+                            <button type="button" class="settings-switch cursor-pointer"
+                                [class.is-on]="onsiteEnabled" [disabled]="saving()"
+                                (click)="onsiteEnabled = !onsiteEnabled; onOnsiteEnabledChange()"
+                                aria-label="Toggle on-site repairs">
+                                <span class="settings-switch-handle"></span>
+                            </button>
+                        </div>
+
+                        @if (onsiteEnabled) {
+                        <div class="settings-subsection space-y-4">
+                            <div class="settings-toggle-row">
+                                <div class="settings-toggle-copy">
+                                    <p class="settings-toggle-title">Automatically add a trip fee</p>
+                                    <p class="settings-toggle-description">Apply a default travel charge when on-site service is selected.</p>
+                                </div>
+                                <button type="button" class="settings-switch cursor-pointer"
+                                    [class.is-on]="onsiteTripFeeEnabled" [disabled]="saving()"
+                                    (click)="onsiteTripFeeEnabled = !onsiteTripFeeEnabled; onOnsiteTripFeeEnabledChange()"
+                                    aria-label="Toggle automatic trip fee">
+                                    <span class="settings-switch-handle"></span>
+                                </button>
+                            </div>
+
+                            @if (onsiteTripFeeEnabled) {
+                            <div class="max-w-[220px]">
+                                <label class="settings-label">Default trip fee</label>
+                                <div class="settings-input-group">
+                                    <span class="settings-input-affix">$</span>
+                                    <input type="number" [(ngModel)]="onsiteDefaultTripFeeDollars" min="0" step="0.01"
+                                        placeholder="0.00" />
+                                </div>
+                            </div>
+                            }
+
                             <div>
-                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Radius Miles
-                                </label>
-                                <input type="number" [(ngModel)]="onsiteServiceAreaMiles" min="0" step="1"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                                    placeholder="25" />
+                                <label class="settings-label">Service area</label>
+                                <div class="settings-segmented" role="group" aria-label="Service area mode">
+                                    @for (mode of serviceAreaModes; track mode.value) {
+                                    <button type="button" class="cursor-pointer"
+                                        [class.is-active]="onsiteServiceAreaMode === mode.value"
+                                        (click)="onsiteServiceAreaMode = mode.value; onServiceAreaModeChange()">
+                                        {{ mode.label }}
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (onsiteServiceAreaMode === 'radius') {
+                            <div class="max-w-[220px]">
+                                <label class="settings-label">Travel radius</label>
+                                <div class="settings-input-group">
+                                    <input type="number" [(ngModel)]="onsiteServiceAreaMiles" min="0" step="1"
+                                        placeholder="25" />
+                                    <span class="settings-input-affix is-suffix">mi</span>
+                                </div>
                             </div>
                             }
 
                             @if (onsiteServiceAreaMode === 'zip_codes') {
                             <div>
-                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    ZIP Codes
-                                </label>
-
-                                <div
-                                    class="rounded-xl border border-gray-200 bg-white px-3 py-2 focus-within:border-brand">
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        @for (zip of serviceAreaZips; track zip.id) {
-                                        <div
-                                            class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                                            <span>{{ zip.postalCode }}</span>
-                                            <button type="button" class="cursor-pointer text-gray-400 hover:text-gray-600"
-                                                (click)="removeServiceAreaZip(zip.id)">
-                                                ×
-                                            </button>
-                                        </div>
-                                        }
-
-                                        <input type="text" placeholder="Add ZIP..."
-                                            class="min-w-[120px] flex-1 bg-transparent py-0.5 text-sm text-gray-700 outline-none placeholder:text-gray-400"
-                                            [(ngModel)]="serviceAreaZipInput"
-                                            (keydown)="onServiceAreaZipKeydown($event)" />
-                                    </div>
+                                <label class="settings-label">Covered ZIP codes</label>
+                                <div class="settings-control flex min-h-10 flex-wrap items-center gap-1.5 py-1.5 focus-within:border-brand">
+                                    @for (zip of serviceAreaZips; track zip.id) {
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-app-surface-muted px-2 py-1 text-[11px] font-semibold text-app-text-muted">
+                                        {{ zip.postalCode }}
+                                        <button type="button" class="cursor-pointer text-app-text-muted transition hover:text-app-text"
+                                            (click)="removeServiceAreaZip(zip.id)" aria-label="Remove ZIP code">×</button>
+                                    </span>
+                                    }
+                                    <input type="text" [(ngModel)]="serviceAreaZipInput"
+                                        (keydown)="onServiceAreaZipKeydown($event)"
+                                        class="min-w-[110px] flex-1 border-0 bg-transparent p-0 text-xs outline-none"
+                                        placeholder="Add ZIP and press Enter" />
                                 </div>
-
-                                <p class="mt-2 ps-1 text-xs text-gray-500">
-                                    Press enter or comma to add.
-                                </p>
                             </div>
                             }
 
                             <div>
-                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                    Notes
-                                </label>
-                                <textarea [(ngModel)]="onsiteServiceAreaNotes" rows="3"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand resize-none"
-                                    placeholder="Optional internal note about your on-site coverage area."></textarea>
+                                <label class="settings-label">Internal coverage note</label>
+                                <textarea [(ngModel)]="onsiteServiceAreaNotes" rows="3" class="settings-control"
+                                    placeholder="Optional notes about boundaries, exceptions, or travel policies."></textarea>
                             </div>
                         </div>
+                        }
                     </div>
-                    }
-                </div>
+                </section>
             </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Order Settings</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Simple V1 controls for order numbering defaults.
-                    </p>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Prefix
-                        </label>
-                        <input type="text" [(ngModel)]="orderPrefix"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="SPR" />
-                    </div>
-
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Start Number
-                            </label>
-                            <input type="number" [(ngModel)]="orderStartNumber"
-                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-                        </div>
-
-                        <div>
-                            <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Padding
-                            </label>
-                            <input type="number" [(ngModel)]="orderPadding"
-                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Default Fulfillment Status
-                        </label>
-                        <select [(ngModel)]="defaultFulfillmentStatus"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand">
-                            <option value="unfulfilled">Unfulfilled</option>
-                            <option value="fulfilled">Fulfilled</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-4">
-                    <h2 class="text-base font-semibold text-gray-900">Locale</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        These settings shape formatting and regional defaults.
-                    </p>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-1">
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Language
-                        </label>
-                        <input type="text" [(ngModel)]="localeLanguage"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="en" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Currency
-                        </label>
-                        <input type="text" [(ngModel)]="localeCurrency"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="USD" />
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                            Country
-                        </label>
-                        <input type="text" [(ngModel)]="localeCountry"
-                            class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-brand"
-                            placeholder="US" />
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
     }
-</div>
+</app-settings-layout>

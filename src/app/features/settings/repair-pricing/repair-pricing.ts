@@ -48,6 +48,7 @@ import { Service } from '../../../core/services/model';
 import { ProductsService } from '../../../core/products/products-service';
 import { Product } from '../../../core/products/products-model';
 import { ToastService } from '../../../core/toast/toast-service';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type PricingTab = 'pricing' | 'types';
 type PriceAdjustmentMode =
@@ -60,7 +61,7 @@ type PriceAdjustmentMode =
 @Component({
   selector: 'app-repair-pricing',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [SettingsLayoutComponent, CommonModule, ReactiveFormsModule, LucideAngularModule],
   templateUrl: './repair-pricing.html',
 })
 export class RepairPricingSettings implements OnInit {

@@ -1,136 +1,103 @@
-<div class="mx-auto w-full max-w-[1500px] space-y-6 p-4 sm:p-6 lg:p-8">
-  <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-    <div>
-      <div class="flex items-center gap-3">
-        <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-          <lucide-icon [img]="icons.WalletCards" [size]="21"></lucide-icon>
-        </div>
+<app-settings-layout>
+  @if (state() !== 'loading') {
+  <button settings-actions type="button" class="settings-secondary-action cursor-pointer" (click)="retry()">
+    <lucide-icon [img]="icons.RefreshCw" [size]="14"></lucide-icon>
+    Refresh
+  </button>
+  }
+
+  <div class="space-y-3">
+    <section class="grid overflow-hidden rounded-[14px] border border-app-border bg-app-surface sm:grid-cols-3">
+      <div class="flex items-start gap-3 px-4 py-3 sm:border-r sm:border-app-border">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-emerald-50 text-emerald-700">
+          <lucide-icon [img]="icons.BadgeDollarSign" [size]="16"></lucide-icon>
+        </span>
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-app-text-muted">Finance</p>
-          <h1 class="text-2xl font-semibold tracking-tight text-app-text">Payouts</h1>
+          <p class="text-xs font-semibold text-app-text">Instant when eligible</p>
+          <p class="mt-0.5 text-[10.5px] leading-4 text-app-text-muted">Availability depends on your Stripe balance and destination.</p>
         </div>
       </div>
-      <p class="mt-3 max-w-2xl text-sm leading-6 text-app-text-muted">
-        Review your Stripe balance, manage payout accounts, change your payout schedule, and request an instant payout when eligible.
-      </p>
-    </div>
 
-    @if (state() !== 'loading') {
-      <button type="button"
-        class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-app-md border border-app-border bg-app-surface px-4 py-2.5 text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
-        (click)="retry()">
-        <lucide-icon [img]="icons.RefreshCw" [size]="16"></lucide-icon>
-        Refresh
-      </button>
-    }
-  </header>
-
-  <section class="grid gap-4 md:grid-cols-3">
-    <article class="rounded-app-lg border border-app-border bg-app-surface p-5 shadow-app-sm">
-      <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-          <lucide-icon [img]="icons.BadgeDollarSign" [size]="19"></lucide-icon>
-        </div>
+      <div class="flex items-start gap-3 border-t border-app-border px-4 py-3 sm:border-r sm:border-t-0">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-blue-50 text-blue-700">
+          <lucide-icon [img]="icons.ShieldCheck" [size]="16"></lucide-icon>
+        </span>
         <div>
-          <h2 class="text-sm font-semibold text-app-text">Instant when eligible</h2>
-          <p class="mt-1 text-sm leading-5 text-app-text-muted">
-            Stripe determines instant availability from your balance and payout destination.
-          </p>
+          <p class="text-xs font-semibold text-app-text">Managed by Stripe</p>
+          <p class="mt-0.5 text-[10.5px] leading-4 text-app-text-muted">Bank and debit-card information stays inside Stripe.</p>
         </div>
       </div>
-    </article>
 
-    <article class="rounded-app-lg border border-app-border bg-app-surface p-5 shadow-app-sm">
-      <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-          <lucide-icon [img]="icons.ShieldCheck" [size]="19"></lucide-icon>
-        </div>
+      <div class="flex items-start gap-3 border-t border-app-border px-4 py-3 sm:border-t-0">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-violet-50 text-violet-700">
+          <lucide-icon [img]="icons.Building2" [size]="16"></lucide-icon>
+        </span>
         <div>
-          <h2 class="text-sm font-semibold text-app-text">Stripe-managed security</h2>
-          <p class="mt-1 text-sm leading-5 text-app-text-muted">
-            Bank and debit-card details stay inside Stripe's authenticated payout experience.
-          </p>
+          <p class="text-xs font-semibold text-app-text">No Opscend markup</p>
+          <p class="mt-0.5 text-[10.5px] leading-4 text-app-text-muted">Your shop pays only Stripe’s disclosed instant payout fee.</p>
         </div>
       </div>
-    </article>
+    </section>
 
-    <article class="rounded-app-lg border border-app-border bg-app-surface p-5 shadow-app-sm">
-      <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
-          <lucide-icon [img]="icons.Building2" [size]="19"></lucide-icon>
-        </div>
+    <section class="settings-card">
+      @if (state() === 'loading') {
+      <div class="flex min-h-[360px] flex-col items-center justify-center gap-3 p-8 text-center">
+        <lucide-icon [img]="icons.Loader2" [size]="24" class="animate-spin text-brand"></lucide-icon>
         <div>
-          <h2 class="text-sm font-semibold text-app-text">No Opscend markup</h2>
-          <p class="mt-1 text-sm leading-5 text-app-text-muted">
-            Your shop pays only the disclosed instant payout fee. Opscend adds no markup.
-          </p>
+          <p class="text-xs font-semibold text-app-text">Loading Stripe payouts</p>
+          <p class="mt-1 text-[11px] text-app-text-muted">Checking the connected account and payout access.</p>
         </div>
       </div>
-    </article>
-  </section>
-
-  <section class="overflow-hidden rounded-app-lg border border-app-border bg-app-surface shadow-app-sm">
-    @if (state() === 'loading') {
-      <div class="flex min-h-[480px] flex-col items-center justify-center gap-3 p-8 text-center">
-        <lucide-icon [img]="icons.Loader2" [size]="28" class="animate-spin text-brand"></lucide-icon>
-        <div>
-          <p class="text-sm font-semibold text-app-text">Loading your Stripe payouts</p>
-          <p class="mt-1 text-sm text-app-text-muted">Checking your connected account and payout access.</p>
+      } @else if (state() === 'not_connected') {
+      <div class="flex min-h-[320px] flex-col items-center justify-center p-8 text-center">
+        <div class="flex h-11 w-11 items-center justify-center rounded-[12px] bg-amber-50 text-amber-700">
+          <lucide-icon [img]="icons.AlertCircle" [size]="21"></lucide-icon>
         </div>
-      </div>
-    } @else if (state() === 'not_connected') {
-      <div class="flex min-h-[420px] flex-col items-center justify-center p-8 text-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-amber-50 text-amber-700">
-          <lucide-icon [img]="icons.AlertCircle" [size]="25"></lucide-icon>
-        </div>
-        <h2 class="mt-5 text-lg font-semibold text-app-text">Connect Stripe first</h2>
-        <p class="mt-2 max-w-md text-sm leading-6 text-app-text-muted">
-          Your shop needs an active Stripe Connect account before payouts can be managed in Opscend.
+        <h2 class="mt-4 text-sm font-semibold text-app-text">Connect Stripe before managing payouts</h2>
+        <p class="mt-1.5 max-w-md text-[11px] leading-5 text-app-text-muted">
+          An active Stripe Connect account is required before balances, payout destinations, and instant payouts can appear here.
         </p>
-        <a routerLink="/settings/integrations"
-          class="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-app-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+        <a routerLink="/settings/integrations" class="settings-primary-action cursor-pointer mt-4">
           Open integrations
-          <lucide-icon [img]="icons.ArrowRight" [size]="16"></lucide-icon>
+          <lucide-icon [img]="icons.ArrowRight" [size]="14"></lucide-icon>
         </a>
       </div>
-    } @else if (state() === 'not_ready') {
-      <div class="flex min-h-[420px] flex-col items-center justify-center p-8 text-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-blue-50 text-blue-700">
-          <lucide-icon [img]="icons.Clock3" [size]="25"></lucide-icon>
+      } @else if (state() === 'not_ready') {
+      <div class="flex min-h-[320px] flex-col items-center justify-center p-8 text-center">
+        <div class="flex h-11 w-11 items-center justify-center rounded-[12px] bg-blue-50 text-blue-700">
+          <lucide-icon [img]="icons.Clock3" [size]="21"></lucide-icon>
         </div>
-        <h2 class="mt-5 text-lg font-semibold text-app-text">Payout setup is not complete</h2>
-        <p class="mt-2 max-w-md text-sm leading-6 text-app-text-muted">
-          Stripe has not enabled payouts for this account yet. Finish any remaining verification or payout-account requirements.
+        <h2 class="mt-4 text-sm font-semibold text-app-text">Stripe payout setup is incomplete</h2>
+        <p class="mt-1.5 max-w-md text-[11px] leading-5 text-app-text-muted">
+          Complete any remaining identity, business, or payout-destination requirements in Stripe.
         </p>
-        <a routerLink="/settings/integrations"
-          class="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-app-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+        <a routerLink="/settings/integrations" class="settings-primary-action cursor-pointer mt-4">
           Review Stripe setup
-          <lucide-icon [img]="icons.ExternalLink" [size]="16"></lucide-icon>
+          <lucide-icon [img]="icons.ExternalLink" [size]="14"></lucide-icon>
         </a>
       </div>
-    } @else if (state() === 'error') {
-      <div class="flex min-h-[420px] flex-col items-center justify-center p-8 text-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-50 text-rose-700">
-          <lucide-icon [img]="icons.AlertCircle" [size]="25"></lucide-icon>
+      } @else if (state() === 'error') {
+      <div class="flex min-h-[320px] flex-col items-center justify-center p-8 text-center">
+        <div class="flex h-11 w-11 items-center justify-center rounded-[12px] bg-rose-50 text-rose-700">
+          <lucide-icon [img]="icons.AlertCircle" [size]="21"></lucide-icon>
         </div>
-        <h2 class="mt-5 text-lg font-semibold text-app-text">Payouts could not be loaded</h2>
-        <p class="mt-2 max-w-lg text-sm leading-6 text-app-text-muted">{{ errorMessage() }}</p>
-        <button type="button"
-          class="cursor-pointer mt-5 inline-flex items-center gap-2 rounded-app-md bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-          (click)="retry()">
-          <lucide-icon [img]="icons.RefreshCw" [size]="16"></lucide-icon>
+        <h2 class="mt-4 text-sm font-semibold text-app-text">Payouts could not be loaded</h2>
+        <p class="mt-1.5 max-w-lg text-[11px] leading-5 text-app-text-muted">{{ errorMessage() }}</p>
+        <button type="button" class="settings-primary-action cursor-pointer mt-4" (click)="retry()">
+          <lucide-icon [img]="icons.RefreshCw" [size]="14"></lucide-icon>
           Try again
         </button>
       </div>
-    }
+      }
 
-    <div #payoutsHost class="min-h-[540px] p-4 sm:p-6" [class.hidden]="state() !== 'ready'"></div>
-  </section>
+      <div #payoutsHost class="min-h-[500px] p-3 sm:p-4" [class.hidden]="state() !== 'ready'"></div>
+    </section>
 
-  <div class="flex items-start gap-3 rounded-app-lg border border-app-border bg-app-surface-muted p-4 text-sm text-app-text-muted">
-    <lucide-icon [img]="icons.CheckCircle2" [size]="18" class="mt-0.5 shrink-0 text-emerald-600"></lucide-icon>
-    <p class="leading-6">
-      Instant payout eligibility, limits, timing, and destination support are determined by Stripe. Standard payouts remain available according to your selected schedule.
-    </p>
+    <div class="settings-inline-note flex items-start gap-2.5">
+      <lucide-icon [img]="icons.CheckCircle2" [size]="16" class="mt-0.5 shrink-0 text-emerald-600"></lucide-icon>
+      <p>
+        Eligibility, limits, timing, and supported payout destinations are determined by Stripe. Standard payouts remain available according to the schedule configured in Stripe.
+      </p>
+    </div>
   </div>
-</div>
+</app-settings-layout>

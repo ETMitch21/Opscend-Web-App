@@ -4,11 +4,12 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UsersStore } from '../../../../core/users/users-store';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { ToastService } from '../../../../core/toast/toast-service';
+import { SettingsLayoutComponent } from '../../settings-layout/settings-layout';
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [SettingsLayoutComponent, CommonModule, ReactiveFormsModule],
   templateUrl: './my-profile.component.html',
 })
 export class MyProfileComponent implements OnInit {

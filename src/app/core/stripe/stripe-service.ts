@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, Observable } from 'rxjs';
 import { loadStripe } from '@stripe/stripe-js';
-import { loadConnectAndInitialize } from '@stripe/connect-js/pure';
+import { loadConnectAndInitialize } from '@stripe/connect-js';
 import type {
   Stripe,
   StripeCardElement,

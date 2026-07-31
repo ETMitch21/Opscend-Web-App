@@ -15,6 +15,7 @@ import {
 import { LucideAngularModule } from 'lucide-angular';
 
 import { AppConfigService } from '../../../core/app-config/app-config.service';
+import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type RepairNotificationEvent =
   | 'repair_verification_code_created'
@@ -58,7 +59,7 @@ interface RepairNotificationTemplateListResponse {
 @Component({
   selector: 'app-repair-notification-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [SettingsLayoutComponent, CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './repair-notifications.html',
 })
 export class RepairNotifications implements OnInit {
