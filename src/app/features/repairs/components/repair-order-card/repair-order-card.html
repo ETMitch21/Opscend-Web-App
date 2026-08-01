@@ -141,13 +141,14 @@
           @if (searchFocused()) {
           <div
             class="absolute left-6 right-6 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
-            @if (catalogLoading()) {
-            <div class="px-4 py-3 text-sm text-gray-500">
-              Loading products and services...
+            @if (itemSearchQuery() ? catalogSearching() : catalogLoading()) {
+            <div class="flex items-center gap-2 px-4 py-3 text-sm text-gray-500">
+              <lucide-icon [name]="icons.LoaderCircle" class="h-4 w-4 animate-spin"></lucide-icon>
+              {{ itemSearchQuery() ? 'Searching products and services...' : 'Loading products and services...' }}
             </div>
-            } @else if (catalogLoadFailed()) {
+            } @else if (itemSearchQuery() ? catalogSearchFailed() : catalogLoadFailed()) {
             <div class="px-4 py-3 text-sm text-rose-600">
-              Products and services could not be loaded. Refresh and try again.
+              Products and services could not be loaded. Try the search again.
             </div>
             } @else if (filteredCatalogItems().length) {
             @for (result of filteredCatalogItems(); track trackCatalogItem($index, result)) {

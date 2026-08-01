@@ -19,7 +19,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { firstValueFrom } from 'rxjs';
+import { debounceTime, distinctUntilChanged, firstValueFrom, tap } from 'rxjs';
 import {
   BadgeDollarSign,
   CheckCircle2,
@@ -143,9 +143,14 @@ export class RepairOrderCard {
 
   readonly catalogLoading = signal(false);
   readonly catalogLoadFailed = signal(false);
+  readonly catalogSearching = signal(false);
+  readonly catalogSearchFailed = signal(false);
+  readonly itemSearchQuery = signal('');
 
+  private catalogSearchRequestId = 0;
   private readonly productCatalogItems = signal<CatalogItemOption[]>([]);
   private readonly serviceCatalogItems = signal<CatalogItemOption[]>([]);
+  private readonly catalogSearchItems = signal<CatalogItemOption[]>([]);
 
   readonly products = computed<CatalogItemOption[]>(() => this.productCatalogItems());
   readonly services = computed<CatalogItemOption[]>(() => this.serviceCatalogItems());
@@ -175,22 +180,15 @@ export class RepairOrderCard {
 
   private readonly itemsFormRevision = signal(0);
 
-  readonly catalogItems = computed(() => [...this.products(), ...this.services()]);
+  readonly catalogItems = computed(() => {
+    if (this.itemSearchQuery()) {
+      return this.catalogSearchItems();
+    }
 
-  readonly filteredCatalogItems = computed(() => {
-    const query = this.itemSearchControl.value.trim().toLowerCase();
-    const items = this.catalogItems();
-
-    if (!query) return items.slice(0, 8);
-
-    return items
-      .filter((item) => {
-        const name = item.name.toLowerCase();
-        const description = (item.description ?? '').toLowerCase();
-        return name.includes(query) || description.includes(query);
-      })
-      .slice(0, 8);
+    return [...this.products(), ...this.services()];
   });
+
+  readonly filteredCatalogItems = computed(() => this.catalogItems().slice(0, 8));
 
   readonly draftSubtotalCents = computed(() => {
     this.itemsFormRevision();
@@ -232,6 +230,33 @@ export class RepairOrderCard {
 
   constructor() {
     void this.loadCatalogItems();
+
+    this.itemSearchControl.valueChanges
+      .pipe(
+        tap((value) => {
+          const query = value.trim();
+          this.itemSearchQuery.set(query);
+
+          if (!query) {
+            this.clearCatalogSearchResults();
+            return;
+          }
+
+          // Invalidate any older request immediately so stale results never flash
+          // while the next debounced search is waiting to run.
+          this.catalogSearchRequestId += 1;
+          this.catalogSearchItems.set([]);
+          this.catalogSearchFailed.set(false);
+          this.catalogSearching.set(true);
+        }),
+        debounceTime(250),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((value) => {
+        const query = value.trim();
+        if (query) void this.searchCatalogItems(query);
+      });
 
     this.itemsForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -307,14 +332,7 @@ export class RepairOrderCard {
       this.productCatalogItems.set(
         (productsResult.value.data ?? [])
           .filter((product: any) => product?.status === 'active')
-          .map((product: any) => ({
-            id: product.id,
-            type: 'product' as CatalogItemType,
-            name: product.name,
-            description: product.sku ? `Product SKU: ${product.sku}` : null,
-            priceCents: Number(product.price ?? product.priceCents ?? 0),
-            sku: product.sku ?? null,
-          }))
+          .map((product: any) => this.mapProductCatalogItem(product))
       );
     } else {
       this.productCatalogItems.set([]);
@@ -324,18 +342,7 @@ export class RepairOrderCard {
       this.serviceCatalogItems.set(
         (servicesResult.value ?? [])
           .filter((service: any) => service?.status === 'active')
-          .map((service: any) => ({
-            id: service.id,
-            type: 'service' as CatalogItemType,
-            name: service.name,
-            description: [
-              service.code ? `Service Code: ${service.code}` : null,
-              service.duration != null ? `${service.duration} min` : null,
-              service.description ?? null,
-            ].filter(Boolean).join(' · ') || null,
-            priceCents: Number(service.price ?? service.priceCents ?? 0),
-            sku: null,
-          }))
+          .map((service: any) => this.mapServiceCatalogItem(service))
       );
     } else {
       this.serviceCatalogItems.set([]);
@@ -355,6 +362,44 @@ export class RepairOrderCard {
     }
 
     this.catalogLoading.set(false);
+  }
+
+  async searchCatalogItems(queryValue: string): Promise<void> {
+    const query = queryValue.trim();
+    if (!query) {
+      this.clearCatalogSearchResults();
+      return;
+    }
+
+    const requestId = ++this.catalogSearchRequestId;
+    this.catalogSearching.set(true);
+    this.catalogSearchFailed.set(false);
+    this.catalogSearchItems.set([]);
+
+    const [productsResult, servicesResult] = await Promise.allSettled([
+      firstValueFrom(this.productsService.search(query, 30)),
+      firstValueFrom(this.servicesService.search(query, 20)),
+    ]);
+
+    if (requestId !== this.catalogSearchRequestId) return;
+
+    const products = productsResult.status === 'fulfilled'
+      ? (productsResult.value ?? [])
+          .filter((product: any) => product?.status === 'active')
+          .map((product: any) => this.mapProductCatalogItem(product, query))
+      : [];
+
+    const services = servicesResult.status === 'fulfilled'
+      ? (servicesResult.value ?? [])
+          .filter((service: any) => service?.status === 'active')
+          .map((service: any) => this.mapServiceCatalogItem(service))
+      : [];
+
+    this.catalogSearchItems.set([...products, ...services]);
+    this.catalogSearchFailed.set(
+      productsResult.status === 'rejected' && servicesResult.status === 'rejected'
+    );
+    this.catalogSearching.set(false);
   }
 
   async loadStripeStatus(): Promise<void> {
@@ -438,6 +483,76 @@ export class RepairOrderCard {
 
   onSearchBlur(): void {
     setTimeout(() => this.searchFocused.set(false), 150);
+  }
+
+  private clearCatalogSearchResults(): void {
+    this.catalogSearchRequestId += 1;
+    this.catalogSearchItems.set([]);
+    this.catalogSearching.set(false);
+    this.catalogSearchFailed.set(false);
+  }
+
+  private mapProductCatalogItem(product: any, query = ''): CatalogItemOption {
+    const supplierLinks = Array.isArray(product?.supplierLinks)
+      ? product.supplierLinks
+      : [];
+    const normalizedQuery = query.trim().toLowerCase();
+
+    const matchingSupplier = normalizedQuery
+      ? supplierLinks.find((link: any) =>
+          [link?.supplierSku, link?.supplierProductName, link?.supplierName]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedQuery))
+        )
+      : null;
+
+    const preferredSupplier =
+      supplierLinks.find((link: any) => link?.isPreferred) ??
+      supplierLinks[0] ??
+      null;
+
+    const internalSku = product?.sku ? String(product.sku) : null;
+    const supplierSku = matchingSupplier?.supplierSku
+      ? String(matchingSupplier.supplierSku)
+      : preferredSupplier?.supplierSku
+        ? String(preferredSupplier.supplierSku)
+        : null;
+
+    const description = [
+      internalSku ? `Product SKU: ${internalSku}` : null,
+      supplierSku && supplierSku !== internalSku
+        ? `Supplier SKU: ${supplierSku}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || null;
+
+    return {
+      id: product.id,
+      type: 'product',
+      name: product.name,
+      description,
+      priceCents: Number(product.price ?? product.priceCents ?? 0),
+      sku: internalSku ?? supplierSku,
+    };
+  }
+
+  private mapServiceCatalogItem(service: any): CatalogItemOption {
+    return {
+      id: service.id,
+      type: 'service',
+      name: service.name,
+      description:
+        [
+          service.code ? `Service Code: ${service.code}` : null,
+          service.duration != null ? `${service.duration} min` : null,
+          service.description ?? null,
+        ]
+          .filter(Boolean)
+          .join(' · ') || null,
+      priceCents: Number(service.price ?? service.priceCents ?? 0),
+      sku: null,
+    };
   }
 
   private bumpDraftTotals(): void {
@@ -992,6 +1107,8 @@ export class RepairOrderCard {
 
     this.itemsForm.patchValue({ discountDollars: 0 }, { emitEvent: false });
     this.itemSearchControl.setValue('', { emitEvent: false });
+    this.itemSearchQuery.set('');
+    this.clearCatalogSearchResults();
     this.searchFocused.set(false);
     this.expandedItemIndex.set(null);
     this.bumpDraftTotals();
@@ -1026,6 +1143,8 @@ export class RepairOrderCard {
     );
 
     this.itemSearchControl.setValue('', { emitEvent: false });
+    this.itemSearchQuery.set('');
+    this.clearCatalogSearchResults();
     this.searchFocused.set(false);
     this.expandedItemIndex.set(null);
     this.bumpDraftTotals();
