@@ -818,7 +818,10 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
             return this.productsApi.search(search, 25).pipe(
               catchError((error) => {
                 console.error('Unable to search products', error);
-                return of(null);
+                // Never leave an older, unrelated result set visible when the
+                // current server-side search fails. An empty result is safer
+                // than allowing a stale product to be selected.
+                return of([] as Product[]);
               }),
               finalize(() => {
                 if (requestVersion === this.productSearchVersion) {
