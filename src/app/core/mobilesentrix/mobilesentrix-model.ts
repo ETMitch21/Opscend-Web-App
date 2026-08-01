@@ -44,7 +44,7 @@ export interface MobileSentrixSearchItemApi {
   front_position: string;
 }
 
-export type MobileSentrixSearchSource = 'live' | 'cache' | 'linked_products';
+export type MobileSentrixSearchSource = 'live' | 'cache' | 'linked_products' | 'unavailable';
 
 export interface MobileSentrixSearchResponse {
   ok: boolean;
@@ -54,6 +54,12 @@ export interface MobileSentrixSearchResponse {
   stale?: boolean;
   fetchedAt?: string | null;
   warning?: string | null;
+  unavailable?: boolean;
+  requiresReconnect?: boolean;
+  code?: string | number | null;
+  upstreamStatus?: number | null;
+  cfRay?: string | null;
+  attempts?: number | null;
 }
 
 export interface MobileSentrixSearchResult {
