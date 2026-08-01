@@ -374,6 +374,9 @@ export class NewRepair implements OnInit {
   public searchingMobileSentrixParts = false;
   public inventoryLookupFailed = false;
   public mobileSentrixLookupFailed = false;
+  public mobileSentrixLookupWarning: string | null = null;
+
+  private lastMobileSentrixSearchQuery: string | null = null;
 
   public customerAddresses: CustomerAddress[] = [];
   public loadingCustomerAddresses = false;
@@ -1552,8 +1555,15 @@ export class NewRepair implements OnInit {
     this.partLookupStarted = true;
     this.inventoryLookupFailed = false;
     this.mobileSentrixLookupFailed = false;
+    this.mobileSentrixLookupWarning = null;
     this.inventoryPartResults = [];
-    this.mobileSentrixPartResults = [];
+
+    const normalizedMobileSentrixQuery = query.trim().toLowerCase();
+    if (this.lastMobileSentrixSearchQuery !== normalizedMobileSentrixQuery) {
+      this.mobileSentrixPartResults = [];
+    }
+    this.lastMobileSentrixSearchQuery = normalizedMobileSentrixQuery;
+
     this.searchingInventoryParts = true;
     this.searchingMobileSentrixParts = true;
 
@@ -1582,13 +1592,22 @@ export class NewRepair implements OnInit {
       }),
     )
       .then((response) => {
+        this.mobileSentrixLookupFailed = false;
         this.mobileSentrixPartResults = mapMobileSentrixItems(
           response.items ?? [],
         );
+        this.mobileSentrixLookupWarning =
+          response.warning ??
+          (response.cached
+            ? 'Showing recently cached MobileSentrix results.'
+            : null);
       })
       .catch(() => {
         this.mobileSentrixLookupFailed = true;
-        this.mobileSentrixPartResults = [];
+        this.mobileSentrixLookupWarning =
+          this.mobileSentrixPartResults.length > 0
+            ? 'MobileSentrix could not refresh. Showing the previous successful results.'
+            : null;
       })
       .finally(() => {
         this.searchingMobileSentrixParts = false;

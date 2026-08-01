@@ -44,9 +44,16 @@ export interface MobileSentrixSearchItemApi {
   front_position: string;
 }
 
+export type MobileSentrixSearchSource = 'live' | 'cache' | 'linked_products';
+
 export interface MobileSentrixSearchResponse {
   ok: boolean;
   items: MobileSentrixSearchItemApi[];
+  source?: MobileSentrixSearchSource;
+  cached?: boolean;
+  stale?: boolean;
+  fetchedAt?: string | null;
+  warning?: string | null;
 }
 
 export interface MobileSentrixSearchResult {

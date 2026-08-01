@@ -3,6 +3,7 @@ import {
   Component,
   EventEmitter,
   Output,
+  OnDestroy,
   computed,
   inject,
   signal,
@@ -14,7 +15,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { LucideAngularModule, SearchIcon, XIcon } from 'lucide-angular';
-import { firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 import { ProductsStore } from '../../../core/products/products-store';
 import { MobileSentrixService } from '../../../core/mobilesentrix/mobilesentrix-service';
@@ -29,7 +30,7 @@ import { MobileSentrixSearchResult } from '../../../core/mobilesentrix/mobilesen
   styleUrl: './product-create-drawer.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProductCreateDrawer {
+export class ProductCreateDrawer implements OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly productsStore = inject(ProductsStore);
   private readonly mobileSentrixService = inject(MobileSentrixService);
@@ -44,6 +45,7 @@ export class ProductCreateDrawer {
 
   readonly searching = signal(false);
   readonly searchError = signal<string | null>(null);
+  readonly searchNotice = signal<string | null>(null);
   readonly searchTerm = signal('');
   readonly searchResults = signal<MobileSentrixSearchResult[]>([]);
   readonly selectedSearchResult = signal<MobileSentrixSearchResult | null>(null);
@@ -64,6 +66,10 @@ export class ProductCreateDrawer {
 
   public sellingPriceDisplay = '';
   public costDisplay = '';
+
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeSearchSubscription: Subscription | null = null;
+  private searchRequestId = 0;
 
   readonly hasSearchResults = computed(() => this.searchResults().length > 0);
   readonly canSearch = computed(() => this.searchTerm().trim().length >= 2);
@@ -125,30 +131,54 @@ export class ProductCreateDrawer {
     this.costDisplay = cents == null ? '' : this.formatCentsToDisplay(cents);
   }
 
-  async searchMobileSentrix(): Promise<void> {
-    const term = this.searchTerm().trim();
-    if (term.length < 2) return;
+  searchMobileSentrix(): void {
+    this.clearSearchDebounce();
 
+    const term = this.searchTerm().trim();
+    if (term.length < 2) {
+      this.cancelActiveSearch();
+      this.searchResults.set([]);
+      return;
+    }
+
+    const requestId = ++this.searchRequestId;
+
+    this.activeSearchSubscription?.unsubscribe();
     this.searching.set(true);
     this.searchError.set(null);
+    this.searchNotice.set(null);
 
-    try {
-      const response = await firstValueFrom(
-        this.mobileSentrixService.search({
-          q: term,
-          maxResults: 25,
-          startIndex: 0,
-        })
-      );
+    this.activeSearchSubscription = this.mobileSentrixService
+      .search({
+        q: term,
+        maxResults: 25,
+        startIndex: 0,
+      })
+      .subscribe({
+        next: (response) => {
+          if (requestId !== this.searchRequestId) return;
 
-      this.searchResults.set(mapMobileSentrixItems(response.items));
-    } catch (error) {
-      console.error(error);
-      this.searchError.set('Unable to search MobileSentrix right now.');
-      this.searchResults.set([]);
-    } finally {
-      this.searching.set(false);
-    }
+          this.searchResults.set(mapMobileSentrixItems(response.items ?? []));
+          this.searchNotice.set(this.buildSearchNotice(response));
+        },
+        error: (error) => {
+          if (requestId !== this.searchRequestId) return;
+
+          console.error(error);
+          this.searchError.set(
+            this.searchResults().length > 0
+              ? 'MobileSentrix could not refresh. Showing the previous successful results.'
+              : 'Unable to search MobileSentrix right now.',
+          );
+          this.searching.set(false);
+          this.activeSearchSubscription = null;
+        },
+        complete: () => {
+          if (requestId !== this.searchRequestId) return;
+          this.searching.set(false);
+          this.activeSearchSubscription = null;
+        },
+      });
   }
 
   selectSearchResult(result: MobileSentrixSearchResult): void {
@@ -191,6 +221,65 @@ export class ProductCreateDrawer {
 
   setSearchTerm(value: string): void {
     this.searchTerm.set(value);
+    this.searchError.set(null);
+    this.searchNotice.set(null);
+
+    this.cancelActiveSearch();
+    this.clearSearchDebounce();
+
+    const term = value.trim();
+
+    if (term.length < 2) {
+      this.searchResults.set([]);
+      return;
+    }
+
+    this.searchDebounceTimer = setTimeout(() => {
+      this.searchDebounceTimer = null;
+      this.searchMobileSentrix();
+    }, 400);
+  }
+
+  ngOnDestroy(): void {
+    this.clearSearchDebounce();
+    this.cancelActiveSearch();
+  }
+
+  private cancelActiveSearch(): void {
+    this.searchRequestId++;
+    this.activeSearchSubscription?.unsubscribe();
+    this.activeSearchSubscription = null;
+    this.searching.set(false);
+  }
+
+  private clearSearchDebounce(): void {
+    if (!this.searchDebounceTimer) return;
+    clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = null;
+  }
+
+  private buildSearchNotice(response: {
+    cached?: boolean;
+    stale?: boolean;
+    fetchedAt?: string | null;
+    warning?: string | null;
+  }): string | null {
+    if (response.warning) return response.warning;
+    if (!response.cached) return null;
+
+    const fetchedAt = response.fetchedAt
+      ? new Date(response.fetchedAt).toLocaleString()
+      : null;
+
+    if (response.stale) {
+      return fetchedAt
+        ? `Showing cached MobileSentrix results from ${fetchedAt}.`
+        : 'Showing cached MobileSentrix results.';
+    }
+
+    return fetchedAt
+      ? `Loaded from Opscend's recent MobileSentrix cache (${fetchedAt}).`
+      : "Loaded from Opscend's recent MobileSentrix cache.";
   }
 
   async submit(): Promise<void> {

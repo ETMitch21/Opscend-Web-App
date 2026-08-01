@@ -79,6 +79,7 @@ export class ProductDetail {
 
   readonly mobileSentrixLoading = signal(false);
   readonly mobileSentrixError = signal<string | null>(null);
+  readonly mobileSentrixNotice = signal<string | null>(null);
   readonly mobileSentrixMatch = signal<MobileSentrixSearchResult | null>(null);
   readonly mobileSentrixConnected = signal<boolean | null>(null);
 
@@ -376,7 +377,7 @@ export class ProductDetail {
 
     this.mobileSentrixLoading.set(true);
     this.mobileSentrixError.set(null);
-    this.mobileSentrixMatch.set(null);
+    this.mobileSentrixNotice.set(null);
 
     try {
       const status = await firstValueFrom(this.mobileSentrixService.getStatus());
@@ -423,9 +424,22 @@ export class ProductDetail {
         null;
 
       this.mobileSentrixMatch.set(match);
+      this.mobileSentrixNotice.set(
+        response.warning ??
+          (response.cached
+            ? 'Showing the most recent MobileSentrix data saved by Opscend.'
+            : null),
+      );
     } catch (error) {
       console.error(error);
-      this.mobileSentrixError.set('Unable to load MobileSentrix snapshot.');
+
+      if (this.mobileSentrixMatch()) {
+        this.mobileSentrixNotice.set(
+          'MobileSentrix could not refresh. Showing the previous successful snapshot.',
+        );
+      } else {
+        this.mobileSentrixError.set('Unable to load MobileSentrix snapshot.');
+      }
     } finally {
       this.mobileSentrixLoading.set(false);
     }

@@ -964,37 +964,47 @@
                     <p class="text-sm text-gray-500">
                       Searching MobileSentrix...
                     </p>
-                    } @else if (mobileSentrixLookupFailed) {
-                    <p class="text-sm text-red-600">
-                      MobileSentrix lookup failed. You can still create the
-                      repair and decide later.
-                    </p>
-                    } @else if (mobileSentrixPartResults.length > 0) {
-                    <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
-                      @for (part of mobileSentrixPartResults; track part.id) {
-                      <button
-                        type="button"
-                        class="w-full cursor-pointer rounded-xl border bg-white px-3 py-3 text-left transition"
-                        [ngClass]="newRepairForm.controls.selectedSupplierPartId.value === part.id
-                                                ? 'border-brand bg-brand/5'
-                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
-                        (click)="selectMobileSentrixPart(part)"
-                      >
-                        <div class="text-sm font-semibold text-gray-900">
-                          {{ part.title }}
-                        </div>
-                        <div class="mt-1 text-xs text-gray-500">
-                          SKU {{ part.sku || '—' }} · Cost {{
-                          formatCents(part.costCents) }} · {{ part.inStock ? 'In
-                          stock' : 'Out of stock' }}
-                        </div>
-                      </button>
-                      }
-                    </div>
                     } @else {
-                    <p class="text-sm text-gray-500">
-                      No matching MobileSentrix parts found.
-                    </p>
+                      @if (mobileSentrixLookupFailed) {
+                      <div class="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                        MobileSentrix could not be reached. You can still create
+                        the repair and decide later.
+                      </div>
+                      }
+
+                      @if (mobileSentrixLookupWarning) {
+                      <div class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        {{ mobileSentrixLookupWarning }}
+                      </div>
+                      }
+
+                      @if (mobileSentrixPartResults.length > 0) {
+                      <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                        @for (part of mobileSentrixPartResults; track part.id) {
+                        <button
+                          type="button"
+                          class="w-full cursor-pointer rounded-xl border bg-white px-3 py-3 text-left transition"
+                          [ngClass]="newRepairForm.controls.selectedSupplierPartId.value === part.id
+                                                  ? 'border-brand bg-brand/5'
+                                                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'"
+                          (click)="selectMobileSentrixPart(part)"
+                        >
+                          <div class="text-sm font-semibold text-gray-900">
+                            {{ part.title }}
+                          </div>
+                          <div class="mt-1 text-xs text-gray-500">
+                            SKU {{ part.sku || '—' }} · Cost {{
+                            formatCents(part.costCents) }} · {{ part.inStock ? 'In
+                            stock' : 'Out of stock' }}
+                          </div>
+                        </button>
+                        }
+                      </div>
+                      } @else if (!mobileSentrixLookupFailed) {
+                      <p class="text-sm text-gray-500">
+                        No matching MobileSentrix parts found.
+                      </p>
+                      }
                     }
                   </div>
                 </div>

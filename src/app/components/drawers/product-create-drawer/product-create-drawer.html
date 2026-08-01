@@ -27,7 +27,7 @@
             Supplier Search
           </h3>
           <p class="mt-1 text-sm text-gray-500">
-            Start with MobileSentrix to prefill the product details below.
+            Results update automatically as you type and stay available if MobileSentrix briefly fails.
           </p>
         </div>
 
@@ -45,20 +45,26 @@
             class="min-w-0 flex-1 bg-transparent py-1 text-xs outline-none placeholder:text-gray-400"
             [value]="searchTerm()"
             (input)="setSearchTerm($any($event.target).value)"
-            (keydown.enter)="searchMobileSentrix()" />
+            (keydown.enter)="$event.preventDefault(); searchMobileSentrix()" />
 
           <button
             type="button"
             class="ml-1.5 shrink-0 rounded-md bg-gray-900 px-3 py-1 text-xs font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             [disabled]="!canSearch() || searching()"
             (click)="searchMobileSentrix()">
-            {{ searching() ? '...' : 'Search' }}
+            {{ searching() ? 'Searching…' : 'Search' }}
           </button>
         </div>
 
         @if (searchError()) {
           <div class="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {{ searchError() }}
+          </div>
+        }
+
+        @if (searchNotice()) {
+          <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {{ searchNotice() }}
           </div>
         }
 
