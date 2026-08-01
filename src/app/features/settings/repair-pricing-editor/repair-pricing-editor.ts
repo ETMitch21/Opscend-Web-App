@@ -368,6 +368,9 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   private readonly serviceSearch$ = new Subject<string>();
   private readonly productSearch$ = new Subject<string>();
   private readonly subscriptions = new Subscription();
+  private modelSearchVersion = 0;
+  private serviceSearchVersion = 0;
+  private productSearchVersion = 0;
   private productHydrationVersion = 0;
 
   async ngOnInit(): Promise<void> {
@@ -743,16 +746,25 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
           debounceTime(220),
           distinctUntilChanged(),
           switchMap((search) => {
+            const requestVersion = ++this.modelSearchVersion;
             this.modelLoading.set(true);
             return this.catalogApi
               .searchManagedModels({ includeInactive: false, search, limit: 50 })
               .pipe(
-                catchError(() => of({ data: [] as ManagedDeviceCatalogModel[] })),
-                finalize(() => this.modelLoading.set(false)),
+                catchError((error) => {
+                  console.error('Unable to search device models', error);
+                  return of(null);
+                }),
+                finalize(() => {
+                  if (requestVersion === this.modelSearchVersion) {
+                    this.modelLoading.set(false);
+                  }
+                }),
               );
           }),
         )
         .subscribe((response) => {
+          if (!response) return;
           const selected = this.selectedModel();
           const rows = response.data ?? [];
           this.modelSuggestions.set(
@@ -769,14 +781,23 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
           debounceTime(220),
           distinctUntilChanged(),
           switchMap((search) => {
+            const requestVersion = ++this.serviceSearchVersion;
             this.serviceLoading.set(true);
             return this.servicesApi.search(search, 25).pipe(
-              catchError(() => of([] as Service[])),
-              finalize(() => this.serviceLoading.set(false)),
+              catchError((error) => {
+                console.error('Unable to search services', error);
+                return of(null);
+              }),
+              finalize(() => {
+                if (requestVersion === this.serviceSearchVersion) {
+                  this.serviceLoading.set(false);
+                }
+              }),
             );
           }),
         )
         .subscribe((rows) => {
+          if (!rows) return;
           const selected = this.selectedService();
           this.serviceSuggestions.set(
             selected && !rows.some((row) => row.id === selected.id)
@@ -792,14 +813,23 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
           debounceTime(220),
           distinctUntilChanged(),
           switchMap((search) => {
+            const requestVersion = ++this.productSearchVersion;
             this.productLoading.set(true);
             return this.productsApi.search(search, 25).pipe(
-              catchError(() => of([] as Product[])),
-              finalize(() => this.productLoading.set(false)),
+              catchError((error) => {
+                console.error('Unable to search products', error);
+                return of(null);
+              }),
+              finalize(() => {
+                if (requestVersion === this.productSearchVersion) {
+                  this.productLoading.set(false);
+                }
+              }),
             );
           }),
         )
         .subscribe((rows) => {
+          if (!rows) return;
           const selected = this.selectedProduct();
           this.productSuggestions.set(
             selected && !rows.some((row) => row.id === selected.id)

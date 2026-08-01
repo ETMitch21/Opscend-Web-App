@@ -42,6 +42,12 @@ export class TypeaheadComponent implements OnChanges {
   @Input() clearable = true;
   @Input() minimumQueryLength = 0;
   @Input() hint = '';
+  /**
+   * Set to false when `items` already come from a server-side search.
+   * Re-filtering remote results locally can hide valid matches returned for
+   * fields that are not rendered in the option label (for example supplier SKU).
+   */
+  @Input() filterLocally = true;
 
   @Output() searchChange = new EventEmitter<string>();
   @Output() selectedItemChange = new EventEmitter<TypeaheadItem | null>();
@@ -61,6 +67,8 @@ export class TypeaheadComponent implements OnChanges {
   private blurTimer: ReturnType<typeof setTimeout> | null = null;
 
   get visibleItems(): TypeaheadItem[] {
+    if (!this.filterLocally) return this.items;
+
     const query = this.normalize(this.query);
     if (!query || this.selectedItem?.label === this.query) return this.items;
 

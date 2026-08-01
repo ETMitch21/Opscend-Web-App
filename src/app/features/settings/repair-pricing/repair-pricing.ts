@@ -178,6 +178,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   private readonly pricingSearch$ = new Subject<string>();
   private readonly modelSearch$ = new Subject<string>();
   private readonly subscriptions = new Subscription();
+  private modelSearchVersion = 0;
   private routeFingerprint = '';
 
   async ngOnInit(): Promise<void> {
@@ -415,6 +416,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
           debounceTime(220),
           distinctUntilChanged(),
           switchMap((search) => {
+            const requestVersion = ++this.modelSearchVersion;
             this.modelLoading.set(true);
             return this.catalogApi
               .searchManagedModels({
@@ -424,14 +426,19 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
               })
               .pipe(
                 catchError((error) => {
-                  console.error(error);
-                  return of({ data: [] as ManagedDeviceCatalogModel[] });
+                  console.error('Unable to search device models', error);
+                  return of(null);
                 }),
-                finalize(() => this.modelLoading.set(false)),
+                finalize(() => {
+                  if (requestVersion === this.modelSearchVersion) {
+                    this.modelLoading.set(false);
+                  }
+                }),
               );
           }),
         )
         .subscribe((response) => {
+          if (!response) return;
           const selected = this.selectedModel();
           const rows = response.data ?? [];
           this.modelSuggestions.set(
