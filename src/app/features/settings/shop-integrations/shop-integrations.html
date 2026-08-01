@@ -2,6 +2,237 @@
     <div class="space-y-3">
         <section class="settings-card">
             <div class="settings-card-body">
+                <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.95fr)_auto] lg:items-center">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-blue-50 text-sm font-bold text-blue-700">
+                            G
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-sm font-semibold text-app-text">Google Calendar</h2>
+                                @if (loadingGoogleStatus) {
+                                <span class="rounded-full bg-app-surface-muted px-2 py-0.5 text-[9px] font-semibold text-app-text-muted">Checking</span>
+                                } @else if (isGoogleConnected && googleStatus?.settings?.syncEnabled) {
+                                <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">Connected</span>
+                                } @else if (isGoogleConnected) {
+                                <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-700">Paused</span>
+                                } @else {
+                                <span class="rounded-full bg-app-surface-muted px-2 py-0.5 text-[9px] font-semibold text-app-text-muted">Not connected</span>
+                                }
+                            </div>
+                            <p class="mt-1 text-[11px] leading-5 text-app-text-muted">
+                                Keep Opscend appointments and technician calendars aligned while blocking personal busy time from booking.
+                            </p>
+                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                @for (feature of ['Appointment sync', 'Technician calendars', 'Busy-time blocking', 'Two-way updates']; track feature) {
+                                <span class="rounded-md px-2 py-1 text-[9.5px] font-semibold"
+                                    [class.bg-emerald-50]="isGoogleConnected" [class.text-emerald-700]="isGoogleConnected"
+                                    [class.bg-app-surface-muted]="!isGoogleConnected" [class.text-app-text-muted]="!isGoogleConnected">
+                                    {{ feature }}
+                                </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-2 text-[10.5px] sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                        <div class="rounded-[10px] bg-app-surface-muted px-3 py-2">
+                            <p class="text-app-text-muted">Google account</p>
+                            <p class="mt-0.5 truncate font-semibold text-app-text" [title]="googleStatus?.accountEmail || ''">
+                                {{ googleStatus?.accountEmail || '—' }}
+                            </p>
+                        </div>
+                        <div class="rounded-[10px] bg-app-surface-muted px-3 py-2">
+                            <p class="text-app-text-muted">Technicians mapped</p>
+                            <p class="mt-0.5 font-semibold text-app-text">{{ googleStatus?.mappings?.length || 0 }}</p>
+                        </div>
+                        <div class="rounded-[10px] bg-app-surface-muted px-3 py-2">
+                            <p class="text-app-text-muted">Last sync</p>
+                            <p class="mt-0.5 font-semibold text-app-text">
+                                {{ googleStatus?.lastSyncAt ? (googleStatus?.lastSyncAt | date:'short') : '—' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 lg:max-w-[190px] lg:justify-end">
+                        @if (isGoogleConnected) {
+                        <button type="button" class="settings-primary-action cursor-pointer"
+                            (click)="toggleGoogleMappings()" [disabled]="loadingGoogleStatus">
+                            {{ googleMappingsOpen ? 'Hide setup' : 'Manage calendars' }}
+                        </button>
+                        <button type="button" class="settings-secondary-action cursor-pointer"
+                            (click)="onGoogleSyncNow()" [disabled]="googleSyncing || loadingGoogleStatus">
+                            {{ googleSyncing ? 'Syncing…' : 'Sync now' }}
+                        </button>
+                        <button type="button" class="settings-secondary-action cursor-pointer"
+                            (click)="onGoogleDisconnect()" [disabled]="googleDisconnecting || loadingGoogleStatus">
+                            {{ googleDisconnecting ? 'Disconnecting…' : 'Disconnect' }}
+                        </button>
+                        } @else {
+                        <button type="button" class="settings-primary-action cursor-pointer"
+                            (click)="onGoogleConnect()" [disabled]="googleConnecting || loadingGoogleStatus">
+                            {{ googleConnecting ? 'Redirecting…' : 'Connect Google' }}
+                        </button>
+                        }
+                    </div>
+                </div>
+
+                @if (googleStatus?.lastError) {
+                <div class="mt-4 rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2 text-[10.5px] text-amber-800">
+                    {{ googleStatus?.lastError }}
+                </div>
+                }
+
+                @if (isGoogleConnected && googleMappingsOpen) {
+                <div class="mt-5 border-t border-app-border pt-5">
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <button type="button" class="cursor-pointer rounded-[11px] border border-app-border bg-app-surface px-3 py-3 text-left transition hover:border-app-text-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            [attr.aria-pressed]="googleStatus?.settings?.syncEnabled"
+                            [disabled]="googleSettingsSaving"
+                            (click)="onGoogleSettingChange('syncEnabled', !googleStatus?.settings?.syncEnabled)">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-[11px] font-semibold text-app-text">Calendar sync</span>
+                                <span class="rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                                    [class.bg-emerald-50]="googleStatus?.settings?.syncEnabled"
+                                    [class.text-emerald-700]="googleStatus?.settings?.syncEnabled"
+                                    [class.bg-app-surface-muted]="!googleStatus?.settings?.syncEnabled"
+                                    [class.text-app-text-muted]="!googleStatus?.settings?.syncEnabled">
+                                    {{ googleStatus?.settings?.syncEnabled ? 'On' : 'Off' }}
+                                </span>
+                            </div>
+                            <p class="mt-1 text-[10px] leading-4 text-app-text-muted">Master switch for this connection.</p>
+                        </button>
+
+                        <button type="button" class="cursor-pointer rounded-[11px] border border-app-border bg-app-surface px-3 py-3 text-left transition hover:border-app-text-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            [attr.aria-pressed]="googleStatus?.settings?.pushAppointments"
+                            [disabled]="googleSettingsSaving"
+                            (click)="onGoogleSettingChange('pushAppointments', !googleStatus?.settings?.pushAppointments)">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-[11px] font-semibold text-app-text">Send appointments</span>
+                                <span class="rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                                    [class.bg-emerald-50]="googleStatus?.settings?.pushAppointments"
+                                    [class.text-emerald-700]="googleStatus?.settings?.pushAppointments"
+                                    [class.bg-app-surface-muted]="!googleStatus?.settings?.pushAppointments"
+                                    [class.text-app-text-muted]="!googleStatus?.settings?.pushAppointments">
+                                    {{ googleStatus?.settings?.pushAppointments ? 'On' : 'Off' }}
+                                </span>
+                            </div>
+                            <p class="mt-1 text-[10px] leading-4 text-app-text-muted">Create and update Google events.</p>
+                        </button>
+
+                        <button type="button" class="cursor-pointer rounded-[11px] border border-app-border bg-app-surface px-3 py-3 text-left transition hover:border-app-text-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            [attr.aria-pressed]="googleStatus?.settings?.pullAppointmentChanges"
+                            [disabled]="googleSettingsSaving"
+                            (click)="onGoogleSettingChange('pullAppointmentChanges', !googleStatus?.settings?.pullAppointmentChanges)">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-[11px] font-semibold text-app-text">Receive changes</span>
+                                <span class="rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                                    [class.bg-emerald-50]="googleStatus?.settings?.pullAppointmentChanges"
+                                    [class.text-emerald-700]="googleStatus?.settings?.pullAppointmentChanges"
+                                    [class.bg-app-surface-muted]="!googleStatus?.settings?.pullAppointmentChanges"
+                                    [class.text-app-text-muted]="!googleStatus?.settings?.pullAppointmentChanges">
+                                    {{ googleStatus?.settings?.pullAppointmentChanges ? 'On' : 'Off' }}
+                                </span>
+                            </div>
+                            <p class="mt-1 text-[10px] leading-4 text-app-text-muted">Apply moved or canceled events in Opscend.</p>
+                        </button>
+
+                        <button type="button" class="cursor-pointer rounded-[11px] border border-app-border bg-app-surface px-3 py-3 text-left transition hover:border-app-text-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            [attr.aria-pressed]="googleStatus?.settings?.blockBusyTime"
+                            [disabled]="googleSettingsSaving"
+                            (click)="onGoogleSettingChange('blockBusyTime', !googleStatus?.settings?.blockBusyTime)">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-[11px] font-semibold text-app-text">Block busy time</span>
+                                <span class="rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                                    [class.bg-emerald-50]="googleStatus?.settings?.blockBusyTime"
+                                    [class.text-emerald-700]="googleStatus?.settings?.blockBusyTime"
+                                    [class.bg-app-surface-muted]="!googleStatus?.settings?.blockBusyTime"
+                                    [class.text-app-text-muted]="!googleStatus?.settings?.blockBusyTime">
+                                    {{ googleStatus?.settings?.blockBusyTime ? 'On' : 'Off' }}
+                                </span>
+                            </div>
+                            <p class="mt-1 text-[10px] leading-4 text-app-text-muted">Hide external busy events from booking.</p>
+                        </button>
+                    </div>
+
+                    <div class="mt-5 flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="text-xs font-semibold text-app-text">Technician calendar mapping</h3>
+                            <p class="mt-1 text-[10.5px] text-app-text-muted">Choose the Google calendar that belongs to each bookable team member.</p>
+                        </div>
+                        @if (loadingGoogleCalendars) {
+                        <span class="text-[10px] font-medium text-app-text-muted">Loading calendars…</span>
+                        }
+                    </div>
+
+                    <div class="mt-3 divide-y divide-app-border overflow-hidden rounded-[12px] border border-app-border bg-app-surface">
+                        @for (user of googleStatus?.users || []; track user.id) {
+                        @let mapping = googleMappingFor(user.id);
+                        <div class="grid gap-3 px-3 py-3 lg:grid-cols-[minmax(170px,0.7fr)_minmax(240px,1fr)_auto] lg:items-center">
+                            <div class="min-w-0">
+                                <p class="truncate text-[11px] font-semibold text-app-text">{{ user.name }}</p>
+                                <p class="mt-0.5 truncate text-[9.5px] text-app-text-muted">{{ user.email || user.role }}</p>
+                            </div>
+
+                            <select class="min-h-9 w-full cursor-pointer rounded-[9px] border border-app-border bg-app-surface px-3 text-[10.5px] font-medium text-app-text outline-none focus:border-app-text-muted disabled:cursor-not-allowed disabled:opacity-60"
+                                [value]="googleCalendarValueFor(user.id)"
+                                [disabled]="loadingGoogleCalendars || isSavingGoogleMapping(user.id)"
+                                (change)="onGoogleCalendarSelected(user.id, $any($event.target).value)">
+                                <option value="">Choose a Google calendar</option>
+                                @for (calendar of googleCalendars; track calendar.id) {
+                                <option [value]="calendar.id">{{ calendar.summary }}{{ calendar.primary ? ' · Primary' : '' }}</option>
+                                }
+                            </select>
+
+                            <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                                @if (mapping) {
+                                <button type="button" class="cursor-pointer rounded-[8px] border px-2.5 py-1.5 text-[9.5px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                                    [class.border-emerald-200]="mapping.syncAppointments"
+                                    [class.bg-emerald-50]="mapping.syncAppointments"
+                                    [class.text-emerald-700]="mapping.syncAppointments"
+                                    [class.border-app-border]="!mapping.syncAppointments"
+                                    [class.bg-app-surface]="!mapping.syncAppointments"
+                                    [class.text-app-text-muted]="!mapping.syncAppointments"
+                                    [disabled]="isSavingGoogleMapping(user.id)"
+                                    (click)="onGoogleMappingToggle(user.id, 'syncAppointments', !mapping.syncAppointments)">
+                                    Appointment sync
+                                </button>
+                                <button type="button" class="cursor-pointer rounded-[8px] border px-2.5 py-1.5 text-[9.5px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                                    [class.border-emerald-200]="mapping.blockBusyTime"
+                                    [class.bg-emerald-50]="mapping.blockBusyTime"
+                                    [class.text-emerald-700]="mapping.blockBusyTime"
+                                    [class.border-app-border]="!mapping.blockBusyTime"
+                                    [class.bg-app-surface]="!mapping.blockBusyTime"
+                                    [class.text-app-text-muted]="!mapping.blockBusyTime"
+                                    [disabled]="isSavingGoogleMapping(user.id)"
+                                    (click)="onGoogleMappingToggle(user.id, 'blockBusyTime', !mapping.blockBusyTime)">
+                                    Busy blocking
+                                </button>
+                                <button type="button" class="cursor-pointer rounded-[8px] px-2 py-1.5 text-[9.5px] font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    [disabled]="isSavingGoogleMapping(user.id)"
+                                    (click)="onRemoveGoogleMapping(user.id)">
+                                    Remove
+                                </button>
+                                } @else {
+                                <span class="text-[9.5px] font-medium text-app-text-muted">Not mapped</span>
+                                }
+                            </div>
+
+                            @if (mapping?.lastError) {
+                            <p class="text-[9.5px] text-amber-700 lg:col-start-2 lg:col-span-2">{{ mapping?.lastError }}</p>
+                            }
+                        </div>
+                        } @empty {
+                        <div class="px-4 py-8 text-center text-[10.5px] text-app-text-muted">No active users are available to map.</div>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+        </section>
+
+        <section class="settings-card">
+            <div class="settings-card-body">
                 <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)_auto] lg:items-center">
                     <div class="flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-app-surface-muted text-sm font-bold text-app-text">
