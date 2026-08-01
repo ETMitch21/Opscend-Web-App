@@ -1,890 +1,225 @@
 <app-settings-layout>
-  <div settings-actions class="flex justify-end">
-    <button
-      type="button"
-      class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
-      [disabled]="saving() || (activeTab() === 'pricing' && !selectedModels().length)"
-      (click)="activeTab() === 'types' ? openNewRepairType() : openNewOption()"
-    >
+  <div settings-actions class="flex flex-wrap items-center justify-end gap-2">
+    <a routerLink="/settings/shop/repair-pricing/types" class="settings-secondary-action cursor-pointer">
+      <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+      Repair types
+      <span class="rounded-full bg-app-surface-muted px-1.5 py-0.5 text-[9px]">{{ repairTypes().length }}</span>
+    </a>
+    <button type="button" class="settings-primary-action cursor-pointer" (click)="newOption()">
       <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
-      {{ activeTab() === 'types' ? 'Add Repair Type' : 'Add Pricing Option' }}
+      New pricing option
     </button>
   </div>
 
-<div class="space-y-3">
-  <div class="settings-segmented">
-    <button
-      type="button"
-      class="cursor-pointer"
-      [class.is-active]="activeTab() === 'pricing'"
-      (click)="setTab('pricing')"
-    >
-      Device Pricing
-    </button>
-    <button
-      type="button"
-      class="cursor-pointer"
-      [class.is-active]="activeTab() === 'types'"
-      (click)="setTab('types')"
-    >
-      Repair Types
-      <span class="ml-1 text-xs opacity-70">{{ repairTypes().length }}</span>
-    </button>
-  </div>
+  <div class="space-y-4">
 
-  @if (error()) {
-  <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-    {{ error() }}
-  </div>
-  }
+    @if (error()) {
+      <div class="settings-alert is-error">{{ error() }}</div>
+    }
 
-  @if (loading()) {
-  <div class="rounded-3xl border border-app-border bg-app-surface p-8">
-    <p class="text-sm font-medium text-app-text-muted">Loading repair pricing...</p>
-  </div>
-  } @else if (activeTab() === 'types') {
-  <section class="rounded-3xl border border-app-border bg-app-surface">
-    <div class="flex flex-col gap-3 border-b border-app-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h2 class="text-base font-semibold text-app-text">Repair Types</h2>
-        <p class="mt-1 text-sm text-app-text-muted">
-          These are the reusable repair categories shown across Opscend. Drag them to change their display order.
-        </p>
-      </div>
-      <div class="rounded-full bg-app-surface-muted px-3 py-1.5 text-xs font-semibold text-app-text-muted">
-        {{ activeRepairTypes().length }} active
-      </div>
-    </div>
-
-    @if (!repairTypes().length) {
-    <div class="px-6 py-16 text-center">
-      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-app-surface-muted text-app-text-muted">
-        <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
-      </div>
-      <h3 class="mt-4 text-sm font-semibold text-app-text">No repair types yet</h3>
-      <p class="mt-1 text-sm text-app-text-muted">Create Screen Replacement, Battery Replacement, Diagnostics, or any service your shop offers.</p>
-    </div>
-    } @else {
-    <div class="divide-y divide-app-border">
-      @for (repairType of repairTypes(); track repairType.id) {
-      <article
-        class="group flex items-start gap-3 px-4 py-4 transition hover:bg-app-surface-muted sm:px-5"
-        [class.opacity-60]="!repairType.isActive"
-        (dragover)="$event.preventDefault()"
-        (drop)="onRepairTypeDrop($event, repairType.id)"
-      >
-        <span
-          class="mt-1 inline-flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text-muted active:cursor-grabbing"
-          [attr.draggable]="true"
-          (dragstart)="onRepairTypeDragStart($event, repairType.id)"
-          aria-label="Drag to reorder repair type"
-          title="Drag to reorder"
-        >
-          <lucide-icon [name]="icons.Grip" class="h-4 w-4"></lucide-icon>
-        </span>
-
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
-            <h3 class="text-sm font-semibold text-app-text">{{ repairType.label }}</h3>
-            <span class="rounded-full bg-app-surface-muted px-2 py-0.5 text-[11px] font-semibold text-app-text-muted">{{ repairType.code }}</span>
-            <span
-              class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-              [ngClass]="repairType.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-app-surface-muted text-app-text-muted'"
-            >
-              {{ repairType.isActive ? 'Active' : 'Inactive' }}
-            </span>
-            @if (repairType.requiresManualReview) {
-            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Manual review</span>
+    <section class="settings-card overflow-visible">
+      <div class="border-b border-app-border px-4 py-3.5">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div class="settings-search-field min-w-0 flex-1 xl:max-w-[460px]">
+            <lucide-icon [name]="icons.Search" class="h-4 w-4"></lucide-icon>
+            <input
+              type="search"
+              autocomplete="off"
+              placeholder="Search option, model, service, product, or SKU…"
+              [value]="pricingSearch()"
+              (input)="onPricingSearch($any($event.target).value)"
+            />
+            @if (pricingSearch()) {
+              <button type="button" class="settings-search-clear cursor-pointer" aria-label="Clear search" (click)="clearPricingSearch()">
+                <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+              </button>
             }
           </div>
 
-          <p class="mt-1 text-sm leading-5 text-app-text-muted">
-            {{ repairType.description || 'No description added.' }}
+          <div class="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_minmax(210px,0.9fr)]">
+            <app-typeahead
+              [items]="modelItems()"
+              [selectedItem]="selectedModelItem()"
+              [loading]="modelLoading()"
+              placeholder="Filter by device model"
+              emptyText="No device models match that search."
+              hint="Searches your active internal device catalog"
+              (searchChange)="onModelSearch($event)"
+              (selectedItemChange)="onModelSelected($event)"
+            ></app-typeahead>
+
+            <app-typeahead
+              [items]="repairTypeItems()"
+              [selectedItem]="selectedRepairTypeItem()"
+              placeholder="Filter by repair type"
+              emptyText="No repair types match that search."
+              (selectedItemChange)="onRepairTypeSelected($event)"
+            ></app-typeahead>
+          </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="settings-segmented" aria-label="Status filter">
+              <button type="button" class="cursor-pointer" [class.is-active]="statusFilter() === 'all'" (click)="setStatusFilter('all')">All</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="statusFilter() === 'active'" (click)="setStatusFilter('active')">Active</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="statusFilter() === 'inactive'" (click)="setStatusFilter('inactive')">Inactive</button>
+            </div>
+
+            <div class="settings-segmented" aria-label="Visibility filter">
+              <button type="button" class="cursor-pointer" [class.is-active]="visibilityFilter() === 'all'" (click)="setVisibilityFilter('all')">Any visibility</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="visibilityFilter() === 'public'" (click)="setVisibilityFilter('public')">Public</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="visibilityFilter() === 'internal'" (click)="setVisibilityFilter('internal')">Internal</button>
+            </div>
+
+            @if (activeFilterCount()) {
+              <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text" (click)="clearFilters()">
+                <lucide-icon [name]="icons.X" class="h-3.5 w-3.5"></lucide-icon>
+                Clear {{ activeFilterCount() }} filter{{ activeFilterCount() === 1 ? '' : 's' }}
+              </button>
+            }
+          </div>
+
+          <p class="text-xs font-medium text-app-text-muted">
+            {{ filteredOptions().length }} option{{ filteredOptions().length === 1 ? '' : 's' }}
           </p>
-          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-app-text-muted">
-            <span>{{ repairType.pricingOptionCount }} pricing option{{ repairType.pricingOptionCount === 1 ? '' : 's' }}</span>
-            <span>Default duration: {{ repairType.defaultDurationMins || 60 }} min</span>
-            <span>Default labor: {{ repairType.defaultLaborCents == null ? 'Shop default' : money(repairType.defaultLaborCents) }}</span>
-          </div>
-        </div>
-
-        <div class="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted"
-            (click)="editRepairType(repairType)"
-          >
-            Edit
-          </button>
-          @if (repairType.isActive) {
-          <button
-            type="button"
-            class="cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100"
-            (click)="deactivateRepairType(repairType)"
-          >
-            Deactivate
-          </button>
-          }
-        </div>
-      </article>
-      }
-    </div>
-    }
-  </section>
-  } @else {
-  <div class="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-    <aside class="min-w-0 rounded-3xl border border-app-border bg-app-surface xl:sticky xl:top-4 xl:self-start">
-      <div class="border-b border-app-border p-4">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h2 class="text-sm font-semibold text-app-text">Device Models</h2>
-            <p class="mt-1 text-xs text-app-text-muted">Select one model to manage it or several for bulk setup.</p>
-          </div>
-          @if (selectedModels().length) {
-          <button
-            type="button"
-            class="cursor-pointer text-xs font-semibold text-app-text-muted hover:text-app-text-muted"
-            (click)="clearModelSelection()"
-          >
-            Clear
-          </button>
-          }
-        </div>
-
-        <div class="mt-4 grid gap-3">
-          <label class="block">
-            <span class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-app-text-muted">Category</span>
-            <select
-              class="w-full cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              [value]="selectedCategoryId()"
-              (change)="onCategoryChange($any($event.target).value)"
-            >
-              @for (category of categories(); track category.id) {
-              <option [value]="category.id">{{ category.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="block">
-            <span class="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-app-text-muted">Brand</span>
-            <select
-              class="w-full cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              [value]="selectedBrandId()"
-              (change)="onBrandChange($any($event.target).value)"
-            >
-              @for (brand of brands(); track brand.id) {
-              <option [value]="brand.id">{{ brand.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label class="relative block">
-            <span class="sr-only">Search models</span>
-            <lucide-icon [name]="icons.Search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted"></lucide-icon>
-            <input
-              type="text"
-              class="w-full rounded-xl border border-app-border bg-app-surface py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-              placeholder="Search models..."
-              [value]="modelSearch()"
-              (input)="onModelSearch($any($event.target).value)"
-            />
-          </label>
         </div>
       </div>
 
-      <div class="flex items-center justify-between border-b border-app-border bg-app-surface-muted px-4 py-3">
-        <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-app-text-muted">
-          <input
-            type="checkbox"
-            class="h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand"
-            [checked]="allVisibleModelsSelected()"
-            [indeterminate]="someVisibleModelsSelected()"
-            (change)="toggleAllVisibleModels()"
-          />
-          Select visible
-        </label>
-        <span class="text-xs text-app-text-muted">{{ selectedModels().length }} selected</span>
-      </div>
-
-      <div class="max-h-[560px] overflow-y-auto overscroll-contain p-2">
-        @if (!visibleModels().length) {
-        <div class="px-3 py-10 text-center text-sm text-app-text-muted">No matching active models.</div>
-        } @else {
-        @for (model of visibleModels(); track model.id) {
-        <div
-          class="group mb-1 flex items-center gap-3 rounded-2xl border px-3 py-3 transition"
-          [ngClass]="selectedModelIds().has(model.id) ? 'border-brand bg-brand/5' : 'border-transparent hover:border-app-border hover:bg-app-surface-muted'"
-        >
-          <input
-            type="checkbox"
-            class="h-4 w-4 shrink-0 cursor-pointer rounded border-app-border text-brand focus:ring-brand"
-            [checked]="selectedModelIds().has(model.id)"
-            (change)="toggleModel(model.id)"
-          />
-          <button
-            type="button"
-            class="cursor-pointer min-w-0 flex-1 text-left"
-            (click)="selectOnlyModel(model.id)"
-          >
-            <span class="block truncate text-sm font-semibold text-app-text">{{ model.name }}</span>
-            <span class="mt-0.5 block text-xs text-app-text-muted">{{ model.releaseYear || 'Year not listed' }}</span>
-          </button>
-          <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 text-app-text-muted/40 transition group-hover:text-app-text-muted"></lucide-icon>
+      @if (initialLoading()) {
+        <div class="flex min-h-72 items-center justify-center gap-2 text-sm text-app-text-muted">
+          <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+          Loading repair pricing…
         </div>
-        }
-        }
-      </div>
-    </aside>
-
-    <main class="min-w-0 space-y-5">
-      @if (!selectedModels().length) {
-      <section class="rounded-3xl border border-dashed border-app-border bg-app-surface px-6 py-20 text-center shadow-sm">
-        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-app-surface-muted text-app-text-muted">
-          <lucide-icon [name]="icons.Layers" class="h-6 w-6"></lucide-icon>
-        </div>
-        <h2 class="mt-4 text-base font-semibold text-app-text">Select a device model</h2>
-        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-app-text-muted">
-          Choose one model to manage its repair options, or select multiple models to apply the same pricing in bulk.
-        </p>
-      </section>
-      } @else if (selectedModels().length > 1) {
-      <section class="rounded-3xl border border-app-border bg-app-surface p-6">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-brand">Bulk setup</p>
-            <h2 class="mt-1 text-xl font-semibold text-app-text">{{ selectedModels().length }} models selected</h2>
-            <p class="mt-1 text-sm text-app-text-muted">Create or update the same repair option across every selected model.</p>
+      } @else if (!filteredOptions().length && !listLoading()) {
+        <div class="px-6 py-20 text-center">
+          <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-text-muted">
+            <lucide-icon [name]="icons.Dollar" class="h-5 w-5"></lucide-icon>
           </div>
-          <button
-            type="button"
-            class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-soft"
-            (click)="openNewOption()"
-          >
+          <h2 class="mt-4 text-sm font-semibold text-app-text">No pricing options found</h2>
+          <p class="mx-auto mt-1 max-w-md text-sm leading-6 text-app-text-muted">
+            {{ pricingSearch() || activeFilterCount() ? 'Try another search or clear the current filters.' : 'Create the first model-specific pricing option for public booking.' }}
+          </p>
+          <button type="button" class="settings-primary-action mt-5 cursor-pointer" (click)="newOption()">
             <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
-            Configure Bulk Option
+            New pricing option
           </button>
         </div>
-
-        <div class="mt-5 flex flex-wrap gap-2">
-          @for (model of selectedModels(); track model.id) {
-          <span class="rounded-full bg-app-surface-muted px-3 py-1.5 text-xs font-semibold text-app-text-muted">{{ model.name }}</span>
+      } @else {
+        <div class="relative overflow-x-auto">
+          @if (listLoading()) {
+            <div class="absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-brand/15">
+              <div class="h-full w-1/3 animate-pulse rounded-full bg-brand"></div>
+            </div>
           }
-        </div>
-      </section>
-      } @else if (singleSelectedModel(); as model) {
-      <section class="rounded-3xl border border-app-border bg-app-surface">
-        <div class="flex flex-col gap-4 border-b border-app-border px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-brand">{{ model.categoryName }} · {{ model.brandName }}</p>
-            <h2 class="mt-1 text-xl font-semibold text-app-text">{{ model.name }}</h2>
-            <p class="mt-1 text-sm text-app-text-muted">Add Essential, Premium, OEM, or any custom option your shop uses.</p>
-          </div>
-          <button
-            type="button"
-            class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-soft"
-            (click)="openNewOption()"
-          >
-            <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
-            Add Pricing Option
-          </button>
-        </div>
 
-        @if (!options().length) {
-        <div class="px-6 py-16 text-center">
-          <h3 class="text-sm font-semibold text-app-text">No pricing configured</h3>
-          <p class="mt-1 text-sm text-app-text-muted">Add the first repair type and price for this model.</p>
-        </div>
-        } @else {
-        <div class="space-y-5 p-5">
-          @for (group of groupedOptions(); track group.repairType.id) {
-          <section class="overflow-hidden rounded-2xl border border-app-border">
-            <div class="flex items-center justify-between gap-3 bg-app-surface-muted px-4 py-3">
-              <div>
-                <h3 class="text-sm font-semibold text-app-text">{{ group.repairType.label }}</h3>
-                <p class="mt-0.5 text-xs text-app-text-muted">Drag options to set the customer and staff display order.</p>
-              </div>
-              <span class="rounded-full bg-app-surface px-2.5 py-1 text-xs font-semibold text-app-text-muted ring-1 ring-gray-200">{{ group.options.length }}</span>
+          <div class="min-w-[980px]">
+            <div class="grid grid-cols-[44px_minmax(260px,1.25fr)_minmax(190px,0.9fr)_130px_140px_110px_92px] items-center gap-3 border-b border-app-border bg-app-surface-muted/60 px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">
+              <label class="flex items-center justify-center">
+                <input type="checkbox" class="h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" [checked]="allVisibleSelected()" (change)="toggleAllVisible()" />
+              </label>
+              <span>Pricing option</span>
+              <span>Links</span>
+              <span>Price</span>
+              <span>Deposit</span>
+              <span>Booking</span>
+              <span class="text-right">Actions</span>
             </div>
 
             <div class="divide-y divide-app-border">
-              @for (option of group.options; track option.id) {
-              <article
-                class="flex items-start gap-3 px-3 py-4 transition hover:bg-app-surface-muted sm:px-4"
-                [class.opacity-60]="!option.isActive"
-                (dragover)="$event.preventDefault()"
-                (drop)="onOptionDrop($event, option)"
-              >
-                <span
-                  class="mt-1 inline-flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-app-text-muted hover:bg-app-surface-muted hover:text-app-text-muted active:cursor-grabbing"
-                  [attr.draggable]="true"
-                  (dragstart)="onOptionDragStart($event, option)"
-                  aria-label="Drag to reorder pricing option"
-                  title="Drag to reorder"
+              @for (option of filteredOptions(); track option.id) {
+                <article
+                  class="group grid cursor-pointer grid-cols-[44px_minmax(260px,1.25fr)_minmax(190px,0.9fr)_130px_140px_110px_92px] items-center gap-3 px-3 py-3.5 transition hover:bg-app-surface-muted/55"
+                  [class.opacity-60]="!option.isActive"
+                  (click)="editOption(option)"
                 >
-                  <lucide-icon [name]="icons.Grip" class="h-4 w-4"></lucide-icon>
-                </span>
+                  <label class="flex items-center justify-center" (click)="$event.stopPropagation()">
+                    <input type="checkbox" class="h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" [checked]="selectedOptionIds().has(option.id)" (change)="toggleOption(option.id)" />
+                  </label>
 
-                <input
-                  type="checkbox"
-                  class="mt-2 h-4 w-4 shrink-0 cursor-pointer rounded border-app-border text-brand focus:ring-brand"
-                  [checked]="selectedOptionIds().has(option.id)"
-                  (change)="toggleOptionSelection(option.id)"
-                />
-
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <h4 class="text-sm font-semibold text-app-text">{{ option.variantName }}</h4>
-                    <span class="rounded-full bg-gray-900 px-2 py-0.5 text-[11px] font-semibold text-white">{{ optionPriceLabel(option) }}</span>
-                    <span
-                      class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                      [ngClass]="option.isPublic ? 'bg-blue-50 text-blue-700' : 'bg-app-surface-muted text-app-text-muted'"
-                    >
-                      {{ option.isPublic ? 'Public' : 'Internal only' }}
-                    </span>
-                    @if (!option.isActive) {
-                    <span class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">Inactive</span>
-                    }
-                    @if (option.requiresManualReview) {
-                    <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Manual review</span>
-                    }
-                    @if (option.depositMode !== 'none') {
-                    <span class="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700">{{ optionDepositLabel(option) }}</span>
+                  <div class="min-w-0">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <h3 class="truncate text-sm font-semibold text-app-text">{{ option.variantName }}</h3>
+                      @if (!option.isActive) {
+                        <span class="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">Inactive</span>
+                      } @else if (option.isPublic) {
+                        <span class="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Public</span>
+                      } @else {
+                        <span class="shrink-0 rounded-full bg-app-surface-muted px-2 py-0.5 text-[10px] font-semibold text-app-text-muted">Internal</span>
+                      }
+                    </div>
+                    <p class="mt-1 truncate text-xs font-medium text-app-text-muted">{{ modelLabel(option) }} · {{ option.repairType.label }}</p>
+                    @if (option.description) {
+                      <p class="mt-1 truncate text-[11px] text-app-text-muted">{{ option.description }}</p>
                     }
                   </div>
-                  @if (option.description) {
-                  <p class="mt-1 text-sm text-app-text-muted">{{ option.description }}</p>
-                  }
-                  <p class="mt-2 truncate text-xs text-app-text-muted">{{ optionLinksLabel(option) }}</p>
-                  <p class="mt-1 text-xs text-app-text-muted">
-                    {{ option.durationMins || group.repairType.defaultDurationMins || 60 }} min
-                    · Labor {{ option.laborCents == null ? 'default' : money(option.laborCents) }}
-                    · {{ option.allowInstantConfirmation ? 'Instant confirmation allowed' : 'Estimated/manual confirmation' }}
-                  </p>
-                </div>
 
-                <div class="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs font-semibold text-app-text-muted hover:bg-app-surface-muted"
-                    (click)="editOption(option)"
-                  >
-                    Edit
-                  </button>
-                  @if (option.isActive) {
-                  <button
-                    type="button"
-                    class="cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                    (click)="deactivateOption(option)"
-                  >
-                    Deactivate
-                  </button>
-                  }
-                </div>
-              </article>
+                  <div class="min-w-0 space-y-1">
+                    <p class="truncate text-xs font-semibold text-app-text">{{ optionServiceLabel(option) }}</p>
+                    <p class="truncate text-[11px] text-app-text-muted">{{ optionProductLabel(option) }}</p>
+                  </div>
+
+                  <div>
+                    <p class="text-sm font-semibold text-app-text">{{ optionPriceLabel(option) }}</p>
+                    @if (option.useDynamicPricing) {
+                      <p class="mt-0.5 text-[10px] font-medium text-brand">Calculated at booking</p>
+                    } @else {
+                      <p class="mt-0.5 text-[10px] text-app-text-muted">Fixed</p>
+                    }
+                  </div>
+
+                  <div>
+                    <p class="text-xs font-semibold" [ngClass]="option.depositConfigurationError ? 'text-red-700' : 'text-app-text'">{{ optionDepositLabel(option) }}</p>
+                    <p class="mt-0.5 text-[10px] text-app-text-muted">{{ option.depositMode === 'inherit' ? 'Inherited rule' : option.depositMode.replace('_', ' ') }}</p>
+                  </div>
+
+                  <div>
+                    <p class="text-xs font-semibold text-app-text">{{ durationLabel(option) }}</p>
+                    <p class="mt-0.5 text-[10px] text-app-text-muted">{{ option.allowInstantConfirmation ? 'Instant' : 'Review' }}</p>
+                  </div>
+
+                  <div class="flex items-center justify-end gap-1" (click)="$event.stopPropagation()">
+                    <button type="button" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface hover:text-app-text" title="Duplicate" aria-label="Duplicate pricing option" (click)="duplicateOption(option)">
+                      <lucide-icon [name]="icons.Copy" class="h-4 w-4"></lucide-icon>
+                    </button>
+                    <button type="button" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface hover:text-app-text" title="Edit" aria-label="Edit pricing option" (click)="editOption(option)">
+                      <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
+                    </button>
+                  </div>
+                </article>
               }
             </div>
-          </section>
-          }
-        </div>
-        }
-      </section>
-
-      @if (selectedOptions().length) {
-      <section class="rounded-3xl border border-brand/20 bg-brand/5 p-5 shadow-sm">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 class="text-sm font-semibold text-app-text">{{ selectedOptions().length }} pricing option{{ selectedOptions().length === 1 ? '' : 's' }} selected</h3>
-            <p class="mt-1 text-xs text-app-text-muted">Apply visibility, price, product, or service changes together.</p>
-          </div>
-          <button type="button" class="cursor-pointer text-xs font-semibold text-app-text-muted hover:text-app-text" (click)="clearOptionSelection()">Clear selection</button>
-        </div>
-
-        <div class="mt-4 flex flex-wrap gap-2">
-          <button type="button" class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs font-semibold text-app-text-muted hover:bg-app-surface-muted" (click)="runBulkStatusAction('activate')">Activate</button>
-          <button type="button" class="cursor-pointer rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100" (click)="runBulkStatusAction('publish')">Publish</button>
-          <button type="button" class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs font-semibold text-app-text-muted hover:bg-app-surface-muted" (click)="runBulkStatusAction('make_private')">Internal only</button>
-          <button type="button" class="cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100" (click)="runBulkStatusAction('deactivate')">Deactivate</button>
-        </div>
-
-        <div class="mt-4 grid gap-3 lg:grid-cols-[1fr_150px_auto]">
-          <select
-            class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
-            [value]="bulkAdjustmentMode()"
-            (change)="bulkAdjustmentMode.set($any($event.target).value)"
-          >
-            <option value="set_price">Set fixed price</option>
-            <option value="increase_fixed">Increase by dollars</option>
-            <option value="decrease_fixed">Decrease by dollars</option>
-            <option value="increase_percent">Increase by percent</option>
-            <option value="decrease_percent">Decrease by percent</option>
-          </select>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            class="rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
-            placeholder="Amount"
-            [value]="bulkAdjustmentValue() ?? ''"
-            (input)="bulkAdjustmentValue.set($any($event.target).value === '' ? null : +$any($event.target).value)"
-          />
-          <button type="button" class="cursor-pointer rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-soft" (click)="applyBulkPriceAdjustment()">Apply price</button>
-        </div>
-
-        <div class="mt-3 grid gap-3 lg:grid-cols-[1fr_auto]">
-          <select
-            class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
-            [value]="bulkServiceId()"
-            (change)="bulkServiceId.set($any($event.target).value)"
-          >
-            <option value="">No linked service</option>
-            @for (service of services(); track service.id) {
-            <option [value]="service.id">{{ serviceLabel(service) }}</option>
-            }
-          </select>
-          <button type="button" class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text-muted hover:bg-app-surface-muted" (click)="applyBulkService()">Apply service</button>
-        </div>
-
-        <div class="mt-3 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
-          <select
-            class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
-            [value]="bulkProductId()"
-            (change)="bulkProductId.set($any($event.target).value); bulkProductSupplierId.set('')"
-          >
-            <option value="">No linked product</option>
-            @for (product of products(); track product.id) {
-            <option [value]="product.id">{{ productLabel(product) }}</option>
-            }
-          </select>
-          <select
-            class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-app-surface-muted"
-            [disabled]="!bulkProductId()"
-            [value]="bulkProductSupplierId()"
-            (change)="bulkProductSupplierId.set($any($event.target).value)"
-          >
-            <option value="">No supplier link</option>
-            @for (link of bulkProductSupplierLinks(); track link.id) {
-            <option [value]="link.id">{{ supplierLinkLabel(link) }}</option>
-            }
-          </select>
-          <div class="flex gap-2">
-            <button type="button" class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text-muted hover:bg-app-surface-muted" (click)="applyBulkProduct()">Apply product</button>
-            <button type="button" class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text-muted hover:bg-app-surface-muted" [disabled]="!bulkProductId()" (click)="applyBulkProductSupplier()">Apply supplier</button>
           </div>
         </div>
-
-        <button type="button" class="mt-3 cursor-pointer text-xs font-semibold text-red-700 hover:text-red-900" (click)="runBulkStatusAction('clear_links')">Clear all linked products and services</button>
-      </section>
       }
-      }
-    </main>
+    </section>
   </div>
+
+  @if (selectedCount()) {
+    <div class="fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
+      <div class="flex max-w-full flex-wrap items-center gap-2 rounded-xl border border-app-border bg-gray-950 px-3 py-2.5 text-white shadow-2xl">
+        <span class="px-1 text-xs font-semibold">{{ selectedCount() }} selected</span>
+        <span class="h-5 w-px bg-white/20"></span>
+        <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition hover:bg-white/10" [disabled]="bulkSaving()" (click)="runBulkAction('publish')">
+          <lucide-icon [name]="icons.Eye" class="h-3.5 w-3.5"></lucide-icon>
+          Publish
+        </button>
+        <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition hover:bg-white/10" [disabled]="bulkSaving()" (click)="runBulkAction('make_private')">
+          <lucide-icon [name]="icons.EyeOff" class="h-3.5 w-3.5"></lucide-icon>
+          Make internal
+        </button>
+        <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition hover:bg-white/10" [disabled]="bulkSaving()" (click)="runBulkAction('activate')">
+          <lucide-icon [name]="icons.Check" class="h-3.5 w-3.5"></lucide-icon>
+          Activate
+        </button>
+        <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/15" [disabled]="bulkSaving()" (click)="runBulkAction('deactivate')">
+          <lucide-icon [name]="icons.Archive" class="h-3.5 w-3.5"></lucide-icon>
+          Deactivate
+        </button>
+        <button type="button" class="ml-1 inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Clear selection" (click)="clearSelection()">
+          <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+        </button>
+      </div>
+    </div>
   }
-</div>
-
-@if (typeEditorOpen()) {
-<div class="fixed inset-0 z-50 flex justify-end bg-black/30" (click)="closeRepairTypeEditor()">
-  <aside class="h-full w-full max-w-xl overflow-y-auto bg-app-surface shadow-2xl" (click)="$event.stopPropagation()">
-    <form [formGroup]="repairTypeForm" (ngSubmit)="saveRepairType()">
-      <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-app-border bg-app-surface px-6 py-5">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-brand">Repair Types</p>
-          <h2 class="mt-1 text-xl font-semibold text-app-text">{{ editingRepairTypeId() ? 'Edit Repair Type' : 'New Repair Type' }}</h2>
-        </div>
-        <button type="button" class="cursor-pointer rounded-xl p-2 text-app-text-muted hover:bg-app-surface-muted hover:text-app-text-muted" (click)="closeRepairTypeEditor()" aria-label="Close">
-          <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
-        </button>
-      </div>
-
-      <div class="space-y-5 p-6">
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="block sm:col-span-2">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Name</span>
-            <input formControlName="label" class="w-full rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Screen Replacement" (input)="onRepairTypeLabelInput($any($event.target).value)" />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Code</span>
-            <input formControlName="code" class="w-full rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" placeholder="screen_replacement" />
-          </label>
-          <label class="block">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Default duration</span>
-            <input type="number" min="5" formControlName="defaultDurationMins" class="w-full rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" />
-          </label>
-        </div>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Description</span>
-          <textarea rows="3" formControlName="description" class="w-full resize-y rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Customer-facing description of this repair type."></textarea>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Supplier search terms</span>
-          <input formControlName="supplierSearchTermsText" class="w-full rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" placeholder="screen, display, oled, lcd" />
-          <span class="mt-1 block text-xs text-app-text-muted">Optional comma-separated terms used by supplier fallback searches.</span>
-        </label>
-
-        <label class="block">
-          <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Default labor</span>
-          <div class="flex overflow-hidden rounded-xl border border-app-border focus-within:border-brand">
-            <span class="flex items-center border-r border-app-border bg-app-surface-muted px-3 text-sm text-app-text-muted">$</span>
-            <input type="number" min="0" step="0.01" formControlName="defaultLaborDollars" class="min-w-0 flex-1 px-4 py-3 text-sm outline-none" placeholder="Use shop default" />
-          </div>
-        </label>
-
-        <div class="space-y-3 rounded-2xl border border-app-border bg-app-surface-muted p-4">
-          <label class="flex cursor-pointer items-start justify-between gap-4">
-            <span>
-              <span class="block text-sm font-semibold text-app-text">Active</span>
-              <span class="mt-1 block text-xs text-app-text-muted">Available for pricing and internal repairs.</span>
-            </span>
-            <input type="checkbox" formControlName="isActive" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-          </label>
-          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-app-border pt-3">
-            <span>
-              <span class="block text-sm font-semibold text-app-text">Requires manual review by default</span>
-              <span class="mt-1 block text-xs text-app-text-muted">Individual pricing options can also enable manual review.</span>
-            </span>
-            <input type="checkbox" formControlName="requiresManualReview" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-          </label>
-        </div>
-      </div>
-
-      <div class="sticky bottom-0 flex justify-end gap-2 border-t border-app-border bg-app-surface px-6 py-4">
-        <button type="button" class="cursor-pointer rounded-xl border border-app-border px-4 py-2.5 text-sm font-semibold text-app-text-muted hover:bg-app-surface-muted" (click)="closeRepairTypeEditor()">Cancel</button>
-        <button type="submit" class="cursor-pointer rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60" [disabled]="saving()">{{ saving() ? 'Saving...' : 'Save Repair Type' }}</button>
-      </div>
-    </form>
-  </aside>
-</div>
-}
-
-@if (optionEditorOpen()) {
-<div class="fixed inset-0 z-50 flex justify-end bg-black/30" (click)="closeOptionEditor()">
-  <aside class="h-full w-full max-w-2xl overflow-y-auto bg-app-surface shadow-2xl" (click)="$event.stopPropagation()">
-    <form [formGroup]="optionForm" (ngSubmit)="saveOption()">
-      <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-app-border bg-app-surface px-6 py-5">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-brand">{{ selectedModels().length > 1 ? 'Bulk Pricing' : 'Device Pricing' }}</p>
-          <h2 class="mt-1 text-xl font-semibold text-app-text">{{ optionEditorTitle() }}</h2>
-          <p class="mt-1 text-sm text-app-text-muted">Products, services, and supplier links are optional.</p>
-        </div>
-        <button type="button" class="cursor-pointer rounded-xl p-2 text-app-text-muted hover:bg-app-surface-muted hover:text-app-text-muted" (click)="closeOptionEditor()" aria-label="Close">
-          <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
-        </button>
-      </div>
-
-      <div class="space-y-6 p-6">
-        <section>
-          <h3 class="text-sm font-semibold text-app-text">Repair option</h3>
-          <div class="mt-3 grid gap-4 sm:grid-cols-2">
-            <label class="block">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Repair type</span>
-              <select formControlName="repairNeedId" class="w-full cursor-pointer rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm outline-none focus:border-brand">
-                <option value="">Select repair type</option>
-                @for (repairType of activeRepairTypes(); track repairType.id) {
-                <option [value]="repairType.id">{{ repairType.label }}</option>
-                }
-              </select>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Option name</span>
-              <input formControlName="variantName" class="w-full rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Essential, Premium, OEM..." />
-            </label>
-          </div>
-          <label class="mt-4 block">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Description</span>
-            <textarea rows="3" formControlName="description" class="w-full resize-y rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Explain what makes this option different."></textarea>
-          </label>
-        </section>
-
-        <section class="rounded-2xl border border-app-border p-4">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h3 class="text-sm font-semibold text-app-text">Pricing</h3>
-              <p class="mt-1 text-xs text-app-text-muted">Use a fixed price or calculate from optional product cost and labor.</p>
-            </div>
-            <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-app-text-muted">
-              <input type="checkbox" formControlName="useDynamicPricing" class="h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-              Dynamic pricing
-            </label>
-          </div>
-
-          <div class="mt-4 grid gap-4 sm:grid-cols-3">
-            <label class="block">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Fixed price</span>
-              <div class="flex overflow-hidden rounded-xl border border-app-border focus-within:border-brand">
-                <span class="flex items-center border-r border-app-border bg-app-surface-muted px-3 text-sm text-app-text-muted">$</span>
-                <input type="number" min="0" step="0.01" formControlName="fixedPriceDollars" class="min-w-0 flex-1 px-3 py-3 text-sm outline-none" />
-              </div>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Labor override</span>
-              <div class="flex overflow-hidden rounded-xl border border-app-border focus-within:border-brand">
-                <span class="flex items-center border-r border-app-border bg-app-surface-muted px-3 text-sm text-app-text-muted">$</span>
-                <input type="number" min="0" step="0.01" formControlName="laborDollars" class="min-w-0 flex-1 px-3 py-3 text-sm outline-none" placeholder="Default" />
-              </div>
-            </label>
-            <label class="block">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Duration</span>
-              <input type="number" min="5" formControlName="durationMins" class="w-full rounded-xl border border-app-border px-4 py-3 text-sm outline-none focus:border-brand" placeholder="Default" />
-            </label>
-          </div>
-        </section>
-
-        <section class="rounded-2xl border border-app-border p-4">
-          <h3 class="text-sm font-semibold text-app-text">Optional links</h3>
-          <p class="mt-1 text-xs text-app-text-muted">Leave these blank when your shop prices repairs without product or service records.</p>
-
-          <div class="mt-4 grid gap-4 sm:grid-cols-2">
-            <div class="block">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Service</span>
-              <div class="relative" (click)="$event.stopPropagation()">
-                <lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted"></lucide-icon>
-                <input
-                  type="text"
-                  autocomplete="off"
-                  [value]="serviceLinkSearch()"
-                  (input)="onServiceLinkInput($any($event.target).value)"
-                  (focus)="openServiceLinkTypeahead()"
-                  placeholder="Search services..."
-                  class="h-[46px] w-full rounded-xl border border-app-border bg-app-surface py-3 pl-10 pr-10 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10" />
-
-                @if (serviceLinkSearch()) {
-                <button
-                  type="button"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1.5 text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text-muted"
-                  (click)="clearServiceLink(); $event.stopPropagation()"
-                  aria-label="Clear linked service">
-                  <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
-                </button>
-                }
-
-                @if (serviceLinkOpen()) {
-                <div class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-app-border bg-app-surface shadow-xl">
-                  <button
-                    type="button"
-                    class="flex w-full cursor-pointer items-center gap-3 border-b border-app-border px-4 py-3 text-left text-sm text-app-text-muted transition hover:bg-app-surface-muted"
-                    (click)="clearServiceLink(); $event.stopPropagation()">
-                    <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
-                    No linked service
-                  </button>
-
-                  @for (service of filteredServiceLinks(); track service.id) {
-                  <button
-                    type="button"
-                    class="block w-full cursor-pointer border-b border-app-border px-4 py-3 text-left transition last:border-b-0 hover:bg-app-surface-muted"
-                    [ngClass]="optionForm.controls.serviceId.value === service.id ? 'bg-brand/5' : ''"
-                    (click)="selectServiceLink(service); $event.stopPropagation()">
-                    <span class="block text-sm font-semibold text-app-text">{{ service.name }}</span>
-                    <span class="mt-0.5 block text-xs text-app-text-muted">{{ serviceLabel(service) }}</span>
-                  </button>
-                  } @empty {
-                  <div class="px-4 py-4 text-sm text-app-text-muted">No matching services.</div>
-                  }
-                </div>
-                }
-              </div>
-            </div>
-
-            <div class="block">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Product</span>
-              <div class="relative" (click)="$event.stopPropagation()">
-                <lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted"></lucide-icon>
-                <input
-                  type="text"
-                  autocomplete="off"
-                  [value]="productLinkSearch()"
-                  (input)="onProductLinkInput($any($event.target).value)"
-                  (focus)="openProductLinkTypeahead()"
-                  placeholder="Search products or SKUs..."
-                  class="h-[46px] w-full rounded-xl border border-app-border bg-app-surface py-3 pl-10 pr-10 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10" />
-
-                @if (productLinkSearch()) {
-                <button
-                  type="button"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1.5 text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text-muted"
-                  (click)="clearProductLink(); $event.stopPropagation()"
-                  aria-label="Clear linked product">
-                  <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
-                </button>
-                }
-
-                @if (productLinkOpen()) {
-                <div class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-app-border bg-app-surface shadow-xl">
-                  <button
-                    type="button"
-                    class="flex w-full cursor-pointer items-center gap-3 border-b border-app-border px-4 py-3 text-left text-sm text-app-text-muted transition hover:bg-app-surface-muted"
-                    (click)="clearProductLink(); $event.stopPropagation()">
-                    <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
-                    No linked product
-                  </button>
-
-                  @for (product of filteredProductLinks(); track product.id) {
-                  <button
-                    type="button"
-                    class="block w-full cursor-pointer border-b border-app-border px-4 py-3 text-left transition last:border-b-0 hover:bg-app-surface-muted"
-                    [ngClass]="optionForm.controls.productId.value === product.id ? 'bg-brand/5' : ''"
-                    (click)="selectProductLink(product); $event.stopPropagation()">
-                    <span class="block text-sm font-semibold text-app-text">{{ product.name }}</span>
-                    <span class="mt-0.5 block text-xs text-app-text-muted">{{ productLabel(product) }}</span>
-                  </button>
-                  } @empty {
-                  <div class="px-4 py-4 text-sm text-app-text-muted">No matching products.</div>
-                  }
-                </div>
-                }
-              </div>
-            </div>
-
-            <div class="block sm:col-span-2">
-              <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Supplier link</span>
-              <div class="relative" (click)="$event.stopPropagation()">
-                <lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-muted"></lucide-icon>
-                <input
-                  type="text"
-                  autocomplete="off"
-                  [disabled]="!selectedProduct()"
-                  [value]="supplierLinkSearch()"
-                  (input)="onSupplierLinkInput($any($event.target).value)"
-                  (focus)="openSupplierLinkTypeahead()"
-                  [placeholder]="selectedProduct() ? 'Search supplier names or SKUs...' : 'Select a product first'"
-                  class="h-[46px] w-full rounded-xl border border-app-border bg-app-surface py-3 pl-10 pr-10 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 disabled:cursor-not-allowed disabled:bg-app-surface-muted disabled:text-app-text-muted" />
-
-                @if (supplierLinkSearch()) {
-                <button
-                  type="button"
-                  class="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg p-1.5 text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text-muted"
-                  (click)="clearSupplierLink(); $event.stopPropagation()"
-                  aria-label="Clear linked supplier record">
-                  <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
-                </button>
-                }
-
-                @if (supplierLinkOpen() && selectedProduct()) {
-                <div class="absolute z-50 mt-2 max-h-64 w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-app-border bg-app-surface shadow-xl">
-                  <button
-                    type="button"
-                    class="flex w-full cursor-pointer items-center gap-3 border-b border-app-border px-4 py-3 text-left text-sm text-app-text-muted transition hover:bg-app-surface-muted"
-                    (click)="clearSupplierLink(); $event.stopPropagation()">
-                    <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
-                    No linked supplier record
-                  </button>
-
-                  @for (link of filteredSupplierLinks(); track link.id) {
-                  <button
-                    type="button"
-                    class="block w-full cursor-pointer border-b border-app-border px-4 py-3 text-left transition last:border-b-0 hover:bg-app-surface-muted"
-                    [ngClass]="optionForm.controls.productSupplierId.value === link.id ? 'bg-brand/5' : ''"
-                    (click)="selectSupplierLink(link); $event.stopPropagation()">
-                    <span class="block text-sm font-semibold text-app-text">{{ link.supplierName || 'Supplier' }}</span>
-                    <span class="mt-0.5 block text-xs text-app-text-muted">{{ supplierLinkLabel(link) }}</span>
-                  </button>
-                  } @empty {
-                  <div class="px-4 py-4 text-sm text-app-text-muted">This product has no matching supplier links.</div>
-                  }
-                </div>
-                }
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="rounded-2xl border border-app-border p-4">
-          <div>
-            <h3 class="text-sm font-semibold text-app-text">Deposit</h3>
-            <p class="mt-1 text-xs text-app-text-muted">Choose whether this pricing option requires money up front. Deposits are handled through the existing quote payment flow.</p>
-          </div>
-
-          <div class="mt-4 grid gap-3 sm:grid-cols-3">
-            <button
-              type="button"
-              class="cursor-pointer rounded-2xl border px-4 py-3 text-left transition"
-              [ngClass]="optionForm.controls.depositMode.value === 'none' ? 'border-brand bg-brand/5 ring-1 ring-brand/10' : 'border-app-border bg-app-surface hover:bg-app-surface-muted'"
-              (click)="setDepositMode('none')">
-              <span class="block text-sm font-semibold text-app-text">No deposit</span>
-              <span class="mt-1 block text-xs leading-5 text-app-text-muted">The full balance remains due later.</span>
-            </button>
-
-            <button
-              type="button"
-              class="cursor-pointer rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50"
-              [disabled]="selectedDepositProductCostCents() == null"
-              [ngClass]="optionForm.controls.depositMode.value === 'product_cost' ? 'border-brand bg-brand/5 ring-1 ring-brand/10' : 'border-app-border bg-app-surface hover:bg-app-surface-muted'"
-              (click)="setDepositMode('product_cost')">
-              <span class="block text-sm font-semibold text-app-text">Product cost</span>
-              <span class="mt-1 block text-xs leading-5 text-app-text-muted">
-                @if (selectedDepositProductCostCents() != null) {
-                Current amount: {{ money(selectedDepositProductCostCents()) }}
-                } @else {
-                Link a product with a cost first.
-                }
-              </span>
-            </button>
-
-            <button
-              type="button"
-              class="cursor-pointer rounded-2xl border px-4 py-3 text-left transition"
-              [ngClass]="optionForm.controls.depositMode.value === 'custom' ? 'border-brand bg-brand/5 ring-1 ring-brand/10' : 'border-app-border bg-app-surface hover:bg-app-surface-muted'"
-              (click)="setDepositMode('custom')">
-              <span class="block text-sm font-semibold text-app-text">Custom amount</span>
-              <span class="mt-1 block text-xs leading-5 text-app-text-muted">Enter a fixed deposit for this option.</span>
-            </button>
-          </div>
-
-          @if (optionForm.controls.depositMode.value === 'custom') {
-          <label class="mt-4 block max-w-sm">
-            <span class="mb-1 block text-xs font-semibold uppercase tracking-wide text-app-text-muted">Deposit amount</span>
-            <div class="flex overflow-hidden rounded-xl border border-app-border bg-app-surface focus-within:border-brand">
-              <span class="flex items-center border-r border-app-border bg-app-surface-muted px-3 text-sm text-app-text-muted">$</span>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                formControlName="depositAmountDollars"
-                class="min-w-0 flex-1 px-3 py-3 text-sm outline-none"
-                placeholder="0.00" />
-            </div>
-          </label>
-          }
-
-          @if (optionForm.controls.depositMode.value === 'product_cost' && selectedDepositProductCostCents() != null) {
-          <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            The deposit will use the current linked product cost of <strong>{{ money(selectedDepositProductCostCents()) }}</strong> when the quote is created.
-          </div>
-          }
-        </section>
-
-        <section class="space-y-3 rounded-2xl border border-app-border bg-app-surface-muted p-4">
-          <label class="flex cursor-pointer items-start justify-between gap-4">
-            <span><span class="block text-sm font-semibold text-app-text">Active</span><span class="mt-1 block text-xs text-app-text-muted">Available inside Opscend.</span></span>
-            <input type="checkbox" formControlName="isActive" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-          </label>
-          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-app-border pt-3">
-            <span><span class="block text-sm font-semibold text-app-text">Public</span><span class="mt-1 block text-xs text-app-text-muted">Customers can select this option in public booking.</span></span>
-            <input type="checkbox" formControlName="isPublic" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-          </label>
-          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-app-border pt-3">
-            <span><span class="block text-sm font-semibold text-app-text">Allow instant confirmation</span><span class="mt-1 block text-xs text-app-text-muted">Public bookings can schedule immediately when pricing is complete.</span></span>
-            <input type="checkbox" formControlName="allowInstantConfirmation" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-          </label>
-          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-app-border pt-3">
-            <span><span class="block text-sm font-semibold text-app-text">Requires manual review</span><span class="mt-1 block text-xs text-app-text-muted">Always route this option through quote review.</span></span>
-            <input type="checkbox" formControlName="requiresManualReview" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-          </label>
-          @if (selectedModels().length > 1) {
-          <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-app-border pt-3">
-            <span><span class="block text-sm font-semibold text-app-text">Update matching options</span><span class="mt-1 block text-xs text-app-text-muted">Overwrite an existing option with the same repair type and name.</span></span>
-            <input type="checkbox" formControlName="overwriteExisting" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
-          </label>
-          }
-        </section>
-      </div>
-
-      <div class="sticky bottom-0 flex justify-end gap-2 border-t border-app-border bg-app-surface px-6 py-4">
-        <button type="button" class="cursor-pointer rounded-xl border border-app-border px-4 py-2.5 text-sm font-semibold text-app-text-muted hover:bg-app-surface-muted" (click)="closeOptionEditor()">Cancel</button>
-        <button type="submit" class="cursor-pointer rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60" [disabled]="saving()">{{ saving() ? 'Saving...' : selectedModels().length > 1 ? 'Apply to Selected Models' : 'Save Pricing Option' }}</button>
-      </div>
-    </form>
-  </aside>
-</div>
-}
 </app-settings-layout>

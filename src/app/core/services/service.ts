@@ -42,6 +42,10 @@ export class ServicesService {
             httpParams = httpParams.set('tag', params.tag);
         }
 
+        if (params?.search?.trim()) {
+            httpParams = httpParams.set('search', params.search.trim());
+        }
+
         if (params?.includeDeleted != null) {
             httpParams = httpParams.set(
                 'includeDeleted',
@@ -63,30 +67,12 @@ export class ServicesService {
     }
 
     search(query: string, limit = 20): Observable<Service[]> {
-        const normalized = query.trim().toLowerCase();
-
         return this.list({
-            limit: 100,
+            limit,
             status: 'active',
+            search: query,
             includeDeleted: false,
-        }).pipe(
-            map((res) =>
-                res.data
-                    .filter((service) => {
-                        const haystack = [
-                            service.name,
-                            service.code,
-                            ...(service.tags ?? []),
-                        ]
-                            .filter(Boolean)
-                            .join(' ')
-                            .toLowerCase();
-
-                        return haystack.includes(normalized);
-                    })
-                    .slice(0, limit)
-            )
-        );
+        }).pipe(map((res) => res.data));
     }
 
     getById(serviceId: string): Observable<Service> {

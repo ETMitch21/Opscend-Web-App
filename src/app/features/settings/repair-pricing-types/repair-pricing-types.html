@@ -1,0 +1,111 @@
+<app-settings-layout>
+  <div settings-actions>
+    <button type="button" class="settings-primary-action cursor-pointer" (click)="openNew()">
+      <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+      New repair type
+    </button>
+  </div>
+
+  <div class="space-y-4">
+
+    @if (error()) {<div class="settings-alert is-error">{{ error() }}</div>}
+
+    <section class="settings-card">
+      <div class="flex flex-col gap-3 border-b border-app-border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-app-text">Repair types</h2>
+          <p class="mt-1 text-xs text-app-text-muted">Shared defaults inherited by model-specific pricing options.</p>
+        </div>
+        <div class="settings-search-field w-full sm:w-80">
+          <lucide-icon [name]="icons.Search" class="h-4 w-4"></lucide-icon>
+          <input type="search" autocomplete="off" placeholder="Search repair types…" [value]="search()" (input)="search.set($any($event.target).value)" />
+          @if (search()) {
+            <button type="button" class="settings-search-clear cursor-pointer" aria-label="Clear search" (click)="search.set('')"><lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon></button>
+          }
+        </div>
+      </div>
+
+      @if (loading()) {
+        <div class="flex min-h-64 items-center justify-center gap-2 text-sm text-app-text-muted"><lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>Loading repair types…</div>
+      } @else if (!filteredTypes().length) {
+        <div class="px-6 py-16 text-center">
+          <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-text-muted"><lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon></div>
+          <h3 class="mt-4 text-sm font-semibold text-app-text">No repair types found</h3>
+          <p class="mt-1 text-sm text-app-text-muted">{{ search() ? 'Try another search.' : 'Create the first repair type used by pricing options.' }}</p>
+        </div>
+      } @else {
+        <div class="divide-y divide-app-border">
+          @for (type of filteredTypes(); track type.id) {
+            <article class="grid grid-cols-[36px_minmax(0,1fr)] gap-2 px-4 py-3.5 transition hover:bg-app-surface-muted/55 sm:grid-cols-[36px_minmax(260px,1fr)_130px_110px_150px_100px] sm:items-center" [class.opacity-60]="!type.isActive" (dragover)="$event.preventDefault()" (drop)="onDrop($event, type)">
+              <span class="hidden h-8 w-8 cursor-grab items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface sm:inline-flex" [attr.draggable]="!search()" (dragstart)="onDragStart($event, type)"><lucide-icon [name]="icons.Grip" class="h-4 w-4"></lucide-icon></span>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2"><h3 class="truncate text-sm font-semibold text-app-text">{{ type.label }}</h3>@if (!type.isActive) {<span class="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700">Inactive</span>}</div>
+                <p class="mt-1 truncate text-xs text-app-text-muted">{{ type.code }} · {{ type.description || 'No description' }}</p>
+              </div>
+              <div class="col-start-2 sm:col-start-auto"><p class="text-[10px] font-semibold uppercase tracking-wide text-app-text-muted sm:hidden">Labor</p><p class="text-xs font-semibold text-app-text">{{ type.defaultLaborCents == null ? 'Shop default' : money(type.defaultLaborCents) }}</p></div>
+              <div class="col-start-2 sm:col-start-auto"><p class="text-[10px] font-semibold uppercase tracking-wide text-app-text-muted sm:hidden">Duration</p><p class="text-xs font-semibold text-app-text">{{ type.defaultDurationMins || 60 }} min</p></div>
+              <div class="col-start-2 sm:col-start-auto"><p class="text-[10px] font-semibold uppercase tracking-wide text-app-text-muted sm:hidden">Deposit</p><p class="text-xs font-semibold text-app-text">{{ depositLabel(type) }}</p></div>
+              <div class="col-start-2 flex items-center justify-end gap-2 sm:col-start-auto">
+                <span class="mr-auto text-[10px] font-semibold text-app-text-muted sm:mr-0">{{ type.pricingOptionCount }} option{{ type.pricingOptionCount === 1 ? '' : 's' }}</span>
+                <button type="button" class="settings-secondary-action cursor-pointer" (click)="edit(type)">Edit</button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  @if (editorOpen()) {
+    <div class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950/45 p-4" (mousedown)="closeEditor()">
+      <section class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-app-border bg-app-surface shadow-2xl" (mousedown)="$event.stopPropagation()">
+        <header class="flex items-start justify-between gap-4 border-b border-app-border px-5 py-4">
+          <div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand">Repair type</p><h2 class="mt-1 text-lg font-semibold text-app-text">{{ editingId() ? 'Edit repair type' : 'New repair type' }}</h2></div>
+          <button type="button" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text" aria-label="Close" (click)="closeEditor()"><lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon></button>
+        </header>
+
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="space-y-5 p-5">
+            <div class="settings-field-grid">
+              <div class="settings-field is-half"><label class="settings-label" for="type-label">Name</label><input id="type-label" type="text" class="settings-control" formControlName="label" placeholder="Screen Repair" (input)="onLabelInput()" /></div>
+              <div class="settings-field is-half"><label class="settings-label" for="type-code">Internal code</label><input id="type-code" type="text" class="settings-control" formControlName="code" placeholder="screen_repair" /><p class="settings-hint">Lowercase letters, numbers, and underscores.</p></div>
+              <div class="settings-field"><label class="settings-label" for="type-description">Description</label><textarea id="type-description" class="settings-control" formControlName="description" rows="3"></textarea></div>
+              <div class="settings-field"><label class="settings-label" for="type-terms">Supplier search terms</label><input id="type-terms" type="text" class="settings-control" formControlName="supplierSearchTermsText" placeholder="screen, display, lcd, oled" /><p class="settings-hint">Comma-separated terms used when searching supplier catalogs.</p></div>
+              <div class="settings-field is-half"><label class="settings-label" for="type-labor">Default labor</label><div class="settings-input-group"><span class="settings-input-affix">$</span><input id="type-labor" type="number" min="0" step="0.01" formControlName="defaultLaborDollars" placeholder="Use shop default" /></div></div>
+              <div class="settings-field is-half"><label class="settings-label" for="type-duration">Default duration</label><div class="settings-input-group"><input id="type-duration" type="number" min="5" step="5" formControlName="defaultDurationMins" /><span class="settings-input-affix is-suffix">min</span></div></div>
+            </div>
+
+            <div class="border-t border-app-border pt-5">
+              <label class="settings-label" for="type-deposit-mode">Default deposit rule</label>
+              <select id="type-deposit-mode" class="settings-control cursor-pointer" formControlName="depositMode">
+                <option value="inherit">Inherit shop default</option><option value="none">No deposit</option><option value="product_cost">Part cost only</option><option value="cost_recovery">Part cost + shipping + fees</option><option value="custom">Fixed amount</option>
+              </select>
+
+              @if (form.controls.depositMode.value === 'custom') {
+                <div class="mt-3"><label class="settings-label" for="type-deposit-amount">Deposit amount</label><div class="settings-input-group"><span class="settings-input-affix">$</span><input id="type-deposit-amount" type="number" min="0.01" step="0.01" formControlName="depositAmountDollars" /></div></div>
+              }
+
+              @if (form.controls.depositMode.value === 'cost_recovery') {
+                <div class="mt-3"><label class="settings-label" for="type-shipping">Shipping allowance</label><div class="settings-input-group"><span class="settings-input-affix">$</span><input id="type-shipping" type="number" min="0" step="0.01" formControlName="depositShippingDollars" placeholder="Use shop default" /></div></div>
+                <div class="settings-toggle-list mt-4">
+                  <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Recover processing fees</p><p class="settings-toggle-description">Gross up the customer deposit.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="form.controls.depositIncludeProcessingFees.value" (click)="toggle('depositIncludeProcessingFees')"><span class="settings-switch-handle"></span></button></div>
+                  <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Recover instant payout fee</p><p class="settings-toggle-description">Include the configured payout percentage.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="form.controls.depositIncludeInstantPayoutFee.value" (click)="toggle('depositIncludeInstantPayoutFee')"><span class="settings-switch-handle"></span></button></div>
+                </div>
+              }
+            </div>
+
+            <div class="settings-toggle-list border-t border-app-border pt-5">
+              <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Active</p><p class="settings-toggle-description">Allow this repair type to be used by pricing options.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="form.controls.isActive.value" (click)="toggle('isActive')"><span class="settings-switch-handle"></span></button></div>
+              <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Requires manual review</p><p class="settings-toggle-description">Flag bookings using this repair type for staff review.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="form.controls.requiresManualReview.value" (click)="toggle('requiresManualReview')"><span class="settings-switch-handle"></span></button></div>
+            </div>
+          </div>
+
+          <footer class="flex items-center justify-between gap-3 border-t border-app-border px-5 py-4">
+            <div>@if (editingRepairType()?.isActive) {<button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50" (click)="deactivate(editingRepairType()!)"><lucide-icon [name]="icons.Trash" class="h-4 w-4"></lucide-icon>Deactivate</button>}</div>
+            <div class="flex items-center gap-2"><button type="button" class="settings-secondary-action cursor-pointer" (click)="closeEditor()">Cancel</button><button type="submit" class="settings-primary-action cursor-pointer" [disabled]="saving()">@if (saving()) {<lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>}Save repair type</button></div>
+          </footer>
+        </form>
+      </section>
+    </div>
+  }
+</app-settings-layout>

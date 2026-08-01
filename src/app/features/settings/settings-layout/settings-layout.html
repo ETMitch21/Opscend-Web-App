@@ -1,42 +1,21 @@
 <div class="settings-shell">
-  <header class="settings-header">
-    <div class="settings-header-copy">
-      <p class="settings-breadcrumb">Settings / {{ currentGroup().label }}</p>
-      <h1 class="settings-title">{{ currentItem().label }}</h1>
-      <p class="settings-description">{{ currentItem().description }}</p>
+  <header class="settings-page-header">
+    <div class="settings-page-header-copy">
+      <a [routerLink]="resolvedBackRoute()" class="settings-back-link cursor-pointer">
+        <lucide-icon [img]="icons.ArrowLeft" [size]="15"></lucide-icon>
+        {{ resolvedBackLabel() }}
+      </a>
+
+      <h1 class="settings-title">{{ resolvedTitle() }}</h1>
+      @if (resolvedDescription()) {
+        <p class="settings-description">{{ resolvedDescription() }}</p>
+      }
     </div>
 
     <div class="settings-header-actions">
       <ng-content select="[settings-actions]"></ng-content>
     </div>
   </header>
-
-  <div class="settings-navigation">
-    <nav class="settings-group-tabs" aria-label="Settings categories">
-      @for (group of visibleGroups; track group.label) {
-        <a
-          [routerLink]="groupRoute(group)"
-          class="settings-group-tab cursor-pointer"
-          [ngClass]="isGroupActive(group) ? 'is-active' : ''"
-        >
-          {{ group.label }}
-        </a>
-      }
-    </nav>
-
-    <nav class="settings-page-tabs" [attr.aria-label]="currentGroup().label + ' settings'">
-      @for (item of currentGroup().items; track item.route) {
-        <a
-          [routerLink]="item.route"
-          class="settings-page-tab cursor-pointer"
-          [ngClass]="isItemActive(item.route) ? 'is-active' : ''"
-        >
-          <lucide-icon [img]="item.icon" [size]="14"></lucide-icon>
-          {{ item.label }}
-        </a>
-      }
-    </nav>
-  </div>
 
   <section class="settings-content">
     <ng-content></ng-content>

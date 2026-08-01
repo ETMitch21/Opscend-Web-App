@@ -117,6 +117,12 @@ export const routes: Routes = [
         path: 'settings',
         children: [
             {
+                path: '',
+                pathMatch: 'full',
+                loadComponent: () =>
+                    import('./features/settings/settings-home/settings-home').then((m) => m.SettingsHome)
+            },
+            {
                 path: 'shop',
                 children: [
                     {
@@ -151,8 +157,29 @@ export const routes: Routes = [
                     },
                     {
                         path: 'repair-pricing',
-                        loadComponent: () =>
-                            import('./features/settings/repair-pricing/repair-pricing').then((m) => m.RepairPricingSettings)
+                        children: [
+                            {
+                                path: 'types',
+                                loadComponent: () =>
+                                    import('./features/settings/repair-pricing-types/repair-pricing-types').then((m) => m.RepairPricingTypes)
+                            },
+                            {
+                                path: 'new',
+                                loadComponent: () =>
+                                    import('./features/settings/repair-pricing-editor/repair-pricing-editor').then((m) => m.RepairPricingEditor)
+                            },
+                            {
+                                path: ':id',
+                                loadComponent: () =>
+                                    import('./features/settings/repair-pricing-editor/repair-pricing-editor').then((m) => m.RepairPricingEditor)
+                            },
+                            {
+                                path: '',
+                                pathMatch: 'full',
+                                loadComponent: () =>
+                                    import('./features/settings/repair-pricing/repair-pricing').then((m) => m.RepairPricingSettings)
+                            }
+                        ]
                     },
                     {
                         path: 'payouts',

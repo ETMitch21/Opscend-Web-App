@@ -180,6 +180,10 @@ interface RepairServiceOption {
   depositMode: PricingOptionDepositMode;
   depositAmountCents: number | null;
   resolvedDepositCents: number | null;
+  depositConfigurationError:
+    | 'missing_product_cost'
+    | 'missing_custom_amount'
+    | null;
   needKey: string;
   label: string;
   description: string;
@@ -909,6 +913,7 @@ export class NewRepair implements OnInit {
     if (!this.isDeviceStepValid()) return false;
     if (!this.isRepairStepValid()) return false;
     if (!this.isServiceStepValid()) return false;
+    if (this.selectedDepositConfigurationError()) return false;
     if (this.shouldEnforceSelectedDeposit()) {
       if (this.adminDepositAction === 'send_payment' && !this.depositCustomerEmail()) {
         return false;
@@ -1274,14 +1279,8 @@ export class NewRepair implements OnInit {
       productCostCents: option.product?.costCents ?? null,
       depositMode: option.depositMode,
       depositAmountCents: option.depositAmountCents,
-      resolvedDepositCents:
-        option.depositMode === 'custom'
-          ? option.depositAmountCents
-          : option.depositMode === 'product_cost'
-            ? (option.productSupplier?.lastKnownCostCents ??
-              option.product?.costCents ??
-              null)
-            : null,
+      resolvedDepositCents: option.resolvedDepositCents,
+      depositConfigurationError: option.depositConfigurationError,
       needKey: option.repairNeedId,
       label: option.variantName,
       description:
@@ -1317,6 +1316,7 @@ export class NewRepair implements OnInit {
       depositMode: 'none',
       depositAmountCents: null,
       resolvedDepositCents: null,
+      depositConfigurationError: null,
       needKey: repairType.id,
       label: 'Custom price',
       description: 'Create this repair without a saved model price.',
@@ -1368,6 +1368,17 @@ export class NewRepair implements OnInit {
 
   selectedPricingRequiresDeposit(): boolean {
     return this.selectedDepositAmountCents() !== null;
+  }
+
+  selectedDepositConfigurationError(): string | null {
+    const error = this.selectedRepairService()?.depositConfigurationError ?? null;
+    if (error === 'missing_product_cost') {
+      return 'This deposit rule needs a linked part with a recorded cost.';
+    }
+    if (error === 'missing_custom_amount') {
+      return 'This deposit rule is missing its fixed deposit amount.';
+    }
+    return null;
   }
 
   shouldEnforceSelectedDeposit(): boolean {

@@ -80,6 +80,12 @@ export class RepairPricingService {
     );
   }
 
+  getOption(id: string): Observable<PricingOption> {
+    return this.http.get<PricingOption>(
+      `${this.baseUrl}/options/${encodeURIComponent(id)}`,
+    );
+  }
+
   createOption(payload: PricingOptionInput): Observable<PricingOption> {
     return this.http.post<PricingOption>(`${this.baseUrl}/options`, payload);
   }

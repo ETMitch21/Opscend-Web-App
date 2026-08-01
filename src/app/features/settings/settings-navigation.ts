@@ -1,0 +1,144 @@
+import {
+  BellIcon,
+  BlocksIcon,
+  Building2,
+  CalendarClockIcon,
+  CalendarCog,
+  DollarSignIcon,
+  LucideIconData,
+  SmartphoneIcon,
+  UserIcon,
+  UsersIcon,
+  WalletCardsIcon,
+} from 'lucide-angular';
+
+export type SettingsNavItem = {
+  label: string;
+  description: string;
+  route: string;
+  icon: LucideIconData;
+  ownerOnly?: boolean;
+  keywords?: string[];
+};
+
+export type SettingsNavGroup = {
+  label: string;
+  description: string;
+  items: SettingsNavItem[];
+};
+
+export const SETTINGS_GROUPS: SettingsNavGroup[] = [
+  {
+    label: 'Business',
+    description: 'Manage your shop identity, team, hours, and customer communication.',
+    items: [
+      {
+        label: 'General',
+        description: 'Business details, customer-facing information, and operating defaults.',
+        route: '/settings/shop/general',
+        icon: Building2,
+        keywords: ['shop', 'business', 'identity', 'contact', 'address', 'branding'],
+      },
+      {
+        label: 'Team',
+        description: 'Staff access, roles, invitations, and archived team members.',
+        route: '/settings/shop/users',
+        icon: UsersIcon,
+        keywords: ['users', 'employees', 'staff', 'roles', 'permissions', 'invite'],
+      },
+      {
+        label: 'Shop hours',
+        description: 'Weekly operating hours and date-specific closures or exceptions.',
+        route: '/settings/shop/availability',
+        icon: CalendarClockIcon,
+        keywords: ['availability', 'schedule', 'open', 'closed', 'holiday'],
+      },
+      {
+        label: 'Notifications',
+        description: 'Automated repair updates, sender details, and customer templates.',
+        route: '/settings/shop/notifications',
+        icon: BellIcon,
+        keywords: ['email', 'sms', 'alerts', 'messages', 'templates'],
+      },
+    ],
+  },
+  {
+    label: 'Booking',
+    description: 'Control the customer booking experience, pricing, and supported devices.',
+    items: [
+      {
+        label: 'Public booking',
+        description: 'Quote flow, scheduling rules, fallback pricing, and website embed.',
+        route: '/settings/shop/shop-bookings',
+        icon: CalendarCog,
+        keywords: ['appointments', 'quotes', 'schedule', 'embed', 'website', 'booking'],
+      },
+      {
+        label: 'Repair pricing',
+        description: 'Repair types, model-specific options, deposits, and booking behavior.',
+        route: '/settings/shop/repair-pricing',
+        icon: DollarSignIcon,
+        keywords: ['price', 'labor', 'parts', 'deposit', 'service', 'repair type'],
+      },
+      {
+        label: 'Device catalog',
+        description: 'Categories, brands, models, publishing, and master catalog updates.',
+        route: '/settings/shop/device-catalog',
+        icon: SmartphoneIcon,
+        keywords: ['devices', 'phones', 'tablets', 'models', 'brands', 'catalog'],
+      },
+    ],
+  },
+  {
+    label: 'Connections',
+    description: 'Connect the services used for sourcing, payments, and payouts.',
+    items: [
+      {
+        label: 'Integrations',
+        description: 'Supplier, payment, and external service connections used by your shop.',
+        route: '/settings/integrations',
+        icon: BlocksIcon,
+        keywords: ['connections', 'mobilesentrix', 'stripe', 'supplier', 'api'],
+      },
+      {
+        label: 'Payouts',
+        description: 'Stripe balances, payout destinations, schedules, and instant payouts.',
+        route: '/settings/shop/payouts',
+        icon: WalletCardsIcon,
+        ownerOnly: true,
+        keywords: ['stripe', 'bank', 'balance', 'instant', 'money'],
+      },
+    ],
+  },
+  {
+    label: 'Your account',
+    description: 'Manage your personal profile and recurring working availability.',
+    items: [
+      {
+        label: 'My profile',
+        description: 'Your personal details and internal team profile.',
+        route: '/settings/profile/my-profile',
+        icon: UserIcon,
+        keywords: ['name', 'phone', 'account', 'personal'],
+      },
+      {
+        label: 'My hours',
+        description: 'Your recurring working hours and personal schedule exceptions.',
+        route: '/settings/profile/my-availability',
+        icon: CalendarClockIcon,
+        keywords: ['availability', 'schedule', 'working hours', 'technician'],
+      },
+    ],
+  },
+];
+
+export function visibleSettingsGroups(role: string | null | undefined): SettingsNavGroup[] {
+  const normalizedRole = String(role ?? '').toLowerCase();
+
+  return SETTINGS_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.ownerOnly || normalizedRole === 'owner'),
+    }))
+    .filter((group) => group.items.length > 0);
+}

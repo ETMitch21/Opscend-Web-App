@@ -613,7 +613,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   goToShopSettings(): void {
     this.closeProfileMenu();
-    void this.router.navigate(['/settings/shop/general']);
+    void this.router.navigate(['/settings']);
   }
 
   logout(): void {

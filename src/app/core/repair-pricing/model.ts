@@ -9,6 +9,11 @@ export interface RepairType {
   supplierSearchTerms: string[];
   defaultLaborCents: number | null;
   defaultDurationMins: number | null;
+  depositMode: PricingOptionDepositMode;
+  depositAmountCents: number | null;
+  depositShippingCents: number | null;
+  depositIncludeProcessingFees: boolean | null;
+  depositIncludeInstantPayoutFee: boolean | null;
   requiresManualReview: boolean;
   pricingOptionCount: number;
   createdAt: string;
@@ -24,6 +29,11 @@ export interface RepairTypeInput {
   supplierSearchTerms?: string[];
   defaultLaborCents?: number | null;
   defaultDurationMins?: number | null;
+  depositMode?: PricingOptionDepositMode;
+  depositAmountCents?: number | null;
+  depositShippingCents?: number | null;
+  depositIncludeProcessingFees?: boolean | null;
+  depositIncludeInstantPayoutFee?: boolean | null;
   requiresManualReview?: boolean;
 }
 
@@ -66,7 +76,12 @@ export interface PricingOptionProductSupplierSummary {
   lastKnownInStock: boolean | null;
 }
 
-export type PricingOptionDepositMode = 'none' | 'product_cost' | 'custom';
+export type PricingOptionDepositMode =
+  | 'inherit'
+  | 'none'
+  | 'product_cost'
+  | 'cost_recovery'
+  | 'custom';
 
 export interface PricingOption {
   id: string;
@@ -83,6 +98,14 @@ export interface PricingOption {
   useDynamicPricing: boolean;
   depositMode: PricingOptionDepositMode;
   depositAmountCents: number | null;
+  depositShippingCents: number | null;
+  depositIncludeProcessingFees: boolean | null;
+  depositIncludeInstantPayoutFee: boolean | null;
+  resolvedDepositCents: number | null;
+  depositConfigurationError:
+    | 'missing_product_cost'
+    | 'missing_custom_amount'
+    | null;
   laborCents: number | null;
   durationMins: number | null;
   allowInstantConfirmation: boolean;
@@ -114,6 +137,9 @@ export interface PricingOptionInput {
   useDynamicPricing?: boolean;
   depositMode?: PricingOptionDepositMode;
   depositAmountCents?: number | null;
+  depositShippingCents?: number | null;
+  depositIncludeProcessingFees?: boolean | null;
+  depositIncludeInstantPayoutFee?: boolean | null;
   laborCents?: number | null;
   durationMins?: number | null;
   allowInstantConfirmation?: boolean;

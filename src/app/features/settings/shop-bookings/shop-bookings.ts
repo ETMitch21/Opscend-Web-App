@@ -84,6 +84,15 @@ export class ShopBookingsComponent implements OnInit {
     minimumRetailDollars: [null as number | null],
     maximumRetailDollars: [null as number | null],
 
+    defaultDepositMode: ['none'],
+    defaultDepositAmountDollars: [null as number | null, Validators.min(0.01)],
+    defaultDepositShippingDollars: [5, [Validators.required, Validators.min(0)]],
+    defaultDepositIncludeProcessingFees: [true],
+    defaultDepositIncludeInstantPayoutFee: [false],
+    depositProcessingFeePercent: [2.9, [Validators.required, Validators.min(0)]],
+    depositProcessingFeeFixedDollars: [0.3, [Validators.required, Validators.min(0)]],
+    depositInstantPayoutFeePercent: [1, [Validators.required, Validators.min(0)]],
+
     sameDayEnabled: [true],
     sameDayCutoffTime: ['14:00'],
     sameDayBufferMins: [120, [Validators.required, Validators.min(0)]],
@@ -156,9 +165,18 @@ export class ShopBookingsComponent implements OnInit {
       return;
     }
 
+    const raw = this.settingsForm.getRawValue();
+    if (
+      raw.defaultDepositMode === 'custom' &&
+      this.optionalDollarsToCents(raw.defaultDepositAmountDollars) == null
+    ) {
+      this.settingsForm.controls.defaultDepositAmountDollars.markAsTouched();
+      this.error.set('Enter a fixed deposit amount before saving.');
+      return;
+    }
+
     this.saveState.set('saving');
     this.error.set(null);
-    const raw = this.settingsForm.getRawValue();
 
     const body: BookingSettingsPatch = {
       enabled: Boolean(raw.enabled),
@@ -175,6 +193,29 @@ export class ShopBookingsComponent implements OnInit {
         raw.maximumRetailDollars == null
           ? null
           : this.dollarsToCents(raw.maximumRetailDollars),
+      defaultDepositMode: raw.defaultDepositMode as BookingSettingsPatch['defaultDepositMode'],
+      defaultDepositAmountCents:
+        raw.defaultDepositMode === 'custom'
+          ? this.optionalDollarsToCents(raw.defaultDepositAmountDollars)
+          : null,
+      defaultDepositShippingCents: this.dollarsToCents(
+        raw.defaultDepositShippingDollars,
+      ),
+      defaultDepositIncludeProcessingFees: Boolean(
+        raw.defaultDepositIncludeProcessingFees,
+      ),
+      defaultDepositIncludeInstantPayoutFee: Boolean(
+        raw.defaultDepositIncludeInstantPayoutFee,
+      ),
+      depositProcessingFeeBps: this.percentToBps(
+        raw.depositProcessingFeePercent,
+      ),
+      depositProcessingFeeFixedCents: this.dollarsToCents(
+        raw.depositProcessingFeeFixedDollars,
+      ),
+      depositInstantPayoutFeeBps: this.percentToBps(
+        raw.depositInstantPayoutFeePercent,
+      ),
       sameDayEnabled: Boolean(raw.sameDayEnabled),
       sameDayCutoffMin: this.timeToMinutes(raw.sameDayCutoffTime),
       sameDayBufferMins: Number(raw.sameDayBufferMins ?? 120),
@@ -238,6 +279,25 @@ export class ShopBookingsComponent implements OnInit {
         settings.maximumRetailCents == null
           ? null
           : this.centsToDollars(settings.maximumRetailCents),
+      defaultDepositMode: settings.defaultDepositMode ?? 'none',
+      defaultDepositAmountDollars:
+        settings.defaultDepositAmountCents == null
+          ? null
+          : this.centsToDollars(settings.defaultDepositAmountCents),
+      defaultDepositShippingDollars: this.centsToDollars(
+        settings.defaultDepositShippingCents ?? 500,
+      ),
+      defaultDepositIncludeProcessingFees:
+        settings.defaultDepositIncludeProcessingFees ?? true,
+      defaultDepositIncludeInstantPayoutFee:
+        settings.defaultDepositIncludeInstantPayoutFee ?? false,
+      depositProcessingFeePercent:
+        Number(settings.depositProcessingFeeBps ?? 290) / 100,
+      depositProcessingFeeFixedDollars: this.centsToDollars(
+        settings.depositProcessingFeeFixedCents ?? 30,
+      ),
+      depositInstantPayoutFeePercent:
+        Number(settings.depositInstantPayoutFeeBps ?? 100) / 100,
       sameDayEnabled: settings.sameDayEnabled,
       sameDayCutoffTime: this.minutesToTime(settings.sameDayCutoffMin),
       sameDayBufferMins: settings.sameDayBufferMins,
@@ -275,6 +335,23 @@ export class ShopBookingsComponent implements OnInit {
 
   private centsToDollars(value: number): number {
     return Math.round(value) / 100;
+  }
+
+  private optionalDollarsToCents(
+    value: number | string | null | undefined,
+  ): number | null {
+    if (value == null || value === '') return null;
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount > 0
+      ? Math.round(amount * 100)
+      : null;
+  }
+
+  private percentToBps(
+    value: number | string | null | undefined,
+  ): number {
+    const percent = Number(value ?? 0);
+    return Number.isFinite(percent) ? Math.max(0, Math.round(percent * 100)) : 0;
   }
 
   private nullableTrim(value: string | null | undefined): string | null {

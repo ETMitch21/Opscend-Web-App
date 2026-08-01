@@ -1,46 +1,57 @@
-.settings-shell {
+ .settings-shell {
   --settings-radius: 14px;
   --settings-control-radius: 10px;
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   color: var(--color-app-text);
 }
 
-.settings-header {
+.settings-page-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
-  padding: 4px 2px 14px;
+  gap: 24px;
+  margin-bottom: 18px;
+  padding: 2px 0 16px;
+  border-bottom: 1px solid var(--color-app-border);
 }
 
-.settings-header-copy {
+.settings-page-header-copy {
   min-width: 0;
 }
 
-.settings-breadcrumb {
-  margin: 0;
+.settings-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  margin-bottom: 7px;
+  border-radius: 8px;
   color: var(--color-app-text-muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  line-height: 1.4;
-  text-transform: uppercase;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1;
+  text-decoration: none;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.settings-back-link:hover {
+  color: var(--color-app-text);
 }
 
 .settings-title {
-  margin: 3px 0 0;
+  margin: 0;
   color: var(--color-app-text);
-  font-size: clamp(20px, 2vw, 24px);
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
+  font-size: clamp(22px, 2vw, 27px);
+  font-weight: 680;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
 }
 
 .settings-description {
-  max-width: 720px;
-  margin: 4px 0 0;
+  max-width: 760px;
+  margin: 5px 0 0;
   color: var(--color-app-text-muted);
   font-size: 12.5px;
   line-height: 1.55;
@@ -50,104 +61,13 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-}
-
-.settings-navigation {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  margin: 0 -4px;
-  padding: 0 4px 10px;
-  background: color-mix(in srgb, var(--color-app-bg) 94%, transparent);
-  backdrop-filter: blur(12px);
-}
-
-.settings-group-tabs,
-.settings-page-tabs {
-  display: flex;
-  min-width: max-content;
-  align-items: center;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.settings-group-tabs::-webkit-scrollbar,
-.settings-page-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.settings-group-tabs {
-  gap: 22px;
-  border-bottom: 1px solid var(--color-app-border);
-}
-
-.settings-group-tab {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  color: var(--color-app-text-muted);
-  font-size: 12.5px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: color 150ms ease;
-}
-
-.settings-group-tab:hover {
-  color: var(--color-app-text);
-}
-
-.settings-group-tab.is-active {
-  color: var(--color-app-text);
-}
-
-.settings-group-tab.is-active::after {
-  position: absolute;
-  right: 0;
-  bottom: -1px;
-  left: 0;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--color-brand);
-  content: '';
-}
-
-.settings-page-tabs {
-  gap: 4px;
-  padding-top: 8px;
-}
-
-.settings-page-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  color: var(--color-app-text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: 150ms ease;
-}
-
-.settings-page-tab:hover {
-  background: var(--color-app-surface-muted);
-  color: var(--color-app-text);
-}
-
-.settings-page-tab.is-active {
-  border-color: color-mix(in srgb, var(--color-brand) 22%, var(--color-app-border));
-  background: color-mix(in srgb, var(--color-brand) 9%, var(--color-app-surface));
-  color: var(--color-brand);
+  padding-bottom: 1px;
 }
 
 .settings-content {
   min-width: 0;
-  padding-top: 4px;
 }
 
 /* Compact settings design language. Scoped so operational pages are unaffected. */
@@ -588,5 +508,514 @@
 
   .settings-group-tabs {
     gap: 18px;
+  }
+}
+
+/* Search and typeahead controls used throughout settings. */
+.settings-shell .settings-search-field,
+.settings-shell .settings-typeahead-control {
+  position: relative;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  border: 1px solid var(--color-app-border);
+  border-radius: var(--settings-control-radius);
+  background: var(--color-app-surface);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.settings-shell .settings-search-field:focus-within,
+.settings-shell .settings-typeahead-control:focus-within,
+.settings-shell .settings-typeahead-control.is-open {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 12%, transparent);
+}
+
+.settings-shell .settings-search-field > lucide-icon {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 1;
+  display: inline-flex;
+  width: 44px;
+  height: auto;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--color-app-text-muted) 88%, transparent);
+  pointer-events: none;
+}
+
+.settings-shell .settings-search-field > lucide-icon svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  stroke-width: 2;
+}
+
+.settings-shell .settings-search-field input,
+.settings-shell .settings-typeahead-control input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 0 !important;
+  border-radius: inherit !important;
+  background: transparent;
+  padding: 9px 42px 9px 46px !important;
+  color: var(--color-app-text);
+  font-size: 13px !important;
+  line-height: 1.35;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.settings-shell .settings-search-field input::placeholder,
+.settings-shell .settings-typeahead-control input::placeholder {
+  color: color-mix(in srgb, var(--color-app-text-muted) 78%, transparent);
+}
+
+.settings-shell .settings-search-clear,
+.settings-shell .settings-typeahead-clear,
+.settings-shell .settings-typeahead-trailing-icon {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  display: inline-flex;
+  translate: 0 -50%;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px !important;
+  background: transparent;
+  color: var(--color-app-text-muted);
+}
+
+.settings-shell .settings-search-clear:hover,
+.settings-shell .settings-typeahead-clear:hover {
+  background: var(--color-app-surface-muted);
+  color: var(--color-app-text);
+}
+
+.settings-shell .settings-typeahead {
+  position: relative;
+  min-width: 0;
+}
+
+.settings-shell .settings-typeahead:has(.settings-typeahead-control.is-open) {
+  z-index: 140;
+}
+
+/* Typeahead menus must be allowed to escape compact settings cards. */
+.settings-shell .settings-card.overflow-visible {
+  overflow: visible !important;
+}
+
+.settings-shell .settings-card:has(.settings-typeahead-control.is-open) {
+  position: relative;
+  z-index: 120;
+  overflow: visible !important;
+}
+
+.settings-shell .settings-card:has(.settings-typeahead-control.is-open) .settings-card-body,
+.settings-shell .settings-card.overflow-visible .settings-card-body {
+  overflow: visible;
+}
+
+.settings-shell .settings-typeahead-control.is-disabled {
+  background: var(--color-app-surface-muted);
+  opacity: 0.72;
+}
+
+.settings-shell .settings-typeahead-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 160;
+  overflow: hidden;
+  border: 1px solid var(--color-app-border);
+  border-radius: 12px;
+  background: var(--color-app-surface);
+  box-shadow: 0 14px 36px rgb(15 23 42 / 0.14), 0 3px 8px rgb(15 23 42 / 0.06);
+}
+
+.settings-shell .settings-typeahead-list {
+  max-height: 286px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.settings-shell .settings-typeahead-option {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 8px !important;
+  background: transparent;
+  padding: 8px 9px;
+  color: var(--color-app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-shell .settings-typeahead-option:hover,
+.settings-shell .settings-typeahead-option.is-active {
+  background: var(--color-app-surface-muted);
+}
+
+.settings-shell .settings-typeahead-option.is-selected {
+  background: color-mix(in srgb, var(--color-brand) 8%, var(--color-app-surface));
+}
+
+.settings-shell .settings-typeahead-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.settings-shell .settings-typeahead-option-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.settings-shell .settings-typeahead-option-label {
+  overflow: hidden;
+  color: var(--color-app-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-shell .settings-typeahead-option-description {
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--color-app-text-muted);
+  font-size: 10.75px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-shell .settings-typeahead-option-meta {
+  flex: 0 0 auto;
+  color: var(--color-app-text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.settings-shell .settings-typeahead-state {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 16px;
+  color: var(--color-app-text-muted);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+.settings-shell .settings-typeahead-hint {
+  border-top: 1px solid var(--color-app-border);
+  background: var(--color-app-surface-muted);
+  padding: 7px 10px;
+  color: var(--color-app-text-muted);
+  font-size: 10px;
+}
+
+.settings-shell input[type='search'] {
+  appearance: none;
+}
+
+.settings-shell input[type='search']::-webkit-search-cancel-button,
+.settings-shell input[type='search']::-webkit-search-decoration {
+  display: none;
+  appearance: none;
+}
+
+/* Settings landing page */
+.settings-home {
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 2px 0 24px;
+  color: var(--color-app-text);
+}
+
+.settings-home-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 8px 0 28px;
+  border-bottom: 1px solid var(--color-app-border);
+}
+
+.settings-home-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-brand);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.settings-home-header h1 {
+  margin: 6px 0 0;
+  color: var(--color-app-text);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.settings-home-header p {
+  max-width: 680px;
+  margin: 7px 0 0;
+  color: var(--color-app-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.settings-home-search {
+  position: relative;
+  display: flex;
+  width: min(100%, 390px);
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.settings-home-search > lucide-icon {
+  position: absolute;
+  left: 13px;
+  z-index: 1;
+  color: var(--color-app-text-muted);
+  pointer-events: none;
+}
+
+.settings-home-search input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--color-app-border);
+  border-radius: 12px;
+  background: var(--color-app-surface);
+  padding: 10px 42px 10px 40px;
+  color: var(--color-app-text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.settings-home-search input:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 12%, transparent);
+}
+
+.settings-home-search button {
+  position: absolute;
+  right: 8px;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-app-text-muted);
+}
+
+.settings-home-search button:hover {
+  background: var(--color-app-surface-muted);
+  color: var(--color-app-text);
+}
+
+.settings-home-groups {
+  display: grid;
+  gap: 30px;
+  padding-top: 28px;
+}
+
+.settings-home-group {
+  display: grid;
+  gap: 13px;
+}
+
+.settings-home-group-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-home-group-heading h2 {
+  margin: 0;
+  color: var(--color-app-text);
+  font-size: 14px;
+  font-weight: 680;
+  letter-spacing: -0.015em;
+}
+
+.settings-home-group-heading p {
+  margin: 3px 0 0;
+  color: var(--color-app-text-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.settings-home-group-heading > span {
+  display: inline-flex;
+  min-width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-app-surface-muted);
+  color: var(--color-app-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.settings-home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-home-tile {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 18px;
+  align-items: start;
+  gap: 11px;
+  min-height: 104px;
+  border: 1px solid var(--color-app-border);
+  border-radius: 13px;
+  background: var(--color-app-surface);
+  padding: 15px;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease, background 150ms ease;
+}
+
+.settings-home-tile:hover {
+  border-color: color-mix(in srgb, var(--color-brand) 28%, var(--color-app-border));
+  background: color-mix(in srgb, var(--color-brand) 2.5%, var(--color-app-surface));
+  box-shadow: 0 7px 20px rgb(15 23 42 / 0.055);
+  transform: translateY(-1px);
+}
+
+.settings-home-tile-icon {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-brand) 9%, var(--color-app-surface-muted));
+  color: var(--color-brand);
+}
+
+.settings-home-tile-copy {
+  display: block;
+  min-width: 0;
+}
+
+.settings-home-tile-copy strong {
+  display: block;
+  color: var(--color-app-text);
+  font-size: 12.5px;
+  font-weight: 680;
+  line-height: 1.4;
+}
+
+.settings-home-tile-copy small {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-app-text-muted);
+  font-size: 10.8px;
+  line-height: 1.5;
+}
+
+.settings-home-tile-arrow {
+  margin-top: 2px;
+  color: var(--color-app-text-muted);
+  opacity: 0.55;
+  transition: transform 150ms ease, opacity 150ms ease, color 150ms ease;
+}
+
+.settings-home-tile:hover .settings-home-tile-arrow {
+  color: var(--color-brand);
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.settings-home-empty {
+  display: flex;
+  min-height: 340px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.settings-home-empty > span {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--color-app-surface-muted);
+  color: var(--color-app-text-muted);
+}
+
+.settings-home-empty h2 {
+  margin: 14px 0 0;
+  font-size: 14px;
+  font-weight: 680;
+}
+
+.settings-home-empty p {
+  margin: 5px 0 15px;
+  color: var(--color-app-text-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .settings-home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .settings-page-header,
+  .settings-home-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-header-actions {
+    justify-content: flex-start;
+  }
+
+  .settings-home-search {
+    width: 100%;
+  }
+
+  .settings-home-grid {
+    grid-template-columns: 1fr;
   }
 }

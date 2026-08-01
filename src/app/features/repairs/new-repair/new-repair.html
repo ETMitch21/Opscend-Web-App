@@ -1370,13 +1370,21 @@
               </p>
             </div>
 
+            @if (selectedDepositConfigurationError()) {
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-red-700">Deposit setup needs attention</p>
+              <p class="mt-1 text-sm font-semibold text-red-950">{{ selectedDepositConfigurationError() }}</p>
+              <p class="mt-1 text-xs leading-5 text-red-800">Update this pricing option or its inherited repair-type rule before creating the repair.</p>
+            </div>
+            }
+
             @if (selectedPricingRequiresDeposit()) {
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Deposit</p>
                   <p class="mt-1 text-sm font-semibold text-amber-950">
-                    {{ formatCents(selectedDepositAmountCents()) }} required by this pricing option
+                    {{ formatCents(selectedDepositAmountCents()) }} required by the effective deposit rule
                   </p>
                   <p class="mt-1 text-xs leading-5 text-amber-800">
                     @if (adminDepositEnforcement === 'disabled') {

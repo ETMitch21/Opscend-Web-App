@@ -1,0 +1,71 @@
+<main class="settings-home">
+  <header class="settings-home-header">
+    <div>
+      <div class="settings-home-eyebrow">
+        <lucide-icon [img]="icons.Settings" [size]="14"></lucide-icon>
+        Workspace settings
+      </div>
+      <h1>Settings</h1>
+      <p>Manage how your shop operates, books work, connects services, and supports your team.</p>
+    </div>
+
+    <div class="settings-home-search">
+      <lucide-icon [img]="icons.Search" [size]="17"></lucide-icon>
+      <input
+        type="search"
+        autocomplete="off"
+        aria-label="Search settings"
+        placeholder="Search settings…"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+      @if (search()) {
+        <button type="button" class="cursor-pointer" aria-label="Clear settings search" (click)="clearSearch()">
+          <lucide-icon [img]="icons.X" [size]="15"></lucide-icon>
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (filteredGroups().length) {
+    <div class="settings-home-groups">
+      @for (group of filteredGroups(); track group.label) {
+        <section class="settings-home-group">
+          <div class="settings-home-group-heading">
+            <div>
+              <h2>{{ group.label }}</h2>
+              <p>{{ group.description }}</p>
+            </div>
+            <span>{{ group.items.length }}</span>
+          </div>
+
+          <div class="settings-home-grid">
+            @for (item of group.items; track item.route) {
+              <a [routerLink]="item.route" class="settings-home-tile cursor-pointer">
+                <span class="settings-home-tile-icon">
+                  <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
+                </span>
+
+                <span class="settings-home-tile-copy">
+                  <strong>{{ item.label }}</strong>
+                  <small>{{ item.description }}</small>
+                </span>
+
+                <lucide-icon class="settings-home-tile-arrow" [img]="icons.ArrowRight" [size]="16"></lucide-icon>
+              </a>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  } @else {
+    <section class="settings-home-empty">
+      <span>
+        <lucide-icon [img]="icons.Search" [size]="19"></lucide-icon>
+      </span>
+      <h2>No settings found</h2>
+      <p>Try another word or clear the search to browse all settings.</p>
+      <button type="button" class="settings-secondary-action cursor-pointer" (click)="clearSearch()">Clear search</button>
+    </section>
+  }
+</main>

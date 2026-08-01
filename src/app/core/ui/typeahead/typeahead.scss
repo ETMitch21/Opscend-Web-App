@@ -1,0 +1,35 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+/*
+ * Keep the search glyph in a dedicated leading slot. This prevents the
+ * lucide host from participating in the input's flex layout or drifting into
+ * the selected value when global styles are reordered during production builds.
+ */
+.settings-typeahead-leading {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  z-index: 2;
+  display: flex;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--color-app-text-muted) 88%, transparent);
+  pointer-events: none;
+}
+
+.settings-typeahead-leading-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+}
+
+.settings-typeahead-control > input {
+  padding-inline-start: 44px !important;
+}

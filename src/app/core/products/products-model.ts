@@ -47,6 +47,7 @@ export interface ProductListParams {
   cursor?: string | null;
   status?: ProductStatus;
   tag?: string;
+  search?: string;
   includeDeleted?: boolean;
 }
 

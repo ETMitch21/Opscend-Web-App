@@ -226,6 +226,88 @@
             </div>
           </section>
         </div>
+
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Default deposit rule</h2>
+              <p class="settings-card-description">Repair types can inherit this rule, and individual pricing options can override it.</p>
+            </div>
+          </div>
+
+          <div class="settings-card-body">
+            <div class="settings-field-grid">
+              <div class="settings-field is-half">
+                <label class="settings-label">Deposit calculation</label>
+                <select formControlName="defaultDepositMode" class="settings-control cursor-pointer">
+                  <option value="none">No deposit</option>
+                  <option value="product_cost">Part cost only</option>
+                  <option value="cost_recovery">Part cost + shipping + selected fees</option>
+                  <option value="custom">Fixed amount</option>
+                </select>
+                <p class="settings-hint">Cost recovery grosses up the charge so the shop nets the part and shipping amount after selected fees.</p>
+              </div>
+
+              @if (settingsForm.controls.defaultDepositMode.value === 'custom') {
+              <div class="settings-field is-half">
+                <label class="settings-label">Default fixed deposit</label>
+                <div class="settings-input-group">
+                  <span class="settings-input-affix">$</span>
+                  <input type="number" min="0.01" step="0.01" formControlName="defaultDepositAmountDollars" />
+                </div>
+              </div>
+              }
+
+              <div class="settings-field is-half">
+                <label class="settings-label">Default shipping allowance</label>
+                <div class="settings-input-group">
+                  <span class="settings-input-affix">$</span>
+                  <input type="number" min="0" step="0.01" formControlName="defaultDepositShippingDollars" />
+                </div>
+              </div>
+
+              <div class="settings-field is-half">
+                <label class="settings-label">Card processing fee</label>
+                <div class="grid grid-cols-[1fr_1fr] gap-2">
+                  <div class="settings-input-group">
+                    <input type="number" min="0" step="0.01" formControlName="depositProcessingFeePercent" />
+                    <span class="settings-input-affix is-suffix">%</span>
+                  </div>
+                  <div class="settings-input-group">
+                    <span class="settings-input-affix">$</span>
+                    <input type="number" min="0" step="0.01" formControlName="depositProcessingFeeFixedDollars" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-field is-half">
+                <label class="settings-label">Instant payout fee</label>
+                <div class="settings-input-group">
+                  <input type="number" min="0" step="0.01" formControlName="depositInstantPayoutFeePercent" />
+                  <span class="settings-input-affix is-suffix">%</span>
+                </div>
+              </div>
+
+              <div class="settings-field is-half space-y-3">
+                <label class="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-app-border px-4 py-3">
+                  <span>
+                    <span class="block text-sm font-semibold text-app-text">Recover card processing fees</span>
+                    <span class="mt-1 block text-xs text-app-text-muted">Gross up the deposit using the percentage and fixed fee above.</span>
+                  </span>
+                  <input type="checkbox" formControlName="defaultDepositIncludeProcessingFees" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
+                </label>
+
+                <label class="flex cursor-pointer items-start justify-between gap-4 rounded-xl border border-app-border px-4 py-3">
+                  <span>
+                    <span class="block text-sm font-semibold text-app-text">Recover instant payout fee</span>
+                    <span class="mt-1 block text-xs text-app-text-muted">Include the configured instant payout percentage in the gross-up.</span>
+                  </span>
+                  <input type="checkbox" formControlName="defaultDepositIncludeInstantPayoutFee" class="mt-1 h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
       }
 

@@ -38,6 +38,7 @@ export interface ServiceListParams {
   cursor?: string | null;
   status?: ServiceStatus;
   tag?: string;
+  search?: string;
   includeDeleted?: boolean;
 }
 

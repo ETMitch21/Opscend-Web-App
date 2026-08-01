@@ -1,0 +1,103 @@
+<div class="settings-typeahead" (mousedown)="cancelBlur()">
+  <div
+    class="settings-typeahead-control"
+    [class.is-open]="open"
+    [class.is-disabled]="disabled"
+  >
+    <span class="settings-typeahead-leading" aria-hidden="true">
+      <lucide-icon
+        [name]="icons.Search"
+        [size]="18"
+        class="settings-typeahead-leading-icon"
+      ></lucide-icon>
+    </span>
+
+    <input
+      [id]="inputId"
+      type="text"
+      autocomplete="off"
+      spellcheck="false"
+      role="combobox"
+      [attr.aria-autocomplete]="'list'"
+      [attr.aria-controls]="listboxId"
+      [attr.aria-expanded]="open"
+      [attr.aria-activedescendant]="activeIndex >= 0 ? inputId + '-option-' + activeIndex : null"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [value]="query"
+      (focus)="onFocus()"
+      (input)="onInput($event)"
+      (keydown)="onKeydown($event)"
+      (blur)="scheduleClose()"
+    />
+
+    @if (loading) {
+      <lucide-icon
+        [name]="icons.Loader"
+        class="settings-typeahead-trailing-icon animate-spin"
+        aria-label="Loading"
+      ></lucide-icon>
+    } @else if (clearable && (selectedItem || query)) {
+      <button
+        type="button"
+        class="settings-typeahead-clear"
+        aria-label="Clear selection"
+        (mousedown)="$event.preventDefault()"
+        (click)="clear($event)"
+      >
+        <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+      </button>
+    }
+  </div>
+
+  @if (open) {
+    <div class="settings-typeahead-popover">
+      <div [id]="listboxId" role="listbox" class="settings-typeahead-list">
+        @if (loading && !visibleItems.length) {
+          <div class="settings-typeahead-state">
+            <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+            Searching…
+          </div>
+        } @else if (query.trim().length < minimumQueryLength) {
+          <div class="settings-typeahead-state">
+            Type at least {{ minimumQueryLength }} characters to search.
+          </div>
+        } @else if (!visibleItems.length) {
+          <div class="settings-typeahead-state">{{ emptyText }}</div>
+        } @else {
+          @for (item of visibleItems; track item.id; let index = $index) {
+            <button
+              type="button"
+              role="option"
+              [id]="inputId + '-option-' + index"
+              class="settings-typeahead-option"
+              [class.is-active]="index === activeIndex"
+              [class.is-selected]="selectedItem?.id === item.id"
+              [disabled]="item.disabled"
+              [attr.aria-selected]="selectedItem?.id === item.id"
+              (mouseenter)="activeIndex = index"
+              (mousedown)="$event.preventDefault()"
+              (click)="select(item)"
+            >
+              <span class="settings-typeahead-option-copy">
+                <span class="settings-typeahead-option-label">{{ item.label }}</span>
+                @if (item.description) {
+                  <span class="settings-typeahead-option-description">{{ item.description }}</span>
+                }
+              </span>
+              @if (item.meta) {
+                <span class="settings-typeahead-option-meta">{{ item.meta }}</span>
+              }
+              @if (selectedItem?.id === item.id) {
+                <lucide-icon [name]="icons.Check" class="h-4 w-4 shrink-0 text-brand"></lucide-icon>
+              }
+            </button>
+          }
+        }
+      </div>
+      @if (hint) {
+        <div class="settings-typeahead-hint">{{ hint }}</div>
+      }
+    </div>
+  }
+</div>

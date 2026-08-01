@@ -378,16 +378,41 @@ export class TechSpecsService {
     includeInactive = true,
     search = ''
   ): Observable<ListResponse<ManagedDeviceCatalogModel>> {
-    let params = new HttpParams()
-      .set('brandId', brandId)
-      .set('includeInactive', String(includeInactive));
+    return this.searchManagedModels({
+      brandId,
+      includeInactive,
+      search,
+    });
+  }
 
-    const normalizedSearch = this.normalizeSearchParam(search);
+  searchManagedModels(query: {
+    brandId?: string;
+    categoryId?: string;
+    includeInactive?: boolean;
+    search?: string;
+    limit?: number;
+  } = {}): Observable<ListResponse<ManagedDeviceCatalogModel>> {
+    let params = new HttpParams().set(
+      'includeInactive',
+      String(query.includeInactive ?? true),
+    );
+
+    if (query.brandId) params = params.set('brandId', query.brandId);
+    if (query.categoryId) params = params.set('categoryId', query.categoryId);
+    if (query.limit != null) params = params.set('limit', String(query.limit));
+
+    const normalizedSearch = String(query.search ?? '').trim();
     if (normalizedSearch) params = params.set('search', normalizedSearch);
 
     return this.http.get<ListResponse<ManagedDeviceCatalogModel>>(
       `${this.baseUrl}/manage/models`,
-      { params }
+      { params },
+    );
+  }
+
+  getManagedModel(id: string): Observable<ManagedDeviceCatalogModel> {
+    return this.http.get<ManagedDeviceCatalogModel>(
+      `${this.baseUrl}/manage/models/${encodeURIComponent(id)}`,
     );
   }
 

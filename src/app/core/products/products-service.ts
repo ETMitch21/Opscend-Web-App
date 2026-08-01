@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import {
   CreateProductPayload,
   PatchProductPayload,
@@ -33,11 +33,23 @@ export class ProductsService {
     if (params?.cursor) httpParams = httpParams.set('cursor', params.cursor);
     if (params?.status) httpParams = httpParams.set('status', params.status);
     if (params?.tag) httpParams = httpParams.set('tag', params.tag);
+    if (params?.search?.trim()) {
+      httpParams = httpParams.set('search', params.search.trim());
+    }
     if (params?.includeDeleted != null) {
       httpParams = httpParams.set('includeDeleted', String(params.includeDeleted));
     }
 
     return this.http.get<ProductListResponse>(this.baseUrl, { params: httpParams });
+  }
+
+  search(query: string, limit = 20): Observable<Product[]> {
+    return this.list({
+      limit,
+      status: 'active',
+      search: query,
+      includeDeleted: false,
+    }).pipe(map((response) => response.data));
   }
 
   create(payload: CreateProductPayload): Observable<Product> {

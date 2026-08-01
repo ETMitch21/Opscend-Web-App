@@ -3,6 +3,13 @@ export type PricingRoundingMode =
   | 'nearest_dollar'
   | 'nearest_nine';
 
+export type DepositRuleMode =
+  | 'inherit'
+  | 'none'
+  | 'product_cost'
+  | 'cost_recovery'
+  | 'custom';
+
 export interface BookingSettings {
   shopId: string;
   shopSlug: string | null;
@@ -18,6 +25,15 @@ export interface BookingSettings {
 
   minimumRetailCents: number | null;
   maximumRetailCents: number | null;
+
+  defaultDepositMode: Exclude<DepositRuleMode, 'inherit'>;
+  defaultDepositAmountCents: number | null;
+  defaultDepositShippingCents: number;
+  defaultDepositIncludeProcessingFees: boolean;
+  defaultDepositIncludeInstantPayoutFee: boolean;
+  depositProcessingFeeBps: number;
+  depositProcessingFeeFixedCents: number;
+  depositInstantPayoutFeeBps: number;
 
   sameDayEnabled: boolean;
   sameDayCutoffMin: number | null;
@@ -49,6 +65,15 @@ export interface BookingSettingsPatch {
 
   minimumRetailCents?: number | null;
   maximumRetailCents?: number | null;
+
+  defaultDepositMode?: Exclude<DepositRuleMode, 'inherit'>;
+  defaultDepositAmountCents?: number | null;
+  defaultDepositShippingCents?: number;
+  defaultDepositIncludeProcessingFees?: boolean;
+  defaultDepositIncludeInstantPayoutFee?: boolean;
+  depositProcessingFeeBps?: number;
+  depositProcessingFeeFixedCents?: number;
+  depositInstantPayoutFeeBps?: number;
 
   publicCatalogCategories: string[];
 
@@ -85,6 +110,12 @@ export interface ShopRepairNeed {
   defaultLaborCents: number | null;
   defaultDurationMins: number | null;
 
+  depositMode: DepositRuleMode;
+  depositAmountCents: number | null;
+  depositShippingCents: number | null;
+  depositIncludeProcessingFees: boolean | null;
+  depositIncludeInstantPayoutFee: boolean | null;
+
   requiresManualReview: boolean;
 
   createdAt: string;
@@ -103,6 +134,12 @@ export interface ShopRepairNeedCreate {
 
   defaultLaborCents?: number | null;
   defaultDurationMins?: number | null;
+
+  depositMode?: DepositRuleMode;
+  depositAmountCents?: number | null;
+  depositShippingCents?: number | null;
+  depositIncludeProcessingFees?: boolean | null;
+  depositIncludeInstantPayoutFee?: boolean | null;
 
   requiresManualReview?: boolean;
 }
@@ -160,6 +197,12 @@ export interface RepairPricingTemplate {
   fixedPriceCents: number | null;
   useDynamicPricing: boolean;
 
+  depositMode: DepositRuleMode;
+  depositAmountCents: number | null;
+  depositShippingCents: number | null;
+  depositIncludeProcessingFees: boolean | null;
+  depositIncludeInstantPayoutFee: boolean | null;
+
   laborCents: number | null;
   durationMins: number | null;
 
@@ -193,6 +236,12 @@ export interface RepairPricingTemplateCreate {
 
   fixedPriceCents?: number | null;
   useDynamicPricing?: boolean;
+
+  depositMode?: DepositRuleMode;
+  depositAmountCents?: number | null;
+  depositShippingCents?: number | null;
+  depositIncludeProcessingFees?: boolean | null;
+  depositIncludeInstantPayoutFee?: boolean | null;
 
   laborCents?: number | null;
   durationMins?: number | null;
