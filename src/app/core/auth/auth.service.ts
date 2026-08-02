@@ -10,9 +10,28 @@ import {
   catchError,
 } from "rxjs";
 import { AppConfigService } from "../app-config/app-config.service";
+import { TenantService } from "../tenant/tenant.service";
 
 type LoginResponse = { accessToken: string };
 type AuthStatus = "unknown" | "hydrating" | "authenticated" | "anonymous";
+
+export interface AccessibleLocation {
+  shopId: string;
+  name: string;
+  legalName: string | null;
+  slug: string;
+  status: string;
+  role: string;
+  isCurrent: boolean;
+  address: {
+    line1: string | null;
+    line2: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    country: string | null;
+  } | null;
+}
 
 export interface CurrentUser {
   id: string;
@@ -20,11 +39,34 @@ export interface CurrentUser {
   role: string;
   name: string;
   email: string;
+  organization: {
+    id: string;
+    name: string;
+  } | null;
+  locations: AccessibleLocation[];
+}
+
+export interface CreateLocationInput {
+  name: string;
+  legalName?: string;
+  slug: string;
+  timezone?: string;
+  phone?: string;
+  email?: string;
+  address?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  };
 }
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
   private readonly appConfig = inject(AppConfigService);
+  private readonly tenant = inject(TenantService);
 
   private readonly tokenKey = "px_access_token";
 
@@ -42,6 +84,7 @@ export class AuthService {
   authStatus$ = this.authStatusSubject.asObservable();
 
   private refreshInFlight$: Observable<LoginResponse> | null = null;
+  private loadMePromise: Promise<CurrentUser | null> | null = null;
   private bootstrapPromise: Promise<void> | null = null;
 
   constructor(private http: HttpClient) { }
@@ -103,12 +146,28 @@ export class AuthService {
   me() {
     return this.http.get<CurrentUser>(`${this.apiBase}/auth/me`).pipe(
       tap((user) => {
+        const currentLocation = user.locations?.find((location) => location.isCurrent);
+        if (currentLocation?.slug) {
+          this.tenant.setShopSlug(currentLocation.slug);
+        }
         this.currentUserSubject.next(user);
       })
     );
   }
 
   async loadMe(): Promise<CurrentUser | null> {
+    if (this.loadMePromise) return this.loadMePromise;
+
+    this.loadMePromise = this.performLoadMe();
+
+    try {
+      return await this.loadMePromise;
+    } finally {
+      this.loadMePromise = null;
+    }
+  }
+
+  private async performLoadMe(): Promise<CurrentUser | null> {
     const token = this.getAccessToken();
 
     if (!token) {
@@ -148,6 +207,32 @@ export class AuthService {
     return await this.loadMe();
   }
 
+  switchLocation(shopId: string): Observable<{ accessToken: string; location: AccessibleLocation }> {
+    return this.http
+      .post<{ accessToken: string; location: AccessibleLocation }>(
+        `${this.apiBase}/auth/locations/${encodeURIComponent(shopId)}/switch`,
+        {},
+        { withCredentials: true }
+      )
+      .pipe(
+        tap((response) => {
+          this.setStoredToken(response.accessToken);
+          this.accessTokenSubject.next(response.accessToken);
+          this.tenant.setShopSlug(response.location.slug);
+          this.currentUserSubject.next(null);
+          this.authStatusSubject.next("authenticated");
+        })
+      );
+  }
+
+  createLocation(input: CreateLocationInput): Observable<{ location: AccessibleLocation }> {
+    return this.http.post<{ location: AccessibleLocation }>(
+      `${this.apiBase}/auth/locations`,
+      input,
+      { withCredentials: true }
+    );
+  }
+
   requestPasswordReset(email: string) {
     return this.http.post<void>(`${this.apiBase}/auth/password/forgot`, { email });
   }
@@ -181,8 +266,10 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem("px_current_user");
     localStorage.removeItem("px_shop");
+    this.tenant.resetToHost();
 
     this.refreshInFlight$ = null;
+    this.loadMePromise = null;
   }
 
   refresh(): Observable<LoginResponse> {

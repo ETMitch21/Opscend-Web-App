@@ -131,6 +131,12 @@ export const routes: Routes = [
                             import('./features/settings/shop-settings/shop-settings').then((m) => m.ShopSettings)
                     },
                     {
+                        path: 'locations',
+                        loadComponent: () =>
+                            import('./features/settings/shop-locations/shop-locations').then((m) => m.ShopLocations),
+                        canActivate: [OwnerGuard]
+                    },
+                    {
                         path: 'users',
                         loadComponent: () =>
                             import('./features/settings/shop-users/shop-users').then((m) => m.ShopUsers)

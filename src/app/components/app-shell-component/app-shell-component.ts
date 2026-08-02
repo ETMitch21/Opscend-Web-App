@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, firstValueFrom, Subscription } from 'rxjs';
 import {
   BookOpenIcon,
@@ -34,8 +35,11 @@ import {
   ClipboardList,
   Gauge,
   Bot,
+  MapPinIcon,
+  CheckIcon,
+  LoaderCircleIcon,
 } from 'lucide-angular';
-import { AuthService } from '../../core/auth/auth.service';
+import { AccessibleLocation, AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
 import { GlobalSearchResponse, SearchItem, SearchService } from '../../core/search/search-service';
 import { InternalNotificationService } from '../../core/internal-notifications/internal-notification.service';
@@ -126,6 +130,9 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private communicationService = inject(CommunicationService);
   private toast = inject(ToastService);
   private workQueueService = inject(WorkQueueService);
+  private readonly currentUser = toSignal(this.auth.currentUser$, {
+    initialValue: this.auth.getCurrentUser(),
+  });
 
   readonly bookOpenIcon = BookOpenIcon;
   readonly MenuIcon = MenuIcon;
@@ -155,6 +162,9 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly technicianDashboardIcon = Gauge;
   readonly aiAssistantIcon = Bot;
   readonly workQueueAlertIcon = AlertTriangle;
+  readonly locationIcon = MapPinIcon;
+  readonly locationCheckIcon = CheckIcon;
+  readonly locationLoadingIcon = LoaderCircleIcon;
 
   private readonly notificationPollMs = 15_000;
   private readonly communicationPollMs = 5_000;
@@ -170,6 +180,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
   });
   public moreMenuOpen = signal(false);
   public profileMenuOpen = signal(false);
+  public locationMenuOpen = signal(false);
+  public switchingLocationId = signal<string | null>(null);
+  public availableLocations = computed(() => this.currentUser()?.locations ?? []);
+  public currentLocation = computed(() =>
+    this.availableLocations().find((location) => location.isCurrent) ?? null,
+  );
+  public showLocationSelector = computed(() => this.availableLocations().length > 1);
+  public canManageLocations = computed(() => String(this.currentUser()?.role ?? '').toLowerCase() === 'owner');
   public aiAssistantDrawerOpen = signal(false);
 
   public notificationMenuOpen = signal(false);
@@ -344,6 +362,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.aiAssistantDrawerOpen.set(false);
         this.moreMenuOpen.set(false);
+        this.locationMenuOpen.set(false);
         if (this.auth.getAccessToken()) {
           void this.refreshNotificationsInBackground();
           void this.refreshNewQuoteRequestCount();
@@ -384,6 +403,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     event?.stopPropagation();
     this.moreMenuOpen.set(false);
     this.profileMenuOpen.set(false);
+    this.locationMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
@@ -467,12 +487,47 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
 
+  toggleLocationMenu(event?: MouseEvent): void {
+    event?.stopPropagation();
+    const willOpen = !this.locationMenuOpen();
+    this.locationMenuOpen.set(willOpen);
+    this.moreMenuOpen.set(false);
+    this.profileMenuOpen.set(false);
+    this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
+    this.closeSearchDropdown();
+  }
+
+  closeLocationMenu(): void {
+    this.locationMenuOpen.set(false);
+  }
+
+  async switchLocation(location: AccessibleLocation): Promise<void> {
+    if (location.isCurrent || this.switchingLocationId()) return;
+
+    this.switchingLocationId.set(location.shopId);
+
+    try {
+      await firstValueFrom(this.auth.switchLocation(location.shopId));
+      this.closeLocationMenu();
+      await this.router.navigateByUrl('/dashboard');
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to switch locations.', error);
+      this.toast.error('Location switch failed', 'Try again in a moment.');
+    } finally {
+      this.switchingLocationId.set(null);
+    }
+  }
+
+
   toggleMoreMenu(event?: MouseEvent): void {
     event?.stopPropagation();
 
     const willOpen = !this.moreMenuOpen();
     this.moreMenuOpen.set(willOpen);
     this.profileMenuOpen.set(false);
+    this.locationMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
@@ -591,6 +646,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     event?.stopPropagation();
     this.moreMenuOpen.set(false);
     this.profileMenuOpen.set(false);
+    this.locationMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
@@ -601,6 +657,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   toggleProfileMenu(event?: MouseEvent): void {
     event?.stopPropagation();
     this.moreMenuOpen.set(false);
+    this.locationMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
     this.closeSearchDropdown();
@@ -865,6 +922,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   onSearchFocus(): void {
     this.moreMenuOpen.set(false);
     this.profileMenuOpen.set(false);
+    this.locationMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
     this.searchTouched.set(true);
@@ -1350,6 +1408,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     event.preventDefault();
     this.moreMenuOpen.set(false);
     this.profileMenuOpen.set(false);
+    this.locationMenuOpen.set(false);
     this.notificationMenuOpen.set(false);
     this.workQueueMenuOpen.set(false);
 
@@ -1368,6 +1427,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   onDocumentClick(): void {
     this.closeMoreMenu();
     this.closeProfileMenu();
+    this.closeLocationMenu();
     this.closeNotificationMenu();
     this.closeWorkQueueMenu();
     this.closeSearchDropdown();

@@ -2,6 +2,7 @@ import {
   BellIcon,
   BlocksIcon,
   Building2,
+  MapPinIcon,
   CalendarClockIcon,
   CalendarCog,
   DollarSignIcon,
@@ -38,6 +39,14 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         route: '/settings/shop/general',
         icon: Building2,
         keywords: ['shop', 'business', 'identity', 'contact', 'address', 'branding'],
+      },
+      {
+        label: 'Locations',
+        description: 'Add operating locations and switch between each location workspace.',
+        route: '/settings/shop/locations',
+        icon: MapPinIcon,
+        ownerOnly: true,
+        keywords: ['multi-location', 'branches', 'stores', 'offices', 'workspace'],
       },
       {
         label: 'Team',

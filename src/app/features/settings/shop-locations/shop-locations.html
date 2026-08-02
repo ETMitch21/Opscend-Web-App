@@ -1,0 +1,250 @@
+<app-settings-layout
+  pageTitle="Locations"
+  pageDescription="Manage each operating location in {{ organizationName() }} and move between them without signing out."
+>
+  <div settings-actions>
+    @if (!showCreateForm()) {
+      <button
+        type="button"
+        class="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-brand px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+        (click)="openCreateForm()"
+      >
+        <lucide-icon [img]="icons.Plus" [size]="16"></lucide-icon>
+        Add location
+      </button>
+    }
+  </div>
+
+  <div class="space-y-4">
+    @if (error()) {
+      <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        {{ error() }}
+      </div>
+    }
+
+    @if (success()) {
+      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+        {{ success() }}
+      </div>
+    }
+
+    @if (showCreateForm()) {
+      <section class="overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-sm">
+        <header class="flex items-start justify-between gap-4 border-b border-app-border px-5 py-4">
+          <div>
+            <p class="text-base font-semibold tracking-tight text-app-text">Add another location</p>
+            <p class="mt-1 text-sm leading-5 text-app-text-muted">
+              The new location starts with its own customers, repairs, inventory, payments, and booking setup.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="cursor-pointer inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+            aria-label="Close add location form"
+            (click)="closeCreateForm()"
+          >
+            <lucide-icon [img]="icons.X" [size]="17"></lucide-icon>
+          </button>
+        </header>
+
+        <div class="grid gap-5 p-5 lg:grid-cols-2">
+          <div class="space-y-4">
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-app-text">Location name</label>
+              <input
+                type="text"
+                class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                placeholder="Downtown"
+                [ngModel]="name"
+                (ngModelChange)="onNameChange($event)"
+              />
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-app-text">Location URL</label>
+              <div class="flex overflow-hidden rounded-xl border border-app-border bg-app-surface focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
+                <input
+                  type="text"
+                  class="min-w-0 flex-1 bg-transparent px-3.5 py-2.5 text-sm text-app-text outline-none"
+                  placeholder="downtown"
+                  [ngModel]="slug"
+                  (ngModelChange)="onSlugChange($event)"
+                />
+                <span class="flex items-center border-l border-app-border bg-app-surface-muted px-3 text-xs font-medium text-app-text-muted">.opscend.app</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-app-text">Legal business name</label>
+              <input
+                type="text"
+                class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                placeholder="Defaults to the current business"
+                [(ngModel)]="legalName"
+              />
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-app-text">Timezone</label>
+              <select
+                class="w-full cursor-pointer rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                [(ngModel)]="timezone"
+              >
+                @for (option of timezones; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold text-app-text">Phone</label>
+                <input
+                  type="tel"
+                  class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                  [(ngModel)]="phone"
+                />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold text-app-text">Email</label>
+                <input
+                  type="email"
+                  class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                  [(ngModel)]="email"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-app-text">Street address</label>
+              <input
+                type="text"
+                class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                [(ngModel)]="addressLine1"
+              />
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-app-text">Suite or unit</label>
+              <input
+                type="text"
+                class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                [(ngModel)]="addressLine2"
+              />
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem_9rem]">
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold text-app-text">City</label>
+                <input
+                  type="text"
+                  class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                  [(ngModel)]="addressCity"
+                />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold text-app-text">State</label>
+                <input
+                  type="text"
+                  maxlength="2"
+                  class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm uppercase text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                  [(ngModel)]="addressState"
+                />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold text-app-text">ZIP code</label>
+                <input
+                  type="text"
+                  class="w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
+                  [(ngModel)]="addressPostalCode"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-app-border bg-app-surface-muted/50 px-5 py-4">
+          <button
+            type="button"
+            class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text transition hover:bg-app-surface-muted"
+            [disabled]="creating()"
+            (click)="closeCreateForm()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="creating()"
+            (click)="createLocation()"
+          >
+            @if (creating()) {
+              <lucide-icon [img]="icons.Loader" [size]="16" class="animate-spin"></lucide-icon>
+              Creating…
+            } @else {
+              <lucide-icon [img]="icons.Plus" [size]="16"></lucide-icon>
+              Create location
+            }
+          </button>
+        </footer>
+      </section>
+    }
+
+    <section class="overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-sm">
+      <header class="flex items-start gap-3 border-b border-app-border px-5 py-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+          <lucide-icon [img]="icons.Building" [size]="19"></lucide-icon>
+        </span>
+        <div>
+          <p class="text-base font-semibold tracking-tight text-app-text">{{ organizationName() }}</p>
+          <p class="mt-1 text-sm text-app-text-muted">
+            {{ locations().length }} {{ locations().length === 1 ? 'location' : 'locations' }} connected to your account
+          </p>
+        </div>
+      </header>
+
+      <div class="divide-y divide-app-border">
+        @for (location of locations(); track location.shopId) {
+          <div class="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-app-border bg-app-surface-muted text-app-text-muted">
+              <lucide-icon [img]="icons.MapPin" [size]="19"></lucide-icon>
+            </span>
+
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="truncate text-sm font-semibold text-app-text">{{ location.name }}</p>
+                @if (location.isCurrent) {
+                  <span class="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-brand">
+                    <lucide-icon [img]="icons.Check" [size]="12"></lucide-icon>
+                    Current
+                  </span>
+                }
+              </div>
+              <p class="mt-1 truncate text-xs text-app-text-muted">{{ locationAddress(location) }}</p>
+              <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-app-text-muted">{{ location.role }}</p>
+            </div>
+
+            @if (!location.isCurrent) {
+              <button
+                type="button"
+                class="cursor-pointer inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm font-semibold text-app-text transition hover:bg-app-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="!!switchingLocationId()"
+                (click)="switchLocation(location)"
+              >
+                @if (switchingLocationId() === location.shopId) {
+                  <lucide-icon [img]="icons.Loader" [size]="15" class="animate-spin"></lucide-icon>
+                  Opening…
+                } @else {
+                  Open location
+                  <lucide-icon [img]="icons.ChevronRight" [size]="15"></lucide-icon>
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</app-settings-layout>
