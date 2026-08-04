@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -7,6 +7,8 @@ import { firstValueFrom } from 'rxjs';
 import {
   Archive,
   ArrowLeft,
+  Bold,
+  Code2,
   BookOpen,
   Check,
   ChevronRight,
@@ -15,18 +17,30 @@ import {
   FileText,
   Folder,
   FolderPlus,
+  Heading2,
+  Heading3,
+  Italic,
   Link,
+  List,
   ListFilter,
+  ListOrdered,
   Loader2,
   Paperclip,
   Pencil,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pin,
   Plus,
+  Quote,
+  Redo2,
+  RemoveFormatting,
   Save,
   Search,
   Tag,
   Trash2,
+  Underline,
   Unlink,
+  Undo2,
   Upload,
   X,
   LucideAngularModule,
@@ -48,6 +62,8 @@ import { KnowledgeBaseService } from '../../core/knowledge-base/service';
 import { ToastService } from '../../core/toast/toast-service';
 
 type StatusFilter = 'all' | KnowledgeArticleStatus;
+type EditorBlock = 'p' | 'h2' | 'h3' | 'blockquote' | 'pre';
+type EditorInlineFormat = 'bold' | 'italic' | 'underline' | 'insertUnorderedList' | 'insertOrderedList';
 
 type ArticleDraft = KnowledgeArticlePayload & {
   id: string | null;
@@ -76,19 +92,25 @@ const EMPTY_DRAFT: ArticleDraft = {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
   templateUrl: './knowledge-base.html',
+  styleUrl: './knowledge-base.scss',
 })
 export class KnowledgeBase implements OnInit {
+  @ViewChild('bodyEditor') private bodyEditor?: ElementRef<HTMLDivElement>;
+
   private readonly api = inject(KnowledgeBaseService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
+  private savedEditorRange: Range | null = null;
 
   readonly icons = {
     Archive,
     ArrowLeft,
+    Bold,
     BookOpen,
+    Code2,
     Check,
     ChevronRight,
     Download,
@@ -96,18 +118,30 @@ export class KnowledgeBase implements OnInit {
     FileText,
     Folder,
     FolderPlus,
+    Heading2,
+    Heading3,
+    Italic,
     Link,
+    List,
     ListFilter,
+    ListOrdered,
     Loader2,
     Paperclip,
+    PanelLeftClose,
+    PanelLeftOpen,
     Pencil,
     Pin,
     Plus,
+    Quote,
+    Redo2,
+    RemoveFormatting,
     Save,
     Search,
     Tag,
     Trash2,
+    Underline,
     Unlink,
+    Undo2,
     Upload,
     X,
   };
@@ -126,8 +160,10 @@ export class KnowledgeBase implements OnInit {
   readonly statusFilter = signal<StatusFilter>('all');
   readonly tagFilter = signal('all');
 
+  readonly sidebarCollapsed = signal(false);
   readonly editorOpen = signal(false);
-  readonly editorPreview = signal(false);
+  readonly currentEditorBlock = signal<EditorBlock>('p');
+  readonly activeEditorFormats = signal<ReadonlySet<EditorInlineFormat>>(new Set<EditorInlineFormat>());
   readonly draft = signal<ArticleDraft>({ ...EMPTY_DRAFT });
   readonly serviceSearch = signal('');
   readonly deviceSearch = signal('');
@@ -165,7 +201,7 @@ export class KnowledgeBase implements OnInit {
       const haystack = [
         article.title,
         article.summary,
-        article.body,
+        this.bodyToPlainText(article.body),
         article.category?.name,
         article.tags.join(' '),
         article.services.map((service) => service.name).join(' '),
@@ -196,10 +232,8 @@ export class KnowledgeBase implements OnInit {
   });
 
   readonly selectedRenderedBody = computed<SafeHtml>(() =>
-    this.renderMarkdown(this.selectedArticle()?.body ?? ''),
+    this.renderArticleBody(this.selectedArticle()?.body ?? ''),
   );
-
-  readonly draftRenderedBody = computed<SafeHtml>(() => this.renderMarkdown(this.draft().body));
 
   async ngOnInit(): Promise<void> {
     await this.reload();
@@ -283,10 +317,10 @@ export class KnowledgeBase implements OnInit {
       repairId: context?.repairId ?? null,
       workQueueItemId: context?.type === 'work_queue' ? context.id : null,
     });
-    this.editorPreview.set(false);
     this.serviceSearch.set('');
     this.deviceSearch.set('');
     this.editorOpen.set(true);
+    this.syncEditorFromDraft();
   }
 
   openEditArticle(article: KnowledgeArticle): void {
@@ -295,7 +329,7 @@ export class KnowledgeBase implements OnInit {
       id: article.id,
       title: article.title,
       summary: article.summary,
-      body: article.body,
+      body: this.toEditorHtml(article.body),
       categoryId: article.categoryId,
       status: article.status,
       visibility: article.visibility,
@@ -307,15 +341,18 @@ export class KnowledgeBase implements OnInit {
       repairId: null,
       workQueueItemId: null,
     });
-    this.editorPreview.set(false);
     this.serviceSearch.set('');
     this.deviceSearch.set('');
     this.editorOpen.set(true);
+    this.syncEditorFromDraft();
   }
 
   closeEditor(): void {
     if (this.saving() || this.uploading()) return;
     this.editorOpen.set(false);
+    this.savedEditorRange = null;
+    this.currentEditorBlock.set('p');
+    this.activeEditorFormats.set(new Set<EditorInlineFormat>());
   }
 
   patchDraft(patch: Partial<ArticleDraft>): void {
@@ -348,20 +385,152 @@ export class KnowledgeBase implements OnInit {
     return this.draft().deviceModelIds.includes(id);
   }
 
-  insertMarkdown(prefix: string, suffix = '', placeholder = 'text'): void {
-    const textarea = document.querySelector<HTMLTextAreaElement>('#knowledge-body-editor');
-    const body = this.draft().body;
-    const start = textarea?.selectionStart ?? body.length;
-    const end = textarea?.selectionEnd ?? body.length;
-    const selected = body.slice(start, end) || placeholder;
-    const next = `${body.slice(0, start)}${prefix}${selected}${suffix}${body.slice(end)}`;
-    this.patchDraft({ body: next });
+  toggleSidebar(): void {
+    this.sidebarCollapsed.update((collapsed) => !collapsed);
+  }
 
-    queueMicrotask(() => {
-      textarea?.focus();
-      const cursor = start + prefix.length + selected.length + suffix.length;
-      textarea?.setSelectionRange(cursor, cursor);
-    });
+  @HostListener('document:selectionchange')
+  onDocumentSelectionChange(): void {
+    if (!this.editorOpen()) return;
+    this.rememberEditorSelection();
+  }
+
+  onEditorInput(event: Event): void {
+    const editor = event.currentTarget as HTMLDivElement;
+    this.patchDraft({ body: editor.innerHTML });
+    this.rememberEditorSelection();
+  }
+
+  onEditorFocus(): void {
+    this.configureNativeEditor();
+    this.rememberEditorSelection();
+  }
+
+  onEditorInteraction(): void {
+    this.rememberEditorSelection();
+  }
+
+  onEditorBlur(): void {
+    this.captureEditorBody();
+  }
+
+  onEditorKeydown(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.rememberEditorSelection();
+      this.insertEditorLink();
+    }
+  }
+
+  onEditorPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    const clipboard = event.clipboardData;
+    if (!clipboard) return;
+
+    const sourceHtml = clipboard.getData('text/html');
+    const sourceText = clipboard.getData('text/plain');
+    const cleanHtml = sourceHtml
+      ? this.sanitizeRichHtml(sourceHtml)
+      : this.plainTextToEditorHtml(sourceText);
+
+    this.restoreEditorSelection();
+    this.configureNativeEditor();
+    document.execCommand('insertHTML', false, cleanHtml);
+    this.captureEditorBody();
+    this.rememberEditorSelection();
+  }
+
+  prepareEditorToolbarAction(event: MouseEvent): void {
+    this.rememberEditorSelection();
+    event.preventDefault();
+  }
+
+  applyEditorCommand(command: EditorInlineFormat | 'undo' | 'redo' | 'removeFormat'): void {
+    const editor = this.bodyEditor?.nativeElement;
+    if (!editor) return;
+
+    this.restoreEditorSelection();
+    this.configureNativeEditor();
+    editor.focus({ preventScroll: true });
+    document.execCommand(command, false);
+    this.captureEditorBody();
+    this.rememberEditorSelection();
+  }
+
+  setEditorBlock(tag: EditorBlock): void {
+    const editor = this.bodyEditor?.nativeElement;
+    if (!editor) return;
+
+    this.restoreEditorSelection();
+    this.configureNativeEditor();
+    editor.focus({ preventScroll: true });
+
+    const current = this.getCurrentEditorBlock();
+    const target: EditorBlock = current === tag && tag !== 'p' ? 'p' : tag;
+    const formatted = document.execCommand('formatBlock', false, `<${target}>`);
+    if (!formatted) document.execCommand('formatBlock', false, target);
+
+    this.captureEditorBody();
+    this.rememberEditorSelection();
+  }
+
+  isEditorFormatActive(format: EditorInlineFormat): boolean {
+    return this.activeEditorFormats().has(format);
+  }
+
+  isEditorBlockActive(block: EditorBlock): boolean {
+    return this.currentEditorBlock() === block;
+  }
+
+  insertEditorLink(): void {
+    const editor = this.bodyEditor?.nativeElement;
+    if (!editor) return;
+
+    this.rememberEditorSelection();
+    const rawUrl = window.prompt('Enter the link URL');
+    if (!rawUrl?.trim()) {
+      this.restoreEditorSelection();
+      return;
+    }
+
+    const url = this.normalizeLink(rawUrl.trim());
+    if (!url) {
+      this.toast.error('Invalid link', 'Use an http, https, mailto, or tel link.');
+      this.restoreEditorSelection();
+      return;
+    }
+
+    this.restoreEditorSelection();
+    this.configureNativeEditor();
+    editor.focus({ preventScroll: true });
+
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+
+    if (selection.isCollapsed) {
+      const range = selection.getRangeAt(0);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      anchor.textContent = url;
+      range.insertNode(anchor);
+      range.setStartAfter(anchor);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      document.execCommand('createLink', false, url);
+      for (const anchor of Array.from(editor.querySelectorAll<HTMLAnchorElement>('a'))) {
+        if (anchor.getAttribute('href') === url || anchor.href === url) {
+          anchor.target = '_blank';
+          anchor.rel = 'noopener noreferrer';
+        }
+      }
+    }
+
+    this.captureEditorBody();
+    this.rememberEditorSelection();
   }
 
   async saveArticle(): Promise<void> {
@@ -375,7 +544,7 @@ export class KnowledgeBase implements OnInit {
     const payload: KnowledgeArticlePayload = {
       title: current.title.trim(),
       summary: current.summary?.trim() || null,
-      body: current.body,
+      body: this.sanitizeRichHtml(this.captureEditorBody()),
       categoryId: current.categoryId || null,
       status: current.status,
       visibility: current.visibility,
@@ -619,18 +788,145 @@ export class KnowledgeBase implements OnInit {
     });
   }
 
-  private renderMarkdown(markdown: string): SafeHtml {
-    const escaped = markdown
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+  private syncEditorFromDraft(): void {
+    window.setTimeout(() => {
+      const editor = this.bodyEditor?.nativeElement;
+      if (!editor) return;
+      editor.innerHTML = this.sanitizeRichHtml(this.draft().body);
+      this.savedEditorRange = null;
+      this.currentEditorBlock.set('p');
+      this.activeEditorFormats.set(new Set<EditorInlineFormat>());
+      this.configureNativeEditor();
+    });
+  }
 
+  private configureNativeEditor(): void {
+    try {
+      document.execCommand('styleWithCSS', false, 'false');
+      document.execCommand('defaultParagraphSeparator', false, 'p');
+    } catch {
+      // Older WebKit builds can reject editor configuration before focus.
+    }
+  }
+
+  private rememberEditorSelection(): void {
+    const editor = this.bodyEditor?.nativeElement;
+    const selection = window.getSelection();
+    if (!editor || !selection?.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    if (!this.rangeBelongsToEditor(range, editor)) return;
+
+    this.savedEditorRange = range.cloneRange();
+    this.updateEditorToolbarState(range);
+  }
+
+  private restoreEditorSelection(): void {
+    const editor = this.bodyEditor?.nativeElement;
+    const selection = window.getSelection();
+    if (!editor || !selection) return;
+
+    editor.focus({ preventScroll: true });
+    selection.removeAllRanges();
+
+    if (this.savedEditorRange && this.rangeBelongsToEditor(this.savedEditorRange, editor)) {
+      selection.addRange(this.savedEditorRange);
+      return;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    selection.addRange(range);
+    this.savedEditorRange = range.cloneRange();
+  }
+
+  private rangeBelongsToEditor(range: Range, editor: HTMLElement): boolean {
+    const start = range.startContainer.nodeType === Node.ELEMENT_NODE
+      ? range.startContainer
+      : range.startContainer.parentNode;
+    const end = range.endContainer.nodeType === Node.ELEMENT_NODE
+      ? range.endContainer
+      : range.endContainer.parentNode;
+    return Boolean(start && end && (start === editor || editor.contains(start)) && (end === editor || editor.contains(end)));
+  }
+
+  private updateEditorToolbarState(range: Range): void {
+    const formats = new Set<EditorInlineFormat>();
+    const commands: EditorInlineFormat[] = ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList'];
+    for (const command of commands) {
+      try {
+        if (document.queryCommandState(command)) formats.add(command);
+      } catch {
+        // Querying an unsupported command should not interrupt editing.
+      }
+    }
+    this.activeEditorFormats.set(formats);
+    this.currentEditorBlock.set(this.getCurrentEditorBlock(range));
+  }
+
+  private getCurrentEditorBlock(range?: Range): EditorBlock {
+    const editor = this.bodyEditor?.nativeElement;
+    const selection = window.getSelection();
+    const activeRange = range ?? (selection?.rangeCount ? selection.getRangeAt(0) : null);
+    if (!editor || !activeRange) return 'p';
+
+    let element = activeRange.startContainer.nodeType === Node.ELEMENT_NODE
+      ? activeRange.startContainer as HTMLElement
+      : activeRange.startContainer.parentElement;
+
+    while (element && element !== editor) {
+      const tag = element.tagName.toLowerCase();
+      if (tag === 'h2' || tag === 'h3' || tag === 'blockquote' || tag === 'pre' || tag === 'p') return tag;
+      element = element.parentElement;
+    }
+    return 'p';
+  }
+
+  private captureEditorBody(): string {
+    const editor = this.bodyEditor?.nativeElement;
+    const body = editor?.innerHTML ?? this.draft().body;
+    this.patchDraft({ body });
+    return body;
+  }
+
+  private plainTextToEditorHtml(value: string): string {
+    return value
+      .replace(/\r\n?/g, '\n')
+      .split(/\n{2,}/)
+      .map((paragraph) => `<p>${this.escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+      .join('');
+  }
+
+  private renderArticleBody(body: string): SafeHtml {
+    const html = this.looksLikeHtml(body) ? body : this.markdownToHtml(body);
+    return this.sanitizer.bypassSecurityTrustHtml(this.sanitizeRichHtml(html));
+  }
+
+  private toEditorHtml(body: string): string {
+    if (!body.trim()) return '';
+    return this.sanitizeRichHtml(this.looksLikeHtml(body) ? body : this.markdownToHtml(body));
+  }
+
+  private bodyToPlainText(body: string): string {
+    if (!body) return '';
+    if (!this.looksLikeHtml(body)) return body;
+    const documentValue = new DOMParser().parseFromString(body, 'text/html');
+    return documentValue.body.textContent ?? '';
+  }
+
+  private looksLikeHtml(value: string): boolean {
+    return /<\/?[a-z][\s\S]*>/i.test(value);
+  }
+
+  private markdownToHtml(markdown: string): string {
+    const escaped = this.escapeHtml(markdown);
     const inline = (value: string) =>
       value
-        .replace(/`([^`]+)`/g, '<code class="rounded bg-slate-100 px-1.5 py-0.5 text-[0.9em] text-slate-800">$1</code>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="font-medium text-brand underline">$1</a>');
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
     const lines = escaped.split('\n');
     const output: string[] = [];
@@ -645,8 +941,7 @@ export class KnowledgeBase implements OnInit {
     for (const line of lines) {
       if (line.trim().startsWith('```')) {
         closeList();
-        if (inCode) output.push('</code></pre>');
-        else output.push('<pre class="my-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-sm text-slate-100"><code>');
+        output.push(inCode ? '</code></pre>' : '<pre><code>');
         inCode = !inCode;
         continue;
       }
@@ -658,8 +953,8 @@ export class KnowledgeBase implements OnInit {
       const heading = line.match(/^(#{1,4})\s+(.+)$/);
       if (heading) {
         closeList();
-        const level = heading[1].length + 1;
-        output.push(`<h${level} class="mt-6 font-semibold tracking-tight text-slate-950">${inline(heading[2])}</h${level}>`);
+        const level = Math.min(4, heading[1].length + 1);
+        output.push(`<h${level}>${inline(heading[2])}</h${level}>`);
         continue;
       }
 
@@ -667,7 +962,7 @@ export class KnowledgeBase implements OnInit {
       if (unordered) {
         if (inList !== 'ul') {
           closeList();
-          output.push('<ul class="my-3 list-disc space-y-1 pl-6">');
+          output.push('<ul>');
           inList = 'ul';
         }
         output.push(`<li>${inline(unordered[1])}</li>`);
@@ -678,7 +973,7 @@ export class KnowledgeBase implements OnInit {
       if (ordered) {
         if (inList !== 'ol') {
           closeList();
-          output.push('<ol class="my-3 list-decimal space-y-1 pl-6">');
+          output.push('<ol>');
           inList = 'ol';
         }
         output.push(`<li>${inline(ordered[1])}</li>`);
@@ -686,14 +981,130 @@ export class KnowledgeBase implements OnInit {
       }
 
       closeList();
-      if (!line.trim()) output.push('<div class="h-3"></div>');
-      else if (line.startsWith('&gt; ')) output.push(`<blockquote class="my-4 border-l-4 border-brand/30 pl-4 italic text-slate-600">${inline(line.slice(5))}</blockquote>`);
-      else output.push(`<p class="my-2 leading-7 text-slate-700">${inline(line)}</p>`);
+      if (!line.trim()) output.push('<p><br></p>');
+      else if (line.startsWith('&gt; ')) output.push(`<blockquote>${inline(line.slice(5))}</blockquote>`);
+      else output.push(`<p>${inline(line)}</p>`);
     }
 
     closeList();
     if (inCode) output.push('</code></pre>');
-    return this.sanitizer.bypassSecurityTrustHtml(output.join(''));
+    return output.join('');
+  }
+
+  private sanitizeRichHtml(rawHtml: string): string {
+    if (!rawHtml.trim()) return '';
+
+    const parsed = new DOMParser().parseFromString(rawHtml, 'text/html');
+    this.normalizeBrowserFormatting(parsed.body);
+    const allowedTags = new Set([
+      'A', 'B', 'BLOCKQUOTE', 'BR', 'CODE', 'DIV', 'EM', 'H2', 'H3', 'H4', 'HR',
+      'I', 'LI', 'OL', 'P', 'PRE', 'STRONG', 'U', 'UL',
+    ]);
+    const removeEntirely = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'SVG', 'MATH', 'FORM', 'INPUT', 'BUTTON']);
+
+    const clean = (parent: ParentNode): void => {
+      for (const node of Array.from(parent.childNodes)) {
+        if (node.nodeType === Node.COMMENT_NODE) {
+          node.remove();
+          continue;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+        const element = node as HTMLElement;
+        if (removeEntirely.has(element.tagName)) {
+          element.remove();
+          continue;
+        }
+
+        if (!allowedTags.has(element.tagName)) {
+          clean(element);
+          element.replaceWith(...Array.from(element.childNodes));
+          continue;
+        }
+
+        const originalHref = element.tagName === 'A' ? element.getAttribute('href') : null;
+        for (const attribute of Array.from(element.attributes)) {
+          element.removeAttribute(attribute.name);
+        }
+
+        if (element.tagName === 'A') {
+          const href = this.normalizeLink(originalHref ?? '');
+          if (href) {
+            element.setAttribute('href', href);
+            element.setAttribute('target', '_blank');
+            element.setAttribute('rel', 'noopener noreferrer');
+          }
+        }
+        clean(element);
+      }
+    };
+
+    clean(parsed.body);
+    return parsed.body.innerHTML;
+  }
+
+  private normalizeBrowserFormatting(parent: ParentNode): void {
+    for (const node of Array.from(parent.childNodes)) {
+      if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+      const element = node as HTMLElement;
+      this.normalizeBrowserFormatting(element);
+
+      const style = (element.getAttribute('style') ?? '').toLowerCase();
+      const bold = /font-weight\s*:\s*(bold|[6-9]00)/.test(style);
+      const italic = /font-style\s*:\s*italic/.test(style);
+      const underline = /text-decoration(?:-line)?\s*:[^;]*underline/.test(style);
+      const isDisposableInline = element.tagName === 'SPAN' || element.tagName === 'FONT';
+
+      if (!bold && !italic && !underline) {
+        if (isDisposableInline) element.replaceWith(...Array.from(element.childNodes));
+        continue;
+      }
+
+      const fragment = document.createDocumentFragment();
+      while (element.firstChild) fragment.appendChild(element.firstChild);
+
+      let wrapped: Node = fragment;
+      if (underline) {
+        const wrapper = document.createElement('u');
+        wrapper.appendChild(wrapped);
+        wrapped = wrapper;
+      }
+      if (italic) {
+        const wrapper = document.createElement('em');
+        wrapper.appendChild(wrapped);
+        wrapped = wrapper;
+      }
+      if (bold) {
+        const wrapper = document.createElement('strong');
+        wrapper.appendChild(wrapped);
+        wrapped = wrapper;
+      }
+
+      if (isDisposableInline) {
+        element.replaceWith(wrapped);
+      } else {
+        element.appendChild(wrapped);
+        element.removeAttribute('style');
+      }
+    }
+  }
+
+  private normalizeLink(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^(https?:|mailto:|tel:)/i.test(trimmed)) return trimmed;
+    if (/^www\./i.test(trimmed)) return `https://${trimmed}`;
+    return null;
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   private errorMessage(error: unknown, fallback: string): string {

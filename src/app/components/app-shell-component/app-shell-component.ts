@@ -1285,7 +1285,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   isCompactSidebarRoute(): boolean {
-    return this.isCommunicationsRoute();
+    return this.isCommunicationsRoute() || this.isKnowledgeBaseRoute();
+  }
+
+  isFullBleedRoute(): boolean {
+    return this.isKnowledgeBaseRoute();
   }
 
   compactNavRoute(item: NavItem): string | undefined {
@@ -1329,6 +1333,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private isCommunicationsRoute(): boolean {
     const url = this.router.url.split('?')[0].split('#')[0];
     return url === '/communications' || url.startsWith('/communications/');
+  }
+
+  private isKnowledgeBaseRoute(): boolean {
+    const url = this.router.url.split('?')[0].split('#')[0];
+    return url === '/knowledge-base' || url.startsWith('/knowledge-base/');
   }
 
   private showIncomingCommunicationToast(

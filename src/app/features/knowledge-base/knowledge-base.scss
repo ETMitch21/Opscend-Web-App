@@ -1,0 +1,414 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.kb-page {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kb-page-header {
+  min-height: 4.5rem;
+  flex: 0 0 auto;
+}
+
+.kb-workspace {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-filter-sidebar,
+.kb-article-list,
+.kb-article-reader {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-article-list,
+.kb-article-reader {
+  display: flex;
+  flex-direction: column;
+}
+
+.kb-pane-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.kb-sidebar-rail {
+  display: none;
+}
+
+
+.kb-rail-tooltip {
+  position: relative;
+}
+
+.kb-rail-tooltip::before,
+.kb-rail-tooltip::after {
+  pointer-events: none;
+  position: absolute;
+  z-index: 120;
+  opacity: 0;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.kb-rail-tooltip::before {
+  content: attr(data-tooltip);
+  top: 50%;
+  left: calc(100% + 0.75rem);
+  max-width: 14rem;
+  transform: translate(0.3rem, -50%);
+  white-space: nowrap;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 0.625rem;
+  background: rgb(15 23 42 / 0.97);
+  padding: 0.45rem 0.65rem;
+  color: white;
+  box-shadow: 0 12px 28px -12px rgb(15 23 42 / 0.65);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1rem;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
+}
+
+.kb-rail-tooltip::after {
+  content: '';
+  top: 50%;
+  left: calc(100% + 0.35rem);
+  transform: translate(0.3rem, -50%);
+  border-width: 0.35rem;
+  border-style: solid;
+  border-color: transparent rgb(15 23 42 / 0.97) transparent transparent;
+}
+
+.kb-rail-tooltip:hover::before,
+.kb-rail-tooltip:hover::after,
+.kb-rail-tooltip:focus-visible::before,
+.kb-rail-tooltip:focus-visible::after {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+
+.kb-search-field {
+  position: relative;
+  display: block;
+}
+
+.kb-search-icon {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  color: rgb(148 163 184);
+}
+
+.kb-search-input {
+  height: 2.5rem;
+  width: 100%;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.75rem;
+  background: rgb(248 250 252);
+  padding: 0 0.75rem 0 2.5rem;
+  color: rgb(30 41 59);
+  font-size: 0.75rem;
+  outline: none;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.kb-search-input::placeholder {
+  color: rgb(148 163 184);
+}
+
+.kb-search-input:focus {
+  border-color: var(--color-brand, rgb(249 115 22));
+  background: white;
+  box-shadow: 0 0 0 3px rgb(249 115 22 / 0.1);
+}
+
+.kb-article-row {
+  position: relative;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.kb-article-row:hover {
+  background: rgb(248 250 252);
+}
+
+.kb-article-row.is-selected {
+  background: rgb(249 115 22 / 0.055);
+  box-shadow: inset 3px 0 0 var(--color-brand, rgb(249 115 22));
+}
+
+.kb-reader-header {
+  flex: 0 0 auto;
+}
+
+.knowledge-editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  box-shadow: 0 1px 0 rgb(226 232 240 / 0.75);
+}
+
+.editor-tool {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: rgb(71 85 105);
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.editor-tool-text {
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.editor-tool:hover {
+  border-color: rgb(226 232 240);
+  background: white;
+  color: rgb(15 23 42);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+.editor-tool.is-active {
+  border-color: rgb(249 115 22 / 0.22);
+  background: rgb(249 115 22 / 0.1);
+  color: var(--color-brand, rgb(249 115 22));
+  box-shadow: inset 0 0 0 1px rgb(249 115 22 / 0.04);
+}
+
+.editor-tool:focus-visible {
+  outline: 2px solid rgb(249 115 22 / 0.28);
+  outline-offset: 1px;
+}
+
+:host ::ng-deep .knowledge-rich-text {
+  color: rgb(51 65 85);
+  font-size: 0.925rem;
+  line-height: 1.75;
+  word-break: break-word;
+}
+
+/*
+ * Rich-text children are created by contenteditable and [innerHTML], so Angular
+ * does not add the component's scoped _ngcontent attribute to them. Keep these
+ * selectors behind ::ng-deep or headings, lists, and quotes inherit Tailwind's
+ * reset styles and appear to do nothing.
+ */
+:host ::ng-deep .knowledge-rich-text :where(p, div) {
+  margin: 0.65rem 0;
+}
+
+:host ::ng-deep .knowledge-rich-text > :first-child {
+  margin-top: 0;
+}
+
+:host ::ng-deep .knowledge-rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .knowledge-rich-text :where(h2, h3, h4) {
+  display: block;
+  color: rgb(15 23 42);
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+:host ::ng-deep .knowledge-rich-text h2 {
+  margin: 1.9rem 0 0.7rem;
+  font-size: 1.6rem;
+}
+
+:host ::ng-deep .knowledge-rich-text h3 {
+  margin: 1.5rem 0 0.6rem;
+  font-size: 1.25rem;
+}
+
+:host ::ng-deep .knowledge-rich-text h4 {
+  margin: 1.2rem 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+:host ::ng-deep .knowledge-rich-text :where(ul, ol) {
+  display: block;
+  margin: 0.9rem 0;
+  padding-left: 1.8rem;
+  list-style-position: outside;
+}
+
+:host ::ng-deep .knowledge-rich-text ul {
+  list-style-type: disc;
+}
+
+:host ::ng-deep .knowledge-rich-text ol {
+  list-style-type: decimal;
+}
+
+:host ::ng-deep .knowledge-rich-text ul ul {
+  list-style-type: circle;
+}
+
+:host ::ng-deep .knowledge-rich-text ol ol {
+  list-style-type: lower-alpha;
+}
+
+:host ::ng-deep .knowledge-rich-text li {
+  display: list-item;
+  margin: 0.35rem 0;
+  padding-left: 0.2rem;
+}
+
+:host ::ng-deep .knowledge-rich-text li::marker {
+  color: rgb(100 116 139);
+  font-weight: 700;
+}
+
+:host ::ng-deep .knowledge-rich-text blockquote {
+  display: block;
+  margin: 1.15rem 0;
+  border-left: 4px solid rgb(249 115 22 / 0.5);
+  border-radius: 0 0.75rem 0.75rem 0;
+  background: rgb(255 247 237);
+  padding: 0.9rem 1.1rem;
+  color: rgb(71 85 105);
+  font-style: italic;
+}
+
+:host ::ng-deep .knowledge-rich-text blockquote > :first-child {
+  margin-top: 0;
+}
+
+:host ::ng-deep .knowledge-rich-text blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .knowledge-rich-text pre {
+  display: block;
+  margin: 1rem 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  border-radius: 0.85rem;
+  background: rgb(15 23 42);
+  padding: 1rem;
+  color: rgb(241 245 249);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+:host ::ng-deep .knowledge-rich-text code:not(pre code) {
+  border-radius: 0.35rem;
+  background: rgb(241 245 249);
+  padding: 0.1rem 0.35rem;
+  color: rgb(30 41 59);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+}
+
+:host ::ng-deep .knowledge-rich-text a {
+  color: var(--color-brand, rgb(249 115 22));
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+:host ::ng-deep .knowledge-rich-text hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid rgb(226 232 240);
+}
+
+.knowledge-editor {
+  caret-color: var(--color-brand, rgb(249 115 22));
+  white-space: normal;
+}
+
+.knowledge-editor:focus {
+  box-shadow: inset 0 0 0 2px rgb(249 115 22 / 0.08);
+}
+
+:host ::ng-deep .knowledge-editor ::selection {
+  background: rgb(249 115 22 / 0.2);
+}
+
+.knowledge-editor:empty::before {
+  content: attr(data-placeholder);
+  pointer-events: none;
+  color: rgb(148 163 184);
+}
+
+@media (min-width: 1024px) {
+  .kb-workspace {
+    grid-template-columns: 196px 304px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .kb-workspace {
+    grid-template-columns: 204px 326px minmax(0, 1fr);
+  }
+
+  .kb-workspace.sidebar-collapsed {
+    grid-template-columns: 54px 326px minmax(0, 1fr);
+  }
+
+  .kb-filter-sidebar.is-collapsed {
+    position: relative;
+    z-index: 30;
+    overflow: visible;
+  }
+
+  .kb-filter-sidebar.is-collapsed .kb-sidebar-expanded {
+    display: none;
+  }
+
+  .kb-filter-sidebar.is-collapsed .kb-sidebar-rail {
+    display: flex;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1023px) {
+  :host,
+  .kb-page {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .kb-page {
+    overflow-y: auto;
+  }
+
+  .kb-workspace {
+    display: block;
+    overflow: visible;
+  }
+
+  .kb-filter-sidebar,
+  .kb-article-list {
+    border-right: 0;
+    border-bottom: 1px solid rgb(226 232 240);
+  }
+
+  .kb-pane-scroll {
+    max-height: 32rem;
+  }
+}
