@@ -3,6 +3,7 @@ import {
   BlocksIcon,
   Building2,
   MapPinIcon,
+  PhoneCallIcon,
   CalendarClockIcon,
   CalendarCog,
   DollarSignIcon,
@@ -108,6 +109,13 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         route: '/settings/integrations',
         icon: BlocksIcon,
         keywords: ['connections', 'mobilesentrix', 'stripe', 'supplier', 'api'],
+      },
+      {
+        label: 'AI phone agent',
+        description: 'Answer calls, create exact quotes, capture review requests, and transfer callers.',
+        route: '/settings/shop/voice-agent',
+        icon: PhoneCallIcon,
+        keywords: ['phone', 'calls', 'twilio', 'openai', 'voice', 'quotes', 'agent'],
       },
       {
         label: 'Payouts',

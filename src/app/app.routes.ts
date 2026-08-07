@@ -188,6 +188,11 @@ export const routes: Routes = [
                         ]
                     },
                     {
+                        path: 'voice-agent',
+                        loadComponent: () =>
+                            import('./features/settings/voice-agent/voice-agent').then((m) => m.VoiceAgentSettingsComponent)
+                    },
+                    {
                         path: 'payouts',
                         loadComponent: () =>
                             import('./features/settings/payouts/payouts').then((m) => m.Payouts),
