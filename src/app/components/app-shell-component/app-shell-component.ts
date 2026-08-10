@@ -38,9 +38,11 @@ import {
   MapPinIcon,
   CheckIcon,
   LoaderCircleIcon,
+  CalculatorIcon,
 } from 'lucide-angular';
 import { AccessibleLocation, AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
+import { QuickQuoteModalComponent } from '../modals/quick-quote-modal/quick-quote-modal';
 import { GlobalSearchResponse, SearchItem, SearchService } from '../../core/search/search-service';
 import { InternalNotificationService } from '../../core/internal-notifications/internal-notification.service';
 import type {
@@ -114,6 +116,7 @@ type FlatSearchRow =
     RouterOutlet,
     LucideAngularModule,
     ManageDevicesModalComponent,
+    QuickQuoteModalComponent,
     AiAssistant,
   ],
   templateUrl: './app-shell-component.html',
@@ -121,6 +124,7 @@ type FlatSearchRow =
 })
 export class AppShellComponent implements OnInit, OnDestroy {
   @ViewChild('globalSearchInput') private globalSearchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild(QuickQuoteModalComponent) private quickQuoteModal?: QuickQuoteModalComponent;
 
   private auth = inject(AuthService);
   private router = inject(Router);
@@ -165,6 +169,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly locationIcon = MapPinIcon;
   readonly locationCheckIcon = CheckIcon;
   readonly locationLoadingIcon = LoaderCircleIcon;
+  readonly quickQuoteIcon = CalculatorIcon;
 
   private readonly notificationPollMs = 15_000;
   private readonly communicationPollMs = 5_000;
@@ -189,6 +194,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public showLocationSelector = computed(() => this.availableLocations().length > 1);
   public canManageLocations = computed(() => String(this.currentUser()?.role ?? '').toLowerCase() === 'owner');
   public aiAssistantDrawerOpen = signal(false);
+  public quickQuoteOpen = signal(false);
 
   public notificationMenuOpen = signal(false);
   public notificationsLoading = signal(false);
@@ -397,6 +403,22 @@ export class AppShellComponent implements OnInit, OnDestroy {
       this.routerEventsSubscription.unsubscribe();
       this.routerEventsSubscription = null;
     }
+  }
+
+  openQuickQuote(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.moreMenuOpen.set(false);
+    this.profileMenuOpen.set(false);
+    this.locationMenuOpen.set(false);
+    this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
+    this.closeSearchDropdown();
+    this.quickQuoteOpen.set(true);
+    queueMicrotask(() => void this.quickQuoteModal?.ensureLoaded());
+  }
+
+  closeQuickQuote(): void {
+    this.quickQuoteOpen.set(false);
   }
 
   openAiAssistantDrawer(event?: MouseEvent): void {

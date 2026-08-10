@@ -60,6 +60,7 @@ import type {
   ServiceAreaCheckResponse,
 } from '../../../core/shop/shop-service';
 import {
+  ManagedDeviceCatalogModel,
   TechSpecsBrand,
   TechSpecsModel,
   TechSpecsService,
@@ -242,6 +243,11 @@ export class NewRepair implements OnInit {
   private readonly deviceCatalogPageSize = 20;
   private readonly deviceCatalogSearchDebounceMs = 500;
   private readonly deviceCatalogMinimumSearchLength = 2;
+
+  private quickQuoteModelPrefill: ManagedDeviceCatalogModel | null = null;
+  private quickQuoteRepairNeedId: string | null = null;
+  private quickQuotePricingTemplateId: string | null = null;
+  private quickQuotePricingSelectionApplied = false;
 
   private readonly popularBrandsByCountryCategory: Record<
     string,
@@ -800,7 +806,26 @@ export class NewRepair implements OnInit {
   }
 
   private async applyRouteContext(): Promise<void> {
-    const customerId = this.route.snapshot.queryParamMap.get('customerId')?.trim();
+    const params = this.route.snapshot.queryParamMap;
+    const quickQuoteModelId = params.get('quickQuoteModelId')?.trim() || null;
+    this.quickQuoteRepairNeedId = params.get('quickQuoteRepairNeedId')?.trim() || null;
+    this.quickQuotePricingTemplateId = params.get('quickQuotePricingTemplateId')?.trim() || null;
+
+    if (quickQuoteModelId) {
+      try {
+        this.quickQuoteModelPrefill = await firstValueFrom(
+          this.techSpecsService.getManagedModel(quickQuoteModelId),
+        );
+      } catch (error) {
+        console.error('Quick Quote device could not be loaded.', error);
+        this.toastService.error(
+          'Quick Quote device could not be loaded',
+          'Select the device again before creating the repair.',
+        );
+      }
+    }
+
+    const customerId = params.get('customerId')?.trim();
     if (!customerId) return;
 
     const customer = await this.customersStore.getById(customerId);
@@ -1256,6 +1281,7 @@ export class NewRepair implements OnInit {
         ),
         ...this.buildManualPricingOptions(),
       ];
+      this.applyQuickQuotePricingSelection();
     } catch (error) {
       console.error('Device pricing options could not be loaded.', error);
       this.repairServices = this.buildManualPricingOptions();
@@ -1990,6 +2016,7 @@ export class NewRepair implements OnInit {
 
     this.updateDeviceValidators();
     void this.loadDeviceCatalogCategories(true);
+    this.applyQuickQuoteDevicePrefill();
   }
 
   cancelNewDevice(): void {
@@ -2208,6 +2235,56 @@ export class NewRepair implements OnInit {
     }
   }
 
+  private applyQuickQuoteDevicePrefill(): void {
+    const model = this.quickQuoteModelPrefill;
+    if (!model || !this.newDevice) return;
+
+    this.deviceCatalogCategory = model.categoryName;
+    this.selectedTechSpecsBrand = {
+      id: model.brandId,
+      name: model.brandName,
+    };
+    this.selectedTechSpecsModel = {
+      id: model.id,
+      brandId: model.brandId,
+      brandName: model.brandName,
+      name: model.name,
+      releaseYear: model.releaseYear,
+    };
+
+    this.newRepairForm.patchValue(
+      {
+        catalogRef: model.id,
+        techSpecsCategorySearchControl: model.categoryName,
+        techSpecsBrandSearchControl: model.brandName,
+        techSpecsModelSearchControl: model.name,
+        nickname: this.buildDefaultDeviceNickname(model.name),
+        brand: model.brandName,
+        model: model.name,
+      },
+      { emitEvent: false },
+    );
+
+    this.updateDeviceValidators();
+  }
+
+  private applyQuickQuotePricingSelection(): void {
+    if (this.quickQuotePricingSelectionApplied) return;
+    const repairNeedId = this.quickQuoteRepairNeedId;
+    const pricingTemplateId = this.quickQuotePricingTemplateId;
+    if (!repairNeedId || !pricingTemplateId) return;
+
+    const need = this.repairNeeds.find((row) => row.id === repairNeedId);
+    const service = this.repairServices.find(
+      (row) => row.pricingOptionId === pricingTemplateId,
+    );
+    if (!need || !service) return;
+
+    this.selectRepairNeed(need);
+    this.selectRepairService(service);
+    this.quickQuotePricingSelectionApplied = true;
+  }
+
   private prepareDeviceStep(): void {
     if (!this.isCustomerStepValid()) return;
     if (this.selectedDevice || this.newDevice) return;
@@ -2233,7 +2310,17 @@ export class NewRepair implements OnInit {
 
           this.searchingDevices = false;
 
-          if (!devices.length) {
+          const quickQuoteModelId = this.quickQuoteModelPrefill?.id ?? null;
+          const matchingDevice = quickQuoteModelId
+            ? devices.find((device) => device.catalogRef === quickQuoteModelId) ?? null
+            : null;
+
+          if (matchingDevice) {
+            this.selectDevice(matchingDevice);
+            return;
+          }
+
+          if (!devices.length || quickQuoteModelId) {
             this.startNewDevice();
             return;
           }

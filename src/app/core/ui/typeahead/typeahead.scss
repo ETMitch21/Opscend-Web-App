@@ -3,18 +3,44 @@
   min-width: 0;
 }
 
-/*
- * Keep the search glyph in a dedicated leading slot. This prevents the
- * lucide host from participating in the input's flex layout or drifting into
- * the selected value when global styles are reordered during production builds.
- */
+.settings-typeahead {
+  position: relative;
+  min-width: 0;
+}
+
+.settings-typeahead:has(.settings-typeahead-control.is-open) {
+  z-index: 160;
+}
+
+.settings-typeahead-control {
+  position: relative;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  border: 1px solid var(--color-app-border);
+  border-radius: 10px;
+  background: var(--color-app-surface);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.settings-typeahead-control:focus-within,
+.settings-typeahead-control.is-open {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 12%, transparent);
+}
+
+.settings-typeahead-control.is-disabled {
+  background: var(--color-app-surface-muted);
+  opacity: 0.72;
+}
+
 .settings-typeahead-leading {
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
   z-index: 2;
   display: flex;
-  width: 44px;
+  width: 42px;
   align-items: center;
   justify-content: center;
   color: color-mix(in srgb, var(--color-app-text-muted) 88%, transparent);
@@ -23,13 +49,156 @@
 
 .settings-typeahead-leading-icon {
   display: inline-flex;
-  width: 18px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 18px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
 }
 
 .settings-typeahead-control > input {
-  padding-inline-start: 44px !important;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 0 !important;
+  border-radius: inherit !important;
+  background: transparent;
+  padding: 9px 40px 9px 42px !important;
+  color: var(--color-app-text);
+  font-size: 13px !important;
+  line-height: 1.35;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.settings-typeahead-control > input::placeholder {
+  color: color-mix(in srgb, var(--color-app-text-muted) 78%, transparent);
+}
+
+.settings-typeahead-clear,
+.settings-typeahead-trailing-icon {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: inline-flex;
+  translate: 0 -50%;
+  width: 25px;
+  height: 25px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-app-text-muted);
+}
+
+.settings-typeahead-clear {
+  cursor: pointer;
+}
+
+.settings-typeahead-clear:hover {
+  background: var(--color-app-surface-muted);
+  color: var(--color-app-text);
+}
+
+.settings-typeahead-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 200;
+  overflow: hidden;
+  border: 1px solid var(--color-app-border);
+  border-radius: 12px;
+  background: var(--color-app-surface);
+  box-shadow: 0 16px 40px rgb(15 23 42 / 0.16), 0 3px 9px rgb(15 23 42 / 0.07);
+}
+
+.settings-typeahead-list {
+  max-height: 278px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 5px;
+}
+
+.settings-typeahead-option {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px 9px;
+  color: var(--color-app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-typeahead-option:hover,
+.settings-typeahead-option.is-active {
+  background: var(--color-app-surface-muted);
+}
+
+.settings-typeahead-option.is-selected {
+  background: color-mix(in srgb, var(--color-brand) 8%, var(--color-app-surface));
+}
+
+.settings-typeahead-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.settings-typeahead-option-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.settings-typeahead-option-label {
+  overflow: hidden;
+  color: var(--color-app-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-typeahead-option-description {
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--color-app-text-muted);
+  font-size: 10.75px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-typeahead-option-meta {
+  flex: 0 0 auto;
+  color: var(--color-app-text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.settings-typeahead-state {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 16px;
+  color: var(--color-app-text-muted);
+  font-size: 11.5px;
+  text-align: center;
+}
+
+.settings-typeahead-hint {
+  border-top: 1px solid var(--color-app-border);
+  background: var(--color-app-surface-muted);
+  padding: 7px 10px;
+  color: var(--color-app-text-muted);
+  font-size: 10px;
 }

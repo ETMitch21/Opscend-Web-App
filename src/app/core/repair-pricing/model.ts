@@ -7,6 +7,11 @@ export interface RepairType {
   isActive: boolean;
   sortOrder: number;
   supplierSearchTerms: string[];
+  supplierPreferredTerms: string[];
+  supplierRequiredTerms: string[];
+  supplierExcludedTerms: string[];
+  supplierRequireInStock: boolean;
+  supplierAutoSelectEnabled: boolean;
   defaultLaborCents: number | null;
   defaultDurationMins: number | null;
   depositMode: PricingOptionDepositMode;
@@ -27,6 +32,11 @@ export interface RepairTypeInput {
   isActive?: boolean;
   sortOrder?: number;
   supplierSearchTerms?: string[];
+  supplierPreferredTerms?: string[];
+  supplierRequiredTerms?: string[];
+  supplierExcludedTerms?: string[];
+  supplierRequireInStock?: boolean;
+  supplierAutoSelectEnabled?: boolean;
   defaultLaborCents?: number | null;
   defaultDurationMins?: number | null;
   depositMode?: PricingOptionDepositMode;

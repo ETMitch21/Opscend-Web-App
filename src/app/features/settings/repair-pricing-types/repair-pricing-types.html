@@ -10,6 +10,28 @@
 
     @if (error()) {<div class="settings-alert is-error">{{ error() }}</div>}
 
+    @if (quickQuoteSettings(); as qq) {
+      <section class="settings-card">
+        <div class="flex flex-col gap-3 border-b border-app-border px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-sm font-semibold text-app-text">Quick Quote</h2>
+            <p class="mt-1 text-xs text-app-text-muted">Control how conservatively Opscend can find, approve, and remember supplier parts when a saved pricing option does not exist.</p>
+          </div>
+          <span class="rounded-full bg-app-surface-muted px-2.5 py-1 text-[10px] font-semibold text-app-text-muted">{{ qq.rememberedMatchCount }} remembered match{{ qq.rememberedMatchCount === 1 ? '' : 'es' }}</span>
+        </div>
+        <div class="settings-toggle-list px-4 py-3">
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Enable Quick Quote</p><p class="settings-toggle-description">Show the staff quoting tool and allow supplier fallback matching.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="qq.enabled" [disabled]="quickQuoteSaving()" (click)="updateQuickQuoteSetting({ enabled: !qq.enabled })"><span class="settings-switch-handle"></span></button></div>
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Remember high-confidence matches automatically</p><p class="settings-toggle-description">When every quality rule passes, save the selected supplier part so the next quote is instant.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="qq.autoRememberApprovedMatches" [disabled]="quickQuoteSaving()" (click)="updateQuickQuoteSetting({ autoRememberApprovedMatches: !qq.autoRememberApprovedMatches })"><span class="settings-switch-handle"></span></button></div>
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Create pricing options from remembered matches</p><p class="settings-toggle-description">Build the reusable device + repair pricing option when Quick Quote learns a part.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="qq.autoCreatePricingTemplates" [disabled]="quickQuoteSaving()" (click)="updateQuickQuoteSetting({ autoCreatePricingTemplates: !qq.autoCreatePricingTemplates })"><span class="settings-switch-handle"></span></button></div>
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Publish remembered pricing options</p><p class="settings-toggle-description">Allow learned options to become available to customer-facing booking after staff approval.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="qq.rememberedTemplatePublic" [disabled]="quickQuoteSaving()" (click)="updateQuickQuoteSetting({ rememberedTemplatePublic: !qq.rememberedTemplatePublic })"><span class="settings-switch-handle"></span></button></div>
+        </div>
+        <div class="grid gap-3 border-t border-app-border px-4 py-3.5 sm:grid-cols-2">
+          <div class="settings-field"><label class="settings-label" for="qq-min-score">Minimum automatic match score</label><input id="qq-min-score" type="number" min="40" max="200" class="settings-control" [value]="qq.minimumMatchScore" [disabled]="quickQuoteSaving()" (change)="updateQuickQuoteSetting({ minimumMatchScore: +$any($event.target).value })" /><p class="settings-hint">Higher values make automatic selection more conservative.</p></div>
+          <div class="settings-field"><label class="settings-label" for="qq-score-margin">Minimum lead over second result</label><input id="qq-score-margin" type="number" min="0" max="100" class="settings-control" [value]="qq.minimumScoreMargin" [disabled]="quickQuoteSaving()" (change)="updateQuickQuoteSetting({ minimumScoreMargin: +$any($event.target).value })" /><p class="settings-hint">If the top two parts are too close, staff must review.</p></div>
+        </div>
+      </section>
+    }
+
     <section class="settings-card">
       <div class="flex flex-col gap-3 border-b border-app-border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -70,7 +92,21 @@
               <div class="settings-field is-half"><label class="settings-label" for="type-label">Name</label><input id="type-label" type="text" class="settings-control" formControlName="label" placeholder="Screen Repair" (input)="onLabelInput()" /></div>
               <div class="settings-field is-half"><label class="settings-label" for="type-code">Internal code</label><input id="type-code" type="text" class="settings-control" formControlName="code" placeholder="screen_repair" /><p class="settings-hint">Lowercase letters, numbers, and underscores.</p></div>
               <div class="settings-field"><label class="settings-label" for="type-description">Description</label><textarea id="type-description" class="settings-control" formControlName="description" rows="3"></textarea></div>
-              <div class="settings-field"><label class="settings-label" for="type-terms">Supplier search terms</label><input id="type-terms" type="text" class="settings-control" formControlName="supplierSearchTermsText" placeholder="screen, display, lcd, oled" /><p class="settings-hint">Comma-separated terms used when searching supplier catalogs.</p></div>
+              <div class="settings-field"><label class="settings-label" for="type-terms">Supplier search terms</label><input id="type-terms" type="text" class="settings-control" formControlName="supplierSearchTermsText" placeholder="screen, display, assembly" /><p class="settings-hint">General terms that identify this repair in supplier catalogs.</p></div>
+
+              <div class="settings-field rounded-xl border border-app-border bg-app-surface-muted/35 p-4">
+                <div class="mb-3"><p class="text-xs font-semibold text-app-text">Supplier part matching</p><p class="mt-1 text-xs leading-5 text-app-text-muted">Teach Opscend the quality standard for this repair type. Required and excluded terms are hard safety rules; preferred terms improve ranking.</p></div>
+                <div class="settings-field-grid">
+                  <div class="settings-field"><label class="settings-label" for="type-preferred-terms">Preferred quality terms</label><input id="type-preferred-terms" type="text" class="settings-control" formControlName="supplierPreferredTermsText" placeholder="X07, Soft OLED" /><p class="settings-hint">Strongly prefer parts matching these terms.</p></div>
+                  <div class="settings-field"><label class="settings-label" for="type-required-terms">Required terms</label><input id="type-required-terms" type="text" class="settings-control" formControlName="supplierRequiredTermsText" placeholder="assembly" /><p class="settings-hint">Every automatic match must contain all required terms.</p></div>
+                  <div class="settings-field"><label class="settings-label" for="type-excluded-terms">Excluded terms</label><input id="type-excluded-terms" type="text" class="settings-control" formControlName="supplierExcludedTermsText" placeholder="LCD, Incell, Hard OLED" /><p class="settings-hint">Any matching result containing one of these terms is rejected.</p></div>
+                </div>
+                <div class="settings-toggle-list mt-3">
+                  <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Require in-stock supplier part</p><p class="settings-toggle-description">Reject an explicitly out-of-stock result from automatic selection.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="form.controls.supplierRequireInStock.value" (click)="toggle('supplierRequireInStock')"><span class="settings-switch-handle"></span></button></div>
+                  <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Allow automatic selection</p><p class="settings-toggle-description">Only applies when quality rules exist and the configured confidence thresholds are met.</p></div><button type="button" role="switch" class="settings-switch" [class.is-on]="form.controls.supplierAutoSelectEnabled.value" (click)="toggle('supplierAutoSelectEnabled')"><span class="settings-switch-handle"></span></button></div>
+                </div>
+              </div>
+
               <div class="settings-field is-half"><label class="settings-label" for="type-labor">Default labor</label><div class="settings-input-group"><span class="settings-input-affix">$</span><input id="type-labor" type="number" min="0" step="0.01" formControlName="defaultLaborDollars" placeholder="Use shop default" /></div></div>
               <div class="settings-field is-half"><label class="settings-label" for="type-duration">Default duration</label><div class="settings-input-group"><input id="type-duration" type="number" min="5" step="5" formControlName="defaultDurationMins" /><span class="settings-input-affix is-suffix">min</span></div></div>
             </div>

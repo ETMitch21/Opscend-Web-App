@@ -410,6 +410,13 @@
                         </div>
 
                         <button type="button"
+                            class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-full border border-app-border bg-app-surface px-3 text-sm font-semibold text-app-text transition hover:border-brand/35 hover:bg-brand/5 hover:text-brand"
+                            (click)="openQuickQuote($event)" aria-label="Open Quick Quote">
+                            <lucide-icon [size]="17" [img]="quickQuoteIcon"></lucide-icon>
+                            <span class="hidden md:inline">Quick Quote</span>
+                        </button>
+
+                        <button type="button"
                             class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 text-sm font-semibold text-violet-700 transition hover:border-violet-300 hover:bg-violet-100"
                             (click)="openAiAssistantDrawer($event)" aria-label="Open Opscend AI"
                             [attr.aria-expanded]="aiAssistantDrawerOpen()">
@@ -756,6 +763,7 @@
                 <div class="h-full w-full">
                     <router-outlet></router-outlet>
                     <manage-devices-modal-component></manage-devices-modal-component>
+                    <app-quick-quote-modal [open]="quickQuoteOpen()" (closed)="closeQuickQuote()"></app-quick-quote-modal>
                 </div>
             </main>
         </div>

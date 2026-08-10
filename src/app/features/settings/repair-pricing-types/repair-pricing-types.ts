@@ -20,6 +20,8 @@ import {
   RepairTypeInput,
 } from '../../../core/repair-pricing/model';
 import { RepairPricingService } from '../../../core/repair-pricing/service';
+import { QuickQuoteSettings } from '../../../core/quick-quote/model';
+import { QuickQuoteService } from '../../../core/quick-quote/service';
 import { ToastService } from '../../../core/toast/toast-service';
 import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
@@ -37,6 +39,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 export class RepairPricingTypes implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly pricingApi = inject(RepairPricingService);
+  private readonly quickQuoteApi = inject(QuickQuoteService);
   private readonly toast = inject(ToastService);
 
   readonly icons = {
@@ -58,6 +61,8 @@ export class RepairPricingTypes implements OnInit {
   readonly editorOpen = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly draggedId = signal<string | null>(null);
+  readonly quickQuoteSettings = signal<QuickQuoteSettings | null>(null);
+  readonly quickQuoteSaving = signal(false);
 
   readonly form = this.fb.group({
     label: ['', [Validators.required, Validators.maxLength(120)]],
@@ -71,6 +76,11 @@ export class RepairPricingTypes implements OnInit {
     ],
     description: ['', Validators.maxLength(1000)],
     supplierSearchTermsText: [''],
+    supplierPreferredTermsText: [''],
+    supplierRequiredTermsText: [''],
+    supplierExcludedTermsText: [''],
+    supplierRequireInStock: [true],
+    supplierAutoSelectEnabled: [true],
     defaultLaborDollars: [null as number | null, Validators.min(0)],
     defaultDurationMins: [60 as number | null, Validators.min(5)],
     depositMode: ['inherit' as PricingOptionDepositMode],
@@ -107,6 +117,11 @@ export class RepairPricingTypes implements OnInit {
       code: '',
       description: '',
       supplierSearchTermsText: '',
+      supplierPreferredTermsText: '',
+      supplierRequiredTermsText: '',
+      supplierExcludedTermsText: '',
+      supplierRequireInStock: true,
+      supplierAutoSelectEnabled: true,
       defaultLaborDollars: null,
       defaultDurationMins: 60,
       depositMode: 'inherit',
@@ -127,6 +142,11 @@ export class RepairPricingTypes implements OnInit {
       code: type.code,
       description: type.description ?? '',
       supplierSearchTermsText: type.supplierSearchTerms.join(', '),
+      supplierPreferredTermsText: (type.supplierPreferredTerms ?? []).join(', '),
+      supplierRequiredTermsText: (type.supplierRequiredTerms ?? []).join(', '),
+      supplierExcludedTermsText: (type.supplierExcludedTerms ?? []).join(', '),
+      supplierRequireInStock: type.supplierRequireInStock ?? true,
+      supplierAutoSelectEnabled: type.supplierAutoSelectEnabled ?? true,
       defaultLaborDollars:
         type.defaultLaborCents == null ? null : type.defaultLaborCents / 100,
       defaultDurationMins: type.defaultDurationMins,
@@ -160,7 +180,9 @@ export class RepairPricingTypes implements OnInit {
       | 'isActive'
       | 'requiresManualReview'
       | 'depositIncludeProcessingFees'
-      | 'depositIncludeInstantPayoutFee',
+      | 'depositIncludeInstantPayoutFee'
+      | 'supplierRequireInStock'
+      | 'supplierAutoSelectEnabled',
   ): void {
     this.form.controls[control].setValue(!this.form.controls[control].value);
     this.form.controls[control].markAsDirty();
@@ -184,6 +206,11 @@ export class RepairPricingTypes implements OnInit {
       code: String(raw.code ?? '').trim(),
       description: this.nullable(raw.description),
       supplierSearchTerms: this.commaList(raw.supplierSearchTermsText),
+      supplierPreferredTerms: this.commaList(raw.supplierPreferredTermsText),
+      supplierRequiredTerms: this.commaList(raw.supplierRequiredTermsText),
+      supplierExcludedTerms: this.commaList(raw.supplierExcludedTermsText),
+      supplierRequireInStock: Boolean(raw.supplierRequireInStock),
+      supplierAutoSelectEnabled: Boolean(raw.supplierAutoSelectEnabled),
       defaultLaborCents: this.dollarsToCents(raw.defaultLaborDollars),
       defaultDurationMins:
         raw.defaultDurationMins == null
@@ -303,12 +330,16 @@ export class RepairPricingTypes implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const response = await firstValueFrom(this.pricingApi.listRepairTypes());
+      const [response, quickQuoteSettings] = await Promise.all([
+        firstValueFrom(this.pricingApi.listRepairTypes()),
+        firstValueFrom(this.quickQuoteApi.getSettings()),
+      ]);
       this.repairTypes.set(
         [...(response.data ?? [])].sort(
           (a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label),
         ),
       );
+      this.quickQuoteSettings.set(quickQuoteSettings);
     } catch (error) {
       console.error(error);
       this.error.set('Repair types could not be loaded.');
@@ -326,6 +357,28 @@ export class RepairPricingTypes implements OnInit {
     } catch (error) {
       console.error(error);
       this.toast.error('Repair type was not deactivated');
+    }
+  }
+
+  async updateQuickQuoteSetting(
+    patch: Partial<Omit<QuickQuoteSettings, 'rememberedMatchCount'>>,
+  ): Promise<void> {
+    if (this.quickQuoteSaving()) return;
+    const current = this.quickQuoteSettings();
+    if (!current) return;
+
+    this.quickQuoteSaving.set(true);
+    this.quickQuoteSettings.set({ ...current, ...patch });
+    try {
+      const updated = await firstValueFrom(this.quickQuoteApi.updateSettings(patch));
+      this.quickQuoteSettings.set(updated);
+      this.toast.success('Quick Quote settings saved');
+    } catch (error) {
+      console.error(error);
+      this.quickQuoteSettings.set(current);
+      this.toast.error('Quick Quote settings were not saved');
+    } finally {
+      this.quickQuoteSaving.set(false);
     }
   }
 
