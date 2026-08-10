@@ -3,6 +3,8 @@
     class="settings-typeahead-control"
     [class.is-open]="open"
     [class.is-disabled]="disabled"
+    cdkOverlayOrigin
+    #typeaheadOrigin="cdkOverlayOrigin"
   >
     <span class="settings-typeahead-leading" aria-hidden="true">
       <lucide-icon
@@ -50,8 +52,17 @@
     }
   </div>
 
-  @if (open) {
-    <div class="settings-typeahead-popover">
+  <ng-template
+    cdkConnectedOverlay
+    [cdkConnectedOverlayOrigin]="typeaheadOrigin"
+    [cdkConnectedOverlayOpen]="open"
+    [cdkConnectedOverlayPositions]="overlayPositions"
+    [cdkConnectedOverlayPush]="true"
+    [cdkConnectedOverlayFlexibleDimensions]="true"
+    [cdkConnectedOverlayViewportMargin]="8"
+    [cdkConnectedOverlayWidth]="typeaheadOrigin.elementRef.nativeElement.offsetWidth"
+  >
+    <div class="settings-typeahead-popover" (mousedown)="cancelBlur()">
       <div [id]="listboxId" role="listbox" class="settings-typeahead-list">
         @if (loading && !visibleItems.length) {
           <div class="settings-typeahead-state">
@@ -99,5 +110,5 @@
         <div class="settings-typeahead-hint">{{ hint }}</div>
       }
     </div>
-  }
+  </ng-template>
 </div>

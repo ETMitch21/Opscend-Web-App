@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import {
   Component,
   EventEmitter,
@@ -28,7 +29,7 @@ let nextTypeaheadId = 0;
 @Component({
   selector: 'app-typeahead',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, LucideAngularModule, OverlayModule],
   templateUrl: './typeahead.html',
   styleUrl: './typeahead.scss',
 })
@@ -60,6 +61,23 @@ export class TypeaheadComponent implements OnChanges {
     Search: SearchIcon,
     X: XIcon,
   };
+
+  readonly overlayPositions: ConnectedPosition[] = [
+    {
+      originX: 'start',
+      originY: 'bottom',
+      overlayX: 'start',
+      overlayY: 'top',
+      offsetY: 6,
+    },
+    {
+      originX: 'start',
+      originY: 'top',
+      overlayX: 'start',
+      overlayY: 'bottom',
+      offsetY: -6,
+    },
+  ];
 
   query = '';
   open = false;

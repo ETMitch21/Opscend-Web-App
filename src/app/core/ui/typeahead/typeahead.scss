@@ -100,11 +100,7 @@
 }
 
 .settings-typeahead-popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  left: 0;
-  z-index: 200;
+  width: 100%;
   overflow: hidden;
   border: 1px solid var(--color-app-border);
   border-radius: 12px;
@@ -113,7 +109,7 @@
 }
 
 .settings-typeahead-list {
-  max-height: 278px;
+  max-height: min(278px, calc(100vh - 48px));
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 5px;
