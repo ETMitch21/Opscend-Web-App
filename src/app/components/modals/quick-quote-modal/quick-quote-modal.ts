@@ -361,11 +361,11 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
       case 'approved':
         return result.source === 'template' ? 'Approved pricing' : 'Remembered match';
       case 'high':
-        return 'High confidence';
+        return 'Part matched';
       case 'review':
-        return 'Review part';
+        return 'Choose part';
       default:
-        return 'No safe match';
+        return 'No part found';
     }
   }
 

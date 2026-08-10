@@ -9,7 +9,7 @@
           <div class="min-w-0">
             <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand">Staff tool</p>
             <h2 class="mt-0.5 text-lg font-semibold tracking-tight text-app-text">Quick Quote</h2>
-            <p class="mt-1 text-xs leading-5 text-app-text-muted">Use approved pricing first. When pricing is missing, Opscend safely matches the configured MobileSentrix part.</p>
+            <p class="mt-1 text-xs leading-5 text-app-text-muted">Build a repair quote fast using your saved pricing. If a price hasn't been set up yet, Opscend will check your connected suppliers and calculate it for you.</p>
           </div>
         </div>
         <button type="button" class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text" aria-label="Close Quick Quote" (click)="close()">
@@ -33,8 +33,8 @@
                 [loading]="modelLoading()"
                 [filterLocally]="false"
                 [minimumQueryLength]="2"
-                hint="Search by model name — results come from your managed device catalog."
-                placeholder="Search iPhone 15 Pro Max…"
+                hint="Search by model name."
+                placeholder="Search device model…"
                 emptyText="No catalog models found."
                 (searchChange)="onModelSearch($event)"
                 (selectedItemChange)="onModelSelected($event)"
@@ -42,11 +42,11 @@
             </div>
 
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-app-text">Repair need</label>
+              <label class="mb-1.5 block text-xs font-semibold text-app-text">Repair type</label>
               <app-typeahead
                 [items]="repairTypeItems()"
                 [selectedItem]="selectedRepairTypeItem()"
-                placeholder="Screen replacement…"
+                placeholder="Select repair type…"
                 emptyText="No active repair types found."
                 (selectedItemChange)="onRepairTypeSelected($event)"
               />
@@ -58,16 +58,34 @@
               <div class="flex items-start gap-3">
                 <lucide-icon [name]="icons.Search" class="mt-0.5 h-4 w-4 shrink-0 text-app-text-muted"></lucide-icon>
                 <div>
-                  <p class="text-xs font-semibold text-app-text">Template → memory → supplier search</p>
-                  <p class="mt-1 text-xs leading-5 text-app-text-muted">A MobileSentrix result is only auto-selected when it satisfies the repair type's quality rules and confidence threshold.</p>
+                  <p class="text-xs font-semibold text-app-text">How pricing works</p>
+                  <p class="mt-1 text-xs leading-5 text-app-text-muted">Opscend checks your saved pricing first. If none is available, it looks for a previously approved part. If needed, it searches your connected suppliers using your shop's preferred part settings.</p>
                 </div>
               </div>
             </div>
 
-            <div class="flex justify-end">
-              <button type="button" class="settings-primary-action cursor-pointer" [disabled]="!canQuote()" (click)="createQuote()">
-                @if (quoteLoading()) {<lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>}
-                Calculate quote
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                class="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-xs font-semibold text-app-text transition hover:bg-app-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="quoteLoading()"
+                (click)="close()"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-45"
+                [disabled]="!canQuote()"
+                (click)="createQuote()"
+              >
+                @if (quoteLoading()) {
+                  <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+                  Getting quote…
+                } @else {
+                  <lucide-icon [name]="icons.Sparkles" class="h-4 w-4"></lucide-icon>
+                  Get Quote
+                }
               </button>
             </div>
           }
@@ -85,7 +103,7 @@
                     </span>
                   </div>
                   <p class="mt-1 text-[11px] text-app-text-muted">
-                    {{ quote.source === 'template' ? 'Using saved pricing option' : quote.source === 'remembered' ? 'Using a previously approved supplier match' : quote.source === 'supplier' ? 'Using MobileSentrix catalog matching' : 'No safe supplier result found' }}
+                    {{ quote.source === 'template' ? 'Using your saved pricing' : quote.source === 'remembered' ? 'Using a previously approved part' : quote.source === 'supplier' ? 'Matched from a connected supplier' : 'No matching supplier part found' }}
                   </p>
                 </div>
                 <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface hover:text-app-text" (click)="reset()">
@@ -100,7 +118,7 @@
                   <div class="mt-2 flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                       <p class="text-sm font-semibold text-app-text">{{ part.supplierName }}</p>
-                      <p class="mt-1 text-xs text-app-text-muted">{{ part.supplierSku || part.supplierProductId || 'MobileSentrix' }} · {{ part.inStock === true ? 'In stock' : part.inStock === false ? 'Out of stock' : 'Stock unknown' }}</p>
+                      <p class="mt-1 text-xs text-app-text-muted">{{ part.supplierSku || part.supplierProductId || 'Supplier item' }} · {{ part.inStock === true ? 'In stock' : part.inStock === false ? 'Out of stock' : 'Stock unknown' }}</p>
                       @if (part.matchedPreferredTerms.length) {
                         <p class="mt-1 text-[11px] font-medium text-emerald-700">Matched: {{ part.matchedPreferredTerms.join(', ') }}</p>
                       }
@@ -118,8 +136,8 @@
                   <div class="flex items-start gap-2">
                     <lucide-icon [name]="icons.Help" class="mt-0.5 h-4 w-4 shrink-0 text-amber-700"></lucide-icon>
                     <div>
-                      <p class="text-xs font-semibold text-amber-900">Opscend needs you to teach this match once.</p>
-                      <p class="mt-0.5 text-[11px] leading-5 text-amber-800">Choose the correct standardized part. It will be remembered for this device + repair type and used next time.</p>
+                      <p class="text-xs font-semibold text-amber-900">Choose the part you normally use</p>
+                      <p class="mt-0.5 text-[11px] leading-5 text-amber-800">Opscend will remember your choice for this device and repair type, so future quotes are faster.</p>
                     </div>
                   </div>
                   <div class="mt-3 space-y-2">
@@ -127,11 +145,11 @@
                       <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-left transition hover:border-brand/40 hover:shadow-sm" [disabled]="remembering()" (click)="rememberCandidate(candidate)">
                         <span class="min-w-0">
                           <span class="block truncate text-xs font-semibold text-app-text">{{ candidate.supplierName }}</span>
-                          <span class="mt-0.5 block truncate text-[11px] text-app-text-muted">{{ candidate.supplierSku || candidate.supplierProductId || 'No SKU' }} · score {{ candidate.score }} · {{ candidate.inStock === true ? 'in stock' : candidate.inStock === false ? 'out of stock' : 'stock unknown' }}</span>
+                          <span class="mt-0.5 block truncate text-[11px] text-app-text-muted">{{ candidate.supplierSku || candidate.supplierProductId || 'No SKU' }} · {{ candidate.inStock === true ? 'In stock' : candidate.inStock === false ? 'Out of stock' : 'Stock unknown' }}</span>
                         </span>
                         <span class="shrink-0 text-right">
                           <span class="block text-xs font-semibold text-app-text">{{ money(candidate.costCents) }}</span>
-                          <span class="text-[10px] font-semibold text-brand">Use & remember</span>
+                          <span class="mt-1 inline-flex items-center rounded-lg bg-brand/10 px-2 py-1 text-[10px] font-semibold text-brand">Use & remember</span>
                         </span>
                       </button>
                     }
@@ -157,18 +175,18 @@
               <div class="flex flex-wrap items-center justify-between gap-3 border-t border-app-border px-4 py-3.5">
                 <div>
                   <p class="text-xs font-semibold text-app-text">{{ quote.depositRequired ? 'Deposit ' + money(quote.depositAmountCents) : 'No deposit required' }}</p>
-                  <p class="mt-0.5 text-[11px] text-app-text-muted">Calculated with the same repair pricing and deposit rules used elsewhere in Opscend.</p>
+                  <p class="mt-0.5 text-[11px] text-app-text-muted">Uses your shop's saved pricing and deposit settings.</p>
                 </div>
                 @if (quote.matchedPart && !quote.pricingTemplateId && quote.confidence === 'high') {
-                  <button type="button" class="settings-secondary-action cursor-pointer" [disabled]="remembering()" (click)="rememberCandidate(quote.matchedPart)">
+                  <button type="button" class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-3.5 py-2 text-xs font-semibold text-app-text transition hover:border-brand/30 hover:bg-brand/[0.04] disabled:cursor-not-allowed disabled:opacity-50" [disabled]="remembering()" (click)="rememberCandidate(quote.matchedPart)">
                     @if (remembering()) {<lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>}
                     Remember part
                   </button>
                 }
                 @if (quote.pricingTemplateId && quote.canStartRepair) {
-                  <button type="button" class="settings-primary-action cursor-pointer" (click)="startRepair()">
+                  <button type="button" class="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-95 hover:shadow-md" (click)="startRepair()">
                     <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
-                    Start repair & send deposit
+                    Start Repair & Send Deposit
                   </button>
                 }
               </div>
