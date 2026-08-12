@@ -8,6 +8,15 @@ export interface QuickQuoteSettings {
   rememberedMatchCount: number;
 }
 
+
+export interface QuickQuoteAttributeRequirement {
+  key: string;
+  label: string;
+  prompt: string;
+  placeholder: string | null;
+  suggestions: string[];
+}
+
 export interface QuickQuoteCandidate {
   supplierProvider: 'mobilesentrix';
   supplierSku: string | null;

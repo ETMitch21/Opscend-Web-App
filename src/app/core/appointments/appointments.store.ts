@@ -98,6 +98,8 @@ export class AppointmentsStore {
     candidateType?: 'internal' | 'contractor' | null;
     assignedUserId?: string | null;
     contractorId?: string | null;
+    isAvailabilityOverride?: boolean;
+    availabilityOverrideReason?: string | null;
   }): Promise<Appointment | null> {
     return this.upsertAppointment(input.repairId, {
       startAt: input.startAt,
@@ -111,6 +113,10 @@ export class AppointmentsStore {
         input.candidateType === 'contractor'
           ? input.contractorId ?? undefined
           : undefined,
+      isAvailabilityOverride: input.isAvailabilityOverride ?? false,
+      availabilityOverrideReason: input.isAvailabilityOverride
+        ? input.availabilityOverrideReason ?? null
+        : null,
     });
   }
 
@@ -121,6 +127,8 @@ export class AppointmentsStore {
     candidateType?: 'internal' | 'contractor' | null;
     assignedUserId?: string | null;
     contractorId?: string | null;
+    isAvailabilityOverride?: boolean;
+    availabilityOverrideReason?: string | null;
   }): Promise<Appointment | null> {
     return this.scheduleAppointment(input);
   }

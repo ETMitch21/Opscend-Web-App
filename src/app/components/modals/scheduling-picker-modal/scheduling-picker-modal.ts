@@ -60,6 +60,13 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   readonly selectedContractorId = signal<string | null>(null);
   readonly manuallySelectedAssignedUserId = signal<string | null>(null);
 
+  readonly schedulingMode = signal<'available' | 'custom'>('available');
+  readonly customDate = signal(this.localDateKey(new Date()));
+  readonly customStartTime = signal('18:00');
+  readonly customDurationMinutes = signal(60);
+  readonly customAssignedUserId = signal<string | null>(null);
+  readonly customReason = signal('');
+
   readonly slots = this.availabilityStore.slots;
   readonly loading = this.availabilityStore.listLoading;
   readonly error = this.availabilityStore.error;
@@ -87,6 +94,57 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
     return this.displayMode() === 'inline'
       ? this.inlineRequest()
       : this.modalRequest();
+  });
+
+
+  readonly customAssignableUsers = computed(() => {
+    const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
+    if (requestAssignedUserId) {
+      const user = this.usersStore.getById(requestAssignedUserId);
+      return user ? [user] : [];
+    }
+    return this.usersStore.assignableUsers();
+  });
+
+  readonly customStartAt = computed(() => {
+    const date = this.customDate();
+    const time = this.customStartTime();
+    if (!date || !time) return null;
+    const parsed = new Date(`${date}T${time}:00`);
+    if (!Number.isFinite(parsed.getTime())) return null;
+    return parsed.toISOString();
+  });
+
+  readonly customEndAt = computed(() => {
+    const startAt = this.customStartAt();
+    const durationMinutes = Math.max(5, Number(this.customDurationMinutes()) || 0);
+    if (!startAt || !durationMinutes) return null;
+    return new Date(new Date(startAt).getTime() + durationMinutes * 60_000).toISOString();
+  });
+
+  readonly customConflicts = computed(() => {
+    const startAt = this.customStartAt();
+    const endAt = this.customEndAt();
+    const assignedUserId = this.activeRequest()?.assignedUserId ?? this.customAssignedUserId();
+    const repairId = this.activeRequest()?.repairId ?? null;
+    if (!startAt || !endAt || !assignedUserId) return [];
+
+    const start = new Date(startAt).getTime();
+    const end = new Date(endAt).getTime();
+    return this.appointmentsStore.appointments().filter((item) => {
+      const appointment = item.appointment;
+      if (appointment.status === 'canceled') return false;
+      if (appointment.assignedUserId !== assignedUserId) return false;
+      if (repairId && appointment.repairId === repairId) return false;
+      const existingStart = new Date(appointment.startAt).getTime();
+      const existingEnd = new Date(appointment.endAt).getTime();
+      return start < existingEnd && end > existingStart;
+    });
+  });
+
+  readonly customTimeIsInPast = computed(() => {
+    const startAt = this.customStartAt();
+    return !startAt || new Date(startAt).getTime() <= Date.now();
   });
 
   readonly appointmentCountsByUserIdForSelectedDate = computed(() => {
@@ -158,6 +216,17 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   });
 
   readonly canConfirm = computed(() => {
+    if (this.schedulingMode() === 'custom') {
+      const assignedUserId =
+        this.activeRequest()?.assignedUserId ?? this.customAssignedUserId();
+      return Boolean(
+        assignedUserId &&
+        this.customStartAt() &&
+        this.customEndAt() &&
+        !this.customTimeIsInPast(),
+      );
+    }
+
     const slot = this.selectedSlot();
     if (!slot) return false;
 
@@ -306,6 +375,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
         this.slotUserMap.set({});
         this.selectedAssignedUserId.set(null);
         this.manuallySelectedAssignedUserId.set(null);
+        this.resetCustomScheduling(null);
         this.availabilityStore.clearSlots();
         return;
       }
@@ -321,6 +391,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
       this.confirmedSelection.set(null);
       this.inlineCollapsed.set(false);
       this.selectedAssignedUserId.set(request.assignedUserId ?? null);
+      this.resetCustomScheduling(request);
 
       await this.loadSlots(monthRequest, false);
       this.lastRequestKey.set(requestKey);
@@ -337,6 +408,7 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
         this.selectedStartAt.set(null);
         this.lastRequestKey.set(null);
         this.selectedAssignedUserId.set(null);
+        this.resetCustomScheduling(context.request);
 
         if (context.request) {
           const initialMonth = this.startOfMonth(new Date(context.request.from));
@@ -447,6 +519,78 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
     };
   }
 
+  setSchedulingMode(mode: 'available' | 'custom'): void {
+    this.schedulingMode.set(mode);
+    if (mode === 'custom') {
+      const requestAssignedUserId = this.activeRequest()?.assignedUserId ?? null;
+      if (requestAssignedUserId) {
+        this.customAssignedUserId.set(requestAssignedUserId);
+      } else if (!this.customAssignedUserId()) {
+        this.customAssignedUserId.set(this.usersStore.assignableUsers()[0]?.id ?? null);
+      }
+      const request = this.activeRequest();
+      if (request) {
+        void this.loadAppointmentWorkload(this.buildMonthBoundRequest(request, this.visibleMonth()));
+      }
+    }
+  }
+
+  setCustomDate(value: string): void {
+    this.customDate.set(value);
+
+    const request = this.activeRequest();
+    const date = new Date(`${value}T12:00:00`);
+    if (request && value && !Number.isNaN(date.getTime())) {
+      const month = this.startOfMonth(date);
+      void this.loadAppointmentWorkload(this.buildMonthBoundRequest(request, month));
+    }
+  }
+
+  setCustomStartTime(value: string): void {
+    this.customStartTime.set(value);
+  }
+
+  setCustomDuration(value: string | number): void {
+    const parsed = Math.max(5, Math.min(1440, Math.round(Number(value) || 0)));
+    this.customDurationMinutes.set(parsed || 60);
+  }
+
+  setCustomAssignedUser(userId: string): void {
+    if (this.activeRequest()?.assignedUserId) return;
+    this.customAssignedUserId.set(userId);
+  }
+
+  setCustomReason(value: string): void {
+    this.customReason.set(value.slice(0, 500));
+  }
+
+  customAssignedUserName(): string | null {
+    const userId = this.activeRequest()?.assignedUserId ?? this.customAssignedUserId();
+    return userId ? this.usersStore.getById(userId)?.name ?? null : null;
+  }
+
+  private resetCustomScheduling(request: SchedulingRequest | null): void {
+    this.schedulingMode.set('available');
+    const base = request?.from ? new Date(request.from) : new Date();
+    const now = new Date();
+    const effective = base.getTime() > now.getTime() ? base : now;
+    effective.setMinutes(Math.ceil(effective.getMinutes() / 15) * 15, 0, 0);
+    this.customDate.set(this.localDateKey(effective));
+    this.customStartTime.set(
+      `${String(effective.getHours()).padStart(2, '0')}:${String(effective.getMinutes()).padStart(2, '0')}`,
+    );
+    this.customDurationMinutes.set(Math.max(5, request?.durationMinutes ?? 60));
+    this.customAssignedUserId.set(request?.assignedUserId ?? null);
+    this.customReason.set('');
+  }
+
+  private localDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   selectSlot(startAt: string): void {
     if (this.isPastSlot(startAt)) return;
 
@@ -502,6 +646,36 @@ export class SchedulingPickerModalComponent implements OnInit, OnDestroy {
   }
 
   confirm(): void {
+    if (this.schedulingMode() === 'custom') {
+      const startAt = this.customStartAt();
+      const endAt = this.customEndAt();
+      const assignedUserId =
+        this.activeRequest()?.assignedUserId ?? this.customAssignedUserId();
+      if (!startAt || !endAt || !assignedUserId || this.customTimeIsInPast()) return;
+
+      const selection: SchedulingSelection = {
+        startAt,
+        endAt,
+        candidateType: 'internal',
+        assignedUserId,
+        contractorId: null,
+        assignedTo: this.usersStore.getById(assignedUserId)?.name ?? null,
+        contractorName: null,
+        isAvailabilityOverride: true,
+        availabilityOverrideReason: this.customReason().trim() || null,
+      };
+
+      if (this.displayMode() === 'inline') {
+        this.confirmedSelection.set(selection);
+        this.inlineCollapsed.set(true);
+        this.selectionChange.emit(selection);
+        return;
+      }
+
+      this.schedulingModalService.confirm(selection);
+      return;
+    }
+
     const slot = this.selectedSlot();
     if (!slot) return;
 

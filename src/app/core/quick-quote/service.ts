@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { AppConfigService } from '../app-config/app-config.service';
 import {
+  QuickQuoteAttributeRequirement,
   QuickQuoteCandidate,
   QuickQuotePreview,
   QuickQuoteRememberResponse,
@@ -29,9 +30,20 @@ export class QuickQuoteService {
     return this.http.patch<QuickQuoteSettings>(`${this.baseUrl}/settings`, payload);
   }
 
+  requirements(payload: {
+    deviceCatalogModelId: string;
+    repairNeedId: string;
+  }): Observable<{ requirements: QuickQuoteAttributeRequirement[] }> {
+    return this.http.post<{ requirements: QuickQuoteAttributeRequirement[] }>(
+      `${this.baseUrl}/requirements`,
+      payload,
+    );
+  }
+
   preview(payload: {
     deviceCatalogModelId: string;
     repairNeedId: string;
+    attributes?: Record<string, string>;
   }): Observable<QuickQuotePreview> {
     return this.http.post<QuickQuotePreview>(`${this.baseUrl}/preview`, payload);
   }
@@ -41,6 +53,7 @@ export class QuickQuoteService {
     repairNeedId: string;
     candidate: QuickQuoteCandidate;
     variantName?: string;
+    attributes?: Record<string, string>;
   }): Observable<QuickQuoteRememberResponse> {
     return this.http.post<QuickQuoteRememberResponse>(
       `${this.baseUrl}/remember`,

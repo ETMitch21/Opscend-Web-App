@@ -64,6 +64,16 @@ export class RepairPricingTypes implements OnInit {
   readonly quickQuoteSettings = signal<QuickQuoteSettings | null>(null);
   readonly quickQuoteSaving = signal(false);
 
+  readonly quoteAttributeOptions = [
+    { key: 'color', label: 'Device color', description: 'Useful when the replacement part must match the device finish.' },
+    { key: 'storage', label: 'Storage capacity', description: 'Ask for capacity only when the repair or part varies by storage.' },
+    { key: 'carrier', label: 'Carrier', description: 'Useful for carrier-specific assemblies or radio components.' },
+    { key: 'connectivity', label: 'Connectivity', description: 'Distinguish variants such as Wi-Fi versus cellular.' },
+    { key: 'model_variant', label: 'Model variant', description: 'Collect an extra model or hardware variant when the catalog model is not enough.' },
+    { key: 'region', label: 'Region', description: 'Useful when parts vary by market or region.' },
+    { key: 'keyboard_layout', label: 'Keyboard layout', description: 'Useful for laptops and keyboard-related repairs.' },
+  ] as const;
+
   readonly form = this.fb.group({
     label: ['', [Validators.required, Validators.maxLength(120)]],
     code: [
@@ -88,6 +98,7 @@ export class RepairPricingTypes implements OnInit {
     depositShippingDollars: [null as number | null, Validators.min(0)],
     depositIncludeProcessingFees: [true],
     depositIncludeInstantPayoutFee: [false],
+    quoteAttributeKeys: this.fb.nonNullable.control<string[]>([]),
     isActive: [true],
     requiresManualReview: [false],
   });
@@ -129,6 +140,7 @@ export class RepairPricingTypes implements OnInit {
       depositShippingDollars: null,
       depositIncludeProcessingFees: true,
       depositIncludeInstantPayoutFee: false,
+      quoteAttributeKeys: [],
       isActive: true,
       requiresManualReview: false,
     });
@@ -159,6 +171,7 @@ export class RepairPricingTypes implements OnInit {
         type.depositIncludeProcessingFees ?? true,
       depositIncludeInstantPayoutFee:
         type.depositIncludeInstantPayoutFee ?? false,
+      quoteAttributeKeys: [...(type.quoteAttributeKeys ?? [])],
       isActive: type.isActive,
       requiresManualReview: type.requiresManualReview,
     });
@@ -186,6 +199,21 @@ export class RepairPricingTypes implements OnInit {
   ): void {
     this.form.controls[control].setValue(!this.form.controls[control].value);
     this.form.controls[control].markAsDirty();
+  }
+
+  hasQuoteAttribute(key: string): boolean {
+    return this.form.controls.quoteAttributeKeys.value.includes(key);
+  }
+
+  toggleQuoteAttribute(key: string): void {
+    const control = this.form.controls.quoteAttributeKeys;
+    const current = control.value;
+    control.setValue(
+      current.includes(key)
+        ? current.filter((value) => value !== key)
+        : [...current, key],
+    );
+    control.markAsDirty();
   }
 
   async save(): Promise<void> {
@@ -230,6 +258,7 @@ export class RepairPricingTypes implements OnInit {
         depositMode === 'cost_recovery'
           ? Boolean(raw.depositIncludeInstantPayoutFee)
           : null,
+      quoteAttributeKeys: raw.quoteAttributeKeys ?? [],
       isActive: Boolean(raw.isActive),
       requiresManualReview: Boolean(raw.requiresManualReview),
     };

@@ -48,6 +48,8 @@ export interface SchedulingSelection {
   candidateType?: "internal" | "contractor";
   contractorId?: string | null;
   contractorName?: string | null;
+  isAvailabilityOverride?: boolean;
+  availabilityOverrideReason?: string | null;
 }
 
 export interface SchedulingContext {

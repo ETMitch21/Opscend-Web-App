@@ -106,6 +106,9 @@ export interface RepairAppointment {
   contractorId?: string | null;
   candidateType?: 'internal' | 'contractor' | 'unassigned' | null;
   status: 'scheduled' | 'canceled' | 'completed' | 'no_show';
+  isAvailabilityOverride?: boolean;
+  availabilityOverrideReason?: string | null;
+  availabilityOverrideBy?: string | null;
 
   notes?: string | null;
   createdAt: string;

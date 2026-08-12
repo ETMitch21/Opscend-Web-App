@@ -48,6 +48,7 @@ import {
 import { RepairType } from '../../../core/repair-pricing/model';
 import { RepairPricingService } from '../../../core/repair-pricing/service';
 import {
+  QuickQuoteAttributeRequirement,
   QuickQuoteCandidate,
   QuickQuotePreview,
   QuickQuoteSettings,
@@ -95,9 +96,20 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
   readonly selectedModel = signal<ManagedDeviceCatalogModel | null>(null);
   readonly selectedRepairType = signal<RepairType | null>(null);
   readonly result = signal<QuickQuotePreview | null>(null);
+  readonly attributeRequirements = signal<QuickQuoteAttributeRequirement[]>([]);
+  readonly attributeValues = signal<Record<string, string>>({});
+
+  readonly attributesComplete = computed(() =>
+    this.attributeRequirements().every((requirement) =>
+      Boolean(this.attributeValues()[requirement.key]?.trim()),
+    ),
+  );
 
   readonly canQuote = computed(
-    () => Boolean(this.selectedModel() && this.selectedRepairType()) && !this.quoteLoading(),
+    () =>
+      Boolean(this.selectedModel() && this.selectedRepairType()) &&
+      this.attributesComplete() &&
+      !this.quoteLoading(),
   );
 
   readonly modelItems = computed<TypeaheadItem[]>(() =>
@@ -243,6 +255,9 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
       ? this.models().find((row) => row.id === item.id) ?? null
       : null;
     this.selectedModel.set(model);
+    this.attributeValues.set({});
+    this.setRequirementsForType(this.selectedRepairType());
+    void this.refreshAttributeRequirements();
     this.result.set(null);
   }
 
@@ -251,6 +266,9 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
       ? this.repairTypes().find((row) => row.id === item.id) ?? null
       : null;
     this.selectedRepairType.set(type);
+    this.attributeValues.set({});
+    this.setRequirementsForType(type);
+    void this.refreshAttributeRequirements();
     this.result.set(null);
   }
 
@@ -266,6 +284,7 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
         this.quickQuoteApi.preview({
           deviceCatalogModelId: model.id,
           repairNeedId: repairType.id,
+          attributes: this.attributeValues(),
         }),
       );
       this.result.set(result);
@@ -281,6 +300,14 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
         result = this.result() ?? result;
       }
     } catch (error: any) {
+      if (error?.status === 409 && error?.error?.error === 'quick_quote_attributes_required') {
+        const requirements = Array.isArray(error?.error?.requirements)
+          ? (error.error.requirements as QuickQuoteAttributeRequirement[])
+          : [];
+        this.attributeRequirements.set(requirements);
+        return;
+      }
+
       console.error(error);
       this.toast.error(
         'Quote could not be calculated',
@@ -304,6 +331,7 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
           repairNeedId: repairType.id,
           candidate,
           variantName: 'Standard',
+          attributes: this.attributeValues(),
         }),
       );
 
@@ -311,6 +339,7 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
         this.quickQuoteApi.preview({
           deviceCatalogModelId: model.id,
           repairNeedId: repairType.id,
+          attributes: this.attributeValues(),
         }),
       );
       this.result.set(refreshed);
@@ -341,6 +370,72 @@ export class QuickQuoteModalComponent implements OnInit, OnDestroy {
         quickQuotePricingTemplateId: result.pricingTemplateId,
       },
     });
+  }
+
+  setAttributeValue(key: string, value: string): void {
+    this.attributeValues.update((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    this.result.set(null);
+  }
+
+  chooseAttributeSuggestion(key: string, value: string): void {
+    this.setAttributeValue(key, value);
+  }
+
+  attributeValue(key: string): string {
+    return this.attributeValues()[key] ?? '';
+  }
+
+  clearAttributes(): void {
+    this.attributeRequirements.set([]);
+    this.attributeValues.set({});
+  }
+
+  private async refreshAttributeRequirements(): Promise<void> {
+    const model = this.selectedModel();
+    const repairType = this.selectedRepairType();
+    if (!model || !repairType) return;
+
+    try {
+      const response = await firstValueFrom(
+        this.quickQuoteApi.requirements({
+          deviceCatalogModelId: model.id,
+          repairNeedId: repairType.id,
+        }),
+      );
+      if (this.selectedModel()?.id !== model.id || this.selectedRepairType()?.id !== repairType.id) {
+        return;
+      }
+      this.attributeRequirements.set(response.requirements ?? []);
+    } catch (error) {
+      console.error('Unable to load Quick Quote repair details', error);
+      // Keep the local repair-type fallback so quoting can continue.
+    }
+  }
+
+  private setRequirementsForType(type: RepairType | null): void {
+    const definitions: Record<string, Omit<QuickQuoteAttributeRequirement, 'key' | 'suggestions'>> = {
+      color: { label: 'Device color', prompt: 'What color is the device?', placeholder: 'e.g. Deep Purple' },
+      storage: { label: 'Storage capacity', prompt: 'What storage capacity does the device have?', placeholder: 'e.g. 256 GB' },
+      carrier: { label: 'Carrier', prompt: 'Which carrier is the device for?', placeholder: 'e.g. Verizon' },
+      connectivity: { label: 'Connectivity', prompt: 'Which connectivity version is this device?', placeholder: 'e.g. Wi-Fi + Cellular' },
+      model_variant: { label: 'Model variant', prompt: 'Which model variant is this device?', placeholder: 'e.g. US version' },
+      region: { label: 'Region', prompt: 'Which regional version is this device?', placeholder: 'e.g. US' },
+      keyboard_layout: { label: 'Keyboard layout', prompt: 'Which keyboard layout does the device use?', placeholder: 'e.g. US English' },
+    };
+
+    this.attributeRequirements.set(
+      (type?.quoteAttributeKeys ?? []).map((key) => {
+        const definition = definitions[key] ?? {
+          label: key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()),
+          prompt: `Enter ${key.replaceAll('_', ' ')}.`,
+          placeholder: null,
+        };
+        return { key, ...definition, suggestions: [] };
+      }),
+    );
   }
 
   reset(): void {

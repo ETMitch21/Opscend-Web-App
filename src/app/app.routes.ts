@@ -152,6 +152,12 @@ export const routes: Routes = [
                             import('./features/settings/repair-notifications/repair-notifications').then((m) => m.RepairNotifications)
                     },
                     {
+                        path: 'data-export',
+                        loadComponent: () =>
+                            import('./features/settings/data-export/data-export').then((m) => m.DataExportSettings),
+                        canActivate: [OwnerGuard]
+                    },
+                    {
                         path: 'shop-bookings',
                         loadComponent: () =>
                             import('./features/settings/shop-bookings/shop-bookings').then((m) => m.ShopBookingsComponent)

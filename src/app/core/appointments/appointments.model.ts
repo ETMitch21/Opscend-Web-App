@@ -14,6 +14,9 @@ export interface Appointment {
   startAt: string;
   endAt: string;
   status: AppointmentStatus;
+  isAvailabilityOverride: boolean;
+  availabilityOverrideReason: string | null;
+  availabilityOverrideBy: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,6 +54,8 @@ export interface UpsertAppointmentDto {
   candidateType?: 'internal' | 'contractor' | null;
   assignedUserId?: string | null;
   contractorId?: string | null;
+  isAvailabilityOverride?: boolean;
+  availabilityOverrideReason?: string | null;
 }
 
 

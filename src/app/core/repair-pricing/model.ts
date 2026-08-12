@@ -19,6 +19,7 @@ export interface RepairType {
   depositShippingCents: number | null;
   depositIncludeProcessingFees: boolean | null;
   depositIncludeInstantPayoutFee: boolean | null;
+  quoteAttributeKeys: string[];
   requiresManualReview: boolean;
   pricingOptionCount: number;
   createdAt: string;
@@ -44,6 +45,7 @@ export interface RepairTypeInput {
   depositShippingCents?: number | null;
   depositIncludeProcessingFees?: boolean | null;
   depositIncludeInstantPayoutFee?: boolean | null;
+  quoteAttributeKeys?: string[];
   requiresManualReview?: boolean;
 }
 

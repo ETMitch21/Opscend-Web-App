@@ -2712,6 +2712,10 @@ export class NewRepair implements OnInit {
               schedulingSelection.candidateType === 'contractor'
                 ? (schedulingSelection.contractorId ?? undefined)
                 : undefined,
+            isAvailabilityOverride:
+              schedulingSelection.isAvailabilityOverride ?? false,
+            availabilityOverrideReason:
+              schedulingSelection.availabilityOverrideReason ?? null,
           });
 
           appointmentScheduled = !!scheduled;
@@ -2848,6 +2852,10 @@ export class NewRepair implements OnInit {
                     params.schedulingSelection.candidateType === 'contractor'
                       ? (params.schedulingSelection.contractorId ?? null)
                       : null,
+                  isAvailabilityOverride:
+                    params.schedulingSelection.isAvailabilityOverride ?? false,
+                  availabilityOverrideReason:
+                    params.schedulingSelection.availabilityOverrideReason ?? null,
                 }
               : null,
         },

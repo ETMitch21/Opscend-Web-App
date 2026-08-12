@@ -1783,6 +1783,8 @@ export class RepairDetail implements OnInit, OnDestroy {
           selection.candidateType === 'contractor'
             ? selection.contractorId ?? undefined
             : undefined,
+        isAvailabilityOverride: selection.isAvailabilityOverride ?? false,
+        availabilityOverrideReason: selection.availabilityOverrideReason ?? null,
       })
       : await this.appointmentsStore.scheduleAppointment({
         repairId: id,
@@ -1797,6 +1799,8 @@ export class RepairDetail implements OnInit, OnDestroy {
           selection.candidateType === 'contractor'
             ? selection.contractorId ?? undefined
             : undefined,
+        isAvailabilityOverride: selection.isAvailabilityOverride ?? false,
+        availabilityOverrideReason: selection.availabilityOverrideReason ?? null,
       });
 
     if (!appointment) {
