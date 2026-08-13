@@ -66,6 +66,12 @@ export const routes: Routes = [
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [AuthGuard] },
     {
+        path: "balances",
+        loadComponent: () =>
+            import('./features/receivables/receivables').then((m) => m.Receivables),
+        canActivate: [AuthGuard]
+    },
+    {
         path: "ai-assistant",
         loadComponent: () =>
             import('./features/ai-assistant/ai-assistant').then((m) => m.AiAssistant),

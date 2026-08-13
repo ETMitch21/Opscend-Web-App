@@ -244,6 +244,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       badgeCount: () => this.newQuoteRequestCount(),
     },
     { label: 'Customers', route: '/customers', icon: this.usersIcon },
+    { label: 'Balances', route: '/balances', icon: this.walletCardsIcon },
     { label: 'Services', route: '/services', icon: this.toolboxIcon },
     {
       label: 'Products',

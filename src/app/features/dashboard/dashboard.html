@@ -118,17 +118,24 @@
           </div>
         </article>
 
-        <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
-              <lucide-icon [name]="icons.CreditCard" class="h-5 w-5"></lucide-icon>
+        <a
+          routerLink="/balances"
+          class="group rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700">
+                <lucide-icon [name]="icons.CreditCard" class="h-5 w-5"></lucide-icon>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Outstanding balance</p>
+                <p class="mt-1 text-xl font-semibold text-slate-950">{{ money(outstandingBalanceCents()) }}</p>
+                <p class="mt-0.5 text-[11px] font-medium text-slate-400">{{ integer(outstandingBalanceCount()) }} open balance{{ outstandingBalanceCount() === 1 ? '' : 's' }}</p>
+              </div>
             </div>
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Outstanding balance</p>
-              <p class="mt-1 text-xl font-semibold text-slate-950">{{ money(outstandingBalanceCents()) }}</p>
-            </div>
+            <lucide-icon [name]="icons.ArrowRight" class="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500"></lucide-icon>
           </div>
-        </article>
+        </a>
 
         <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
           <div class="flex items-center gap-3">

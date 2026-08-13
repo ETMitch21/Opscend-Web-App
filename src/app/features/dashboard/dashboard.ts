@@ -47,6 +47,8 @@ import type {
 import { RepairsService } from '../../core/repairs/repairs-service';
 import { ShopContextService } from '../../core/shop/shop-context.store';
 import { WorkQueueService } from '../../core/work-queue/service';
+import { ReceivablesService } from '../../core/receivables/service';
+import type { ReceivablesSummary } from '../../core/receivables/model';
 import type { WorkQueueItem, WorkQueueSummary } from '../../core/work-queue/model';
 
 type DashboardRange = 1 | 14 | 30 | 90;
@@ -165,6 +167,7 @@ export class DashboardComponent implements OnInit {
   private readonly bookingApi = inject(BookingAdminService);
   private readonly ordersService = inject(OrdersService);
   private readonly workQueueService = inject(WorkQueueService);
+  private readonly receivablesService = inject(ReceivablesService);
   private readonly router = inject(Router);
 
   readonly icons = {
@@ -198,6 +201,7 @@ export class DashboardComponent implements OnInit {
   readonly quotes = signal<BookingQuoteRequest[]>([]);
   readonly orders = signal<Order[]>([]);
   readonly workQueueSummary = signal<WorkQueueSummary | null>(null);
+  readonly receivablesSummary = signal<ReceivablesSummary | null>(null);
   readonly loading = signal(true);
   readonly refreshing = signal(false);
   readonly error = signal<string | null>(null);
@@ -339,9 +343,11 @@ export class DashboardComponent implements OnInit {
   );
 
   readonly outstandingBalanceCents = computed(() =>
-    this.orders()
-      .filter((order) => order.paymentStatus !== 'voided')
-      .reduce((sum, order) => sum + Math.max(0, order.totals.balanceCents), 0),
+    this.receivablesSummary()?.totalOutstandingCents ?? 0,
+  );
+
+  readonly outstandingBalanceCount = computed(() =>
+    this.receivablesSummary()?.openBalanceCount ?? 0,
   );
 
   readonly depositsCollectedCents = computed(() =>
@@ -675,12 +681,13 @@ export class DashboardComponent implements OnInit {
     if (showInitialLoader) this.loading.set(true);
     this.error.set(null);
 
-    const [repairsResult, quotesResult, ordersResult, workQueueResult] =
+    const [repairsResult, quotesResult, ordersResult, workQueueResult, receivablesResult] =
       await Promise.allSettled([
         this.loadAllRepairs(),
         this.loadAllQuotes(),
         this.loadAllOrders(),
         firstValueFrom(this.workQueueService.getSummary()),
+        firstValueFrom(this.receivablesService.load()),
       ]);
 
     if (repairsResult.status === 'fulfilled') this.repairs.set(repairsResult.value);
@@ -689,15 +696,19 @@ export class DashboardComponent implements OnInit {
     if (workQueueResult.status === 'fulfilled') {
       this.workQueueSummary.set(workQueueResult.value.data);
     }
+    if (receivablesResult.status === 'fulfilled') {
+      this.receivablesSummary.set(receivablesResult.value.data.summary);
+    }
 
     const failed = [
       repairsResult,
       quotesResult,
       ordersResult,
       workQueueResult,
+      receivablesResult,
     ].filter((result) => result.status === 'rejected').length;
 
-    if (failed === 4) {
+    if (failed === 5) {
       this.error.set('Dashboard data could not be loaded. Please try again.');
     } else if (failed > 0) {
       this.error.set('Some dashboard data could not be loaded. The available sections are shown below.');
