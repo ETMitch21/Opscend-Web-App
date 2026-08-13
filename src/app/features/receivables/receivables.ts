@@ -13,6 +13,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   AlertTriangle,
   ArrowRight,
+  Ban,
   CircleDollarSign,
   CreditCard,
   Loader2,
@@ -24,6 +25,8 @@ import {
   LucideAngularModule,
 } from 'lucide-angular';
 import { ReceivablesService } from '../../core/receivables/service';
+import { OrdersService } from '../../core/orders/orders-service';
+import { ToastService } from '../../core/toast/toast-service';
 import type {
   ReceivableRow,
   ReceivablesSnapshot,
@@ -41,10 +44,13 @@ type BalanceFilter = 'all' | 'unpaid' | 'partial' | 'issues';
 })
 export class Receivables implements OnInit {
   private readonly receivablesService = inject(ReceivablesService);
+  private readonly ordersService = inject(OrdersService);
+  private readonly toast = inject(ToastService);
 
   readonly icons = {
     AlertTriangle,
     ArrowRight,
+    Ban,
     CircleDollarSign,
     CreditCard,
     Loader2,
@@ -61,6 +67,7 @@ export class Receivables implements OnInit {
   readonly snapshot = signal<ReceivablesSnapshot | null>(null);
   readonly search = signal('');
   readonly filter = signal<BalanceFilter>('all');
+  readonly voidingOrderId = signal<string | null>(null);
 
   readonly rows = computed(() => this.snapshot()?.rows ?? []);
   readonly summary = computed(() => this.snapshot()?.summary ?? null);
@@ -70,9 +77,10 @@ export class Receivables implements OnInit {
     const filter = this.filter();
 
     return this.rows().filter((row) => {
-      if (filter === 'unpaid' && row.netPaidCents > 0) return false;
-      if (filter === 'partial' && row.netPaidCents <= 0) return false;
-      if (filter === 'issues' && !row.balanceMismatch) return false;
+      if (filter === 'all' && !row.isReceivable) return false;
+      if (filter === 'unpaid' && (!row.isReceivable || row.netPaidCents > 0)) return false;
+      if (filter === 'partial' && (!row.isReceivable || row.netPaidCents <= 0)) return false;
+      if (filter === 'issues' && row.dataIssues.length === 0) return false;
 
       if (!search) return true;
 
@@ -124,13 +132,30 @@ export class Receivables implements OnInit {
   }
 
   statusLabel(row: ReceivableRow): string {
+    if (!row.isReceivable) return 'Not counted';
     return row.netPaidCents > 0 ? 'Partially paid' : 'Unpaid';
   }
 
   statusClass(row: ReceivableRow): string {
+    if (!row.isReceivable) return 'bg-slate-100 text-slate-600 ring-slate-200';
     return row.netPaidCents > 0
       ? 'bg-amber-50 text-amber-700 ring-amber-200'
       : 'bg-rose-50 text-rose-700 ring-rose-200';
+  }
+
+  hasIssue(row: ReceivableRow, issue: string): boolean {
+    return row.dataIssues.includes(issue);
+  }
+
+  voidOrder(row: ReceivableRow): void {
+    if (!row.canVoid || this.voidingOrderId()) return;
+
+    this.toast.confirm(
+      `Void order ${row.orderNumber}?`,
+      () => void this.confirmVoidOrder(row),
+      'This standalone order has no customer or repair and no recorded payments. It will remain in audit history but will be removed from active financial records.',
+      'Void order',
+    );
   }
 
   repairStatusLabel(status: string | null | undefined): string {
@@ -150,6 +175,30 @@ export class Receivables implements OnInit {
       day: 'numeric',
       year: 'numeric',
     }).format(parsed);
+  }
+
+
+  private async confirmVoidOrder(row: ReceivableRow): Promise<void> {
+    if (!row.canVoid || this.voidingOrderId()) return;
+
+    this.voidingOrderId.set(row.orderId);
+    try {
+      await firstValueFrom(this.ordersService.voidOrder(row.orderId));
+      this.toast.success(
+        `Order ${row.orderNumber} voided`,
+        'The order was kept for audit history and removed from active balances.',
+      );
+      await this.load(false);
+    } catch (error: any) {
+      const apiError = error?.error?.error;
+      const message =
+        apiError === 'cannot_void_money_moved'
+          ? 'This order has payment activity and cannot be voided.'
+          : error?.error?.message ?? 'The order could not be voided.';
+      this.toast.error('Order not voided', message);
+    } finally {
+      this.voidingOrderId.set(null);
+    }
   }
 
   private async load(showLoader = true): Promise<void> {

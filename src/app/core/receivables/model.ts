@@ -4,6 +4,8 @@ export interface ReceivablesSummary {
   unpaidCount: number;
   partiallyPaidCount: number;
   mismatchCount: number;
+  dataIssueCount: number;
+  unassignedOrderCount: number;
 }
 
 export interface ReceivableCustomer {
@@ -40,6 +42,9 @@ export interface ReceivableRow {
   storedBalanceCents: number;
   balanceCents: number;
   balanceMismatch: boolean;
+  isReceivable: boolean;
+  dataIssues: string[];
+  canVoid: boolean;
   customer: ReceivableCustomer | null;
   repair: ReceivableRepair | null;
   lastPayment: ReceivableLastPayment | null;

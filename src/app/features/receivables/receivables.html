@@ -7,7 +7,7 @@
       </div>
       <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Outstanding Balances</h1>
       <p class="mt-1 max-w-2xl text-sm text-slate-500">
-        Every balance that contributes to the dashboard total, with a direct path back to the repair and customer.
+        Customer balances that make up the dashboard total, plus financial records that need attention.
       </p>
     </div>
 
@@ -83,35 +83,35 @@
 
         <article
           class="rounded-2xl border bg-white p-4 shadow-sm"
-          [class.border-amber-300]="totals.mismatchCount > 0"
-          [class.border-slate-200]="totals.mismatchCount === 0"
+          [class.border-amber-300]="totals.dataIssueCount > 0"
+          [class.border-slate-200]="totals.dataIssueCount === 0"
         >
           <div class="flex items-center justify-between gap-3">
             <div>
               <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Data issues</p>
-              <p class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{{ totals.mismatchCount }}</p>
+              <p class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{{ totals.dataIssueCount }}</p>
             </div>
             <div
               class="flex h-10 w-10 items-center justify-center rounded-xl"
-              [class.bg-amber-50]="totals.mismatchCount > 0"
-              [class.text-amber-700]="totals.mismatchCount > 0"
-              [class.bg-slate-50]="totals.mismatchCount === 0"
-              [class.text-slate-500]="totals.mismatchCount === 0"
+              [class.bg-amber-50]="totals.dataIssueCount > 0"
+              [class.text-amber-700]="totals.dataIssueCount > 0"
+              [class.bg-slate-50]="totals.dataIssueCount === 0"
+              [class.text-slate-500]="totals.dataIssueCount === 0"
             >
               <lucide-icon [name]="icons.AlertTriangle" class="h-5 w-5"></lucide-icon>
             </div>
           </div>
-          <p class="mt-3 text-xs text-slate-500">Stored balances that disagree with the calculated balance.</p>
+          <p class="mt-3 text-xs text-slate-500">{{ totals.unassignedOrderCount }} unassigned · {{ totals.mismatchCount }} balance mismatch{{ totals.mismatchCount === 1 ? '' : 'es' }}</p>
         </article>
       </section>
 
-      @if (totals.mismatchCount > 0) {
+      @if (totals.dataIssueCount > 0) {
         <div class="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <lucide-icon [name]="icons.AlertTriangle" class="mt-0.5 h-4 w-4 shrink-0"></lucide-icon>
           <div>
-            <p class="font-semibold">{{ totals.mismatchCount }} balance record{{ totals.mismatchCount === 1 ? '' : 's' }} need attention.</p>
+            <p class="font-semibold">{{ totals.dataIssueCount }} financial record{{ totals.dataIssueCount === 1 ? '' : 's' }} need attention.</p>
             <p class="mt-0.5 text-amber-800">
-              Opscend is using the recalculated amount for the dashboard. Filter to Data issues below to see the affected orders.
+              Customerless orders are excluded from Outstanding Balance. Balance mismatches use the recalculated amount. Filter to Data issues to review or void eligible standalone orders.
             </p>
           </div>
         </div>
@@ -175,10 +175,16 @@
                   <td class="px-4 py-4 align-top">
                     <div class="flex items-center gap-2">
                       <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset" [ngClass]="statusClass(row)">{{ statusLabel(row) }}</span>
+                      @if (hasIssue(row, 'missing_customer')) {
+                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+                          <lucide-icon [name]="icons.AlertTriangle" class="h-3 w-3"></lucide-icon>
+                          Missing customer
+                        </span>
+                      }
                       @if (row.balanceMismatch) {
                         <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
                           <lucide-icon [name]="icons.AlertTriangle" class="h-3 w-3"></lucide-icon>
-                          Mismatch
+                          Balance mismatch
                         </span>
                       }
                     </div>
@@ -193,6 +199,9 @@
                     }
                     @if (row.balanceMismatch) {
                       <p class="mt-1 text-[11px] font-medium text-amber-700">Stored {{ money(row.storedBalanceCents) }} · Calculated {{ money(row.balanceCents) }}</p>
+                    }
+                    @if (!row.isReceivable) {
+                      <p class="mt-1 text-[11px] font-medium text-slate-500">Not included in the dashboard outstanding total.</p>
                     }
                   </td>
                   <td class="px-4 py-4 text-right align-top text-sm font-medium text-slate-600">{{ money(row.totalCents) }}</td>
@@ -217,6 +226,20 @@
                         Customer
                         <lucide-icon [name]="icons.ArrowRight" class="h-3.5 w-3.5"></lucide-icon>
                       </a>
+                    } @else if (row.canVoid) {
+                      <button
+                        type="button"
+                        class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        [disabled]="voidingOrderId() === row.orderId"
+                        (click)="voidOrder(row)"
+                      >
+                        <lucide-icon
+                          [name]="voidingOrderId() === row.orderId ? icons.Loader2 : icons.Ban"
+                          class="h-3.5 w-3.5"
+                          [class.animate-spin]="voidingOrderId() === row.orderId"
+                        ></lucide-icon>
+                        {{ voidingOrderId() === row.orderId ? 'Voiding...' : 'Void order' }}
+                      </button>
                     }
                   </td>
                 </tr>
@@ -237,13 +260,19 @@
               </div>
               <div class="mt-3 flex flex-wrap items-center gap-2">
                 <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset" [ngClass]="statusClass(row)">{{ statusLabel(row) }}</span>
+                @if (hasIssue(row, 'missing_customer')) {
+                  <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Missing customer</span>
+                }
                 @if (row.balanceMismatch) {
-                  <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Mismatch</span>
+                  <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">Balance mismatch</span>
                 }
                 <span class="text-xs text-slate-500">Total {{ money(row.totalCents) }} · Paid {{ money(row.netPaidCents) }}</span>
               </div>
               @if (row.balanceMismatch) {
                 <p class="mt-2 text-xs font-medium text-amber-700">Stored balance {{ money(row.storedBalanceCents) }}; calculated balance {{ money(row.balanceCents) }}.</p>
+              }
+              @if (!row.isReceivable) {
+                <p class="mt-2 text-xs font-medium text-slate-500">This order is not counted in Outstanding Balance because no customer is assigned.</p>
               }
               <div class="mt-4 flex gap-2">
                 @if (row.repair) {
@@ -251,6 +280,16 @@
                 }
                 @if (row.customer) {
                   <a [routerLink]="['/customers', row.customer.id]" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">Customer</a>
+                } @else if (row.canVoid) {
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    [disabled]="voidingOrderId() === row.orderId"
+                    (click)="voidOrder(row)"
+                  >
+                    <lucide-icon [name]="voidingOrderId() === row.orderId ? icons.Loader2 : icons.Ban" class="h-3.5 w-3.5" [class.animate-spin]="voidingOrderId() === row.orderId"></lucide-icon>
+                    {{ voidingOrderId() === row.orderId ? 'Voiding...' : 'Void order' }}
+                  </button>
                 }
               </div>
             </article>
