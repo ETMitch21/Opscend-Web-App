@@ -61,11 +61,12 @@ type NavItem = {
   route?: string;
   icon: LucideIconData;
   badgeCount?: () => number;
-  ownerOnly?: boolean;
+  permission?: string;
   children?: {
     label: string;
     route: string;
     icon: LucideIconData;
+    permission?: string;
   }[];
 };
 
@@ -74,7 +75,7 @@ type SecondaryNavItem = {
   route: string;
   icon: LucideIconData;
   description: string;
-  ownerOnly?: boolean;
+  permission?: string;
 };
 
 type SecondaryNavGroup = {
@@ -192,7 +193,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     this.availableLocations().find((location) => location.isCurrent) ?? null,
   );
   public showLocationSelector = computed(() => this.availableLocations().length > 1);
-  public canManageLocations = computed(() => String(this.currentUser()?.role ?? '').toLowerCase() === 'owner');
+  public canManageLocations = computed(() => this.auth.hasPermission('shops:create'));
   public aiAssistantDrawerOpen = signal(false);
   public quickQuoteOpen = signal(false);
 
@@ -235,32 +236,35 @@ export class AppShellComponent implements OnInit, OnDestroy {
   public activeSearchIndex = signal(-1);
 
   public navItems: NavItem[] = [
-    { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon },
-    { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon },
+    { label: 'Dashboard', route: '/dashboard', icon: this.layoutDashboardIcon, permission: 'repairs:read' },
+    { label: 'Repairs', route: '/repairs', icon: this.wrenchIcon, permission: 'repairs:read' },
     {
       label: 'Quotes',
       route: '/quote-requests',
       icon: this.messageSquareQuoteIcon,
+      permission: 'quotes:read',
       badgeCount: () => this.newQuoteRequestCount(),
     },
-    { label: 'Customers', route: '/customers', icon: this.usersIcon },
-    { label: 'Balances', route: '/balances', icon: this.walletCardsIcon },
-    { label: 'Services', route: '/services', icon: this.toolboxIcon },
+    { label: 'Customers', route: '/customers', icon: this.usersIcon, permission: 'customers:read' },
+    { label: 'Balances', route: '/balances', icon: this.walletCardsIcon, permission: 'orders:read' },
+    { label: 'Services', route: '/services', icon: this.toolboxIcon, permission: 'services:read' },
     {
       label: 'Products',
       icon: this.boxesIcon,
       children: [
-        { label: 'All Products', route: '/products/overview', icon: this.boxesIcon },
-        { label: 'Inventory', route: '/products/inventory', icon: this.packageIcon },
+        { label: 'All Products', route: '/products/overview', icon: this.boxesIcon, permission: 'products:read' },
+        { label: 'Inventory', route: '/products/inventory', icon: this.packageIcon, permission: 'inventory:read' },
         {
           label: 'Purchase Orders',
           route: '/products/inventory/purchase-orders',
           icon: this.shoppingCartIcon,
+          permission: 'inventory:read',
         },
         {
           label: 'Suppliers',
           route: '/products/inventory/suppliers',
           icon: this.blocksIcon,
+          permission: 'inventory:read',
         },
       ],
     },
@@ -273,12 +277,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
         {
           label: 'Technician Dashboard',
           route: '/technician-dashboard',
+          permission: 'technicianDashboard:read',
           icon: this.technicianDashboardIcon,
           description: 'Assigned work and technician performance.',
         },
         {
           label: 'Analytics',
           route: '/analytics',
+          permission: 'analytics:read',
           icon: this.analyticsIcon,
           description: 'Trends, reporting, and business performance.',
         },
@@ -290,18 +296,21 @@ export class AppShellComponent implements OnInit, OnDestroy {
         {
           label: 'Automations',
           route: '/automations',
+          permission: 'automations:read',
           icon: this.automationIcon,
           description: 'Rules and actions that keep work moving.',
         },
         {
           label: 'Forms',
           route: '/forms',
+          permission: 'forms:read',
           icon: this.formsIcon,
           description: 'Reusable forms, checklists, and submissions.',
         },
         {
           label: 'Knowledge Base',
           route: '/knowledge-base',
+          permission: 'knowledge:read',
           icon: this.bookOpenIcon,
           description: 'Internal articles and shop documentation.',
         },
@@ -313,12 +322,14 @@ export class AppShellComponent implements OnInit, OnDestroy {
         {
           label: 'Contractors',
           route: '/contractors',
+          permission: 'contractors:read',
           icon: this.handshakeIcon,
           description: 'Manage contractor access and assignments.',
         },
         {
           label: 'Contractor Payouts',
           route: '/contractor-payouts',
+          permission: 'contractorPayouts:read',
           icon: this.walletCardsIcon,
           description: 'Review and manage contractor payments.',
         },
@@ -327,19 +338,33 @@ export class AppShellComponent implements OnInit, OnDestroy {
   ];
 
   get visibleNavItems(): NavItem[] {
-    const role = String(this.auth.getCurrentUser()?.role ?? '').toLowerCase();
-    return this.navItems.filter((item) => !item.ownerOnly || role === 'owner');
+
+    return this.navItems
+      .map((item) => ({
+        ...item,
+        children: item.children?.filter((child) => this.canAccess(child.permission)),
+      }))
+      .filter((item) => {
+        if (!this.canAccess(item.permission)) return false;
+        if (item.children && item.children.length === 0) return false;
+        return true;
+      });
   }
 
   get visibleSecondaryNavGroups(): SecondaryNavGroup[] {
-    const role = String(this.auth.getCurrentUser()?.role ?? '').toLowerCase();
 
     return this.secondaryNavGroups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => !item.ownerOnly || role === 'owner'),
+        items: group.items.filter((item) =>
+          this.canAccess(item.permission),
+        ),
       }))
       .filter((group) => group.items.length > 0);
+  }
+
+  canAccess(permission?: string): boolean {
+    return !permission || this.auth.hasPermission(permission);
   }
 
   private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -460,6 +485,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   async refreshNewQuoteRequestCount(): Promise<void> {
+  if (!this.auth.hasPermission('quotes:read')) {
+    this.newQuoteRequestCount.set(0);
+    return;
+  }
   try {
     const response = await firstValueFrom(
       this.bookingAdminService.listQuoteRequests({ limit: 100 })
@@ -477,6 +506,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
 }
 
   async refreshUnreadCommunicationCount(options: { notify?: boolean } = {}): Promise<void> {
+    if (!this.auth.hasPermission('communications:read')) {
+      this.unreadCommunicationCount.set(0);
+      return;
+    }
     try {
       const response = await firstValueFrom(
         this.communicationService.listConversations({ limit: 100, status: 'open' })
@@ -573,6 +606,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   async refreshWorkQueueSummary(): Promise<void> {
+    if (!this.auth.hasPermission('workQueue:read')) {
+      this.workQueueSummary.set(null);
+      return;
+    }
     try {
       const response = await firstValueFrom(
         this.workQueueService.getSummary(),
@@ -755,6 +792,11 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   async loadInternalNotifications(): Promise<void> {
+    if (!this.auth.hasPermission('repairs:read')) {
+      this.notifications.set([]);
+      this.unreadNotificationCount.set(0);
+      return;
+    }
     this.notificationsLoading.set(true);
 
     try {

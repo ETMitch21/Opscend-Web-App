@@ -5,9 +5,11 @@
         [checked]="includeArchived()" (change)="includeArchived.set($any($event.target).checked); onArchivedToggle()" />
       Archived
     </label>
+    @if (canWriteUsers()) {
     <button type="button" class="settings-primary-action cursor-pointer" (click)="toggleCreate()">
       {{ createExpanded() ? 'Close form' : 'Add user' }}
     </button>
+    }
   </div>
 
   <div class="space-y-3">
@@ -37,10 +39,9 @@
           <div class="settings-field is-quarter">
             <label class="settings-label">Role</label>
             <select formControlName="role" class="settings-control cursor-pointer">
-              <option value="owner">Owner</option>
-              <option value="manager">Manager</option>
-              <option value="staff">Staff</option>
-              <option value="tech">Tech</option>
+              @for (roleOption of roleOptions(); track roleOption.key) {
+              <option [value]="roleOption.key" [disabled]="roleOption.key === 'owner' && !canAssignOwner()">{{ roleOption.name }}</option>
+              }
             </select>
           </div>
           <div class="settings-field is-quarter">
@@ -117,7 +118,7 @@
             </span>
 
             <span class="truncate text-[11px] text-app-text-muted">{{ user.email || 'No email' }}</span>
-            <span class="text-[10.5px] font-semibold capitalize text-app-text-muted">{{ user.role }}</span>
+            <span class="text-[10.5px] font-semibold capitalize text-app-text-muted">{{ roleLabel(user.role) }}</span>
             <span class="justify-self-start rounded-full px-2 py-0.5 text-[9px] font-semibold"
               [class.bg-red-50]="isArchived(user)" [class.text-red-600]="isArchived(user)"
               [class.bg-amber-50]="!isArchived(user) && (user.status || '').toLowerCase() === 'invited'"
@@ -156,12 +157,12 @@
           </div>
         </div>
 
-        @if (isArchived(user)) {
+        @if (isArchived(user) && canRestoreUsers()) {
         <button type="button" class="settings-secondary-action cursor-pointer"
           (click)="restoreSelectedUser()" [disabled]="actioningUserId() === user.id">
           {{ actioningUserId() === user.id ? 'Restoring...' : 'Restore user' }}
         </button>
-        } @else {
+        } @else if (!isArchived(user) && canArchiveUsers()) {
         <button type="button" class="cursor-pointer inline-flex min-h-9 items-center rounded-[10px] border border-red-200 px-3 text-[11px] font-semibold text-red-700 transition hover:bg-red-50"
           (click)="archiveSelectedUser()" [disabled]="actioningUserId() === user.id">
           {{ actioningUserId() === user.id ? 'Archiving...' : 'Archive user' }}
@@ -173,28 +174,27 @@
         <div class="settings-field-grid">
           <div class="settings-field is-half">
             <label class="settings-label">Name</label>
-            <input type="text" formControlName="name" class="settings-control" />
+            <input type="text" formControlName="name" class="settings-control" [disabled]="!canWriteUsers()" />
           </div>
           <div class="settings-field is-half">
             <label class="settings-label">Email</label>
-            <input type="email" formControlName="email" class="settings-control" />
+            <input type="email" formControlName="email" class="settings-control" [disabled]="!canWriteUsers()" />
           </div>
           <div class="settings-field is-half">
             <label class="settings-label">Phone</label>
-            <input type="text" formControlName="phone" class="settings-control" />
+            <input type="text" formControlName="phone" class="settings-control" [disabled]="!canWriteUsers()" />
           </div>
           <div class="settings-field is-quarter">
             <label class="settings-label">Role</label>
-            <select formControlName="role" class="settings-control cursor-pointer">
-              <option value="owner">Owner</option>
-              <option value="manager">Manager</option>
-              <option value="staff">Staff</option>
-              <option value="tech">Tech</option>
+            <select formControlName="role" class="settings-control cursor-pointer" [disabled]="!canWriteUsers()">
+              @for (roleOption of roleOptions(); track roleOption.key) {
+              <option [value]="roleOption.key" [disabled]="roleOption.key === 'owner' && !canAssignOwner()">{{ roleOption.name }}</option>
+              }
             </select>
           </div>
           <div class="settings-field is-quarter">
             <label class="settings-label">Status</label>
-            <select formControlName="status" class="settings-control cursor-pointer">
+            <select formControlName="status" class="settings-control cursor-pointer" [disabled]="!canWriteUsers()">
               <option value="active">Active</option>
               <option value="invited">Invited</option>
               <option value="inactive">Inactive</option>
@@ -203,19 +203,21 @@
           </div>
           <div class="settings-field is-half">
             <label class="settings-label">Tags</label>
-            <input type="text" formControlName="tagsText" class="settings-control" placeholder="comma, separated, tags" />
+            <input type="text" formControlName="tagsText" class="settings-control" [disabled]="!canWriteUsers()" placeholder="comma, separated, tags" />
           </div>
           <div class="settings-field is-half">
             <label class="settings-label">Internal notes</label>
-            <textarea rows="3" formControlName="notes" class="settings-control"></textarea>
+            <textarea rows="3" formControlName="notes" class="settings-control" [disabled]="!canWriteUsers()"></textarea>
           </div>
         </div>
 
+        @if (canWriteUsers()) {
         <div class="mt-4 flex justify-end border-t border-app-border pt-4">
           <button type="submit" class="settings-primary-action cursor-pointer" [disabled]="savingSelectedUser()">
             {{ savingSelectedUser() ? 'Saving...' : 'Save changes' }}
           </button>
         </div>
+        }
       </form>
     </section>
     }

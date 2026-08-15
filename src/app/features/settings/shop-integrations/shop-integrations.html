@@ -54,6 +54,7 @@
                         </div>
                     </div>
 
+                    @if (canManageIntegrations()) {
                     <div class="flex flex-wrap gap-2 lg:max-w-[190px] lg:justify-end">
                         @if (isGoogleConnected) {
                         <button type="button" class="settings-primary-action cursor-pointer"
@@ -75,6 +76,7 @@
                         </button>
                         }
                     </div>
+                    }
                 </div>
 
                 @if (googleStatus?.lastError) {
@@ -275,6 +277,7 @@
                         </div>
                     </div>
 
+                    @if (canManageIntegrations()) {
                     <div class="flex flex-wrap gap-2 lg:justify-end">
                         @if (isConnected) {
                         <button type="button" class="settings-secondary-action cursor-pointer"
@@ -288,6 +291,7 @@
                         </button>
                         }
                     </div>
+                    }
                 </div>
             </div>
         </section>
@@ -354,6 +358,7 @@
                         </div>
                     </div>
 
+                    @if (canManageIntegrations()) {
                     <div class="flex flex-wrap gap-2 lg:max-w-[150px] lg:justify-end">
                         @if (isStripeConnected) {
                         <button type="button" class="settings-primary-action cursor-pointer"
@@ -373,6 +378,7 @@
                         </button>
                         }
                     </div>
+                    }
                 </div>
             </div>
         </section>

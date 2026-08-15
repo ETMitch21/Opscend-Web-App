@@ -102,7 +102,7 @@ export class SettingsLayoutComponent implements OnDestroy {
 
   private currentItem(): SettingsNavItem | null {
     const active = this.activeUrl();
-    const groups = visibleSettingsGroups(this.auth.getCurrentUser()?.role);
+    const groups = visibleSettingsGroups(this.auth.getCurrentUser()?.role, this.auth.getCurrentUser()?.permissions ?? []);
 
     return (
       groups

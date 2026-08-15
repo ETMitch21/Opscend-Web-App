@@ -1,0 +1,238 @@
+<app-settings-layout
+  pageTitle="Roles & permissions"
+  pageDescription="Decide exactly what each role can view and manage in this shop."
+>
+  <div class="roles-page">
+    @if (error()) {
+      <div class="settings-alert is-error">{{ error() }}</div>
+    }
+    @if (success()) {
+      <div class="settings-alert is-success">{{ success() }}</div>
+    }
+
+    @if (loading()) {
+      <section class="settings-card roles-loading">Loading roles and permissions…</section>
+    } @else {
+      <section class="roles-layout">
+        <aside class="settings-card role-list-card">
+          <div class="settings-card-header role-list-header">
+            <div>
+              <h2 class="settings-card-title">Shop roles</h2>
+              <p class="settings-card-description">Access is scoped to this location.</p>
+            </div>
+
+            @if (canWrite()) {
+              <button type="button" class="role-add-button cursor-pointer" (click)="openCreate()" aria-label="Create role">
+                <lucide-icon [img]="icons.Plus" [size]="15"></lucide-icon>
+              </button>
+            }
+          </div>
+
+          <div class="role-list">
+            @for (role of roles(); track role.key) {
+              <button
+                type="button"
+                class="role-row cursor-pointer"
+                [class.is-active]="selectedRoleKey() === role.key"
+                (click)="selectRole(role.key)"
+              >
+                <span class="role-row-icon">
+                  <lucide-icon [img]="role.key === 'owner' ? icons.Lock : icons.Shield" [size]="16"></lucide-icon>
+                </span>
+                <span class="role-row-copy">
+                  <strong>{{ role.name }}</strong>
+                  <small>{{ role.userCount }} team member{{ role.userCount === 1 ? '' : 's' }}</small>
+                </span>
+                @if (role.isSystem) {
+                  <span class="role-system-badge">Default</span>
+                }
+              </button>
+            }
+          </div>
+        </aside>
+
+        @if (selectedRole(); as role) {
+          <div class="role-editor-stack">
+            <section class="settings-card">
+              <div class="settings-card-header role-editor-header">
+                <div>
+                  <h2 class="settings-card-title">{{ role.name }}</h2>
+                  <p class="settings-card-description">
+                    @if (role.key === 'owner') {
+                      Owner always has full access so the shop can never be locked out.
+                    } @else {
+                      Changes apply immediately to every active user assigned to this role.
+                    }
+                  </p>
+                </div>
+
+                <div class="role-editor-actions">
+                  @if (!role.isSystem && role.userCount === 0 && canWrite()) {
+                    <button type="button" class="role-delete-button cursor-pointer" (click)="deleteSelected()" [disabled]="deleting()">
+                      <lucide-icon [img]="icons.Trash" [size]="14"></lucide-icon>
+                      {{ deleting() ? 'Deleting…' : 'Delete role' }}
+                    </button>
+                  }
+                  @if (canWrite()) {
+                    <button type="button" class="settings-primary-action cursor-pointer" (click)="save()" [disabled]="saving()">
+                      {{ saving() ? 'Saving…' : 'Save changes' }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="settings-card-body role-details-grid">
+                <div class="settings-field">
+                  <label class="settings-label">Role name</label>
+                  <input
+                    type="text"
+                    class="settings-control"
+                    [disabled]="!canWrite()"
+                    [ngModel]="draftName()"
+                    (ngModelChange)="draftName.set($event)"
+                  />
+                </div>
+                <div class="settings-field">
+                  <label class="settings-label">Description</label>
+                  <input
+                    type="text"
+                    class="settings-control"
+                    [disabled]="!canWrite()"
+                    [ngModel]="draftDescription()"
+                    (ngModelChange)="draftDescription.set($event)"
+                    placeholder="Who should use this role?"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-card permission-card">
+              <div class="settings-card-header permission-heading">
+                <div>
+                  <h2 class="settings-card-title">Access</h2>
+                  <p class="settings-card-description">Turn access on only for the work this role should be able to do.</p>
+                </div>
+                <input
+                  type="search"
+                  class="settings-control permission-search"
+                  placeholder="Search permissions…"
+                  [value]="search()"
+                  (input)="search.set($any($event.target).value)"
+                />
+              </div>
+
+              @if (role.key === 'owner') {
+                <div class="owner-access-banner">
+                  <span class="owner-access-icon"><lucide-icon [img]="icons.Check" [size]="16"></lucide-icon></span>
+                  <div>
+                    <strong>Full access</strong>
+                    <p>The Owner role automatically includes every current and future permission.</p>
+                  </div>
+                </div>
+              }
+
+              <div class="permission-groups">
+                @for (group of permissionGroups(); track group.group) {
+                  <section class="permission-group">
+                    <div class="permission-group-header">
+                      <div>
+                        <h3>{{ group.group }}</h3>
+                        <span>{{ group.items.length }} permission{{ group.items.length === 1 ? '' : 's' }}</span>
+                      </div>
+
+                      @if (role.key !== 'owner' && canWrite()) {
+                        <label class="permission-group-toggle cursor-pointer">
+                          <input
+                            type="checkbox"
+                            [checked]="groupChecked(group.items)"
+                            (change)="toggleGroup(group.items, $any($event.target).checked)"
+                          />
+                          <span>All</span>
+                        </label>
+                      }
+                    </div>
+
+                    <div class="permission-list">
+                      @for (permission of group.items; track permission.key) {
+                        <label
+                          class="permission-row"
+                          [class.cursor-pointer]="role.key !== 'owner' && canWrite()"
+                          [class.is-disabled]="role.key === 'owner' || !canWrite()"
+                        >
+                          <span class="permission-copy">
+                            <strong>{{ permission.label }}</strong>
+                            <small>{{ permission.description }}</small>
+                          </span>
+                          <input
+                            type="checkbox"
+                            [disabled]="role.key === 'owner' || !canWrite()"
+                            [checked]="permissionChecked(permission.key)"
+                            (change)="togglePermission(permission.key, $any($event.target).checked)"
+                          />
+                        </label>
+                      }
+                    </div>
+                  </section>
+                }
+              </div>
+            </section>
+          </div>
+        }
+      </section>
+    }
+
+    @if (showCreate()) {
+      <div class="role-modal-backdrop" (click)="showCreate.set(false)">
+        <section class="role-modal settings-card" (click)="$event.stopPropagation()">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Create role</h2>
+              <p class="settings-card-description">Start with no access, then choose exactly what this role can do.</p>
+            </div>
+          </div>
+
+          <div class="settings-card-body role-create-fields">
+            <div class="settings-field">
+              <label class="settings-label">Role name</label>
+              <input
+                type="text"
+                class="settings-control"
+                placeholder="Lead Technician"
+                [ngModel]="newRoleName()"
+                (ngModelChange)="updateNewRoleName($event)"
+              />
+            </div>
+            <div class="settings-field">
+              <label class="settings-label">Role key</label>
+              <input
+                type="text"
+                class="settings-control"
+                placeholder="lead-technician"
+                [ngModel]="newRoleKey()"
+                (ngModelChange)="newRoleKey.set($event)"
+              />
+              <p class="settings-hint">Used internally. Lowercase letters, numbers, dashes, and underscores only.</p>
+            </div>
+            <div class="settings-field">
+              <label class="settings-label">Description</label>
+              <textarea
+                rows="3"
+                class="settings-control"
+                placeholder="Who is this role for?"
+                [ngModel]="newRoleDescription()"
+                (ngModelChange)="newRoleDescription.set($event)"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="role-modal-actions">
+            <button type="button" class="settings-secondary-action cursor-pointer" (click)="showCreate.set(false)">Cancel</button>
+            <button type="button" class="settings-primary-action cursor-pointer" (click)="createRole()" [disabled]="creating()">
+              {{ creating() ? 'Creating…' : 'Create role' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+  </div>
+</app-settings-layout>

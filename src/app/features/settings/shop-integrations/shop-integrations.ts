@@ -16,6 +16,7 @@ import { StripeService } from '../../../core/stripe/stripe-service';
 import { StripeStatusResponse } from '../../../core/stripe/stripe-model';
 import { ToastService } from '../../../core/toast/toast-service';
 import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-shop-integrations',
@@ -30,6 +31,9 @@ export class ShopIntegrations {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+
+  readonly canManageIntegrations = () => this.auth.hasPermission('shops:write');
 
   checkmarkIcon = CheckIcon;
 
@@ -133,6 +137,7 @@ export class ShopIntegrations {
   }
 
   onConnect(): void {
+    if (!this.canManageIntegrations()) return;
     if (this.connecting || this.isConnected) return;
 
     this.connecting = true;
@@ -140,6 +145,7 @@ export class ShopIntegrations {
   }
 
   onDisconnect(): void {
+    if (!this.canManageIntegrations()) return;
     if (this.disconnecting) return;
 
     this.toast.confirm('Disconnect MobileSentrix from your shop?', () => {
@@ -161,6 +167,7 @@ export class ShopIntegrations {
   }
 
   onStripeConnect(): void {
+    if (!this.canManageIntegrations()) return;
     if (this.stripeConnecting || this.isStripeConnected) return;
 
     this.stripeConnecting = true;
@@ -172,6 +179,7 @@ export class ShopIntegrations {
   }
 
   onStripeDisconnect(): void {
+    if (!this.canManageIntegrations()) return;
     if (this.stripeDisconnecting) return;
 
     this.toast.confirm('Disconnect Stripe from your shop?', () => {
@@ -193,6 +201,7 @@ export class ShopIntegrations {
   }
 
   onOpenStripeDashboard(): void {
+    if (!this.canManageIntegrations()) return;
     if (this.stripeOpeningDashboard || !this.isStripeConnected) return;
 
     this.stripeOpeningDashboard = true;
@@ -205,6 +214,7 @@ export class ShopIntegrations {
   }
 
   async onGoogleConnect(): Promise<void> {
+    if (!this.canManageIntegrations()) return;
     if (this.googleConnecting || this.isGoogleConnected) return;
 
     this.googleConnecting = true;
@@ -217,6 +227,7 @@ export class ShopIntegrations {
   }
 
   onGoogleDisconnect(): void {
+    if (!this.canManageIntegrations()) return;
     if (this.googleDisconnecting) return;
 
     this.toast.confirm(
@@ -240,6 +251,7 @@ export class ShopIntegrations {
   }
 
   async onGoogleSyncNow(): Promise<void> {
+    if (!this.canManageIntegrations()) return;
     if (this.googleSyncing || !this.isGoogleConnected) return;
 
     this.googleSyncing = true;
@@ -261,6 +273,7 @@ export class ShopIntegrations {
     key: 'syncEnabled' | 'pushAppointments' | 'pullAppointmentChanges' | 'blockBusyTime',
     value: boolean,
   ): Promise<void> {
+    if (!this.canManageIntegrations()) return;
     if (!this.googleStatus || this.googleSettingsSaving) return;
 
     const previous = this.googleStatus.settings[key];
@@ -286,6 +299,7 @@ export class ShopIntegrations {
   }
 
   async onGoogleCalendarSelected(userId: string, calendarId: string): Promise<void> {
+    if (!this.canManageIntegrations()) return;
     if (!calendarId || this.savingGoogleMappings.has(userId)) return;
 
     const existing = this.googleMappingFor(userId);
@@ -311,6 +325,7 @@ export class ShopIntegrations {
     key: 'syncAppointments' | 'blockBusyTime',
     value: boolean,
   ): Promise<void> {
+    if (!this.canManageIntegrations()) return;
     const mapping = this.googleMappingFor(userId);
     if (!mapping || this.savingGoogleMappings.has(userId)) return;
 
@@ -330,6 +345,7 @@ export class ShopIntegrations {
   }
 
   onRemoveGoogleMapping(userId: string): void {
+    if (!this.canManageIntegrations()) return;
     const mapping = this.googleMappingFor(userId);
     if (!mapping || this.savingGoogleMappings.has(userId)) return;
 

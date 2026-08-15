@@ -13,6 +13,7 @@ import {
   UserIcon,
   UsersIcon,
   WalletCardsIcon,
+  ShieldCheckIcon,
 } from 'lucide-angular';
 
 export type SettingsNavItem = {
@@ -20,7 +21,7 @@ export type SettingsNavItem = {
   description: string;
   route: string;
   icon: LucideIconData;
-  ownerOnly?: boolean;
+  permission?: string;
   keywords?: string[];
 };
 
@@ -40,6 +41,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Business details, customer-facing information, and operating defaults.',
         route: '/settings/shop/general',
         icon: Building2,
+        permission: 'shops:read',
         keywords: ['shop', 'business', 'identity', 'contact', 'address', 'branding'],
       },
       {
@@ -47,7 +49,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Add operating locations and switch between each location workspace.',
         route: '/settings/shop/locations',
         icon: MapPinIcon,
-        ownerOnly: true,
+        permission: 'shops:create',
         keywords: ['multi-location', 'branches', 'stores', 'offices', 'workspace'],
       },
       {
@@ -55,13 +57,23 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Staff access, roles, invitations, and archived team members.',
         route: '/settings/shop/users',
         icon: UsersIcon,
+        permission: 'users:read',
         keywords: ['users', 'employees', 'staff', 'roles', 'permissions', 'invite'],
+      },
+      {
+        label: 'Roles & permissions',
+        description: 'Choose exactly what each shop role can view and manage.',
+        route: '/settings/shop/roles-permissions',
+        icon: ShieldCheckIcon,
+        permission: 'roles:read',
+        keywords: ['roles', 'permissions', 'access', 'security', 'rbac'],
       },
       {
         label: 'Shop hours',
         description: 'Weekly operating hours and date-specific closures or exceptions.',
         route: '/settings/shop/availability',
         icon: CalendarClockIcon,
+        permission: 'availability:read',
         keywords: ['availability', 'schedule', 'open', 'closed', 'holiday'],
       },
       {
@@ -69,6 +81,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Automated repair updates, sender details, and customer templates.',
         route: '/settings/shop/notifications',
         icon: BellIcon,
+        permission: 'notifications:read',
         keywords: ['email', 'sms', 'alerts', 'messages', 'templates'],
       },
       {
@@ -76,7 +89,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Download a complete shop archive or export individual data sections.',
         route: '/settings/shop/data-export',
         icon: DownloadIcon,
-        ownerOnly: true,
+        permission: 'dataExport:read',
         keywords: ['export', 'csv', 'download', 'backup', 'data', 'portability'],
       },
     ],
@@ -90,6 +103,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Quote flow, scheduling rules, fallback pricing, and website embed.',
         route: '/settings/shop/shop-bookings',
         icon: CalendarCog,
+        permission: 'booking:read',
         keywords: ['appointments', 'quotes', 'schedule', 'embed', 'website', 'booking'],
       },
       {
@@ -97,6 +111,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Repair types, model-specific options, deposits, and booking behavior.',
         route: '/settings/shop/repair-pricing',
         icon: DollarSignIcon,
+        permission: 'repairPricing:read',
         keywords: ['price', 'labor', 'parts', 'deposit', 'service', 'repair type'],
       },
       {
@@ -104,6 +119,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Categories, brands, models, publishing, and master catalog updates.',
         route: '/settings/shop/device-catalog',
         icon: SmartphoneIcon,
+        permission: 'deviceCatalog:read',
         keywords: ['devices', 'phones', 'tablets', 'models', 'brands', 'catalog'],
       },
     ],
@@ -117,6 +133,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Supplier, payment, and external service connections used by your shop.',
         route: '/settings/integrations',
         icon: BlocksIcon,
+        permission: 'shops:read',
         keywords: ['connections', 'mobilesentrix', 'stripe', 'supplier', 'api'],
       },
       {
@@ -124,6 +141,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Answer calls, create exact quotes, capture review requests, and transfer callers.',
         route: '/settings/shop/voice-agent',
         icon: PhoneCallIcon,
+        permission: 'voiceAgent:read',
         keywords: ['phone', 'calls', 'twilio', 'openai', 'voice', 'quotes', 'agent'],
       },
       {
@@ -131,7 +149,7 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Stripe balances, payout destinations, schedules, and instant payouts.',
         route: '/settings/shop/payouts',
         icon: WalletCardsIcon,
-        ownerOnly: true,
+        permission: 'payouts:write',
         keywords: ['stripe', 'bank', 'balance', 'instant', 'money'],
       },
     ],
@@ -152,19 +170,31 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         description: 'Your recurring working hours and personal schedule exceptions.',
         route: '/settings/profile/my-availability',
         icon: CalendarClockIcon,
+        permission: 'availability:read',
         keywords: ['availability', 'schedule', 'working hours', 'technician'],
       },
     ],
   },
 ];
 
-export function visibleSettingsGroups(role: string | null | undefined): SettingsNavGroup[] {
-  const normalizedRole = String(role ?? '').toLowerCase();
+export function visibleSettingsGroups(
+  _role: string | null | undefined,
+  permissions: readonly string[] = [],
+): SettingsNavGroup[] {
+  const granted = new Set(permissions);
+  const hasPermission = (permission?: string) => {
+    if (!permission) return true;
+    if (granted.has('*') || granted.has(permission)) return true;
+    const resource = permission.split(':')[0];
+    return Boolean(resource && granted.has(`${resource}:*`));
+  };
 
   return SETTINGS_GROUPS
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.ownerOnly || normalizedRole === 'owner'),
+      items: group.items.filter((item) =>
+        hasPermission(item.permission),
+      ),
     }))
     .filter((group) => group.items.length > 0);
 }

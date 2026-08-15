@@ -21,7 +21,7 @@
                 {{ archivedView() ? 'View Active' : 'View Archived' }}
             </button>
 
-            @if (!archivedView()) {
+            @if (!archivedView() && canWrite()) {
                 <button
                     type="button"
                     class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white"
@@ -110,20 +110,23 @@
                                 <td class="px-4 py-4">
                                     <div class="flex justify-end gap-2">
                                         @if (!archivedView()) {
+                                            @if (canWrite()) {
                                             <button
                                                 type="button"
                                                 class="cursor-pointer rounded-lg border border-app-border px-3 py-2 text-xs font-medium"
                                                 (click)="editCustomer(customer)">
                                                 Edit
                                             </button>
-
+                                            }
+                                            @if (canArchive()) {
                                             <button
                                                 type="button"
                                                 class="cursor-pointer rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-700"
                                                 (click)="archiveCustomer(customer)">
                                                 Archive
                                             </button>
-                                        } @else {
+                                            }
+                                        } @else if (canRestore()) {
                                             <button
                                                 type="button"
                                                 class="cursor-pointer rounded-lg border border-app-border px-3 py-2 text-xs font-medium"

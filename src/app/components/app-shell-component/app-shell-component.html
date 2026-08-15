@@ -346,6 +346,7 @@
                     }
 
                     <div class="relative flex items-center gap-2" (click)="$event.stopPropagation()">
+                        @if (visibleSecondaryNavGroups.length > 0) {
                         <div class="relative">
                             <button type="button"
                                 class="cursor-pointer inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border px-0 text-sm font-semibold transition xl:w-auto xl:px-3"
@@ -409,13 +410,18 @@
                             }
                         </div>
 
+                        }
+
+                        @if (canAccess('quotes:read')) {
                         <button type="button"
                             class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-full border border-app-border bg-app-surface px-3 text-sm font-semibold text-app-text transition hover:border-brand/35 hover:bg-brand/5 hover:text-brand"
                             (click)="openQuickQuote($event)" aria-label="Open Quick Quote">
                             <lucide-icon [size]="17" [img]="quickQuoteIcon"></lucide-icon>
                             <span class="hidden md:inline">Quick Quote</span>
                         </button>
+                        }
 
+                        @if (canAccess('ai:use')) {
                         <button type="button"
                             class="cursor-pointer inline-flex h-10 items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 text-sm font-semibold text-violet-700 transition hover:border-violet-300 hover:bg-violet-100"
                             (click)="openAiAssistantDrawer($event)" aria-label="Open Opscend AI"
@@ -423,7 +429,9 @@
                             <lucide-icon [size]="18" [img]="aiAssistantIcon"></lucide-icon>
                             <span class="hidden sm:inline">AI</span>
                         </button>
+                        }
 
+                        @if (canAccess('workQueue:read')) {
                         <div class="relative">
                             <button type="button"
                                 class="cursor-pointer relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-app-surface text-sm font-medium transition hover:bg-app-surface-muted"
@@ -548,6 +556,9 @@
                             }
                         </div>
 
+                        }
+
+                        @if (canAccess('communications:read')) {
                         <button type="button"
                             class="cursor-pointer relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-app-surface text-sm font-medium transition hover:bg-app-surface-muted"
                             (click)="goToCommunicationsInbox($event)" aria-label="Open inbox">
@@ -560,7 +571,9 @@
                             </span>
                             }
                         </button>
+                        }
 
+                        @if (canAccess('repairs:read')) {
                         <div class="relative">
                             <button type="button"
                                 class="cursor-pointer relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-app-surface text-sm font-medium transition hover:bg-app-surface-muted"
@@ -697,6 +710,7 @@
                             </div>
                             }
                         </div>
+                        }
 
                         <button type="button"
                             class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-full bg-app-surface text-sm font-medium transition hover:bg-app-surface-muted"
@@ -763,7 +777,9 @@
                 <div class="h-full w-full">
                     <router-outlet></router-outlet>
                     <manage-devices-modal-component></manage-devices-modal-component>
+                    @if (canAccess('quotes:read')) {
                     <app-quick-quote-modal [open]="quickQuoteOpen()" (closed)="closeQuickQuote()"></app-quick-quote-modal>
+                    }
                 </div>
             </main>
         </div>

@@ -37,6 +37,7 @@ export interface CurrentUser {
   id: string;
   shopId: string;
   role: string;
+  permissions: string[];
   name: string;
   email: string;
   organization: {
@@ -121,6 +122,27 @@ export class AuthService {
 
   getCurrentUserId(): string | null {
     return this.currentUserSubject.value?.id ?? null;
+  }
+
+  getPermissions(): string[] {
+    return [...(this.currentUserSubject.value?.permissions ?? [])];
+  }
+
+  hasPermission(permission: string): boolean {
+    const permissions = this.currentUserSubject.value?.permissions ?? [];
+    if (permissions.includes('*')) return true;
+    if (permissions.includes(permission)) return true;
+
+    const [resource] = permission.split(':');
+    return Boolean(resource && permissions.includes(`${resource}:*`));
+  }
+
+  hasEveryPermission(permissions: readonly string[]): boolean {
+    return permissions.every((permission) => this.hasPermission(permission));
+  }
+
+  hasAnyPermission(permissions: readonly string[]): boolean {
+    return permissions.some((permission) => this.hasPermission(permission));
   }
 
   getAuthStats(): AuthStatus {

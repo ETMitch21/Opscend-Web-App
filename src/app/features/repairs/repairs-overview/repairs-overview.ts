@@ -17,6 +17,7 @@ import {
 import { ChevronDownIcon, Building2, House, LucideAngularModule } from 'lucide-angular';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 
 type RepairViewFilter =
   | 'all'
@@ -47,6 +48,8 @@ type SortDirection = 'asc' | 'desc';
 })
 export class RepairsOverview {
   private readonly repairsService = inject(RepairsService);
+  private readonly auth = inject(AuthService);
+  readonly canCreateRepair = computed(() => this.auth.hasPermission('repairs:write'));
 
   readonly chevronDownIcon = ChevronDownIcon;
   readonly buildingIcon = Building2;

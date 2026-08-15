@@ -6,6 +6,7 @@ import { Customer } from '../../core/customers/customer.model';
 import { CustomersStore } from '../../core/customers/customers.store';
 import { PhonePipe } from '../../core/pipes/phone-pipe';
 import { ToastService } from '../../core/toast/toast-service';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-customer-list',
@@ -17,6 +18,11 @@ export class CustomerComponent implements OnInit {
   private readonly store = inject(CustomersStore);
   private readonly router = inject(Router);
   private toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+
+  protected readonly canWrite = computed(() => this.auth.hasPermission('customers:write'));
+  protected readonly canArchive = computed(() => this.auth.hasPermission('customers:delete'));
+  protected readonly canRestore = computed(() => this.auth.hasPermission('customers:restore'));
 
   protected readonly search = signal('');
   protected readonly archivedView = signal(false);
@@ -75,14 +81,17 @@ export class CustomerComponent implements OnInit {
   }
 
   protected createCustomer(): void {
+    if (!this.canWrite()) return;
     this.router.navigate(['/customers/create']);
   }
 
   protected editCustomer(customer: Customer): void {
+    if (!this.canWrite()) return;
     this.router.navigate(['/customers', customer.id, 'edit']);
   }
 
   protected async archiveCustomer(customer: Customer): Promise<void> {
+    if (!this.canArchive()) return;
     this.toast.confirm(
       `Archive ${customer.name}?`,
       async () => {
@@ -98,6 +107,7 @@ export class CustomerComponent implements OnInit {
   }
 
   protected async restoreCustomer(customer: Customer): Promise<void> {
+    if (!this.canRestore()) return;
     const restored = await this.store.restore(customer.id);
     if (restored) {
       await this.load();

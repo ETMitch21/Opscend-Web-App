@@ -38,7 +38,7 @@ export class SettingsHome {
   });
 
   readonly groups = computed(() =>
-    visibleSettingsGroups(this.currentUser()?.role),
+    visibleSettingsGroups(this.currentUser()?.role, this.currentUser()?.permissions ?? []),
   );
 
   readonly filteredGroups = computed<SettingsNavGroup[]>(() => {

@@ -17,6 +17,8 @@ import { UsersStore } from '../../../core/users/users-store';
 import { AuthService } from '../../../core/auth/auth.service';
 import { User } from '../../../core/users/users.model';
 import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
+import { RolesService, RoleOption } from '../../../core/roles/roles.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-shop-users-settings',
@@ -29,6 +31,7 @@ export class ShopUsers implements OnInit {
   private fb = inject(FormBuilder);
   protected usersStore = inject(UsersStore);
   private auth = inject(AuthService);
+  private rolesService = inject(RolesService);
 
   protected search = signal('');
   protected includeArchived = signal(false);
@@ -38,6 +41,12 @@ export class ShopUsers implements OnInit {
   protected creatingUser = signal(false);
   protected actioningUserId = signal<string | null>(null);
   protected pageSize = 25;
+  protected roleOptions = signal<RoleOption[]>([]);
+
+  protected canWriteUsers = computed(() => this.auth.hasPermission('users:write'));
+  protected canArchiveUsers = computed(() => this.auth.hasPermission('users:delete'));
+  protected canRestoreUsers = computed(() => this.auth.hasPermission('users:restore'));
+  protected canAssignOwner = computed(() => String(this.auth.getCurrentUser()?.role ?? '').toLowerCase() === 'owner');
 
   protected currentAuthUserId = computed(() => this.auth.getCurrentUserId());
 
@@ -114,6 +123,18 @@ export class ShopUsers implements OnInit {
     }
   }
 
+  try {
+    this.roleOptions.set(await firstValueFrom(this.rolesService.options()));
+  } catch {
+    // Keep the team directory usable if role options fail to load.
+    this.roleOptions.set([
+      { key: 'owner', name: 'Owner', description: null },
+      { key: 'manager', name: 'Manager', description: null },
+      { key: 'staff', name: 'Staff', description: null },
+      { key: 'tech', name: 'Tech', description: null },
+    ]);
+  }
+
   await this.usersStore.load({
     limit: this.pageSize,
     includeDeleted: this.includeArchived(),
@@ -173,6 +194,7 @@ export class ShopUsers implements OnInit {
   }
 
   protected toggleCreate(): void {
+    if (!this.canWriteUsers()) return;
     this.createExpanded.update((value) => !value);
 
     if (!this.createExpanded()) {
@@ -181,6 +203,7 @@ export class ShopUsers implements OnInit {
   }
 
   protected async createUser(): Promise<void> {
+    if (!this.canWriteUsers()) return;
     if (this.createForm.invalid) {
       this.createForm.markAllAsTouched();
       return;
@@ -215,6 +238,7 @@ export class ShopUsers implements OnInit {
   }
 
   protected async saveSelectedUser(): Promise<void> {
+    if (!this.canWriteUsers()) return;
     const selected = this.selectedUser();
     if (!selected || this.isSelf(selected)) return;
 
@@ -248,6 +272,7 @@ export class ShopUsers implements OnInit {
   }
 
   protected async archiveSelectedUser(): Promise<void> {
+    if (!this.canArchiveUsers()) return;
     const selected = this.selectedUser();
     if (!selected || this.isSelf(selected)) return;
 
@@ -264,6 +289,7 @@ export class ShopUsers implements OnInit {
   }
 
   protected async restoreSelectedUser(): Promise<void> {
+    if (!this.canRestoreUsers()) return;
     const selected = this.selectedUser();
     if (!selected || this.isSelf(selected)) return;
 
@@ -312,6 +338,11 @@ export class ShopUsers implements OnInit {
 
   protected trackByUserId(_: number, user: User): string {
     return user.id;
+  }
+
+  protected roleLabel(role: string | null | undefined): string {
+    const key = String(role ?? '').toLowerCase();
+    return this.roleOptions().find((option) => option.key === key)?.name ?? role ?? '—';
   }
 
   private patchEditForm(user: User): void {

@@ -173,10 +173,7 @@ export class KnowledgeBase implements OnInit {
   readonly categoryName = signal('');
   readonly categoryDescription = signal('');
 
-  readonly canWrite = computed(() => {
-    const role = String(this.auth.getCurrentUser()?.role ?? '').toLowerCase();
-    return role === 'owner' || role === 'manager';
-  });
+  readonly canWrite = computed(() => this.auth.hasPermission('knowledge:write'));
 
   readonly categories = computed(() => this.bootstrap().categories);
   readonly services = computed(() => this.bootstrap().services);

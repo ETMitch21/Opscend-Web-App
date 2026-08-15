@@ -3,11 +3,13 @@
     <div class="flex items-center justify-between px-6 pt-1 pb-4">
         <h1 class="text-2xl font-semibold text-gray-900">Repairs</h1>
 
+        @if (canCreateRepair()) {
         <button
             class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-soft transition"
             [routerLink]="['/repairs', 'create']">
             Create Repair
         </button>
+        }
     </div>
 
     <!-- Tabs -->
