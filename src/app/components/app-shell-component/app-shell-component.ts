@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   BarChart3,
   LogOutIcon,
+  LockKeyholeIcon,
   LucideAngularModule,
   LucideIconData,
   MenuIcon,
@@ -55,6 +56,7 @@ import { ToastService } from '../../core/toast/toast-service';
 import { WorkQueueService } from '../../core/work-queue/service';
 import type { WorkQueueItem, WorkQueueSummary } from '../../core/work-queue/model';
 import { AiAssistant } from '../../features/ai-assistant/ai-assistant';
+import { SessionIdleService } from '../../core/auth/session-idle.service';
 
 type NavItem = {
   label: string;
@@ -135,6 +137,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private communicationService = inject(CommunicationService);
   private toast = inject(ToastService);
   private workQueueService = inject(WorkQueueService);
+  private readonly sessionIdle = inject(SessionIdleService);
   private readonly currentUser = toSignal(this.auth.currentUser$, {
     initialValue: this.auth.getCurrentUser(),
   });
@@ -144,6 +147,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly xIcon = XIcon;
   readonly circleUserRoundIcon = CircleUserRoundIcon;
   readonly logoutIcon = LogOutIcon;
+  readonly lockIcon = LockKeyholeIcon;
   readonly searchIcon = SearchIcon;
   readonly wrenchIcon = WrenchIcon;
   readonly usersIcon = UsersIcon;
@@ -733,24 +737,27 @@ export class AppShellComponent implements OnInit, OnDestroy {
     void this.router.navigate(['/settings']);
   }
 
-  logout(): void {
-    console.log('Component logout called');
+  lockSession(): void {
     this.closeMoreMenu();
     this.closeProfileMenu();
-    this.auth.logout().subscribe({
-      next: () => {
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        this.router.navigate(['/login']);
-      }
-    });
+    this.closeLocationMenu();
+    this.notificationMenuOpen.set(false);
+    this.workQueueMenuOpen.set(false);
+    this.closeSearchDropdown();
+    this.sessionIdle.lockNow();
+  }
+
+  logout(): void {
+    this.closeMoreMenu();
+    this.closeProfileMenu();
+    this.auth.logoutAndRedirect('manual');
   }
 
   startNotificationPolling(): void {
     if (this.notificationRefreshTimer) return;
 
     this.notificationRefreshTimer = setInterval(() => {
+      if (this.sessionIdle.locked()) return;
       void this.refreshNotificationsInBackground();
     }, this.notificationPollMs);
   }
@@ -759,6 +766,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     if (this.communicationRefreshTimer) return;
 
     this.communicationRefreshTimer = setInterval(() => {
+      if (this.sessionIdle.locked()) return;
       void this.refreshUnreadCommunicationCount({ notify: true });
     }, this.communicationPollMs);
   }
@@ -767,6 +775,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     if (this.workQueueRefreshTimer) return;
 
     this.workQueueRefreshTimer = setInterval(() => {
+      if (this.sessionIdle.locked()) return;
       void this.refreshWorkQueueSummary();
     }, this.workQueuePollMs);
   }

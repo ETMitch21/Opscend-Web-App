@@ -1,0 +1,86 @@
+<div
+  class="fixed inset-0 z-[10000] flex min-h-screen items-center justify-center bg-app-bg px-5 py-8"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="session-lock-title"
+  (keydown)="$event.stopPropagation()"
+>
+  <div class="w-full max-w-md">
+    <div class="mb-6 flex justify-center">
+      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand text-white shadow-app-md">
+        <lucide-icon [img]="lockIcon" [size]="22"></lucide-icon>
+      </div>
+    </div>
+
+    <div class="rounded-app-lg border border-app-border bg-app-surface p-7 shadow-app-md sm:p-8">
+      <div class="text-center">
+        <div
+          class="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-app-border bg-app-surface-muted text-base font-semibold text-app-text"
+          aria-hidden="true"
+        >
+          {{ initials() }}
+        </div>
+
+        <h1 id="session-lock-title" class="mt-4 text-2xl font-semibold text-app-text">
+          Opscend is locked
+        </h1>
+        <p class="mt-2 text-sm leading-6 text-app-text-muted">
+          Welcome back, {{ displayName() }}. Enter your password to continue where you left off.
+        </p>
+        @if (email()) {
+          <p class="mt-1 text-xs text-app-text-muted">{{ email() }}</p>
+        }
+      </div>
+
+      <form class="mt-7" [formGroup]="form" (ngSubmit)="unlock()">
+        <label for="session-lock-password" class="mb-1.5 block text-sm font-medium text-app-text">
+          Password
+        </label>
+        <input
+          id="session-lock-password"
+          type="password"
+          autocomplete="current-password"
+          formControlName="password"
+          class="w-full rounded-app-md border border-app-border bg-white px-4 py-3 text-app-text outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+          [class.border-red-300]="!!errorMessage()"
+          autofocus
+        />
+
+        @if (errorMessage()) {
+          <p class="mt-2 text-sm font-medium text-red-600">{{ errorMessage() }}</p>
+        }
+
+        <button
+          type="submit"
+          class="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-app-md bg-brand px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="submitting() || form.invalid"
+        >
+          @if (submitting()) {
+            <lucide-icon [img]="loadingIcon" [size]="16" class="animate-spin"></lucide-icon>
+            Unlocking...
+          } @else {
+            Unlock Opscend
+          }
+        </button>
+      </form>
+
+      <div class="mt-5 rounded-app-md border border-app-border bg-app-surface-muted px-4 py-3 text-center">
+        <p class="text-xs leading-5 text-app-text-muted">
+          For security, this session will be signed out in
+          <span class="font-semibold tabular-nums text-app-text">{{ remainingTime() }}</span>
+          if it stays locked.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-app-text-muted transition hover:text-app-text disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="submitting()"
+        (click)="signOut()"
+      >
+        <lucide-icon [img]="logoutIcon" [size]="16"></lucide-icon>
+        Sign out instead
+      </button>
+    </div>
+  </div>
+</div>

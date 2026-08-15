@@ -1,0 +1,29 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--color-app-bg);
+}
+
+.session-protected-shell {
+  display: block;
+  min-height: 100vh;
+}
+
+/*
+ * Keep the authenticated application mounted so route/component/form state is
+ * preserved across a session lock, but remove the entire rendered shell from
+ * view. The inert attribute in app.html remains the interaction boundary;
+ * these styles are an additional privacy boundary so hiding the lock overlay
+ * in DevTools does not reveal customer/shop data underneath it.
+ *
+ * opacity applies to the composited subtree, so descendants cannot make
+ * themselves visible again with their own visibility rule. visibility and
+ * content-visibility are layered on as defense-in-depth for rendering/accessibility.
+ */
+.session-protected-shell--concealed {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  content-visibility: hidden;
+  pointer-events: none !important;
+  user-select: none !important;
+}

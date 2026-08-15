@@ -25,6 +25,17 @@ export class LoginComponent {
 
   loading = false;
 
+  readonly sessionNotice = (() => {
+    const reason = new URLSearchParams(window.location.search).get("reason");
+    if (reason === "idle") {
+      return "You were signed out after being inactive for too long. Sign in to continue.";
+    }
+    if (reason === "session-expired") {
+      return "Your session expired. Sign in again to continue.";
+    }
+    return null;
+  })();
+
   form: FormGroup = this.fb.group({
     email: ["", [Validators.required, Validators.email]],
     password: ["", [Validators.required, Validators.minLength(8)]],

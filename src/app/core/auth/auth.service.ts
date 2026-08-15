@@ -8,12 +8,20 @@ import {
   shareReplay,
   tap,
   catchError,
+  switchMap,
+  timeout,
 } from "rxjs";
 import { AppConfigService } from "../app-config/app-config.service";
 import { TenantService } from "../tenant/tenant.service";
+import {
+  SESSION_LAST_ACTIVITY_KEY,
+  SESSION_MANUAL_LOCK_KEY,
+  SESSION_SUPPRESS_RESTORE_KEY,
+} from "./session-timeout.constants";
 
 type LoginResponse = { accessToken: string };
 type AuthStatus = "unknown" | "hydrating" | "authenticated" | "anonymous";
+export type SessionEndReason = "manual" | "idle" | "expired";
 
 export interface AccessibleLocation {
   shopId: string;
@@ -105,6 +113,7 @@ export class AuthService {
       )
       .pipe(
         tap((res) => {
+          this.markFreshSessionActivity();
           this.setStoredToken(res.accessToken);
           this.accessTokenSubject.next(res.accessToken);
           this.authStatusSubject.next("authenticated");
@@ -217,6 +226,7 @@ export class AuthService {
       )
       .pipe(
         tap((res) => {
+          this.markFreshSessionActivity();
           this.setStoredToken(res.accessToken);
           this.accessTokenSubject.next(res.accessToken);
           this.authStatusSubject.next("authenticated");
@@ -238,12 +248,31 @@ export class AuthService {
       )
       .pipe(
         tap((response) => {
+          this.markFreshSessionActivity();
           this.setStoredToken(response.accessToken);
           this.accessTokenSubject.next(response.accessToken);
           this.tenant.setShopSlug(response.location.slug);
           this.currentUserSubject.next(null);
           this.authStatusSubject.next("authenticated");
         })
+      );
+  }
+
+  unlock(password: string): Observable<CurrentUser> {
+    return this.http
+      .post<LoginResponse>(
+        `${this.apiBase}/auth/unlock`,
+        { password },
+        { withCredentials: true }
+      )
+      .pipe(
+        tap((res) => {
+          this.setStoredToken(res.accessToken);
+          this.accessTokenSubject.next(res.accessToken);
+          this.authStatusSubject.next("authenticated");
+        }),
+        switchMap(() => this.me()),
+        tap(() => this.authStatusSubject.next("authenticated"))
       );
   }
 
@@ -264,14 +293,10 @@ export class AuthService {
   }
 
   logout() {
-    console.log("AuthService logout called");
-
     return this.http
       .post(`${this.apiBase}/auth/logout`, {}, { withCredentials: true })
       .pipe(
-        tap(() => {
-          this.clearLocalSession();
-        }),
+        tap(() => this.clearLocalSession()),
         catchError((err) => {
           this.clearLocalSession();
           throw err;
@@ -279,7 +304,51 @@ export class AuthService {
       );
   }
 
+  logoutAndRedirect(reason: SessionEndReason = "manual"): void {
+    if (typeof window === "undefined") {
+      this.clearLocalSession();
+      return;
+    }
+
+    const returnUrl = reason === "manual" ? null : this.currentReturnUrl();
+
+    this.http
+      .post(`${this.apiBase}/auth/logout`, {}, { withCredentials: true })
+      .pipe(
+        timeout(3000),
+        finalize(() => this.endSessionAndRedirect(reason, returnUrl))
+      )
+      .subscribe({
+        next: () => undefined,
+        error: () => undefined,
+      });
+  }
+
+  endSessionAndRedirect(
+    reason: SessionEndReason = "expired",
+    returnUrl: string | null = this.currentReturnUrl()
+  ): void {
+    this.suppressSessionRestore();
+    this.clearLocalSession();
+
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams();
+    if (reason !== "manual") {
+      params.set("reason", reason === "idle" ? "idle" : "session-expired");
+    }
+    if (returnUrl && returnUrl !== "/login") {
+      params.set("returnUrl", returnUrl);
+    }
+
+    const query = params.toString();
+    window.location.replace(`/login${query ? `?${query}` : ""}`);
+  }
+
   clearLocalSession() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(SESSION_MANUAL_LOCK_KEY);
+    }
     this.setStoredToken(null);
     this.accessTokenSubject.next(null);
     this.currentUserSubject.next(null);
@@ -288,10 +357,35 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem("px_current_user");
     localStorage.removeItem("px_shop");
+    localStorage.removeItem(SESSION_LAST_ACTIVITY_KEY);
     this.tenant.resetToHost();
 
     this.refreshInFlight$ = null;
     this.loadMePromise = null;
+  }
+
+  private markFreshSessionActivity(): void {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(SESSION_SUPPRESS_RESTORE_KEY);
+    localStorage.setItem(SESSION_LAST_ACTIVITY_KEY, String(Date.now()));
+  }
+
+  private suppressSessionRestore(): void {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(SESSION_SUPPRESS_RESTORE_KEY, "1");
+  }
+
+  private shouldSuppressSessionRestore(): boolean {
+    if (typeof window === "undefined") return false;
+
+    return localStorage.getItem(SESSION_SUPPRESS_RESTORE_KEY) === "1";
+  }
+
+  private currentReturnUrl(): string | null {
+    if (typeof window === "undefined") return null;
+
+    const path = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    return path.startsWith("/login") ? null : path;
   }
 
   refresh(): Observable<LoginResponse> {
@@ -328,6 +422,11 @@ export class AuthService {
 
     this.bootstrapPromise = (async () => {
       this.authStatusSubject.next("hydrating");
+
+      if (this.shouldSuppressSessionRestore()) {
+        this.clearLocalSession();
+        return;
+      }
 
       try {
         await firstValueFrom(this.refresh());

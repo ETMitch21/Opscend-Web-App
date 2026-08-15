@@ -760,9 +760,15 @@
                             <div class="border-t border-app-border p-2">
                                 <button type="button"
                                     class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
+                                    (click)="lockSession()">
+                                    <lucide-icon [size]="18" [img]="lockIcon"></lucide-icon>
+                                    <span>Lock Opscend</span>
+                                </button>
+                                <button type="button"
+                                    class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-app-text transition hover:bg-app-surface-muted"
                                     (click)="logout()">
-                                <lucide-icon [size]="18" [img]="logoutIcon"></lucide-icon>
-                                <span>Logout</span>
+                                    <lucide-icon [size]="18" [img]="logoutIcon"></lucide-icon>
+                                    <span>Logout</span>
                                 </button>
                             </div>
                         </div>

@@ -38,6 +38,7 @@ export class AuthInterceptor implements HttpInterceptor {
       req.url.includes("/auth/login") ||
       req.url.includes("/auth/refresh") ||
       req.url.includes("/auth/logout") ||
+      req.url.includes("/auth/unlock") ||
       req.url.includes("/auth/magic") ||
       req.url.includes("/auth/password");
 
@@ -56,7 +57,7 @@ export class AuthInterceptor implements HttpInterceptor {
       catchError((err: unknown) => {
         if (
           err instanceof HttpErrorResponse &&
-          (err.status === 401 || err.status === 403) &&
+          err.status === 401 &&
           token &&
           isApiRequest &&
           !isAuthCall &&
@@ -74,8 +75,8 @@ export class AuthInterceptor implements HttpInterceptor {
               );
             }),
             catchError((refreshErr) => {
-              if (refreshErr instanceof HttpErrorResponse && (refreshErr.status === 401 || refreshErr.status === 403)) {
-                this.auth.clearLocalSession();
+              if (refreshErr instanceof HttpErrorResponse && refreshErr.status === 401) {
+                this.auth.endSessionAndRedirect("expired");
               }
               return throwError(() => refreshErr);
             })

@@ -1,8 +1,17 @@
-
 @if (userIsLoggedIn && !standalonePublicRoute) {
-    <app-shell></app-shell>
+    <app-shell
+        class="session-protected-shell"
+        [class.session-protected-shell--concealed]="sessionIdle.locked()"
+        [attr.inert]="sessionIdle.locked() ? '' : null"
+        [attr.aria-hidden]="sessionIdle.locked() ? 'true' : null">
+    </app-shell>
+    @if (sessionIdle.locked()) {
+        <app-session-lock></app-session-lock>
+    }
 } @else {
     <router-outlet />
 }
 
-<ngx-sonner-toaster position="top-right" [expand]="false" [visibleToasts]="4" [toastOptions]="toastOptions" />
+@if (!userIsLoggedIn || !sessionIdle.locked()) {
+    <ngx-sonner-toaster position="top-right" [expand]="false" [visibleToasts]="4" [toastOptions]="toastOptions" />
+}
