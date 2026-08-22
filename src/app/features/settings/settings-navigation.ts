@@ -1,4 +1,5 @@
 import {
+  AlertCircleIcon,
   BellIcon,
   BlocksIcon,
   Building2,
@@ -91,6 +92,14 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         icon: DownloadIcon,
         permission: 'dataExport:read',
         keywords: ['export', 'csv', 'download', 'backup', 'data', 'portability'],
+      },
+      {
+        label: 'System health',
+        description: 'Check orders, balances, inventory, linked records, and automation processing for integrity issues.',
+        route: '/settings/shop/system-health',
+        icon: AlertCircleIcon,
+        permission: 'systemHealth:read',
+        keywords: ['health', 'integrity', 'issues', 'diagnostics', 'orders', 'balances', 'inventory', 'automations'],
       },
     ],
   },

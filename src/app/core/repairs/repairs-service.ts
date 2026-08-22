@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, switchMap } from 'rxjs';
+import { Observable, from, switchMap } from 'rxjs';
 
 import {
   RepairListResponse,
@@ -29,6 +29,7 @@ import {
   MarkRepairMessagesReadResponse,
 } from './repair.model';
 import { AppConfigService } from '../app-config/app-config.service';
+import { normalizeWebImageFile } from '../forms/image-utils';
 
 @Injectable({
   providedIn: 'root',
@@ -192,27 +193,31 @@ export class RepairsService {
   }
 
   uploadAttachment(repairId: string, file: File): Observable<RepairAttachment> {
-    return this.initAttachmentUpload(repairId, {
-      filename: file.name,
-      mimeType: file.type || undefined,
-      sizeBytes: file.size,
-    }).pipe(
-      switchMap((init) =>
-        this.http
-          .put(init.uploadUrl, file, {
-            headers: file.type ? { 'Content-Type': file.type } : undefined,
-            responseType: 'text',
-          })
-          .pipe(
-            switchMap(() =>
-              this.completeAttachmentUpload(repairId, {
-                storageKey: init.storageKey,
-                filename: file.name,
-                mimeType: file.type || null,
-                sizeBytes: file.size,
+    return from(normalizeWebImageFile(file)).pipe(
+      switchMap((uploadFile) =>
+        this.initAttachmentUpload(repairId, {
+          filename: uploadFile.name,
+          mimeType: uploadFile.type || undefined,
+          sizeBytes: uploadFile.size,
+        }).pipe(
+          switchMap((init) =>
+            this.http
+              .put(init.uploadUrl, uploadFile, {
+                headers: uploadFile.type ? { 'Content-Type': uploadFile.type } : undefined,
+                responseType: 'text',
               })
-            )
+              .pipe(
+                switchMap(() =>
+                  this.completeAttachmentUpload(repairId, {
+                    storageKey: init.storageKey,
+                    filename: uploadFile.name,
+                    mimeType: uploadFile.type || null,
+                    sizeBytes: uploadFile.size,
+                  })
+                )
+              )
           )
+        )
       )
     );
   }

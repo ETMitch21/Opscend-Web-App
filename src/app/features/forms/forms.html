@@ -364,7 +364,7 @@
       <div class="space-y-4 p-5 sm:p-7">
         @for (field of assignment.template?.fields || []; track field.key) {
           @if (!['heading', 'paragraph'].includes(field.type)) {
-            <article class="rounded-2xl border border-slate-200 p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ field.label }}</p>@if (isImageValue(responseValue(assignment, field))) { <img [src]="$any(responseValue(assignment, field))" class="mt-3 max-h-72 rounded-xl border border-slate-200 object-contain" /> } @else { <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">{{ responseDisplay(responseValue(assignment, field)) }}</p> }</article>
+            <article class="rounded-2xl border border-slate-200 p-4"><p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ field.label }}</p>@if (isImageValue(responseValue(assignment, field))) { @if (imagePreview(assignment.id + ':' + field.key, responseValue(assignment, field)); as preview) { <img [src]="preview" class="mt-3 max-h-72 rounded-xl border border-slate-200 object-contain" /> } @else { <div class="mt-3 flex min-h-32 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-center text-sm text-slate-500"><span>Preparing HEIC photo preview…</span></div> } } @else { <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">{{ responseDisplay(responseValue(assignment, field)) }}</p> }</article>
           }
         }
       </div>

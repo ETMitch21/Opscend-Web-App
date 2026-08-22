@@ -1,0 +1,307 @@
+<app-settings-layout>
+  <div settings-actions>
+    <button
+      type="button"
+      class="settings-secondary-action cursor-pointer"
+      [disabled]="loading() || refreshing() || !!actionIssueId()"
+      (click)="refresh()"
+    >
+      <lucide-icon
+        [name]="refreshing() ? icons.Loader : icons.Refresh"
+        class="h-4 w-4"
+        [class.animate-spin]="refreshing()"
+      ></lucide-icon>
+      Run scan
+    </button>
+  </div>
+
+  @if (loading()) {
+    <section class="settings-card">
+      <div class="flex min-h-64 items-center justify-center gap-2 p-8 text-sm text-app-text-muted">
+        <lucide-icon [name]="icons.Loader" class="h-5 w-5 animate-spin"></lucide-icon>
+        Checking shop health…
+      </div>
+    </section>
+  } @else if (error() && !report()) {
+    <section class="rounded-2xl border border-rose-300 bg-rose-50 p-6 dark:border-rose-700/70 dark:bg-rose-950/30">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-700 text-white dark:bg-rose-600 dark:text-white">
+          <lucide-icon [name]="icons.CircleAlert" class="h-5 w-5"></lucide-icon>
+        </span>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-app-text">Health scan failed</p>
+          <p class="mt-1 text-xs leading-5 text-app-text-muted">{{ error() }}</p>
+          <button type="button" class="settings-secondary-action mt-4 cursor-pointer" (click)="refresh()">
+            <lucide-icon [name]="icons.Refresh" class="h-4 w-4"></lucide-icon>
+            Try again
+          </button>
+        </div>
+      </div>
+    </section>
+  } @else if (report(); as health) {
+    <div class="space-y-4">
+      <section
+        class="overflow-hidden rounded-2xl border bg-app-surface"
+        [ngClass]="{
+          'border-emerald-300 dark:border-emerald-700/70': health.status === 'healthy',
+          'border-amber-300 dark:border-amber-700/70': health.status === 'attention',
+          'border-rose-300 dark:border-rose-700/70': health.status === 'critical'
+        }"
+      >
+        <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex min-w-0 items-start gap-3.5">
+            <span
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+              [ngClass]="{
+                'bg-emerald-700 text-white dark:bg-emerald-600 dark:text-white': health.status === 'healthy',
+                'bg-amber-700 text-white dark:bg-amber-600 dark:text-white': health.status === 'attention',
+                'bg-rose-700 text-white dark:bg-rose-600 dark:text-white': health.status === 'critical'
+              }"
+            >
+              <lucide-icon
+                [name]="health.status === 'healthy' ? icons.Check : icons.Alert"
+                class="h-5 w-5"
+              ></lucide-icon>
+            </span>
+
+            <div>
+              <p class="text-base font-semibold text-app-text">
+                @if (health.status === 'healthy') {
+                  Everything looks healthy
+                } @else if (health.status === 'critical') {
+                  {{ health.summary.total }} {{ health.summary.total === 1 ? 'issue needs' : 'issues need' }} attention
+                } @else {
+                  {{ health.summary.total }} {{ health.summary.total === 1 ? 'item needs' : 'items need' }} review
+                }
+              </p>
+              <p class="mt-1 max-w-2xl text-xs leading-5 text-app-text-muted">
+                @if (health.status === 'healthy') {
+                  Orders, balances, inventory, core relationships, and automation processing all passed the current integrity checks.
+                } @else {
+                  System Health found records that may affect balances, inventory accuracy, linked shop data, or background automation processing.
+                }
+              </p>
+              <p class="mt-2 text-[10.5px] font-medium text-app-text-muted">
+                Last scanned {{ scannedAt() }}
+              </p>
+            </div>
+          </div>
+
+          <div class="grid shrink-0 grid-cols-3 gap-2">
+            <button
+              type="button"
+              class="min-w-20 rounded-xl border border-app-border bg-app-surface-muted/45 px-3 py-2 text-center transition hover:bg-app-surface-muted cursor-pointer"
+              [ngClass]="severityFilter() === 'all' ? 'ring-2 ring-brand/45 bg-brand/5' : ''"
+              (click)="setSeverity('all')"
+            >
+              <span class="block text-lg font-semibold text-app-text">{{ health.summary.total }}</span>
+              <span class="block text-[9px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">Total</span>
+            </button>
+            <button
+              type="button"
+              class="min-w-20 rounded-xl border border-rose-300 bg-app-surface px-3 py-2 text-center transition hover:bg-rose-50 dark:border-rose-700/70 dark:bg-app-surface dark:hover:bg-rose-950/30 cursor-pointer"
+              [class.ring-2]="severityFilter() === 'critical'"
+              [class.ring-rose-500]="severityFilter() === 'critical'"
+              (click)="setSeverity('critical')"
+            >
+              <span class="block text-lg font-bold text-rose-800 dark:text-rose-200">{{ health.summary.critical }}</span>
+              <span class="block text-[9px] font-bold uppercase tracking-[0.08em] text-rose-800 dark:text-rose-200">Critical</span>
+            </button>
+            <button
+              type="button"
+              class="min-w-20 rounded-xl border border-amber-300 bg-app-surface px-3 py-2 text-center transition hover:bg-amber-50 dark:border-amber-700/70 dark:bg-app-surface dark:hover:bg-amber-950/30 cursor-pointer"
+              [class.ring-2]="severityFilter() === 'warning'"
+              [class.ring-amber-500]="severityFilter() === 'warning'"
+              (click)="setSeverity('warning')"
+            >
+              <span class="block text-lg font-bold text-amber-900 dark:text-amber-200">{{ health.summary.warning }}</span>
+              <span class="block text-[9px] font-bold uppercase tracking-[0.08em] text-amber-900 dark:text-amber-200">Warnings</span>
+            </button>
+          </div>
+        </div>
+
+        @if (!canRepair() && health.summary.total > 0) {
+          <div class="flex items-start gap-2.5 border-t border-app-border bg-app-surface-muted/35 px-5 py-3 text-[11px] leading-5 text-app-text-muted">
+            <lucide-icon [name]="icons.Shield" class="mt-0.5 h-4 w-4 shrink-0 text-brand"></lucide-icon>
+            <p>You can review health issues, but your role does not have permission to run System Health repairs.</p>
+          </div>
+        }
+      </section>
+
+      <section class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <button
+          type="button"
+          class="flex items-center gap-3 rounded-xl border border-app-border bg-app-surface p-3 text-left transition hover:bg-app-surface-muted/45 cursor-pointer"
+          [ngClass]="categoryFilter() === 'all' ? 'ring-2 ring-brand/45 bg-brand/5' : ''"
+          (click)="setCategory('all')"
+        >
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <lucide-icon [name]="icons.Shield" class="h-4 w-4"></lucide-icon>
+          </span>
+          <span class="min-w-0">
+            <span class="block text-xs font-semibold text-app-text">All checks</span>
+            <span class="mt-0.5 block text-[10.5px] text-app-text-muted">{{ health.summary.total }} issues</span>
+          </span>
+        </button>
+
+        @for (category of health.categories; track category.key) {
+          <button
+            type="button"
+            class="flex items-center gap-3 rounded-xl border border-app-border bg-app-surface p-3 text-left transition hover:bg-app-surface-muted/45 cursor-pointer"
+            [ngClass]="categoryFilter() === category.key ? 'ring-2 ring-brand/45 bg-brand/5' : ''"
+            (click)="setCategory(category.key)"
+          >
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-app-surface-muted text-app-text-muted">
+              <lucide-icon [name]="categoryIcon(category.key)" class="h-4 w-4"></lucide-icon>
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate text-xs font-semibold text-app-text">{{ category.label }}</span>
+              <span class="mt-0.5 block text-[10.5px] text-app-text-muted">
+                {{ category.issueCount }} {{ category.issueCount === 1 ? 'issue' : 'issues' }}
+              </span>
+            </span>
+          </button>
+        }
+      </section>
+
+      <section class="settings-card overflow-hidden">
+        <div class="settings-card-header">
+          <div>
+            <h2 class="settings-card-title">Health findings</h2>
+            <p class="settings-card-description">
+              {{ filteredIssues().length }}
+              {{ filteredIssues().length === 1 ? 'finding matches' : 'findings match' }}
+              the current filters.
+            </p>
+          </div>
+        </div>
+
+        @if (filteredIssues().length === 0) {
+          <div class="flex min-h-52 flex-col items-center justify-center px-6 py-10 text-center">
+            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-700 text-white dark:bg-emerald-600 dark:text-white">
+              <lucide-icon [name]="icons.Check" class="h-5 w-5"></lucide-icon>
+            </span>
+            <p class="mt-3 text-sm font-semibold text-app-text">No issues in this view</p>
+            <p class="mt-1 max-w-sm text-xs leading-5 text-app-text-muted">
+              The selected category and severity filters do not contain any current findings.
+            </p>
+          </div>
+        } @else {
+          <div class="divide-y divide-app-border">
+            @for (issue of filteredIssues(); track issue.id) {
+              <article class="px-4 py-4 sm:px-5">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      [ngClass]="issue.severity === 'critical'
+                        ? 'bg-rose-700 text-white dark:bg-rose-600 dark:text-white'
+                        : 'bg-amber-700 text-white dark:bg-amber-600 dark:text-white'"
+                    >
+                      <lucide-icon [name]="issue.severity === 'critical' ? icons.CircleAlert : icons.Alert" class="h-4 w-4"></lucide-icon>
+                    </span>
+
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-sm font-semibold text-app-text">{{ issue.title }}</p>
+                        <span
+                          class="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em]"
+                          [ngClass]="issue.severity === 'critical'
+                            ? 'bg-rose-700 text-white dark:bg-rose-600 dark:text-white'
+                            : 'bg-amber-700 text-white dark:bg-amber-600 dark:text-white'"
+                        >
+                          {{ issue.severity }}
+                        </span>
+                      </div>
+                      <p class="mt-1 max-w-3xl text-xs leading-5 text-app-text-muted">{{ issue.summary }}</p>
+
+                      <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                        @for (detail of issue.details; track detail.label) {
+                          <span class="text-[10.5px] text-app-text-muted">
+                            <strong class="font-semibold text-app-text">{{ detail.label }}:</strong>
+                            {{ detail.value }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex shrink-0 items-center gap-2 pl-12 lg:pl-0">
+                    @if (issue.route) {
+                      <a
+                        [routerLink]="issue.route"
+                        class="settings-secondary-action cursor-pointer"
+                      >
+                        <lucide-icon [name]="icons.External" class="h-4 w-4"></lucide-icon>
+                        Review
+                      </a>
+                    }
+
+                    @if (issue.action && canRunAction(issue) && confirmingIssueId() !== issue.id) {
+                      <button
+                        type="button"
+                        class="settings-secondary-action cursor-pointer"
+                        [disabled]="!!actionIssueId()"
+                        (click)="startAction(issue)"
+                      >
+                        <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+                        {{ issue.action.label }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                @if (issue.action && canRunAction(issue) && confirmingIssueId() === issue.id) {
+                  <div
+                    class="mt-4 ml-12 rounded-xl border p-3.5"
+                    [ngClass]="issue.action.destructive
+                      ? 'border-rose-300 bg-rose-50 dark:border-rose-700/70 dark:bg-rose-950/30'
+                      : 'border-app-border bg-app-surface-muted/45'"
+                  >
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="min-w-0">
+                        <p class="text-xs font-semibold text-app-text">{{ issue.action.confirmation }}</p>
+                        <p class="mt-1 text-[10.5px] leading-5 text-app-text-muted">{{ issue.action.description }}</p>
+                      </div>
+                      <div class="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          class="settings-secondary-action cursor-pointer"
+                          [disabled]="actionIssueId() === issue.id"
+                          (click)="cancelAction()"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          class="settings-primary-action cursor-pointer"
+                          [disabled]="!!actionIssueId()"
+                          (click)="confirmAction(issue)"
+                        >
+                          @if (actionIssueId() === issue.id) {
+                            <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+                            Applying…
+                          } @else {
+                            <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+                            Confirm fix
+                          }
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+      </section>
+
+      <div class="settings-inline-note flex items-start gap-2.5">
+        <lucide-icon [name]="icons.Shield" class="mt-0.5 h-4 w-4 shrink-0 text-brand"></lucide-icon>
+        <p>
+          System Health never guesses at ambiguous financial or relationship repairs. One-click fixes are only offered for narrowly validated conditions; everything else is surfaced for review.
+        </p>
+      </div>
+    </div>
+  }
+</app-settings-layout>

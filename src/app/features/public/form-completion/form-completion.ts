@@ -16,6 +16,8 @@ import {
 import { FormsService } from '../../../core/forms/service';
 import { FormField, PublicFormResponse } from '../../../core/forms/model';
 import { SignaturePadComponent } from '../../../core/forms/signature-pad';
+import { FORM_PHOTO_MAX_BYTES, formImageFileToDataUrl } from '../../../core/forms/image-utils';
+
 
 @Component({
   selector: 'app-form-completion',
@@ -98,12 +100,18 @@ export class FormCompletion implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 2_000_000) {
-      this.error.set('Photos must be smaller than 2 MB.');
+    if (file.size > FORM_PHOTO_MAX_BYTES) {
+      this.error.set('Photos must be 15 MB or smaller.');
       input.value = '';
       return;
     }
-    this.setValue(field.key, await this.fileToDataUrl(file));
+    try {
+      this.setValue(field.key, await formImageFileToDataUrl(file));
+    } catch (error) {
+      console.error(error);
+      this.error.set(error instanceof Error ? error.message : 'The photo could not be prepared.');
+      input.value = '';
+    }
   }
 
   isImageValue(value: unknown): value is string {
@@ -149,12 +157,4 @@ export class FormCompletion implements OnInit {
     return null;
   }
 
-  private fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result ?? ''));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-  }
 }

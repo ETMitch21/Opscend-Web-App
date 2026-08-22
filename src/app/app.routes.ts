@@ -189,6 +189,13 @@ export const routes: Routes = [
                         data: { permission: 'dataExport:read' }
                     },
                     {
+                        path: 'system-health',
+                        loadComponent: () =>
+                            import('./features/settings/system-health/system-health').then((m) => m.SystemHealthSettings),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'systemHealth:read' }
+                    },
+                    {
                         path: 'shop-bookings',
                         loadComponent: () =>
                             import('./features/settings/shop-bookings/shop-bookings').then((m) => m.ShopBookingsComponent),

@@ -33,6 +33,7 @@ import {
 import { ToastService } from '../../core/toast/toast-service';
 import { FormsService } from '../../core/forms/service';
 import { SignaturePadComponent } from '../../core/forms/signature-pad';
+import { FORM_PHOTO_MAX_BYTES, formImageFileToDataUrl, heicDataUrlToJpegDataUrl, isHeicDataUrl } from '../../core/forms/image-utils';
 import {
   FormAssignment,
   FormAssignmentPayload,
@@ -48,6 +49,7 @@ import {
 } from '../../core/forms/model';
 
 type FormsTab = 'templates' | 'assignments' | 'responses';
+
 
 type FieldTypeOption = {
   value: FormFieldType;
@@ -107,6 +109,8 @@ export class FormsPage implements OnInit {
   readonly completionOpen = signal(false);
   readonly responseOpen = signal(false);
   readonly selectedAssignment = signal<FormAssignment | null>(null);
+  readonly imagePreviews = signal<Record<string, string>>({});
+  private readonly pendingImagePreviews = new Set<string>();
 
   readonly templateSearch = signal('');
   readonly assignmentSearch = signal('');
@@ -543,12 +547,18 @@ export class FormsPage implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 2_000_000) {
-      this.toast.error('Photos must be smaller than 2 MB.');
+    if (file.size > FORM_PHOTO_MAX_BYTES) {
+      this.toast.error('Photos must be 15 MB or smaller.');
       input.value = '';
       return;
     }
-    this.responses[field.key] = await this.fileToDataUrl(file);
+    try {
+      this.responses[field.key] = await formImageFileToDataUrl(file);
+    } catch (error) {
+      console.error(error);
+      this.toast.error(error instanceof Error ? error.message : 'The photo could not be prepared.');
+      input.value = '';
+    }
   }
 
   responseValue(assignment: FormAssignment, field: FormField): unknown {
@@ -566,6 +576,27 @@ export class FormsPage implements OnInit {
 
   isImageValue(value: unknown): value is string {
     return typeof value === 'string' && value.startsWith('data:image/');
+  }
+
+  imagePreview(key: string, value: unknown): string | null {
+    if (!this.isImageValue(value)) return null;
+    if (!isHeicDataUrl(value)) return value;
+
+    const cached = this.imagePreviews()[key];
+    if (cached) return cached;
+
+    if (!this.pendingImagePreviews.has(key)) {
+      this.pendingImagePreviews.add(key);
+      void heicDataUrlToJpegDataUrl(value)
+        .then((preview) => this.imagePreviews.update((current) => ({ ...current, [key]: preview })))
+        .catch((error) => {
+          console.error('Unable to convert HEIC form response for display.', error);
+          this.toast.error('This HEIC photo could not be displayed.');
+        })
+        .finally(() => this.pendingImagePreviews.delete(key));
+    }
+
+    return null;
   }
 
   statusClass(status: string): string {
@@ -689,15 +720,6 @@ export class FormsPage implements OnInit {
       if (empty) return `${field.label} is required.`;
     }
     return null;
-  }
-
-  private fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result ?? ''));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
   }
 
   private replaceAssignment(updated: FormAssignment): void {
