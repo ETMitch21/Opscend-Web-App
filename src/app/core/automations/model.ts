@@ -15,7 +15,15 @@ export type AutomationTriggerType =
   | 'customer_created'
   | 'work_queue_overdue'
   | 'repair_status_stale'
-  | 'form_submitted';
+  | 'form_submitted'
+  | 'business_device_added'
+  | 'business_plan_limit_reached'
+  | 'business_contract_expiring'
+  | 'business_statement_finalized'
+  | 'business_statement_paid'
+  | 'business_statement_payment_failed'
+  | 'business_statement_overdue'
+  | 'business_plan_payment_failed';
 
 export type AutomationActionType =
   | 'send_email'

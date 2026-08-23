@@ -179,11 +179,24 @@ export interface CustomerPortalFormAssignment {
 
 export interface CustomerPortalDevice {
   id: string;
+  catalogRef: string | null;
+  businessAccountId: string | null;
   displayName: string;
   nickname: string | null;
   brand: string | null;
   model: string | null;
   serial: string | null;
+  imei: string | null;
+  assetTag: string | null;
+  assignedToName: string | null;
+  assignedToEmail: string | null;
+  department: string | null;
+  fleetStatus: string | null;
+  isPlanCovered: boolean;
+  carrier: string | null;
+  linePhone: string | null;
+  warrantyExpiresAt: string | null;
+  replacementTargetDate: string | null;
   createdAt: string;
   updatedAt: string;
   repairCount: number;
@@ -194,6 +207,135 @@ export interface CustomerPortalDevice {
     problemSummary: string;
     updatedAt: string;
   } | null;
+}
+
+
+
+
+export interface CustomerPortalDeviceCatalogCategory {
+  id: string;
+  name: string;
+}
+
+export interface CustomerPortalDeviceCatalogBrand {
+  id: string;
+  categoryId: string;
+  name: string;
+}
+
+export interface CustomerPortalDeviceCatalogModel {
+  id: string;
+  name: string;
+  brandId: string;
+  brandName: string;
+  categoryId: string;
+  categoryName: string;
+  releaseYear?: number | null;
+}
+
+export interface CustomerPortalBusinessEntitlement {
+  id: string;
+  name: string;
+  description: string | null;
+  allowanceQuantity: number | null;
+  usedQuantity: number;
+  remainingQuantity: number | null;
+  unitLabel: string;
+  periodEndAt: string | null;
+}
+
+export interface CustomerPortalBusinessStatement {
+  id: string;
+  number: string | null;
+  status: string;
+  totalCents: number;
+  amountPaidCents: number;
+  balanceCents: number;
+  dueAt: string | null;
+  hostedInvoiceUrl: string | null;
+  invoicePdfUrl: string | null;
+  createdAt: string;
+}
+
+export interface CustomerPortalBusinessContact {
+  id: string;
+  name: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  isPrimary: boolean;
+  isBilling: boolean;
+  canAuthorizeRepairs: boolean;
+  receivesUpdates: boolean;
+}
+
+export interface CustomerPortalBusinessPermissions {
+  canManageAccount: boolean;
+  canManageBilling: boolean;
+  canManageContacts: boolean;
+  canManageDevices: boolean;
+}
+
+export interface CustomerPortalBusinessPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  pricingModel: string;
+  recurringChargeCents: number;
+  setupFeeCents: number;
+  currency: string;
+  billingInterval: string;
+  billingIntervalCount: number;
+  coveredDeviceCount: number;
+  billableDeviceCount: number;
+  pendingDeviceCount: number | null;
+  minimumDeviceCount: number;
+  maximumDeviceCount: number | null;
+  billingManagedByStripe: boolean;
+  stripeBillingPortalAvailable: boolean;
+  stripeSubscriptionStatus: string | null;
+  stripeCurrentPeriodEndAt: string | null;
+  stripeCancelAtPeriodEnd: boolean;
+  benefits: string[];
+  entitlements: CustomerPortalBusinessEntitlement[];
+}
+
+export interface CustomerPortalBusinessAgreement {
+  signed: boolean;
+  signedAt: string | null;
+  signerName: string | null;
+  signerTitle: string | null;
+  signerEmail: string | null;
+  title: string | null;
+  templateName: string | null;
+  templateVersion: number | null;
+  documentPath: string;
+}
+
+export interface CustomerPortalBusiness {
+  id: string;
+  fleetManagementEnabled: boolean;
+  name: string;
+  legalName: string | null;
+  billingEmail: string | null;
+  billingPhone: string | null;
+  billingMode: 'per_repair' | 'consolidated';
+  billingTerms: string;
+  purchaseOrderRequired: boolean;
+  authorizationThresholdCents: number | null;
+  purchaseOrderThresholdCents: number | null;
+  contractStartsAt: string | null;
+  contractEndsAt: string | null;
+  contractAutoRenew: boolean;
+  accountManager: { id: string; name: string; email: string | null; phone?: string | null } | null;
+  viewerContact: CustomerPortalBusinessContact | null;
+  permissions: CustomerPortalBusinessPermissions | null;
+  contacts: CustomerPortalBusinessContact[];
+  locations: Array<{ id: string; name: string; code: string | null; city: string | null; state: string | null; isDefault: boolean }>;
+  plan: CustomerPortalBusinessPlan | null;
+  agreement: CustomerPortalBusinessAgreement | null;
+  statements: CustomerPortalBusinessStatement[];
 }
 
 export interface CustomerPortalSummary {
@@ -216,6 +358,7 @@ export interface CustomerPortalDashboard {
   orders: CustomerPortalOrder[];
   devices: CustomerPortalDevice[];
   forms: CustomerPortalFormAssignment[];
+  business: CustomerPortalBusiness | null;
   generatedAt: string;
 }
 

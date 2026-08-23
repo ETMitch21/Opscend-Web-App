@@ -1,0 +1,116 @@
+<div class="fleet-page">
+  <header class="page-header">
+    <div>
+      <div class="eyebrow"><lucide-icon [img]="buildingIcon" [size]="16"></lucide-icon> Business & fleet</div>
+      <h1>Business accounts</h1>
+      <p>Manage company contacts, covered devices, service plans, repairs, and billing from one place.</p>
+    </div>
+    @if (canWrite) {
+      <button class="primary-btn" type="button" (click)="openCreate()">
+        <lucide-icon [img]="plusIcon" [size]="18"></lucide-icon>
+        New business account
+      </button>
+    }
+  </header>
+
+  <section class="metric-grid" aria-label="Business account summary">
+    <article class="metric-card"><span class="metric-icon"><lucide-icon [img]="shieldIcon" [size]="19"></lucide-icon></span><div><strong>{{ activeAccounts }}</strong><span>Active accounts</span></div></article>
+    <article class="metric-card"><span class="metric-icon"><lucide-icon [img]="deviceIcon" [size]="19"></lucide-icon></span><div><strong>{{ managedDevices }}</strong><span>Managed devices</span></div></article>
+    <article class="metric-card"><span class="metric-icon"><lucide-icon [img]="usersIcon" [size]="19"></lucide-icon></span><div><strong>{{ openRepairs }}</strong><span>Open repairs</span></div></article>
+    <article class="metric-card"><span class="metric-icon"><lucide-icon [img]="moneyIcon" [size]="19"></lucide-icon></span><div><strong>{{ money(outstandingCents) }}</strong><span>Outstanding</span></div></article>
+  </section>
+
+  <section class="workspace-card">
+    <div class="toolbar">
+      <label class="search-field">
+        <lucide-icon [img]="searchIcon" [size]="17"></lucide-icon>
+        <input [(ngModel)]="search" (keyup.enter)="applyFilters()" placeholder="Search company, contact, asset tag, or serial…" />
+      </label>
+      <select [(ngModel)]="status" (change)="applyFilters()" aria-label="Account status">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="paused">Paused</option>
+        <option value="closed">Closed</option>
+      </select>
+      <button class="secondary-btn" type="button" (click)="applyFilters()">Search</button>
+      @if (search || status) { <button class="text-btn" type="button" (click)="clearFilters()">Clear</button> }
+    </div>
+
+    @if (loading()) {
+      <div class="state"><lucide-icon class="spin" [img]="loadingIcon" [size]="22"></lucide-icon><span>Loading business accounts…</span></div>
+    } @else if (error()) {
+      <div class="state error-state"><strong>Couldn’t load business accounts</strong><span>{{ error() }}</span><button class="secondary-btn" (click)="load()">Try again</button></div>
+    } @else if (!accounts().length) {
+      <div class="empty-state">
+        <span class="empty-icon"><lucide-icon [img]="buildingIcon" [size]="28"></lucide-icon></span>
+        <h2>{{ search || status ? 'No matching accounts' : 'Your business customers will live here' }}</h2>
+        <p>{{ search || status ? 'Try a different search or status.' : 'Create a business account to track contacts, company devices, service plans, and account activity.' }}</p>
+        @if (canWrite && !search && !status) { <button class="primary-btn" (click)="openCreate()"><lucide-icon [img]="plusIcon" [size]="18"></lucide-icon> Create first account</button> }
+      </div>
+    } @else {
+      <div class="account-list">
+        @for (account of accounts(); track account.id) {
+          <a class="account-row" [routerLink]="['/business-accounts', account.id]">
+            <div class="company-mark">{{ account.name.slice(0, 2).toUpperCase() }}</div>
+            <div class="company-main">
+              <div class="company-title-line">
+                <h2>{{ account.name }}</h2>
+                <span class="status-badge" [class.paused]="account.status === 'paused'" [class.closed]="account.status === 'closed'">{{ statusLabel(account.status) }}</span>
+                @if (account.planName && account.planStatus !== 'none') { <span class="plan-badge">{{ planLabel(account) }}</span> }
+              </div>
+              <p>
+                @if (account.primaryContact) { {{ account.primaryContact.name }} @if (account.primaryContact.title) { · {{ account.primaryContact.title }} } }
+                @else { No primary contact }
+                <span class="dot">•</span> {{ billingTermsLabel(account.billingTerms) }}
+                @if (account.purchaseOrderRequired) { <span class="dot">•</span> PO required }
+              </p>
+            </div>
+            <div class="row-stat"><strong>{{ account.stats.activeDevices }}</strong><span>devices</span></div>
+            <div class="row-stat"><strong>{{ account.stats.openRepairs }}</strong><span>open repairs</span></div>
+            <div class="row-stat money-stat"><strong>{{ money(account.stats.outstandingBalanceCents) }}</strong><span>outstanding</span></div>
+            <lucide-icon class="chevron" [img]="chevronIcon" [size]="19"></lucide-icon>
+          </a>
+        }
+      </div>
+    }
+  </section>
+</div>
+
+@if (createOpen()) {
+  <div class="modal-backdrop" (mousedown)="closeCreate()">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="create-business-title" (mousedown)="$event.stopPropagation()">
+      <header class="modal-header"><div><span class="eyebrow">New account</span><h2 id="create-business-title">Add a business customer</h2><p>Set up the company, its main contact, billing preferences, and optional service plan.</p></div><button class="icon-btn" type="button" (click)="closeCreate()" aria-label="Close"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+      <div class="modal-body">
+        <div class="form-section"><h3>Company</h3><div class="form-grid two">
+          <label><span>Company name *</span><input [(ngModel)]="form.name" placeholder="Acme Dental Group" /></label>
+          <label><span>Legal name</span><input [(ngModel)]="form.legalName" placeholder="Acme Dental Group, LLC" /></label>
+          <label><span>Billing email</span><input type="email" [(ngModel)]="form.billingEmail" placeholder="billing@company.com" /></label>
+          <label><span>Billing phone</span><input [(ngModel)]="form.billingPhone" placeholder="(816) 555-0123" /></label>
+        </div></div>
+        <div class="form-section"><h3>Primary contact</h3><div class="form-grid two">
+          <label><span>Name *</span><input [(ngModel)]="form.contactName" placeholder="Jordan Smith" /></label>
+          <label><span>Title</span><input [(ngModel)]="form.contactTitle" placeholder="Office Manager" /></label>
+          <label><span>Email</span><input type="email" [(ngModel)]="form.contactEmail" placeholder="jordan@company.com" /></label>
+          <label><span>Phone</span><input [(ngModel)]="form.contactPhone" placeholder="(816) 555-0123" /></label>
+        </div></div>
+        <div class="form-section"><h3>Billing</h3><div class="form-grid two">
+          <label><span>Payment terms</span><select [(ngModel)]="form.billingTerms"><option value="due_on_receipt">Due on receipt</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_45">Net 45</option><option value="net_60">Net 60</option></select></label>
+          <div class="toggle-stack"><label class="check-row"><input type="checkbox" [(ngModel)]="form.purchaseOrderRequired" /><span><strong>Purchase order required</strong><small>Flag repairs and billing that should have a PO.</small></span></label><label class="check-row"><input type="checkbox" [(ngModel)]="form.taxExempt" /><span><strong>Tax exempt</strong><small>Keep the account’s tax status visible to staff.</small></span></label></div>
+          @if (form.taxExempt) { <label><span>Tax exemption ID</span><input [(ngModel)]="form.taxExemptId" /></label> }
+        </div></div>
+        <div class="form-section plan-section"><div><h3>Service plan <span>Optional</span></h3><p>Use this for fleet or managed-device agreements. You can change it later.</p></div><div class="form-grid three">
+          <label class="span-two"><span>Plan name</span><input [(ngModel)]="form.planName" placeholder="Managed Device Plan" /></label>
+          <label><span>Plan status</span><select [(ngModel)]="form.planStatus"><option value="active">Active</option><option value="paused">Paused</option><option value="canceled">Canceled</option></select></label>
+          <label><span>Monthly / device</span><div class="money-input"><span>$</span><input type="number" min="0" step="0.01" [(ngModel)]="form.planMonthlyFee" /></div></label>
+          <label><span>Plan labor</span><div class="money-input"><span>$</span><input type="number" min="0" step="0.01" [(ngModel)]="form.planLabor" /></div></label>
+          <label><span>Standard labor</span><div class="money-input"><span>$</span><input type="number" min="0" step="0.01" [(ngModel)]="form.standardLabor" /></div></label>
+          <label><span>Covered devices</span><input type="number" min="0" [(ngModel)]="form.coveredDeviceLimit" placeholder="Unlimited" /></label>
+          <label><span>Parts discount %</span><input type="number" min="0" max="100" step="0.1" [(ngModel)]="form.partsDiscountPercent" /></label>
+          <label><span>Service discount %</span><input type="number" min="0" max="100" step="0.1" [(ngModel)]="form.serviceDiscountPercent" /></label>
+        </div></div>
+        <div class="form-section"><label><span>Internal notes</span><textarea rows="3" [(ngModel)]="form.notes" placeholder="Account preferences, billing instructions, or service notes…"></textarea></label></div>
+      </div>
+      <footer class="modal-footer"><button class="secondary-btn" type="button" (click)="closeCreate()">Cancel</button><button class="primary-btn" type="button" [disabled]="saving()" (click)="createAccount()">@if (saving()) { <lucide-icon class="spin" [img]="loadingIcon" [size]="17"></lucide-icon> Creating… } @else { Create business account }</button></footer>
+    </section>
+  </div>
+}

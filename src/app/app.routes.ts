@@ -33,6 +33,11 @@ import { CommunicationsInbox } from './features/communications/communications-in
 
 export const routes: Routes = [
     {
+        path: 'business-enroll/:token',
+        loadComponent: () =>
+            import('./features/public/business-enrollment/business-enrollment').then((m) => m.BusinessEnrollment)
+    },
+    {
         path: 'form/:token',
         loadComponent: () =>
             import('./features/public/form-completion/form-completion').then((m) => m.FormCompletion)
@@ -65,6 +70,23 @@ export const routes: Routes = [
     { path: "forgot", component: ForgotComponent, canActivate: [PublicGuard] },
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [PermissionGuard], data: { permission: "repairs:read" } },
+    {
+        path: "business-accounts",
+        children: [
+            {
+                path: '',
+                loadComponent: () =>
+                    import('./features/business-accounts/business-accounts').then((m) => m.BusinessAccounts)
+            },
+            {
+                path: ':id',
+                loadComponent: () =>
+                    import('./features/business-accounts/business-account-detail/business-account-detail').then((m) => m.BusinessAccountDetail)
+            }
+        ],
+        canActivate: [PermissionGuard],
+        data: { permission: 'businessAccounts:read' }
+    },
     {
         path: "balances",
         loadComponent: () =>
@@ -194,6 +216,20 @@ export const routes: Routes = [
                             import('./features/settings/system-health/system-health').then((m) => m.SystemHealthSettings),
                         canActivate: [PermissionGuard],
                         data: { permission: 'systemHealth:read' }
+                    },
+                    {
+                        path: 'business-fleet',
+                        loadComponent: () =>
+                            import('./features/settings/business-fleet/business-fleet').then((m) => m.BusinessFleetSettings),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'shops:read' }
+                    },
+                    {
+                        path: 'fleet-plans',
+                        loadComponent: () =>
+                            import('./features/settings/fleet-plans/fleet-plans').then((m) => m.FleetPlansSettings),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'businessAccounts:read' }
                     },
                     {
                         path: 'shop-bookings',

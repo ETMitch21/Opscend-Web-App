@@ -61,3 +61,18 @@
     transform: translate(0, -50%);
   }
 }
+
+/* Shell polish */
+:host {
+  display: block;
+}
+
+:host ::ng-deep main {
+  scrollbar-gutter: stable;
+}
+
+@media (min-width: 1024px) {
+  :host ::ng-deep header.sticky > div {
+    padding-inline: 1.25rem;
+  }
+}

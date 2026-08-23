@@ -1,0 +1,144 @@
+@if (loading()) {
+  <div class="enrollment-state"><lucide-icon class="spin" [img]="icons.LoaderCircle" [size]="28"></lucide-icon><span>Opening your fleet enrollment…</span></div>
+} @else if (error() && !data()) {
+  <div class="enrollment-state error"><div class="state-icon"><lucide-icon [img]="icons.FileSignature" [size]="28"></lucide-icon></div><h1>We couldn’t open this enrollment</h1><p>{{ error() }}</p></div>
+} @else if (data(); as current) {
+  <main class="enrollment-page" [style.--brand]="brandColor()">
+    <header class="enrollment-header">
+      <div class="brand-mark"><lucide-icon [img]="icons.ShieldCheck" [size]="20"></lucide-icon></div>
+      <div><strong>{{ current.shop.name }}</strong><span>Business Fleet Enrollment</span></div>
+      <div class="secure-label"><lucide-icon [img]="icons.LockKeyhole" [size]="14"></lucide-icon>Secure enrollment</div>
+    </header>
+
+    <section class="enrollment-shell">
+      <aside class="step-rail">
+        <div class="company-summary"><span>Prepared for</span><strong>{{ current.account.name }}</strong>@if(current.account.legalName){<small>{{ current.account.legalName }}</small>}</div>
+        <nav>
+          @for (item of steps(); track item.key; let index = $index) {
+            <button type="button" [class.active]="step() === item.key" [class.done]="item.done" [disabled]="!canOpen(item.key)" (click)="setStep(item.key)">
+              <span class="step-dot">@if(item.done){<lucide-icon [img]="icons.Check" [size]="13"></lucide-icon>}@else { {{ index + 1 }} }</span>
+              <span>{{ item.label }}</span>
+            </button>
+          }
+        </nav>
+        <div class="rail-help"><lucide-icon [img]="icons.Mail" [size]="16"></lucide-icon><span>Questions? Reply to the enrollment email and your service team can help.</span></div>
+      </aside>
+
+      <section class="step-panel">
+        @if (error()) { <div class="inline-error">{{ error() }}</div> }
+
+        @if (step() === 'review') {
+          <div class="step-heading"><span class="eyebrow">Your Fleet Plan</span><h1>{{ current.enrollment.planName }}</h1><p>Review the plan prepared for {{ current.account.name }} before signing the service agreement.</p></div>
+          <div class="price-hero"><div><span>Recurring service</span><strong>{{ money(current.enrollment.recurringFeeCents) }}</strong><small>{{ current.enrollment.billableDeviceCount }} billable device{{ current.enrollment.billableDeviceCount === 1 ? '' : 's' }} · {{ current.account.billingTermsLabel }}</small></div>@if(current.enrollment.setupFeeCents){<div class="setup-fee"><span>One-time setup</span><strong>{{ money(current.enrollment.setupFeeCents) }}</strong></div>}</div>
+          <div class="review-grid">
+            <article><lucide-icon [img]="icons.Smartphone" [size]="19"></lucide-icon><span>Device commitment</span><strong>{{ current.enrollment.minimumDeviceCount }} minimum@if(current.enrollment.maximumDeviceCount){ · {{ current.enrollment.maximumDeviceCount }} max}</strong></article>
+            <article><lucide-icon [img]="icons.FileText" [size]="19"></lucide-icon><span>Agreement term</span><strong>{{ current.enrollment.contractTermMonths ? current.enrollment.contractTermMonths + ' months' : 'Ongoing' }}</strong><small>Starts {{ date(current.enrollment.startsAt) }}</small></article>
+            <article><lucide-icon [img]="icons.WalletCards" [size]="19"></lucide-icon><span>Billing</span><strong>{{ current.enrollment.billingManagedByStripe ? 'Secure recurring billing' : current.account.billingTermsLabel }}</strong></article>
+          </div>
+          @if (current.enrollment.benefits.length) { <section class="benefits"><h2>Included with your plan</h2><div class="benefit-grid">@for(benefit of current.enrollment.benefits; track benefit){<div><lucide-icon [img]="icons.CheckCircle2" [size]="17"></lucide-icon><span>{{ benefit }}</span></div>}</div></section> }
+          <div class="step-actions"><span></span><button class="primary" type="button" (click)="nextFromReview()">{{ current.state.agreementSigned ? 'Continue setup' : 'Review agreement' }}<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button></div>
+        }
+
+        @if (step() === 'agreement') {
+          <div class="step-heading"><span class="eyebrow">{{ current.agreement.agreementTemplateName || 'Service Agreement' }}</span><h1>Review & sign</h1><p>Your agreement is frozen for this enrollment before you sign, so future shop template changes won’t alter the copy you accept.</p></div>
+          <div class="agreement-preview">
+            <div class="agreement-title"><div><strong>{{ current.agreement.agreementTitle || 'Fleet Service Agreement' }}</strong><span>{{ current.account.legalName || current.account.name }} · {{ current.shop.name }} · v{{ current.agreement.agreementTemplateVersion || 1 }}</span></div><button class="text-button" type="button" (click)="openAgreement()">Open full agreement</button></div>
+            <div class="agreement-facts"><div><span>Plan</span><strong>{{ current.enrollment.planName }}</strong></div><div><span>Recurring</span><strong>{{ money(current.enrollment.recurringFeeCents) }}</strong></div><div><span>Payment terms</span><strong>{{ current.account.billingTermsLabel }}</strong></div><div><span>Term</span><strong>{{ current.enrollment.contractTermMonths ? current.enrollment.contractTermMonths + ' months' : 'Ongoing' }}</strong></div></div>
+            @if (current.agreement.agreementIntroduction) { <p class="agreement-intro">{{ current.agreement.agreementIntroduction }}</p> }
+            <div class="agreement-section-list">
+              @for (section of current.agreement.agreementSections; track section.id) {
+                <section><h3>{{ section.title }}</h3><p>{{ section.body }}</p></section>
+              }
+            </div>
+          </div>
+          @if (current.state.agreementSigned) {
+            <div class="signed-card"><lucide-icon [img]="icons.CheckCircle2" [size]="22"></lucide-icon><div><strong>Agreement signed</strong><span>{{ current.state.signer?.name }} · {{ date(current.state.signedAt) }}</span></div><button class="secondary" type="button" (click)="openAgreement()">View signed agreement</button></div>
+            <div class="step-actions"><button class="secondary" type="button" (click)="setStep('review')">Back</button><button class="primary" type="button" (click)="setStep('company')">Continue<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button></div>
+          } @else {
+            <div class="form-card">
+              <h2>Authorized signer</h2>
+              <div class="form-grid"><label><span>Full name *</span><input [(ngModel)]="signerName" autocomplete="name"></label><label><span>Title *</span><input [(ngModel)]="signerTitle" placeholder="Owner, Office Manager…"></label><label class="full"><span>Email *</span><input type="email" [(ngModel)]="signerEmail" autocomplete="email"></label></div>
+              <label class="signature-field"><span>Electronic signature *</span><input [(ngModel)]="signature" [placeholder]="signerName || 'Type your full legal name'"><small>Typing your name here is your electronic signature.</small></label>
+              <label class="consent"><input type="checkbox" [(ngModel)]="accepted"><span>{{ current.agreement.signatureStatement || ('I am authorized to sign for ' + current.account.name + ' and agree to this agreement.') }}</span></label>
+            </div>
+            <div class="step-actions"><button class="secondary" type="button" (click)="setStep('review')">Back</button><button class="primary" type="button" [disabled]="saving()" (click)="signAgreement()">{{ saving() ? 'Signing…' : 'Sign agreement' }}<lucide-icon [img]="icons.FileSignature" [size]="17"></lucide-icon></button></div>
+          }
+        }
+
+        @if (step() === 'company') {
+          <div class="step-heading"><span class="eyebrow">Company Setup</span><h1>Confirm your contact details</h1><p>This person can receive billing updates and act as the primary Fleet account contact.</p></div>
+          <div class="form-card"><div class="form-grid"><label><span>Authorized contact *</span><input [(ngModel)]="contactName"></label><label><span>Title</span><input [(ngModel)]="contactTitle"></label><label><span>Email *</span><input type="email" [(ngModel)]="contactEmail"></label><label><span>Phone</span><input type="tel" [(ngModel)]="contactPhone"></label></div><hr><h2>Billing contact</h2><div class="form-grid"><label><span>Billing email</span><input type="email" [(ngModel)]="billingEmail"></label><label><span>Billing phone</span><input type="tel" [(ngModel)]="billingPhone"></label></div></div>
+          <div class="step-actions"><button class="secondary" type="button" (click)="setStep('agreement')">Back</button><button class="primary" type="button" [disabled]="saving()" (click)="saveCompany()">{{ saving() ? 'Saving…' : 'Confirm company' }}<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button></div>
+        }
+
+        @if (step() === 'fleet') {
+          <div class="step-heading"><span class="eyebrow">Fleet Setup</span><h1>Confirm the starting fleet</h1><p>You can add full device details later from the business portal. For now, tell us how many devices you expect this plan to support.</p></div>
+          <div class="fleet-count-card"><div class="fleet-icon"><lucide-icon [img]="icons.Laptop" [size]="24"></lucide-icon></div><div><span>Expected enrolled devices</span><input type="number" min="0" max="500" [(ngModel)]="expectedDeviceCount" (ngModelChange)="onExpectedDeviceCountChange($event)" [disabled]="current.state.fleetConfirmed"></div><small>Your plan bills for at least {{ current.enrollment.minimumDeviceCount }} device{{ current.enrollment.minimumDeviceCount === 1 ? '' : 's' }}.</small></div>
+          <label class="consent add-later"><input type="checkbox" [(ngModel)]="addDevicesLater" (ngModelChange)="onAddDevicesLaterChange($event)" [disabled]="current.state.fleetConfirmed"><span><strong>We’ll add device details later</strong><small>Finish enrollment now, then select devices from the shop catalog and add employee, serial/IMEI, and asset information from the portal.</small></span></label>
+
+          @if (!addDevicesLater) {
+            <section class="device-roster">
+              <div class="device-roster-header">
+                <div><span class="eyebrow">Starting device roster</span><h2>Add the devices covered at launch</h2><p>Choose each device from the shop’s device catalog, then add assignment or asset details now or update them later from the business portal.</p></div>
+                @if (!current.state.fleetConfirmed) {
+                  <button class="secondary compact-btn" type="button" (click)="addDeviceRow()"><lucide-icon [img]="icons.Plus" [size]="15"></lucide-icon>Add device</button>
+                }
+              </div>
+              @if (!current.state.fleetConfirmed && !catalogLoading() && catalogCategories().length === 0) {
+                <div class="catalog-empty-note">No active models are available in this shop's device catalog yet. Contact the shop before completing the starting fleet, or choose “We’ll add device details later.”</div>
+              }
+              <div class="device-list">
+                @for (device of deviceRows; track $index; let i = $index) {
+                  <article class="device-entry">
+                    <div class="device-entry-title"><div class="device-number">{{ i + 1 }}</div><strong>Device {{ i + 1 }}</strong>@if (!current.state.fleetConfirmed && deviceRows.length > 1) {<button class="icon-remove" type="button" (click)="removeDeviceRow(i)" aria-label="Remove device"><lucide-icon [img]="icons.Trash2" [size]="15"></lucide-icon></button>}</div>
+                    <div class="device-grid">
+                      @if (current.state.fleetConfirmed) {
+                        <label class="device-model"><span>Device / model</span><input [ngModel]="device.displayName || 'Catalog device'" disabled></label>
+                      } @else {
+                        <label><span>Category *</span><select [ngModel]="device.categoryId" (ngModelChange)="onEnrollmentDeviceCategoryChange(device, $event)" [disabled]="catalogLoading()"><option value="">Select category</option>@for (category of catalogCategories(); track category.id) { <option [value]="category.id">{{ category.name }}</option> }</select></label>
+                        <label><span>Brand *</span><select [ngModel]="device.brandId" (ngModelChange)="onEnrollmentDeviceBrandChange(device, $event)" [disabled]="!device.categoryId || catalogLoading()"><option value="">Select brand</option>@for (brand of brandsFor(device); track brand.id) { <option [value]="brand.id">{{ brand.name }}</option> }</select></label>
+                        <label class="device-model"><span>Model *</span><select [ngModel]="device.catalogRef" (ngModelChange)="onEnrollmentDeviceModelChange(device, $event)" [disabled]="!device.brandId || catalogLoading()"><option value="">{{ catalogLoading() ? 'Loading catalog…' : 'Select model' }}</option>@for (model of modelsFor(device); track model.id) { <option [value]="model.id">{{ model.name }}{{ model.releaseYear ? ' (' + model.releaseYear + ')' : '' }}</option> }</select></label>
+                      }
+                      <label><span>Assigned to</span><input [(ngModel)]="device.assignedToName" [disabled]="current.state.fleetConfirmed" placeholder="Employee name"></label>
+                      <label><span>Work email</span><input type="email" [(ngModel)]="device.assignedToEmail" [disabled]="current.state.fleetConfirmed" placeholder="employee@company.com"></label>
+                      <label><span>Department</span><input [(ngModel)]="device.department" [disabled]="current.state.fleetConfirmed" placeholder="Sales, Field Ops…"></label>
+                      <label><span>Asset tag</span><input [(ngModel)]="device.assetTag" [disabled]="current.state.fleetConfirmed" placeholder="Optional"></label>
+                      <label><span>Serial number</span><input [(ngModel)]="device.serial" [disabled]="current.state.fleetConfirmed" placeholder="Optional"></label>
+                      <label><span>IMEI</span><input [(ngModel)]="device.imei" [disabled]="current.state.fleetConfirmed" placeholder="Optional"></label>
+                    </div>
+                  </article>
+                }
+              </div>
+            </section>
+          }
+
+          <label class="notes-field"><span>Fleet notes</span><textarea rows="4" [(ngModel)]="fleetNotes" [disabled]="current.state.fleetConfirmed" placeholder="Departments, rollout notes, special device groups…"></textarea></label>
+          <div class="step-actions"><button class="secondary" type="button" (click)="setStep('company')">Back</button>@if (!current.state.fleetConfirmed) {<button class="primary" type="button" [disabled]="saving()" (click)="saveFleet()">{{ saving() ? 'Saving…' : 'Confirm fleet' }}<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button>} @else {<button class="primary" type="button" (click)="setStep(current.enrollment.billingManagedByStripe && current.enrollment.paymentSetupStatus !== 'completed' ? 'billing' : 'complete')">Continue<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button>}</div>
+        }
+
+        @if (step() === 'billing') {
+          <div class="step-heading"><span class="eyebrow">Billing Setup</span><h1>{{ current.enrollment.paymentSetupMethod === 'opscend_tech' ? 'Finish billing in person' : 'Secure billing setup' }}</h1><p>{{ current.enrollment.paymentSetupMethod === 'opscend_tech' ? 'Your agreement and company setup are complete. A technician can now finish card setup with the Stripe Reader M2 in Opscend Tech.' : 'Stripe securely collects and stores the approved payment method. Card details are never entered into Opscend by the shop.' }}</p></div>
+          @if (current.enrollment.paymentSetupStatus === 'completed') {
+            <div class="complete-card compact"><div class="complete-icon"><lucide-icon [img]="icons.CheckCircle2" [size]="25"></lucide-icon></div><div><strong>Billing is ready</strong><span>Your recurring Fleet billing setup is complete.</span></div></div>
+            <div class="step-actions"><button class="secondary" type="button" (click)="setStep('fleet')">Back</button><button class="primary" type="button" (click)="setStep('complete')">Finish<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button></div>
+          } @else if (current.enrollment.paymentSetupMethod === 'opscend_tech') {
+            <div class="billing-handoff"><div class="billing-icon"><lucide-icon [img]="icons.CreditCard" [size]="25"></lucide-icon></div><div><strong>Ready for Opscend Tech</strong><span>Show this status to the technician. The iPad will verify that your agreement is signed before starting the M2 card setup.</span></div></div>
+            <div class="step-actions"><button class="secondary" type="button" (click)="setStep('fleet')">Back</button><button class="secondary" type="button" (click)="openPortal()">Open business portal</button></div>
+          } @else {
+            <div class="billing-card"><div><span>Due at setup</span><strong>{{ money(current.enrollment.setupFeeCents + current.enrollment.recurringFeeCents) }}</strong><small>Includes {{ money(current.enrollment.setupFeeCents) }} setup + first recurring charge.</small></div><lucide-icon [img]="icons.CreditCard" [size]="26"></lucide-icon></div>
+            <div class="secure-note"><lucide-icon [img]="icons.LockKeyhole" [size]="17"></lucide-icon><span>You’ll continue to Stripe’s secure checkout to enter payment details.</span></div>
+            <div class="step-actions"><button class="secondary" type="button" (click)="setStep('fleet')">Back</button><button class="primary" type="button" (click)="continueToBilling()">Continue to secure billing<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button></div>
+          }
+        }
+
+        @if (step() === 'complete') {
+          @if (!current.enrollment.billingManagedByStripe || current.enrollment.paymentSetupStatus === 'completed') {
+            <div class="completion-wrap"><div class="success-orbit"><lucide-icon [img]="icons.Check" [size]="30"></lucide-icon></div><span class="eyebrow">Enrollment Complete</span><h1>{{ current.account.name }} is ready.</h1><p>Your Fleet agreement, company details, and device setup have been recorded. Use the business portal to manage devices, view plan information, statements, and repair requests.</p><div class="completion-summary"><div><span>Plan</span><strong>{{ current.enrollment.planName }}</strong></div><div><span>Effective</span><strong>{{ date(current.enrollment.startsAt) }}</strong></div><div><span>Payment terms</span><strong>{{ current.account.billingTermsLabel }}</strong></div><div><span>Fleet</span><strong>{{ expectedDeviceCount }} expected devices</strong></div></div><div class="completion-actions"><button class="secondary" type="button" (click)="openAgreement()"><lucide-icon [img]="icons.FileText" [size]="16"></lucide-icon>View signed agreement</button>@if(current.state.stage === 'active'){<button class="primary" type="button" (click)="openPortal()">Open business portal<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button>}@else{<button class="primary" type="button" [disabled]="saving()" (click)="finishWithoutStripe()">{{ saving() ? 'Activating…' : 'Activate account' }}<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button>}</div></div>
+          } @else {
+            <div class="completion-wrap"><div class="success-orbit pending"><lucide-icon [img]="icons.CreditCard" [size]="26"></lucide-icon></div><span class="eyebrow">Almost Finished</span><h1>Billing setup is the last step.</h1><p>Your agreement and company information are saved. Complete billing to activate the Fleet Plan.</p><button class="primary centered" type="button" (click)="setStep('billing')">Finish billing setup<lucide-icon [img]="icons.ChevronRight" [size]="17"></lucide-icon></button></div>
+          }
+        }
+      </section>
+    </section>
+  </main>
+}

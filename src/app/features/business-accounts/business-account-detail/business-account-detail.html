@@ -1,0 +1,477 @@
+@if (loading()) {
+  <div class="detail-state"><lucide-icon class="spin" [img]="loaderIcon" [size]="24"></lucide-icon><span>Loading business account…</span></div>
+} @else if (error() || !account()) {
+  <div class="detail-state error"><strong>Couldn’t open this business account</strong><span>{{ error() }}</span><a routerLink="/business-accounts" class="secondary-btn">Back to business accounts</a></div>
+} @else {
+  @let current = account()!;
+  <div class="detail-page">
+    <div class="back-row"><a routerLink="/business-accounts"><lucide-icon [img]="backIcon" [size]="16"></lucide-icon> Business accounts</a></div>
+
+    <header class="account-header">
+      <div class="company-block">
+        <div class="company-mark">{{ current.name.slice(0,2).toUpperCase() }}</div>
+        <div>
+          <div class="title-line">
+            <h1>{{ current.name }}</h1>
+            <span class="status-badge" [class.paused]="current.status === 'paused'" [class.closed]="current.status === 'closed'">{{ accountStatusLabel(current.status) }}</span>
+            @if (current.planName && current.planStatus !== 'none') { <span class="plan-badge">{{ current.planName }}</span> }
+          </div>
+          <p>@if (current.legalName) { {{ current.legalName }} · } {{ current.stats.activeDevices }} managed devices · {{ current.stats.contacts }} contacts</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        @if (canWrite && operations()?.settings?.portalEnabled) { <button class="secondary-btn" type="button" (click)="openPortalShare()"><lucide-icon [img]="shareIcon" [size]="16"></lucide-icon>Share portal</button> }
+        @if (canWrite) { <button class="secondary-btn" type="button" (click)="openAccountEditor()"><lucide-icon [img]="editIcon" [size]="16"></lucide-icon>Edit account</button> }
+        <button class="primary-btn" type="button" (click)="startRepair()"><lucide-icon [img]="wrenchIcon" [size]="17"></lucide-icon>New repair</button>
+      </div>
+    </header>
+
+    <section class="metric-grid">
+      <article class="metric-card"><span class="metric-icon"><lucide-icon [img]="deviceIcon" [size]="18"></lucide-icon></span><div><strong>{{ current.stats.activeDevices }}</strong><span>Managed devices</span></div></article>
+      <article class="metric-card"><span class="metric-icon"><lucide-icon [img]="wrenchIcon" [size]="18"></lucide-icon></span><div><strong>{{ current.stats.openRepairs }}</strong><span>Open repairs</span></div></article>
+      <article class="metric-card"><span class="metric-icon"><lucide-icon [img]="moneyIcon" [size]="18"></lucide-icon></span><div><strong>{{ money(current.stats.lifetimeValueCents) }}</strong><span>Lifetime paid</span></div></article>
+      <article class="metric-card" [class.attention]="current.stats.outstandingBalanceCents > 0"><span class="metric-icon"><lucide-icon [img]="receiptIcon" [size]="18"></lucide-icon></span><div><strong>{{ money(current.stats.outstandingBalanceCents) }}</strong><span>Outstanding</span></div></article>
+    </section>
+
+    <div class="top-grid">
+      <section class="panel account-summary">
+        <div class="panel-header"><div><span class="panel-kicker">Account</span><h2>Billing & company details</h2></div></div>
+        <div class="detail-list">
+          <div><span>Billing contact</span><strong>{{ current.billingEmail || current.primaryContact?.email || 'Not set' }}</strong>@if (current.billingPhone) { <small>{{ current.billingPhone }}</small> }</div>
+          <div><span>Payment terms</span><strong>{{ billingTermsLabel(current.billingTerms) }}</strong>@if (current.purchaseOrderRequired) { <small class="flag">Purchase order required</small> }</div>
+          <div><span>Credit limit</span><strong>{{ current.creditLimitCents === null ? 'No limit set' : money(current.creditLimitCents) }}</strong></div>
+          <div><span>Tax status</span><strong>{{ current.taxExempt ? 'Tax exempt' : 'Standard' }}</strong>@if (current.taxExemptId) { <small>ID {{ current.taxExemptId }}</small> }</div>
+        </div>
+        @if (current.notes) { <div class="account-note"><span>Internal notes</span><p>{{ current.notes }}</p></div> }
+      </section>
+
+      <section class="panel plan-card" [class.no-plan]="!current.planName || current.planStatus === 'none'">
+        <div class="panel-header"><div><span class="panel-kicker">Service plan</span><h2>{{ current.planName || 'No plan assigned' }}</h2></div><span class="plan-status" [class.active]="current.planStatus === 'active'">{{ planStatusLabel(current.planStatus) }}</span></div>
+        @if (current.planName && current.planStatus !== 'none') {
+          <div class="plan-price">@if (current.planMonthlyFeeCents !== null) { <strong>{{ money(current.planMonthlyFeeCents) }}</strong><span> monthly equivalent</span> } @else { <strong>Custom</strong><span> monthly pricing</span> }</div>
+          <div class="plan-grid">
+            <div><span>Plan labor</span><strong>{{ current.planLaborCents === null ? '—' : money(current.planLaborCents) }}</strong></div>
+            <div><span>Standard labor</span><strong>{{ current.standardLaborCents === null ? '—' : money(current.standardLaborCents) }}</strong></div>
+            <div><span>Parts discount</span><strong>{{ percent(current.partsDiscountBps) }}</strong></div>
+            <div><span>Service discount</span><strong>{{ percent(current.serviceDiscountBps) }}</strong></div>
+            <div><span>Covered devices</span><strong>{{ current.coveredDeviceLimit === null ? 'Unlimited' : current.coveredDeviceLimit }}</strong></div>
+            <div><span>Plan dates</span><strong>{{ current.planStartsAt ? date(current.planStartsAt) : 'No start date' }}</strong>@if (current.planEndsAt) { <small>through {{ date(current.planEndsAt) }}</small> }</div>
+          </div>
+        } @else {
+          <div class="no-plan-message"><lucide-icon [img]="shieldIcon" [size]="22"></lucide-icon><p>Use a service plan for contract labor rates, device allowances, and fleet pricing.</p>@if(canWrite){<button class="text-link" (click)="openEnrollmentEditor()">Choose a fleet plan</button>}</div>
+        }
+      </section>
+    </div>
+
+    <section class="panel section-panel enrollment-panel">
+      <div class="panel-header">
+        <div><span class="panel-kicker">Enrollment</span><h2>Agreement & onboarding</h2><p>Track the customer from invitation through signature, company setup, billing, and activation.</p></div>
+        @if (canWrite && enrollmentState()?.enrollmentId) {
+          <div class="panel-actions">
+            @if (enrollmentState()?.stage !== 'active') {
+              <button class="secondary-btn" type="button" [disabled]="saving()" (click)="sendEnrollmentInvite()"><lucide-icon [img]="mailIcon" [size]="15"></lucide-icon>{{ enrollmentState()?.sentAt ? 'Resend enrollment' : 'Send enrollment' }}</button>
+            }
+            <button class="secondary-btn" type="button" (click)="copyEnrollmentLink()"><lucide-icon [img]="copyIcon" [size]="15"></lucide-icon>{{ enrollmentCopied() ? 'Copied' : 'Copy link' }}</button>
+            <button class="secondary-btn" type="button" (click)="openEnrollmentLink()"><lucide-icon [img]="externalIcon" [size]="15"></lucide-icon>Open</button>
+          </div>
+        }
+      </div>
+      @if (enrollmentLoading()) {
+        <div class="inline-empty small"><lucide-icon class="spin" [img]="loaderIcon" [size]="18"></lucide-icon>Loading enrollment…</div>
+      } @else if (enrollmentState(); as enrollmentFlow) {
+        @if (enrollmentFlow.enrollmentId) {
+          <div class="enrollment-summary-row">
+            <div><span class="enrollment-stage-label">Current status</span><strong>{{ enrollmentStageLabel(enrollmentFlow.stage) }}</strong>@if(enrollmentFlow.sentAt){<small>Last sent {{ date(enrollmentFlow.sentAt) }}</small>}</div>
+            @if(enrollmentFlow.agreementSigned && enrollmentFlow.signer){<div class="signed-summary"><span class="signed-mark">✓</span><div><strong>Signed by {{ enrollmentFlow.signer.name || 'authorized signer' }}</strong><small>{{ enrollmentFlow.signer.title || 'Authorized representative' }} · {{ date(enrollmentFlow.signedAt) }}</small></div>@if(operations()?.settings?.contractDocumentUrl){<button class="text-link" type="button" (click)="openSignedAgreement()">View signed agreement</button>}</div>}
+          </div>
+          <div class="enrollment-checks">
+            <div [class.done]="enrollmentFlow.agreementSigned"><span>{{ enrollmentFlow.agreementSigned ? '✓' : '1' }}</span><div><strong>Agreement</strong><small>{{ enrollmentFlow.agreementSigned ? 'Signed' : 'Waiting for signature' }}</small></div></div>
+            <div [class.done]="enrollmentFlow.contactConfirmed"><span>{{ enrollmentFlow.contactConfirmed ? '✓' : '2' }}</span><div><strong>Company</strong><small>{{ enrollmentFlow.contactConfirmed ? 'Confirmed' : 'Contact details' }}</small></div></div>
+            <div [class.done]="enrollmentFlow.fleetConfirmed"><span>{{ enrollmentFlow.fleetConfirmed ? '✓' : '3' }}</span><div><strong>Fleet</strong><small>{{ enrollmentFlow.fleetConfirmed ? 'Confirmed' : 'Device setup' }}</small></div></div>
+            <div [class.done]="billing()?.enrollment?.status === 'active'"><span>{{ billing()?.enrollment?.status === 'active' ? '✓' : '4' }}</span><div><strong>Billing & activation</strong><small>{{ billing()?.enrollment?.status === 'active' ? 'Active' : 'Pending' }}</small></div></div>
+          </div>
+          @if(enrollmentFlow.history.length){
+            <div class="enrollment-history"><div class="enrollment-history-title"><strong>Enrollment history</strong><span>Audit trail</span></div>@for(item of enrollmentFlow.history.slice(0,8); track $index){<div class="enrollment-history-row"><span class="history-dot"></span><strong>{{ enrollmentEventLabel(item.action) }}</strong><time>{{ date(item.createdAt) }}</time></div>}</div>
+          }
+        } @else {
+          <div class="billing-empty"><span class="billing-empty-icon"><lucide-icon [img]="shieldIcon" [size]="22"></lucide-icon></span><div><strong>No enrollment started</strong><p>Choose a Fleet Plan to create the customer agreement and guided enrollment link.</p></div>@if(canWrite){<button class="primary-btn" (click)="openEnrollmentEditor()">Choose plan</button>}</div>
+        }
+      } @else {
+        <div class="inline-empty small">Enrollment information could not be loaded.</div>
+      }
+    </section>
+
+    <section class="panel section-panel billing-panel">
+      <div class="panel-header">
+        <div><span class="panel-kicker">Plan & billing</span><h2>Fleet subscription</h2><p>Plan enrollment, covered-device billing, payment status, and Stripe invoices.</p></div>
+        @if (canWrite && !billingLoading()) {
+          @if (!billing()?.enrollment || billing()?.enrollment?.status === 'canceled' || billing()?.enrollment?.status === 'expired') {
+            <button class="secondary-btn" type="button" (click)="openEnrollmentEditor()"><lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>Enroll in plan</button>
+          }
+        }
+      </div>
+      @if (billingLoading()) {
+        <div class="inline-empty small"><lucide-icon class="spin" [img]="loaderIcon" [size]="18"></lucide-icon>Loading fleet billing…</div>
+      } @else if (billing(); as billingInfo) {
+        @if (billingInfo.enrollment; as enrollment) {
+          @if (enrollment.stripeLastPaymentError) { <div class="billing-alert danger"><strong>Billing needs attention</strong><span>{{ enrollment.stripeLastPaymentError }}</span></div> }
+          @if (enrollment.pendingDeviceCount !== null) { <div class="billing-alert warning"><strong>Device count change awaiting approval</strong><span>Current billing: {{ enrollment.billableDeviceCount }} devices · Proposed: {{ enrollment.pendingDeviceCount }} devices</span>@if(canWrite){<button class="text-link" (click)="applyPendingDeviceCount()">Apply {{ enrollment.pendingDeviceCount }} devices</button>}</div> }
+          <div class="billing-overview-grid">
+            <div class="billing-main-card">
+              <div class="billing-title-row"><div><span class="billing-label">Current plan</span><strong>{{ enrollment.planNameSnapshot }}</strong></div><span class="plan-status" [class.active]="enrollment.status === 'active'">{{ enrollmentStatusLabel(enrollment.status) }}</span></div>
+              <div class="billing-price"><strong>{{ money(enrollment.monthlyEquivalentCents) }}</strong><span> estimated monthly equivalent</span></div>
+              <div class="billing-facts">
+                <div><span>Covered devices</span><strong>{{ enrollment.coveredDeviceCount }}</strong></div>
+                <div><span>Billable devices</span><strong>{{ enrollment.billableDeviceCount }}</strong></div>
+                <div><span>Plan labor</span><strong>{{ enrollment.planLaborCents === null ? '—' : money(enrollment.planLaborCents) }}</strong></div>
+                <div><span>Parts discount</span><strong>{{ percent(enrollment.partsDiscountBps) }}</strong></div>
+                <div><span>Started</span><strong>{{ date(enrollment.startsAt) }}</strong></div>
+                <div><span>Contract</span><strong>{{ enrollment.contractTermMonths ? enrollment.contractTermMonths + ' months' : 'Ongoing' }}</strong></div>
+              </div>
+            </div>
+            <div class="billing-side-card">
+              <span class="billing-label">Billing method</span>
+              @if (enrollment.billingManagedByStripe) {
+                @if (enrollment.paymentSetupStatus === 'completed' || enrollment.stripeSubscriptionId) {
+                  <div class="payment-method"><span class="payment-icon"><lucide-icon [img]="cardIcon" [size]="17"></lucide-icon></span><div><strong>Stripe subscription</strong>@if(billingInfo.paymentMethod){<small>{{ billingInfo.paymentMethod.brand | titlecase }} •••• {{ billingInfo.paymentMethod.last4 }} · exp {{ billingInfo.paymentMethod.expMonth }}/{{ billingInfo.paymentMethod.expYear }}</small>}@else{<small>{{ enrollment.stripeSubscriptionStatus || 'Recurring billing active' }}</small>}</div></div>
+                } @else if (enrollment.paymentSetupMethod === 'email_checkout') {
+                  <div class="payment-method"><span class="payment-icon"><lucide-icon [img]="mailIcon" [size]="17"></lucide-icon></span><div><strong>Customer enrollment in progress</strong><small>{{ paymentSetupContactLabel(enrollment) }} completes the agreement and company setup before Stripe billing.</small></div></div>
+                } @else {
+                  <div class="payment-method"><span class="payment-icon"><lucide-icon [img]="deviceIcon" [size]="17"></lucide-icon></span><div><strong>{{ enrollment.paymentSetupStatus === 'processing' ? 'Payment in progress' : 'Ready in Opscend Tech' }}</strong><small>Complete the enrollment in person on the iPad with the connected Stripe M2 reader.</small></div></div>
+                }
+                @if (enrollment.stripeCurrentPeriodEndAt) { <div class="next-bill"><span>{{ enrollment.stripeCancelAtPeriodEnd ? 'Access through' : 'Next billing period' }}</span><strong>{{ date(enrollment.stripeCurrentPeriodEndAt) }}</strong></div> }
+                <div class="billing-actions">
+                  @if(canWrite && enrollment.paymentSetupMethod === 'email_checkout' && enrollment.status === 'pending' && !enrollment.stripeSubscriptionId){<button class="secondary-btn" [disabled]="saving()" (click)="resendPaymentSetupEmail()"><lucide-icon [img]="mailIcon" [size]="13"></lucide-icon>Resend enrollment</button>}
+                  @if(canWrite && enrollment.stripeSubscriptionId){<button class="secondary-btn" (click)="openBillingPortal()">Manage in Stripe <lucide-icon [img]="externalIcon" [size]="13"></lucide-icon></button>}
+                </div>
+              } @else {
+                <div class="payment-method"><span class="payment-icon"><lucide-icon [img]="receiptIcon" [size]="17"></lucide-icon></span><div><strong>Managed outside Stripe</strong><small>Opscend tracks plan coverage and repair pricing without recurring payment collection.</small></div></div>
+              }
+              @if(canWrite){
+                <div class="billing-plan-actions">
+                  @if(enrollment.stripeCancelAtPeriodEnd){<button class="text-link" (click)="resumeFleetPlan()">Resume subscription</button>}
+                  @else if(enrollment.status === 'active' || enrollment.status === 'pending'){<button class="danger-link" (click)="cancelFleetPlan()">{{ enrollment.billingManagedByStripe ? 'Cancel at period end' : 'Cancel plan' }}</button>}
+                </div>
+              }
+            </div>
+          </div>
+          @if (billingInfo.invoices.length) {
+            <div class="invoice-block"><div class="invoice-header"><strong>Recent invoices</strong><span>Synced from Stripe</span></div><div class="invoice-list">@for(invoice of billingInfo.invoices; track invoice.id){<div class="invoice-row"><div><strong>{{ invoice.number || 'Invoice' }}</strong><span>{{ date(invoice.createdAt) }} · {{ invoiceStatusLabel(invoice.status) }}</span></div><div class="invoice-amount"><strong>{{ money(invoice.totalCents) }}</strong>@if(invoice.amountDueCents > 0){<span>{{ money(invoice.amountDueCents) }} due</span>}</div>@if(invoice.hostedInvoiceUrl){<a class="icon-action" [href]="invoice.hostedInvoiceUrl" target="_blank" rel="noopener" title="Open invoice"><lucide-icon [img]="externalIcon" [size]="14"></lucide-icon></a>}</div>}</div></div>
+          }
+        } @else {
+          <div class="billing-empty"><span class="billing-empty-icon"><lucide-icon [img]="shieldIcon" [size]="22"></lucide-icon></span><div><strong>No fleet plan enrollment</strong><p>Choose one of your reusable fleet plans to activate automatic repair pricing and optional Stripe subscription billing.</p></div>@if(canWrite){<button class="primary-btn" (click)="openEnrollmentEditor()">Choose plan</button>}</div>
+        }
+      } @else {
+        <div class="inline-empty small">Fleet billing information could not be loaded.</div>
+      }
+    </section>
+
+    <section class="panel section-panel operations-panel">
+      <div class="panel-header">
+        <div><span class="panel-kicker">Business operations</span><h2>Service rules & account health @if (operations(); as headerOps) { <span class="health-score">{{ headerOps.healthScore }}/100</span> }</h2><p>Billing policy, authorization, contracts, service levels, and fleet account ownership.</p></div>
+        @if (canWrite && operations()) {
+          <div class="panel-actions">
+            @if (operations()?.settings?.portalEnabled) { <button class="secondary-btn" type="button" (click)="openPortalShare()"><lucide-icon [img]="shareIcon" [size]="15"></lucide-icon>Share portal</button> }
+            <button class="secondary-btn" type="button" (click)="openOperationsEditor()"><lucide-icon [img]="editIcon" [size]="16"></lucide-icon>Edit rules</button>
+          </div>
+        }
+      </div>
+      @if (operationsLoading()) { <div class="inline-empty small"><lucide-icon class="spin" [img]="loaderIcon" [size]="18"></lucide-icon>Loading business operations…</div> }
+      @else if (operations(); as ops) {
+        @if (ops.health.length) {
+          <div class="health-strip">
+            @for (item of ops.health; track item.code) { <div class="health-item" [class.critical]="item.severity === 'critical'" [class.warning]="item.severity === 'warning'"><strong>{{ item.severity === 'critical' ? 'Needs attention' : 'Review' }}</strong><span>{{ item.message }}</span></div> }
+          </div>
+        } @else { <div class="health-strip"><div class="health-item healthy"><strong>Account looks healthy</strong><span>No contract, billing, or plan-limit issues detected.</span></div></div> }
+        <div class="ops-grid">
+          <div><span>Repair billing</span><strong>{{ ops.settings.billingMode === 'consolidated' ? 'Consolidated statement' : 'Per repair' }}</strong>@if(ops.settings.billingMode==='consolidated'){<small>Billing day {{ ops.settings.statementBillingDay }}</small>}</div>
+          <div><span>Account manager</span><strong>{{ ops.settings.accountManager?.name || 'Unassigned' }}</strong>@if(ops.settings.accountManager?.email){<small>{{ ops.settings.accountManager?.email }}</small>}</div>
+          <div><span>Authorization</span><strong>{{ ops.settings.requireAuthorizedContact ? 'Authorized contact required' : (ops.settings.authorizationThresholdCents === null ? 'No approval threshold' : money(ops.settings.authorizationThresholdCents) + '+') }}</strong>@if(ops.settings.purchaseOrderThresholdCents !== null){<small>PO at {{ money(ops.settings.purchaseOrderThresholdCents) }}+</small>}</div>
+          <div><span>Business portal</span><strong>{{ ops.settings.portalEnabled ? 'Enabled' : 'Disabled' }}</strong></div>
+          <div><span>Contract</span><strong>{{ ops.settings.contractEndsAt ? date(ops.settings.contractEndsAt) : 'No expiration set' }}</strong>@if(ops.settings.contractAutoRenew){<small>Auto-renew</small>}</div>
+          <div><span>Service target</span><strong>{{ ops.settings.slaTurnaroundHours ? ops.settings.slaTurnaroundHours + ' hr turnaround' : 'No turnaround target' }}</strong>@if(ops.settings.slaResponseMinutes){<small>{{ ops.settings.slaResponseMinutes }} min response</small>}</div>
+          <div><span>Repair spend limit</span><strong>{{ ops.settings.maxRepairSpendCents === null ? 'No limit' : money(ops.settings.maxRepairSpendCents) }}</strong></div>
+          <div><span>Preferred parts</span><strong>{{ ops.settings.preferredPartQuality || 'Shop default' }}</strong>@if(ops.settings.dataWipeRequiresApproval){<small>Data wipe requires approval</small>}</div>
+        </div>
+      } @else { <div class="inline-empty small">Business operations information could not be loaded.</div> }
+    </section>
+
+    @if (operations(); as ops) {
+      <div class="operations-grid-layout">
+        <section class="panel section-panel compact-panel">
+          <div class="panel-header"><div><span class="panel-kicker">Plan benefits</span><h2>Service entitlements</h2><p>Tracked benefits included with the active fleet plan.</p></div></div>
+          @if (!ops.entitlements.length) { <div class="inline-empty small">No tracked entitlements on the active plan.</div> }
+          @else { <div class="entitlement-list">@for(entitlement of ops.entitlements;track entitlement.id){<div class="entitlement-row"><div><strong>{{ entitlement.nameSnapshot }}</strong><span>{{ entitlement.descriptionSnapshot || (entitlement.allowanceQuantity === null ? 'Unlimited benefit' : entitlement.allowanceQuantity + ' ' + entitlement.unitLabel + ' per period') }}</span></div><div class="entitlement-use"><strong>{{ entitlement.allowanceQuantity === null ? 'Included' : (entitlement.allowanceQuantity - entitlement.usedQuantity) + ' left' }}</strong>@if(entitlement.periodEndAt){<small>Resets {{ date(entitlement.periodEndAt) }}</small>}@if(canWrite){<button class="text-link" (click)="useEntitlement(entitlement.id)">Use 1</button>}</div></div>}</div> }
+        </section>
+
+        <section class="panel section-panel compact-panel">
+          <div class="panel-header"><div><span class="panel-kicker">Performance</span><h2>Fleet snapshot</h2><p>Quick commercial and service metrics.</p></div></div>
+          <div class="ops-grid compact">
+            <div><span>Plan MRR</span><strong>{{ money(ops.reporting.monthlyRecurringRevenueCents) }}</strong></div>
+            <div><span>Repair revenue</span><strong>{{ money(ops.reporting.repairRevenueCents) }}</strong></div>
+            <div><span>Average repair</span><strong>{{ money(ops.reporting.averageRepairValueCents) }}</strong></div>
+            <div><span>Avg turnaround</span><strong>{{ ops.reporting.averageTurnaroundHours === null ? '—' : ops.reporting.averageTurnaroundHours + ' hrs' }}</strong></div>
+            <div><span>Covered devices</span><strong>{{ ops.reporting.coveredDevices }} / {{ ops.reporting.devices }}</strong></div>
+            <div><span>Outstanding</span><strong>{{ money(ops.reporting.outstandingBalanceCents) }}</strong></div>
+            <div><span>Recorded parts cost</span><strong>{{ money(ops.reporting.partsCostCents) }}</strong></div>
+            <div><span>Margin before labor</span><strong>{{ money(ops.reporting.marginBeforeLaborCents) }}</strong></div>
+          </div>
+          @if(ops.reporting.spendByDepartment.length){<div class="department-spend"><strong>Spend by department</strong>@for(row of ops.reporting.spendByDepartment.slice(0,5);track row.department){<div><span>{{ row.department }}</span><strong>{{ money(row.totalCents) }}</strong></div>}</div>}
+          @if(ops.reporting.mostRepairedDevices.length){<div class="department-spend"><strong>Most repaired devices</strong>@for(row of ops.reporting.mostRepairedDevices;track row.deviceId){<div><span>{{ row.displayName }} · {{ row.repairCount }} repairs</span><strong>{{ money(row.totalCents) }}</strong></div>}</div>}
+          @if(ops.reporting.frequentModels.length){<div class="department-spend"><strong>Frequently repaired models</strong>@for(row of ops.reporting.frequentModels;track row.model){<div><span>{{ row.model }}</span><strong>{{ row.repairCount }} repairs</strong></div>}</div>}
+        </section>
+      </div>
+
+      <section class="panel section-panel statement-panel">
+        <div class="panel-header">
+          <div>
+            <span class="panel-kicker">Account billing</span>
+            <h2>Statements & credits</h2>
+            <p>Prepare consolidated repair statements, apply account credits, and send invoices through Stripe when available.</p>
+          </div>
+          @if (canWrite) {
+            <div class="header-actions">
+              <button class="secondary-btn" (click)="openCreditEditor()">Add credit</button>
+              @if (ops.settings.billingMode === 'consolidated') {
+                <button class="primary-btn" (click)="prepareStatement()">Prepare statement</button>
+              }
+            </div>
+          }
+        </div>
+        <div class="credit-summary"><span>Available account credit</span><strong>{{ money(ops.creditBalanceCents) }}</strong></div>
+        @if(!ops.statements.length){<div class="inline-empty small">No business statements yet.</div>}@else{<div class="statement-list">@for(statement of ops.statements;track statement.id){<div class="statement-row"><div><strong>{{ statement.number || 'Statement' }}</strong><span>{{ date(statement.periodStartAt) }} – {{ date(statement.periodEndAt) }}</span></div><span class="statement-status" [class.paid]="statement.status==='paid'" [class.overdue]="statement.status==='overdue'">{{ statement.status | titlecase }}</span><div class="statement-amount"><strong>{{ money(statement.totalCents) }}</strong>@if(statement.balanceCents>0){<small>{{ money(statement.balanceCents) }} due</small>}</div><div class="table-actions">@if(statement.stripeHostedInvoiceUrl){<a class="icon-action" [href]="statement.stripeHostedInvoiceUrl" target="_blank" rel="noopener" title="View invoice"><lucide-icon [img]="externalIcon" [size]="14"></lucide-icon></a>}@if(canWrite && (statement.status==='open' || statement.status==='overdue')){<button class="repair-btn" (click)="openStatementPayment(statement)">Record payment</button>}@if(canWrite && statement.status==='draft'){<button class="repair-btn" (click)="finalizeStatement(statement)">Finalize</button>}@if(canWrite && statement.status!=='paid' && statement.status!=='void'){<button class="icon-action danger" title="Void" (click)="voidStatement(statement)"><lucide-icon [img]="trashIcon" [size]="14"></lucide-icon></button>}</div></div>}</div>}
+      </section>
+
+      <section class="panel section-panel">
+        <div class="panel-header"><div><span class="panel-kicker">Company sites</span><h2>Business locations</h2><p>Track offices, stores, warehouses, and where managed devices belong.</p></div>@if(canWrite){<button class="secondary-btn" (click)="openLocationEditor()"><lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>Add location</button>}</div>
+        @if (!ops.locations.length) {
+          <div class="inline-empty small">No company locations have been added.</div>
+        } @else {
+          <div class="location-grid">
+            @for (location of ops.locations; track location.id) {
+              <article class="location-card">
+                <div><strong>{{ location.name }}</strong>@if(location.code){<span>{{ location.code }}</span>}</div>
+                <p>
+                  @if(location.addressLine1){<span>{{ location.addressLine1 }}</span>}
+                  @if(location.addressLine2){<span><br>{{ location.addressLine2 }}</span>}
+                  @if(location.city || location.state || location.postalCode){<span><br>{{ location.city }}@if(location.city && location.state){, }{{ location.state }} {{ location.postalCode }}</span>}
+                </p>
+                <div class="location-flags">@if(location.isDefault){<small>Default location</small>}@if(location.isBilling){<small>Billing location</small>}</div>
+                @if(canWrite){<button class="text-link" (click)="openLocationEditor(location)">Edit</button>}
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <section class="panel section-panel">
+      <div class="panel-header"><div><span class="panel-kicker">People</span><h2>Contacts</h2><p>Who can authorize repairs, receive updates, and handle billing.</p></div>@if(canWrite){<button class="secondary-btn" (click)="openContactEditor()"><lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>Add contact</button>}</div>
+      @if (!current.contacts.length) { <div class="inline-empty">No contacts have been added.</div> }
+      @else {
+        <div class="contact-grid">
+          @for (contact of current.contacts; track contact.id) {
+            <article class="contact-card">
+              <div class="contact-top"><div class="avatar">{{ contact.name.slice(0,2).toUpperCase() }}</div><div class="contact-name"><strong>{{ contact.name }}</strong><span>{{ contact.title || 'Contact' }}</span></div><div class="contact-badges">@if(contact.isPrimary){<span>Primary</span>}@if(contact.isBilling){<span>Billing</span>}</div></div>
+              <div class="contact-info">@if(contact.email){<a [href]="'mailto:' + contact.email"><lucide-icon [img]="mailIcon" [size]="14"></lucide-icon>{{ contact.email }}</a>}@if(contact.phone){<a [href]="'tel:' + contact.phone"><lucide-icon [img]="phoneIcon" [size]="14"></lucide-icon>{{ contact.phone }}</a>}</div>
+              <div class="contact-rights"><span [class.on]="contact.canAuthorizeRepairs">Can authorize repairs</span><span [class.on]="contact.receivesUpdates">Receives updates</span></div>
+              @if(canWrite){<div class="card-actions"><button (click)="openContactEditor(contact)">Edit</button><button class="danger" (click)="removeContact(contact)"><lucide-icon [img]="trashIcon" [size]="13"></lucide-icon>Remove</button></div>}
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="panel section-panel">
+      <div class="panel-header"><div><span class="panel-kicker">Fleet</span><h2>Managed devices</h2><p>Company-owned equipment, assignments, asset tags, lifecycle, and repair history.</p></div>@if(canWrite){<div class="header-actions"><input #fleetCsv type="file" accept=".csv,text/csv" hidden (change)="onFleetCsvSelected($event)"/><button class="secondary-btn" (click)="fleetCsv.click()">Import CSV</button>@if(selectedDeviceIds().length){<button class="secondary-btn" (click)="openBulkEditor()">Update {{ selectedDeviceIds().length }}</button>}<button class="secondary-btn" (click)="openDeviceEditor()"><lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>Add device</button></div>}</div>
+      @if (!current.devices.length) { <div class="inline-empty"><span>No managed devices yet.</span>@if(canWrite){<button class="text-link" (click)="openDeviceEditor()">Add the first device</button>}</div> }
+      @else {
+        <div class="device-table-wrap"><table class="device-table"><thead><tr>@if(canWrite){<th class="select-col"></th>}<th>Device</th><th>Asset / identifiers</th><th>Assigned to</th><th>Department / location</th><th>Status</th><th></th></tr></thead><tbody>
+          @for (device of current.devices; track device.id) {
+            <tr>@if(canWrite){<td class="select-col"><input type="checkbox" [checked]="deviceSelected(device.id)" (change)="toggleDeviceSelection(device.id)" [attr.aria-label]="'Select ' + deviceLabel(device)"/></td>}<td><div class="device-name"><span class="device-glyph"><lucide-icon [img]="deviceIcon" [size]="16"></lucide-icon></span><div><strong>{{ deviceLabel(device) }}</strong><small>@if(device.brand || device.model){ {{ device.brand }} {{ device.model }} } @else { {{ device.displayName }} }</small></div></div></td>
+              <td><strong class="mono">{{ device.assetTag || '—' }}</strong>@if(device.serial){<small>Serial {{ device.serial }}</small>}</td>
+              <td><strong>{{ device.assignedToName || 'Unassigned' }}</strong>@if(device.assignedToEmail){<small>{{ device.assignedToEmail }}</small>}</td>
+              <td><strong>{{ device.department || '—' }}</strong>@if(device.businessLocationId && operations()){<small>{{ locationName(device.businessLocationId) }}</small>}@if(device.warrantyExpiresAt){<small>Warranty {{ date(device.warrantyExpiresAt) }}</small>}</td>
+              <td><span class="device-status" [class.spare]="device.fleetStatus === 'spare'" [class.retired]="device.fleetStatus === 'retired'" [class.lost]="device.fleetStatus === 'lost'">{{ deviceStatusLabel(device.fleetStatus) }}</span><small class="coverage-label" [class.off]="!device.isPlanCovered">{{ device.isPlanCovered ? 'Plan covered' : 'Not plan covered' }}</small></td>
+              <td><div class="table-actions"><button class="repair-btn" (click)="startRepair(device)"><lucide-icon [img]="wrenchIcon" [size]="14"></lucide-icon>Repair</button>@if(canWrite){<button class="icon-action" title="Edit device" (click)="openDeviceEditor(device)"><lucide-icon [img]="editIcon" [size]="14"></lucide-icon></button><button class="icon-action danger" title="Archive device" (click)="archiveDevice(device)"><lucide-icon [img]="trashIcon" [size]="14"></lucide-icon></button>}</div></td>
+            </tr>
+          }
+        </tbody></table></div>
+      }
+    </section>
+
+    <div class="activity-grid">
+      <section class="panel section-panel compact-panel"><div class="panel-header"><div><span class="panel-kicker">Work</span><h2>Recent repairs</h2></div></div>
+        @if(!current.recentRepairs.length){<div class="inline-empty small">No repair history yet.</div>}@else{<div class="activity-list">@for(repair of current.recentRepairs;track repair.id){<a [routerLink]="['/repairs/detail', repair.id]" class="activity-row"><span class="activity-icon"><lucide-icon [img]="wrenchIcon" [size]="15"></lucide-icon></span><div class="activity-main"><strong>{{ repair.deviceLabel }}</strong><span>{{ repair.problemSummary }}</span></div><div class="activity-meta"><strong>{{ repair.orderNumber || repair.status }}</strong><span>{{ dateTime(repair.createdAt) }}</span></div><lucide-icon [img]="chevronIcon" [size]="16"></lucide-icon></a>}</div>}
+      </section>
+      <section class="panel section-panel compact-panel"><div class="panel-header"><div><span class="panel-kicker">Billing</span><h2>Recent orders</h2></div></div>
+        @if(!current.recentOrders.length){<div class="inline-empty small">No orders yet.</div>}@else{<div class="activity-list">@for(order of current.recentOrders;track order.id){<div class="activity-row"><span class="activity-icon"><lucide-icon [img]="receiptIcon" [size]="15"></lucide-icon></span><div class="activity-main"><strong>{{ order.orderNumber }}</strong><span>{{ order.fulfillmentStatus }} · {{ order.paymentStatus }}</span></div><div class="activity-meta"><strong>{{ money(order.totalCents) }}</strong>@if(order.balanceCents>0){<span class="balance-due">{{ money(order.balanceCents) }} due</span>}@else{<span>{{ date(order.createdAt) }}</span>}</div></div>}</div>}
+      </section>
+      <section class="panel section-panel compact-panel"><div class="panel-header"><div><span class="panel-kicker">Sales</span><h2>Recent quotes</h2></div></div>
+        @if(!current.recentQuotes.length){<div class="inline-empty small">No quotes yet.</div>}@else{<div class="activity-list">@for(quote of current.recentQuotes;track quote.id){<a [routerLink]="['/quote-requests', quote.id]" class="activity-row"><span class="activity-icon"><lucide-icon [img]="quoteIcon" [size]="15"></lucide-icon></span><div class="activity-main"><strong>{{ quote.model || 'Repair quote' }}</strong><span>{{ quote.repairNeedLabel || quote.status }}</span></div><div class="activity-meta"><strong>{{ quote.estimatedTotalCents === null ? 'Pending' : money(quote.estimatedTotalCents) }}</strong><span>{{ date(quote.createdAt) }}</span></div><lucide-icon [img]="chevronIcon" [size]="16"></lucide-icon></a>}</div>}
+      </section>
+    </div>
+  </div>
+}
+
+@if (editor()) {
+  <div class="modal-backdrop" (mousedown)="closeEditor()">
+    <section class="modal" role="dialog" aria-modal="true" (mousedown)="$event.stopPropagation()">
+      @if (editor() === 'account') {
+        <header class="modal-header"><div><span class="panel-kicker">Business account</span><h2>Edit business account</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body">
+          <div class="form-section"><h3>Company</h3><div class="form-grid two"><label><span>Company name *</span><input [(ngModel)]="accountForm.name" /></label><label><span>Legal name</span><input [(ngModel)]="accountForm.legalName" /></label><label><span>Account status</span><select [(ngModel)]="accountForm.status"><option value="active">Active</option><option value="paused">Paused</option><option value="closed">Closed</option></select></label></div></div>
+          <div class="form-section"><h3>Billing</h3><div class="form-grid two"><label><span>Billing email</span><input type="email" [(ngModel)]="accountForm.billingEmail" /></label><label><span>Billing phone</span><input [(ngModel)]="accountForm.billingPhone" /></label><label><span>Payment terms</span><select [(ngModel)]="accountForm.billingTerms"><option value="due_on_receipt">Due on receipt</option><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_45">Net 45</option><option value="net_60">Net 60</option></select></label><label><span>Credit limit</span><div class="money-input"><span>$</span><input type="number" min="0" [(ngModel)]="accountForm.creditLimit" /></div></label></div><div class="check-grid"><label class="check-row"><input type="checkbox" [(ngModel)]="accountForm.purchaseOrderRequired"/><span><strong>PO required</strong><small>Show this requirement on the account.</small></span></label><label class="check-row"><input type="checkbox" [(ngModel)]="accountForm.taxExempt"/><span><strong>Tax exempt</strong><small>Mark this business as tax exempt.</small></span></label></div>@if(accountForm.taxExempt){<label class="top-label"><span>Tax exemption ID</span><input [(ngModel)]="accountForm.taxExemptId"/></label>}</div>
+          <div class="form-section"><label><span>Internal notes</span><textarea rows="4" [(ngModel)]="accountForm.notes"></textarea></label></div>
+        </div><footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="saveAccount()">{{ saving() ? 'Saving…' : 'Save changes' }}</button></footer>
+      } @else if (editor() === 'contact') {
+        <header class="modal-header"><div><span class="panel-kicker">Contact</span><h2>{{ editingContactId ? 'Edit contact' : 'Add contact' }}</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header><div class="modal-body"><div class="form-section"><div class="form-grid two"><label><span>Name *</span><input [(ngModel)]="contactForm.name"/></label><label><span>Title</span><input [(ngModel)]="contactForm.title"/></label><label><span>Email</span><input type="email" [(ngModel)]="contactForm.email"/></label><label><span>Phone</span><input [(ngModel)]="contactForm.phone"/></label></div></div><div class="form-section"><div class="check-grid"><label class="check-row"><input type="checkbox" [(ngModel)]="contactForm.isPrimary"/><span><strong>Primary contact</strong><small>Main point of contact for this business.</small></span></label><label class="check-row"><input type="checkbox" [(ngModel)]="contactForm.isBilling"/><span><strong>Billing contact</strong><small>Handles invoices and payment questions.</small></span></label><label class="check-row"><input type="checkbox" [(ngModel)]="contactForm.canAuthorizeRepairs"/><span><strong>Can authorize repairs</strong><small>Allowed to approve work for fleet devices.</small></span></label><label class="check-row"><input type="checkbox" [(ngModel)]="contactForm.receivesUpdates"/><span><strong>Receives updates</strong><small>Eligible for repair status communications.</small></span></label></div></div><div class="form-section"><label><span>Notes</span><textarea rows="3" [(ngModel)]="contactForm.notes"></textarea></label></div></div><footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="saveContact()">{{ saving() ? 'Saving…' : 'Save contact' }}</button></footer>
+      } @else if (editor() === 'device') {
+        <header class="modal-header"><div><span class="panel-kicker">Managed device</span><h2>{{ editingDeviceId ? 'Edit device' : 'Add fleet device' }}</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body">
+          <div class="form-section">
+            <h3>Device library</h3>
+            <p class="form-help">Choose the exact device from your shop's device catalog. Brand, model, and device name stay standardized everywhere in Opscend.</p>
+            <div class="form-grid three catalog-grid">
+              <label><span>Category *</span><select [(ngModel)]="selectedCatalogCategoryId" (ngModelChange)="onCatalogCategoryChange()" [disabled]="loadingCatalog()"><option value="">{{ loadingCatalog() ? 'Loading…' : 'Select category' }}</option>@for(category of catalogCategories(); track category.id){<option [value]="category.id">{{ category.name }}</option>}</select></label>
+              <label><span>Brand *</span><select [(ngModel)]="selectedCatalogBrandId" (ngModelChange)="onCatalogBrandChange()" [disabled]="!selectedCatalogCategoryId || loadingCatalogBrands()"><option value="">{{ loadingCatalogBrands() ? 'Loading…' : 'Select brand' }}</option>@for(brand of catalogBrands(); track brand.id){<option [value]="brand.id">{{ brand.name }}</option>}</select></label>
+              <label><span>Model *</span><select [(ngModel)]="deviceForm.catalogRef" [disabled]="!selectedCatalogBrandId || loadingCatalogModels()"><option value="">{{ loadingCatalogModels() ? 'Loading…' : 'Select model' }}</option>@for(model of catalogModels(); track model.id){<option [value]="model.id">{{ model.name }}</option>}</select></label>
+            </div>
+            @if (!loadingCatalog() && !catalogCategories().length) {
+              <div class="catalog-note warning">No active devices are available in the device library. Add or activate models under Settings → Device catalog first.</div>
+            } @else if (selectedCatalogModel(); as selectedModel) {
+              <div class="catalog-note"><strong>{{ selectedModel.brandName }} {{ selectedModel.name }}</strong><span>Linked to the device library@if(selectedModel.releaseYear){ · {{ selectedModel.releaseYear }}}</span></div>
+            } @else if (editingDeviceId && !deviceForm.catalogRef) {
+              <div class="catalog-note warning">This older fleet device is not linked to the device library yet. Choose its category, brand, and model before saving.</div>
+            }
+            <div class="form-grid two device-options">
+              <label><span>Nickname</span><input [(ngModel)]="deviceForm.nickname" placeholder="Reception iPad"/></label>
+              <label><span>Fleet status</span><select [(ngModel)]="deviceForm.fleetStatus"><option value="active">Active</option><option value="spare">Spare</option><option value="retired">Retired</option><option value="lost">Lost</option></select></label>
+            </div>
+            <label class="check-row plan-covered-row"><input type="checkbox" [(ngModel)]="deviceForm.isPlanCovered"/><span><strong>Covered by fleet plan</strong><small>Count this active/spare device toward per-device plan billing and coverage.</small></span></label>
+          </div>
+          <div class="form-section"><h3>Asset tracking</h3><div class="form-grid two"><label><span>Asset tag</span><input [(ngModel)]="deviceForm.assetTag" placeholder="ACME-014"/></label><label><span>Serial number</span><input [(ngModel)]="deviceForm.serial"/></label><label><span>IMEI</span><input [(ngModel)]="deviceForm.imei"/></label></div></div>
+          <div class="form-section"><h3>Assignment</h3><div class="form-grid two"><label><span>Assigned to</span><input [(ngModel)]="deviceForm.assignedToName" placeholder="Employee or room"/></label><label><span>Assigned email</span><input type="email" [(ngModel)]="deviceForm.assignedToEmail"/></label><label><span>Department</span><input [(ngModel)]="deviceForm.department" placeholder="Sales, Front Desk, Field Team…"/></label><label><span>Company location</span><select [(ngModel)]="deviceForm.businessLocationId"><option value="">No location</option>@for(location of operations()?.locations || [];track location.id){<option [value]="location.id">{{ location.name }}</option>}</select></label></div></div>
+          <div class="form-section"><h3>Device lifecycle</h3><div class="form-grid two"><label><span>Purchase date</span><input type="date" [(ngModel)]="deviceForm.purchaseDate"/></label><label><span>Warranty expires</span><input type="date" [(ngModel)]="deviceForm.warrantyExpiresAt"/></label><label><span>Carrier</span><input [(ngModel)]="deviceForm.carrier" placeholder="Verizon, AT&T, company Wi‑Fi…"/></label><label><span>Line / phone number</span><input [(ngModel)]="deviceForm.linePhone"/></label><label><span>Replacement target</span><input type="date" [(ngModel)]="deviceForm.replacementTargetDate"/></label>@if(deviceForm.fleetStatus === 'retired'){<label><span>Retired date</span><input type="date" [(ngModel)]="deviceForm.retiredAt"/></label><label class="full"><span>Retirement reason</span><input [(ngModel)]="deviceForm.retirementReason" placeholder="Replaced, damaged beyond repair, end of lifecycle…"/></label>}</div></div>
+          <div class="form-section"><label><span>Notes</span><textarea rows="3" [(ngModel)]="deviceForm.notes"></textarea></label></div>
+        </div>
+        <footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving() || !deviceForm.catalogRef" (click)="saveDevice()">{{ saving() ? 'Saving…' : 'Save device' }}</button></footer>
+      } @else if (editor() === 'operations') {
+        <header class="modal-header"><div><span class="panel-kicker">Business operations</span><h2>Service rules & billing</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body">
+          <div class="form-section"><h3>Account ownership & portal</h3><div class="form-grid two"><label><span>Account manager</span><select [(ngModel)]="operationsForm.accountManagerUserId"><option value="">Unassigned</option>@for(manager of operations()?.managers || [];track manager.id){<option [value]="manager.id">{{ manager.name }}</option>}</select></label><label><span>Account priority</span><input type="number" min="0" max="10" [(ngModel)]="operationsForm.priorityLevel"/></label></div><label class="check-row"><input type="checkbox" [(ngModel)]="operationsForm.portalEnabled"/><span><strong>Enable business customer portal</strong><small>Authorized customer portal users can view fleet information, plan benefits, statements, and submit repair requests.</small></span></label></div>
+          <div class="form-section"><h3>Repair billing</h3><div class="form-grid two"><label><span>Repair billing mode</span><select [(ngModel)]="operationsForm.billingMode"><option value="per_repair">Bill each repair</option><option value="consolidated">Consolidated account statements</option></select></label>@if(operationsForm.billingMode==='consolidated'){<label><span>Monthly billing day</span><input type="number" min="1" max="28" [(ngModel)]="operationsForm.statementBillingDay"/></label>}<label><span>Approval threshold</span><div class="money-input"><span>$</span><input type="number" min="0" [(ngModel)]="operationsForm.authorizationThreshold"/></div></label><label><span>PO threshold</span><div class="money-input"><span>$</span><input type="number" min="0" [(ngModel)]="operationsForm.purchaseOrderThreshold"/></div></label></div><label class="check-row"><input type="checkbox" [(ngModel)]="operationsForm.requireAuthorizedContact"/><span><strong>Require authorized contact approval</strong><small>Repairs cannot move into work until a designated business contact approves them.</small></span></label></div>
+          <div class="form-section"><h3>Contract</h3><div class="form-grid two"><label><span>Signed</span><input type="date" [(ngModel)]="operationsForm.contractSignedAt"/></label><label><span>Starts</span><input type="date" [(ngModel)]="operationsForm.contractStartsAt"/></label><label><span>Ends / renews</span><input type="date" [(ngModel)]="operationsForm.contractEndsAt"/></label><label><span>Cancellation notice (days)</span><input type="number" min="0" [(ngModel)]="operationsForm.cancellationNoticeDays"/></label><label class="full"><span>Contract document URL</span><input type="url" [(ngModel)]="operationsForm.contractDocumentUrl" placeholder="https://…"/></label></div><label class="check-row"><input type="checkbox" [(ngModel)]="operationsForm.contractAutoRenew"/><span><strong>Auto-renewing agreement</strong><small>Show renewal language and contract health reminders.</small></span></label></div>
+          <div class="form-section"><h3>Service levels & repair policy</h3><div class="form-grid two"><label><span>Response target (minutes)</span><input type="number" min="1" [(ngModel)]="operationsForm.slaResponseMinutes"/></label><label><span>Turnaround target (hours)</span><input type="number" min="1" [(ngModel)]="operationsForm.slaTurnaroundHours"/></label><label><span>Maximum repair spend</span><div class="money-input"><span>$</span><input type="number" min="0" [(ngModel)]="operationsForm.maxRepairSpend"/></div></label><label><span>Replace instead threshold (%)</span><input type="number" min="1" max="100" [(ngModel)]="operationsForm.replaceInsteadThresholdPercent"/></label><label class="full"><span>Preferred part quality</span><input [(ngModel)]="operationsForm.preferredPartQuality" placeholder="OEM, premium aftermarket, shop default…"/></label></div><label class="check-row"><input type="checkbox" [(ngModel)]="operationsForm.dataWipeRequiresApproval"/><span><strong>Data wipe requires business approval</strong><small>Surface this policy to technicians before destructive service.</small></span></label></div>
+        </div>
+        <footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="saveOperations()">{{ saving() ? 'Saving…' : 'Save service rules' }}</button></footer>
+      } @else if (editor() === 'portal') {
+        <header class="modal-header">
+          <div><span class="panel-kicker">Business portal</span><h2>Share portal access</h2><p>Give an authorized company contact a simple way to reach the fleet portal.</p></div>
+          <button class="icon-btn" type="button" (click)="closeEditor()" aria-label="Close"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button>
+        </header>
+        <div class="modal-body portal-share-body">
+          <section class="portal-share-card">
+            <div class="portal-share-icon"><lucide-icon [img]="externalIcon" [size]="20"></lucide-icon></div>
+            <div class="portal-share-copy">
+              <strong>Business customer portal</strong>
+              <span>Contacts can review fleet devices, plan benefits, statements, and submit repair requests.</span>
+            </div>
+          </section>
+
+          <div class="form-section portal-link-section">
+            <h3>Portal link</h3>
+            <p class="form-help">Use the same shop portal link for every business customer. Access is verified by email.</p>
+            <div class="portal-url-row">
+              <input [value]="portalUrl()" readonly aria-label="Business portal URL" />
+              <button class="secondary-btn" type="button" (click)="copyPortalLink()"><lucide-icon [img]="copyIcon" [size]="15"></lucide-icon>{{ portalCopied() ? 'Copied' : 'Copy' }}</button>
+              <button class="secondary-btn" type="button" (click)="openPortal()"><lucide-icon [img]="externalIcon" [size]="15"></lucide-icon>Open</button>
+            </div>
+          </div>
+
+          <div class="form-section portal-email-section">
+            <h3>Email portal access</h3>
+            @if (portalShareContacts().length) {
+              <label><span>Send to</span><select [(ngModel)]="portalContactId">@for(contact of portalShareContacts(); track contact.id){<option [value]="contact.id">{{ contact.name }} · {{ contact.email }}</option>}</select></label>
+              <p class="form-help portal-email-help">We’ll email the portal link and tell this contact to use their email address for secure sign-in.</p>
+            } @else {
+              <div class="portal-no-contact"><strong>No contact email available</strong><span>Add an email address to a business contact before sending portal access.</span></div>
+            }
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button class="secondary-btn" type="button" (click)="closeEditor()">Close</button>
+          <button class="primary-btn" type="button" [disabled]="saving() || !portalContactId" (click)="sendPortalAccess()"><lucide-icon [img]="mailIcon" [size]="16"></lucide-icon>{{ saving() ? 'Sending…' : 'Email portal access' }}</button>
+        </footer>
+      } @else if (editor() === 'location') {
+        <header class="modal-header"><div><span class="panel-kicker">Company location</span><h2>{{ editingLocationId ? 'Edit location' : 'Add location' }}</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body"><div class="form-section"><div class="form-grid two"><label><span>Location name *</span><input [(ngModel)]="locationForm.name" placeholder="Headquarters"/></label><label><span>Code</span><input [(ngModel)]="locationForm.code" placeholder="HQ"/></label><label><span>Address</span><input [(ngModel)]="locationForm.addressLine1"/></label><label><span>Suite / unit</span><input [(ngModel)]="locationForm.addressLine2"/></label><label><span>City</span><input [(ngModel)]="locationForm.city"/></label><label><span>State</span><input [(ngModel)]="locationForm.state"/></label><label><span>Postal code</span><input [(ngModel)]="locationForm.postalCode"/></label><label><span>Country</span><input [(ngModel)]="locationForm.country"/></label></div><div class="check-grid"><label class="check-row"><input type="checkbox" [(ngModel)]="locationForm.isDefault"/><span><strong>Default location</strong><small>Use for newly assigned fleet devices.</small></span></label><label class="check-row"><input type="checkbox" [(ngModel)]="locationForm.isBilling"/><span><strong>Billing location</strong><small>Primary company location for statements.</small></span></label><label class="check-row"><input type="checkbox" [(ngModel)]="locationForm.isActive"/><span><strong>Active location</strong><small>Allow devices to be assigned here.</small></span></label></div><label><span>Notes</span><textarea rows="3" [(ngModel)]="locationForm.notes"></textarea></label></div></div>
+        <footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving() || !locationForm.name.trim()" (click)="saveLocation()">{{ saving() ? 'Saving…' : 'Save location' }}</button></footer>
+      } @else if (editor() === 'credit') {
+        <header class="modal-header"><div><span class="panel-kicker">Account credit</span><h2>Add business credit</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body"><div class="form-section"><div class="form-grid two"><label><span>Credit amount *</span><div class="money-input"><span>$</span><input type="number" min="0.01" step="0.01" [(ngModel)]="creditForm.amount"/></div></label><label><span>Reference</span><input [(ngModel)]="creditForm.reference" placeholder="Goodwill, contract credit, check #…"/></label></div><label><span>Note</span><textarea rows="3" [(ngModel)]="creditForm.note"></textarea></label></div><div class="billing-disclaimer">Credits are tracked in Opscend and automatically applied when a consolidated statement is finalized.</div></div>
+        <footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving() || !creditForm.amount" (click)="saveCredit()">{{ saving() ? 'Saving…' : 'Add credit' }}</button></footer>
+      } @else if (editor() === 'statementPayment') {
+        <header class="modal-header"><div><span class="panel-kicker">Business statement</span><h2>Record payment</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body"><div class="form-section"><div class="form-grid two"><label><span>Payment amount *</span><div class="money-input"><span>$</span><input type="number" min="0.01" step="0.01" [(ngModel)]="statementPaymentForm.amount"/></div></label><label><span>Reference</span><input [(ngModel)]="statementPaymentForm.reference" placeholder="Check #, ACH reference, external payment…"/></label></div><label><span>Note</span><textarea rows="3" [(ngModel)]="statementPaymentForm.note"></textarea></label></div><div class="billing-disclaimer">Use this for payments received outside Opscend. If the statement has a Stripe invoice, recording the full balance also marks that invoice paid out of band.</div></div>
+        <footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving() || !statementPaymentForm.amount" (click)="saveStatementPayment()">{{ saving() ? 'Saving…' : 'Record payment' }}</button></footer>
+      } @else if (editor() === 'bulk') {
+        <header class="modal-header"><div><span class="panel-kicker">Fleet bulk update</span><h2>Update {{ selectedDeviceIds().length }} devices</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body"><div class="form-section"><p class="form-help">Only the fields you choose below will be changed. Device identities remain linked to the existing Device Catalog.</p><div class="form-grid two"><label><span>Fleet status</span><select [(ngModel)]="bulkForm.fleetStatus"><option value="">No change</option><option value="active">Active</option><option value="spare">Spare</option><option value="retired">Retired</option><option value="lost">Lost</option></select></label><label><span>Plan coverage</span><select [(ngModel)]="bulkForm.coverageMode"><option value="">No change</option><option value="covered">Covered</option><option value="not_covered">Not covered</option></select></label><label><span>Department</span><select [(ngModel)]="bulkForm.departmentMode"><option value="">No change</option><option value="set">Set / clear department</option></select>@if(bulkForm.departmentMode==='set'){<input class="secondary-input" [(ngModel)]="bulkForm.department" placeholder="Department (blank clears)"/>}</label><label><span>Company location</span><select [(ngModel)]="bulkForm.locationMode"><option value="">No change</option><option value="set">Set / clear location</option></select>@if(bulkForm.locationMode==='set'){<select class="secondary-input" [(ngModel)]="bulkForm.businessLocationId"><option value="">Clear location</option>@for(location of operations()?.locations || [];track location.id){<option [value]="location.id">{{ location.name }}</option>}</select>}</label><label><span>Replacement target</span><select [(ngModel)]="bulkForm.replacementMode"><option value="">No change</option><option value="set">Set / clear date</option></select>@if(bulkForm.replacementMode==='set'){<input class="secondary-input" type="date" [(ngModel)]="bulkForm.replacementTargetDate"/>}</label></div></div></div>
+        <footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="saveBulkDevices()">{{ saving() ? 'Updating…' : 'Update selected devices' }}</button></footer>
+      } @else if (editor() === 'enrollment') {
+        <header class="modal-header"><div><span class="panel-kicker">Fleet plan</span><h2>Enroll {{ account()?.name }}</h2></div><button class="icon-btn" (click)="closeEditor()"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button></header>
+        <div class="modal-body">
+          @if (plansError()) {
+            <div class="enrollment-empty"><lucide-icon [img]="shieldIcon" [size]="24"></lucide-icon><strong>Fleet plans could not be loaded</strong><p>{{ plansError() }}</p><button type="button" class="secondary-btn" (click)="loadBilling()">Try again</button></div>
+          } @else if (!availablePlans().length) {
+            <div class="enrollment-empty"><lucide-icon [img]="shieldIcon" [size]="24"></lucide-icon><strong>No active fleet plans</strong><p>Create a reusable plan first, then come back to enroll this business.</p><a class="secondary-btn" routerLink="/settings/shop/fleet-plans" (click)="closeEditor()">Open Fleet Plans</a></div>
+          } @else {
+            <div class="form-section"><h3>Choose plan</h3><label><span>Fleet plan *</span><select [(ngModel)]="enrollmentForm.planId"><option value="">Select a plan</option>@for(plan of availablePlans(); track plan.id){<option [value]="plan.id">{{ plan.name }} — {{ planRecurringLabel(plan) }}</option>}</select></label>@if(selectedEnrollmentPlan(); as selectedPlan){<div class="selected-plan-preview"><strong>{{ selectedPlan.name }}</strong><span>{{ planRecurringLabel(selectedPlan) }}</span><small>{{ selectedPlan.minimumDeviceCount }} minimum devices@if(selectedPlan.maximumDeviceCount){ · max {{ selectedPlan.maximumDeviceCount }}}@if(selectedPlan.setupFeeCents){ · {{ money(selectedPlan.setupFeeCents) }} setup}</small>@if(selectedPlan.benefits.length){<ul>@for(benefit of selectedPlan.benefits.slice(0,5); track benefit){<li>{{ benefit }}</li>}</ul>}</div>}</div>
+            <div class="form-section">
+              <h3>Billing</h3>
+              <label class="check-row stripe-choice" [class.disabled]="!billing()?.stripeReady">
+                <input type="checkbox" [(ngModel)]="enrollmentForm.billingManagedByStripe" [disabled]="!billing()?.stripeReady"/>
+                <span><strong>Manage recurring billing with Stripe</strong><small>@if(billing()?.stripeReady){Opscend will manage the subscription and keep covered-device billing synchronized.}@else if(billing()?.stripeConnected){Stripe is connected, but charges are not enabled yet.}@else{Connect Stripe under Integrations to collect this plan automatically.}</small></span>
+              </label>
+              @if(enrollmentForm.billingManagedByStripe){
+                <div class="form-grid two enrollment-options">
+                  <label><span>Device changes</span><select [(ngModel)]="enrollmentForm.billingChangePolicy"><option value="next_cycle">Apply next billing cycle</option><option value="prorate">Prorate immediately</option><option value="approval">Require approval</option></select></label>
+                  <label><span>Contract term (months)</span><input type="number" min="1" [(ngModel)]="enrollmentForm.contractTermMonths"/></label>
+                </div>
+                <div class="payment-setup-section">
+                  <div class="payment-setup-heading"><strong>How should payment setup be completed?</strong><small>The customer enters or presents their own payment information. Staff never enter card details in the admin app.</small></div>
+                  <div class="payment-setup-grid">
+                    <label class="payment-setup-option" [class.selected]="enrollmentForm.paymentSetupMethod === 'email_checkout'">
+                      <input type="radio" name="fleetPaymentSetupMethod" value="email_checkout" [(ngModel)]="enrollmentForm.paymentSetupMethod"/>
+                      <span class="payment-setup-icon"><lucide-icon [img]="mailIcon" [size]="18"></lucide-icon></span>
+                      <span><strong>Customer completes billing online</strong><small>Email the full enrollment first. After signing and company setup, the customer securely enters their own Stripe payment details.</small></span>
+                    </label>
+                    <label class="payment-setup-option" [class.selected]="enrollmentForm.paymentSetupMethod === 'opscend_tech'">
+                      <input type="radio" name="fleetPaymentSetupMethod" value="opscend_tech" [(ngModel)]="enrollmentForm.paymentSetupMethod"/>
+                      <span class="payment-setup-icon"><lucide-icon [img]="deviceIcon" [size]="18"></lucide-icon></span>
+                      <span><strong>Complete billing in Opscend Tech</strong><small>The customer signs the enrollment first, then staff can collect the card in person with the Stripe M2.</small></span>
+                    </label>
+                  </div>
+                  @if(enrollmentForm.paymentSetupMethod === 'email_checkout'){
+                    @if(billingContactsWithEmail().length){
+                      <label class="payment-contact-select"><span>Billing contact *</span><select [(ngModel)]="enrollmentForm.paymentSetupContactId"><option value="">Choose billing contact</option>@for(contact of billingContactsWithEmail(); track contact.id){<option [value]="contact.id">{{ contact.name }} — {{ contact.email }}{{ contact.isBilling ? ' · Billing' : '' }}</option>}</select><small>The full Fleet enrollment link is sent directly to this person.</small></label>
+                    } @else {
+                      <div class="payment-contact-warning"><lucide-icon [img]="mailIcon" [size]="16"></lucide-icon><span><strong>Add a billing contact first</strong><small>This business does not have a contact with an email address. Add one under Contacts before using email payment setup.</small></span></div>
+                    }
+                  } @else {
+                    <div class="tech-handoff-note"><lucide-icon [img]="deviceIcon" [size]="16"></lucide-icon><span><strong>Agreement first, M2 second</strong><small>It will appear in Opscend Tech immediately, but billing stays locked until the customer signs the Fleet agreement.</small></span></div>
+                  }
+                </div>
+              } @else {
+                <div class="form-grid two enrollment-options"><label><span>Contract term (months)</span><input type="number" min="1" [(ngModel)]="enrollmentForm.contractTermMonths"/></label></div>
+              }
+            </div>
+            <div class="billing-disclaimer">Plan pricing is snapshotted when you enroll the business. Future edits to the Fleet Plan template will not change this agreement automatically.</div>
+          }
+        </div>
+        <footer class="modal-footer"><button class="secondary-btn" (click)="closeEditor()">Cancel</button>@if(availablePlans().length){<button class="primary-btn" [disabled]="saving() || !enrollmentForm.planId || (enrollmentForm.billingManagedByStripe && enrollmentForm.paymentSetupMethod === 'email_checkout' && !enrollmentForm.paymentSetupContactId)" (click)="enrollInPlan()">{{ saving() ? 'Creating…' : enrollmentForm.paymentSetupMethod === 'email_checkout' ? 'Create & send enrollment' : 'Create enrollment' }}</button>}</footer>
+      }
+    </section>
+  </div>
+}

@@ -1,6 +1,5 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { TenantService } from './core/tenant/tenant.service';
 import { NgxSonnerToaster } from 'ngx-sonner';
 import { AuthService } from './core/auth/auth.service';
 import { AppShellComponent } from "./components/app-shell-component/app-shell-component";
@@ -16,7 +15,6 @@ import { ShopContextService } from './core/shop/shop-context.store';
   styleUrl: './app.scss'
 })
 export class App implements OnInit, OnDestroy {
-  private tenantService = inject(TenantService);
   shopContext = inject(ShopContextService);
   private auth = inject(AuthService);
   private router = inject(Router);
@@ -51,7 +49,6 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.tenantService.init();
     this.updateStandalonePublicRoute(this.router.url);
 
     this.routerSubscription = this.router.events

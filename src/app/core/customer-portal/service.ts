@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -6,6 +6,9 @@ import { AppConfigService } from '../app-config/app-config.service';
 import {
   CustomerPortalConfigResponse,
   CustomerPortalDashboardResponse,
+  CustomerPortalDeviceCatalogBrand,
+  CustomerPortalDeviceCatalogCategory,
+  CustomerPortalDeviceCatalogModel,
   CustomerPortalMessage,
   CustomerPortalMessagesResponse,
   CustomerPortalPaymentIntentResponse,
@@ -91,6 +94,139 @@ export class CustomerPortalService {
   getDashboard(shopSlug: string): Observable<CustomerPortalDashboardResponse> {
     return this.http.get<CustomerPortalDashboardResponse>(
       `${this.baseUrl(shopSlug)}/dashboard`,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  submitBusinessRepairRequest(
+    shopSlug: string,
+    payload: { customerDeviceId: string; problemSummary: string; purchaseOrderNumber?: string | null; intakeNotes?: string | null },
+  ): Observable<{ data: { id: string; status: string; problemSummary: string; customerDeviceId: string; createdAt: string } }> {
+    return this.http.post<{ data: { id: string; status: string; problemSummary: string; customerDeviceId: string; createdAt: string } }>(
+      `${this.baseUrl(shopSlug)}/business/repair-requests`,
+      payload,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  resolveApiPath(path: string): string {
+    if (/^https?:\/\//i.test(path)) return path;
+    const apiBase = this.apiBase.replace(/\/+$/, '');
+    const origin = apiBase.replace(/\/v1$/i, '');
+    return path.startsWith('/v1/') ? `${origin}${path}` : `${apiBase}/${path.replace(/^\/+/, '')}`;
+  }
+
+  openBusinessBillingPortal(shopSlug: string): Observable<{ url: string }> {
+    return this.http.post<{ url: string }>(
+      `${this.baseUrl(shopSlug)}/business/billing-portal`,
+      {},
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  updateBusinessAccount(
+    shopSlug: string,
+    payload: { name?: string; legalName?: string | null; billingEmail?: string | null; billingPhone?: string | null },
+  ): Observable<{ data: { id: string } }> {
+    return this.http.patch<{ data: { id: string } }>(
+      `${this.baseUrl(shopSlug)}/business/account`,
+      payload,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  addBusinessContact(
+    shopSlug: string,
+    payload: { name: string; title?: string | null; email?: string | null; phone?: string | null; isPrimary?: boolean; isBilling?: boolean; canAuthorizeRepairs?: boolean; receivesUpdates?: boolean },
+  ): Observable<{ data: { id: string } }> {
+    return this.http.post<{ data: { id: string } }>(
+      `${this.baseUrl(shopSlug)}/business/contacts`,
+      payload,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  updateBusinessContact(
+    shopSlug: string,
+    contactId: string,
+    payload: { name?: string; title?: string | null; email?: string | null; phone?: string | null; isPrimary?: boolean; isBilling?: boolean; canAuthorizeRepairs?: boolean; receivesUpdates?: boolean },
+  ): Observable<{ data: { id: string } }> {
+    return this.http.patch<{ data: { id: string } }>(
+      `${this.baseUrl(shopSlug)}/business/contacts/${encodeURIComponent(contactId)}`,
+      payload,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  deleteBusinessContact(shopSlug: string, contactId: string): Observable<{ ok: true }> {
+    return this.http.delete<{ ok: true }>(
+      `${this.baseUrl(shopSlug)}/business/contacts/${encodeURIComponent(contactId)}`,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  listBusinessDeviceCatalogCategories(
+    shopSlug: string,
+  ): Observable<{ data: CustomerPortalDeviceCatalogCategory[] }> {
+    return this.http.get<{ data: CustomerPortalDeviceCatalogCategory[] }>(
+      `${this.baseUrl(shopSlug)}/business/device-catalog/categories`,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  listBusinessDeviceCatalogBrands(
+    shopSlug: string,
+    categoryId: string,
+  ): Observable<{ data: CustomerPortalDeviceCatalogBrand[] }> {
+    const params = new HttpParams().set('categoryId', categoryId);
+    return this.http.get<{ data: CustomerPortalDeviceCatalogBrand[] }>(
+      `${this.baseUrl(shopSlug)}/business/device-catalog/brands`,
+      { headers: this.portalHeaders(shopSlug), params },
+    );
+  }
+
+  listBusinessDeviceCatalogModels(
+    shopSlug: string,
+    brandId: string,
+    search = '',
+  ): Observable<{ data: CustomerPortalDeviceCatalogModel[] }> {
+    let params = new HttpParams().set('brandId', brandId);
+    if (search.trim()) params = params.set('search', search.trim());
+    return this.http.get<{ data: CustomerPortalDeviceCatalogModel[] }>(
+      `${this.baseUrl(shopSlug)}/business/device-catalog/models`,
+      { headers: this.portalHeaders(shopSlug), params },
+    );
+  }
+
+  getBusinessDeviceCatalogModel(
+    shopSlug: string,
+    modelId: string,
+  ): Observable<{ data: CustomerPortalDeviceCatalogModel }> {
+    return this.http.get<{ data: CustomerPortalDeviceCatalogModel }>(
+      `${this.baseUrl(shopSlug)}/business/device-catalog/models/${encodeURIComponent(modelId)}`,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  addBusinessDevice(
+    shopSlug: string,
+    payload: { catalogRef: string; assetTag?: string | null; serial?: string | null; imei?: string | null; assignedToName?: string | null; assignedToEmail?: string | null; department?: string | null; fleetStatus?: 'active' | 'spare' | 'retired' | 'lost'; isPlanCovered?: boolean },
+  ): Observable<{ data: { id: string } }> {
+    return this.http.post<{ data: { id: string } }>(
+      `${this.baseUrl(shopSlug)}/business/devices`,
+      payload,
+      { headers: this.portalHeaders(shopSlug) },
+    );
+  }
+
+  updateBusinessDevice(
+    shopSlug: string,
+    deviceId: string,
+    payload: { catalogRef?: string; assetTag?: string | null; serial?: string | null; imei?: string | null; assignedToName?: string | null; assignedToEmail?: string | null; department?: string | null; fleetStatus?: 'active' | 'spare' | 'retired' | 'lost'; isPlanCovered?: boolean },
+  ): Observable<{ data: { id: string } }> {
+    return this.http.patch<{ data: { id: string } }>(
+      `${this.baseUrl(shopSlug)}/business/devices/${encodeURIComponent(deviceId)}`,
+      payload,
       { headers: this.portalHeaders(shopSlug) },
     );
   }

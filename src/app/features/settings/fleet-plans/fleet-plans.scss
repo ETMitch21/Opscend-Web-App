@@ -1,0 +1,98 @@
+:host {
+  display: block;
+}
+
+/* Fleet plan polish: keep the Settings design language, but give this dense editor
+   a little more breathing room and a clearer section rhythm. */
+.fleet-plan-row {
+  transition: background-color 150ms ease;
+}
+
+.fleet-plan-row:hover {
+  background: color-mix(in srgb, var(--color-brand) 2.5%, var(--color-app-surface));
+}
+
+.fleet-plan-editor-backdrop {
+  padding: clamp(12px, 2.4vw, 28px) !important;
+  background: rgb(15 23 42 / 0.42) !important;
+  backdrop-filter: blur(4px);
+}
+
+.fleet-plan-editor {
+  width: min(920px, 100%);
+  max-width: 920px !important;
+  max-height: min(920px, calc(100dvh - 36px)) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    0 28px 80px -28px rgb(15 23 42 / 0.38),
+    0 8px 24px -12px rgb(15 23 42 / 0.16) !important;
+}
+
+.fleet-plan-editor-header {
+  padding: 20px 22px 18px !important;
+  background: color-mix(in srgb, var(--color-app-surface) 96%, var(--color-app-surface-muted));
+}
+
+.fleet-plan-editor-header h2 {
+  font-size: 20px !important;
+  line-height: 1.25;
+}
+
+.fleet-plan-editor-body {
+  padding-inline: 22px !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.fleet-plan-editor-body > section {
+  padding-block: 20px !important;
+}
+
+.fleet-plan-editor-body > section > div:first-child h3 {
+  letter-spacing: -0.01em;
+}
+
+.fleet-plan-editor-body .settings-label {
+  margin-bottom: 6px;
+}
+
+.fleet-plan-editor-body .settings-control,
+.fleet-plan-editor-body .settings-input-group {
+  min-height: 42px;
+}
+
+.fleet-plan-editor-body textarea.settings-control {
+  line-height: 1.5;
+}
+
+.fleet-plan-editor-body .settings-hint {
+  margin-top: 6px;
+}
+
+.fleet-plan-editor-footer {
+  min-height: 66px;
+  padding: 13px 22px !important;
+  background: color-mix(in srgb, var(--color-app-surface) 92%, var(--color-app-surface-muted)) !important;
+  box-shadow: 0 -8px 24px -22px rgb(15 23 42 / 0.3);
+}
+
+@media (max-width: 640px) {
+  .fleet-plan-editor-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .fleet-plan-editor {
+    max-height: 94dvh !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  .fleet-plan-editor-header,
+  .fleet-plan-editor-body,
+  .fleet-plan-editor-footer {
+    padding-inline: 18px !important;
+  }
+}

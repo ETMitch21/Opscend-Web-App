@@ -40,6 +40,7 @@ import {
   CheckIcon,
   LoaderCircleIcon,
   CalculatorIcon,
+  Building2Icon,
 } from 'lucide-angular';
 import { AccessibleLocation, AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
@@ -57,6 +58,7 @@ import { WorkQueueService } from '../../core/work-queue/service';
 import type { WorkQueueItem, WorkQueueSummary } from '../../core/work-queue/model';
 import { AiAssistant } from '../../features/ai-assistant/ai-assistant';
 import { SessionIdleService } from '../../core/auth/session-idle.service';
+import { BusinessSettingsService } from '../../core/business-settings/service';
 
 type NavItem = {
   label: string;
@@ -138,6 +140,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private workQueueService = inject(WorkQueueService);
   private readonly sessionIdle = inject(SessionIdleService);
+  private readonly businessSettings = inject(BusinessSettingsService);
+  private readonly businessAccountsFeatureEnabled = signal(true);
   private readonly currentUser = toSignal(this.auth.currentUser$, {
     initialValue: this.auth.getCurrentUser(),
   });
@@ -175,6 +179,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly locationCheckIcon = CheckIcon;
   readonly locationLoadingIcon = LoaderCircleIcon;
   readonly quickQuoteIcon = CalculatorIcon;
+  readonly businessAccountsIcon = Building2Icon;
 
   private readonly notificationPollMs = 15_000;
   private readonly communicationPollMs = 5_000;
@@ -250,6 +255,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       badgeCount: () => this.newQuoteRequestCount(),
     },
     { label: 'Customers', route: '/customers', icon: this.usersIcon, permission: 'customers:read' },
+    { label: 'Business', route: '/business-accounts', icon: this.businessAccountsIcon, permission: 'businessAccounts:read' },
     { label: 'Balances', route: '/balances', icon: this.walletCardsIcon, permission: 'orders:read' },
     { label: 'Services', route: '/services', icon: this.toolboxIcon, permission: 'services:read' },
     {
@@ -350,6 +356,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       }))
       .filter((item) => {
         if (!this.canAccess(item.permission)) return false;
+        if (item.label === 'Business' && !this.businessAccountsFeatureEnabled()) return false;
         if (item.children && item.children.length === 0) return false;
         return true;
       });
@@ -387,6 +394,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
         this.refreshNewQuoteRequestCount(),
         this.refreshUnreadCommunicationCount({ notify: false }),
         this.refreshWorkQueueSummary(),
+        this.refreshBusinessFeatureVisibility(),
       ]);
       this.startNotificationPolling();
       this.startCommunicationPolling();
@@ -404,8 +412,19 @@ export class AppShellComponent implements OnInit, OnDestroy {
           void this.refreshNewQuoteRequestCount();
           void this.refreshUnreadCommunicationCount({ notify: false });
           void this.refreshWorkQueueSummary();
+          void this.refreshBusinessFeatureVisibility();
         }
       });
+  }
+
+  private async refreshBusinessFeatureVisibility(): Promise<void> {
+    if (!this.canAccess('businessAccounts:read') && !this.canAccess('shops:read')) return;
+    try {
+      const state = await firstValueFrom(this.businessSettings.getFeatures());
+      this.businessAccountsFeatureEnabled.set(state.settings.businessAccountsEnabled);
+    } catch {
+      // Keep the current navigation visible if settings cannot be checked.
+    }
   }
 
   ngOnDestroy(): void {

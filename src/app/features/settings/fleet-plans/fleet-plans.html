@@ -1,0 +1,343 @@
+<app-settings-layout>
+  <div class="space-y-4">
+    <section class="settings-card">
+      <div class="settings-card-header flex items-start justify-between gap-4">
+        <div>
+          <h2 class="settings-card-title">Fleet plans</h2>
+          <p class="settings-card-description">Define business service plans once, then enroll company accounts without rebuilding pricing and terms each time.</p>
+        </div>
+        @if (canWrite && fleetEnabled()) {
+          <button type="button" class="settings-primary-action cursor-pointer shrink-0" (click)="openEditor()">
+            <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+            New plan
+          </button>
+        }
+      </div>
+
+      @if (!fleetEnabled() && !loading()) {
+        <div class="flex min-h-52 flex-col items-center justify-center px-6 text-center">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-app-surface-muted text-app-text-muted"><lucide-icon [name]="icons.Smartphone" class="h-5 w-5"></lucide-icon></span>
+          <p class="mt-3 text-sm font-semibold text-app-text">Fleet Management is turned off</p>
+          <p class="mt-1 max-w-md text-xs leading-5 text-app-text-muted">Existing Fleet records are preserved, but plans and new enrollments stay unavailable until the feature is enabled again.</p>
+          <a class="settings-primary-action mt-4" href="/settings/shop/business-fleet">Open Business & Fleet settings</a>
+        </div>
+      } @else if (loading()) {
+        <div class="flex min-h-44 items-center justify-center gap-2 text-xs text-app-text-muted"><lucide-icon [name]="icons.LoaderCircle" class="h-4 w-4 animate-spin"></lucide-icon>Loading fleet plans…</div>
+      } @else if (!plans().length) {
+        <div class="flex min-h-52 flex-col items-center justify-center px-6 text-center">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/10 text-brand"><lucide-icon [name]="icons.BadgeDollarSign" class="h-5 w-5"></lucide-icon></span>
+          <p class="mt-3 text-sm font-semibold text-app-text">No fleet plans yet</p>
+          <p class="mt-1 max-w-md text-xs leading-5 text-app-text-muted">Create a reusable plan for per-device pricing, setup fees, labor rates, discounts, included benefits, and contract terms.</p>
+          @if (canWrite) { <button type="button" class="settings-primary-action mt-4 cursor-pointer" (click)="openEditor()"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>Create first plan</button> }
+        </div>
+      } @else {
+        <div class="divide-y divide-app-border">
+          @for (plan of plans(); track plan.id) {
+            <article class="fleet-plan-row p-4 sm:p-5">
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-sm font-semibold text-app-text">{{ plan.name }}</h3>
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold" [class.bg-emerald-50]="plan.isActive" [class.text-emerald-700]="plan.isActive" [class.bg-app-surface-muted]="!plan.isActive" [class.text-app-text-muted]="!plan.isActive">{{ plan.isActive ? 'Active' : 'Inactive' }}</span>
+                    <span class="rounded-full bg-app-surface-muted px-2 py-0.5 text-[10px] font-medium text-app-text-muted">{{ pricingModelLabel(plan.pricingModel) }}</span>
+                  </div>
+                  <p class="mt-1 text-base font-semibold text-app-text">{{ recurringLabel(plan) }}</p>
+                  @if (plan.description) { <p class="mt-1 max-w-3xl text-xs leading-5 text-app-text-muted">{{ plan.description }}</p> }
+                  <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-app-text-muted">
+                    <span><strong class="text-app-text">{{ plan.minimumDeviceCount }}</strong> minimum devices</span>
+                    <span>@if(plan.maximumDeviceCount){up to <strong class="text-app-text">{{ plan.maximumDeviceCount }}</strong> devices}@else{no device cap}</span>
+                    <span><strong class="text-app-text">{{ plan.planLaborCents === null ? 'Custom' : money(plan.planLaborCents) }}</strong> plan labor</span>
+                    <span><strong class="text-app-text">{{ plan.partsDiscountBps / 100 }}%</strong> parts discount</span>
+                    <span><strong class="text-app-text">{{ plan.activeEnrollmentCount || 0 }}</strong> active accounts</span>
+                    @if(plan.entitlements?.length){<span><strong class="text-app-text">{{ plan.entitlements?.length }}</strong> tracked entitlement{{ plan.entitlements?.length === 1 ? '' : 's' }}</span>}
+                  </div>
+                  @if (plan.benefits.length) {
+                    <div class="mt-3 flex flex-wrap gap-1.5">@for(benefit of plan.benefits.slice(0, 6); track benefit){<span class="inline-flex items-center gap-1 rounded-md border border-app-border bg-app-surface-muted/40 px-2 py-1 text-[10px] text-app-text-muted"><lucide-icon [name]="icons.Check" class="h-3 w-3 text-emerald-600"></lucide-icon>{{ benefit }}</span>}</div>
+                  }
+                </div>
+                @if (canWrite) {
+                  <div class="flex shrink-0 items-center gap-2">
+                    <button type="button" class="settings-secondary-action cursor-pointer" (click)="toggleActive(plan)">{{ plan.isActive ? 'Deactivate' : 'Activate' }}</button>
+                    <button type="button" class="settings-secondary-action cursor-pointer" (click)="openEditor(plan)"><lucide-icon [name]="icons.Edit3" class="h-4 w-4"></lucide-icon>Edit</button>
+                  </div>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <div class="settings-inline-note flex items-start gap-2.5">
+      <lucide-icon [name]="icons.Users" class="mt-0.5 h-4 w-4 shrink-0 text-brand"></lucide-icon>
+      <p>When a business enrolls, Opscend snapshots the plan terms onto that enrollment. Editing the template later does not silently change an existing contract.</p>
+    </div>
+  </div>
+</app-settings-layout>
+
+@if (editorOpen()) {
+  <div
+    class="settings-shell fleet-plan-editor-backdrop fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/45 p-3 backdrop-blur-[2px]"
+    (mousedown)="closeEditor()"
+  >
+    <section
+      class="fleet-plan-editor flex max-h-[calc(100vh-24px)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-2xl"
+      (mousedown)="$event.stopPropagation()"
+    >
+      <header class="fleet-plan-editor-header flex items-start justify-between border-b border-app-border px-6 py-5">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-[.14em] text-brand">Fleet plan</p>
+          <h2 class="mt-1 text-xl font-semibold tracking-[-0.02em] text-app-text">
+            {{ editingId ? 'Edit plan' : 'Create plan' }}
+          </h2>
+          <p class="mt-1 text-xs text-app-text-muted">
+            Set the recurring price, repair rates, limits, and benefits businesses receive on this plan.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg p-2 text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+          (click)="closeEditor()"
+          aria-label="Close plan editor"
+        >
+          <lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon>
+        </button>
+      </header>
+
+      <div class="fleet-plan-editor-body overflow-y-auto px-6">
+        <section class="border-b border-app-border py-5">
+          <div>
+            <h3 class="text-sm font-semibold text-app-text">Plan details</h3>
+            <p class="mt-1 text-[11px] text-app-text-muted">The core pricing and contract terms used when a business enrolls.</p>
+          </div>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <label class="sm:col-span-2">
+              <span class="settings-label">Plan name <span class="text-rose-600">*</span></span>
+              <input class="settings-control" [(ngModel)]="form.name" placeholder="Fleet Starter" />
+            </label>
+
+            <label class="sm:col-span-2">
+              <span class="settings-label">Description</span>
+              <textarea
+                class="settings-control min-h-20"
+                [(ngModel)]="form.description"
+                placeholder="A short internal description of who this plan is for."
+              ></textarea>
+            </label>
+
+            <label>
+              <span class="settings-label">Pricing model</span>
+              <select class="settings-control" [(ngModel)]="form.pricingModel">
+                <option value="per_device">Per device</option>
+                <option value="flat">Flat recurring</option>
+                <option value="flat_plus_device">Base + per device</option>
+              </select>
+            </label>
+
+            <label>
+              <span class="settings-label">Billing frequency</span>
+              <select class="settings-control" [(ngModel)]="form.billingInterval">
+                <option value="month">Monthly</option>
+                <option value="year">Yearly</option>
+              </select>
+            </label>
+
+            @if (form.pricingModel === 'flat' || form.pricingModel === 'flat_plus_device') {
+              <label>
+                <span class="settings-label">Recurring base fee</span>
+                <div class="settings-input-group">
+                  <span class="settings-input-affix">$</span>
+                  <input type="number" min="0" step="0.01" [(ngModel)]="form.baseRecurringFee" />
+                </div>
+              </label>
+            }
+
+            @if (form.pricingModel === 'per_device' || form.pricingModel === 'flat_plus_device') {
+              <label>
+                <span class="settings-label">Price per device</span>
+                <div class="settings-input-group">
+                  <span class="settings-input-affix">$</span>
+                  <input type="number" min="0" step="0.01" [(ngModel)]="form.perDeviceFee" />
+                </div>
+              </label>
+            }
+
+            <label>
+              <span class="settings-label">One-time setup fee</span>
+              <div class="settings-input-group">
+                <span class="settings-input-affix">$</span>
+                <input type="number" min="0" step="0.01" [(ngModel)]="form.setupFee" />
+              </div>
+            </label>
+
+            <label>
+              <span class="settings-label">Default contract term</span>
+              <div class="settings-input-group">
+                <input type="number" min="1" [(ngModel)]="form.defaultContractTermMonths" />
+                <span class="settings-input-affix is-suffix">months</span>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <section class="border-b border-app-border py-5">
+          <div>
+            <h3 class="text-sm font-semibold text-app-text">Devices & repair pricing</h3>
+            <p class="mt-1 text-[11px] text-app-text-muted">Control fleet size and the rates Opscend applies to covered repair work.</p>
+          </div>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <label>
+              <span class="settings-label">Minimum devices</span>
+              <input class="settings-control" type="number" min="0" [(ngModel)]="form.minimumDeviceCount" />
+            </label>
+
+            <label>
+              <span class="settings-label">Maximum devices</span>
+              <input class="settings-control" type="number" min="1" [(ngModel)]="form.maximumDeviceCount" placeholder="No limit" />
+              <span class="settings-hint">Leave blank for no limit.</span>
+            </label>
+
+            <label>
+              <span class="settings-label">Plan labor</span>
+              <div class="settings-input-group">
+                <span class="settings-input-affix">$</span>
+                <input type="number" min="0" step="0.01" [(ngModel)]="form.planLabor" placeholder="Optional" />
+              </div>
+              <span class="settings-hint">Labor charged for covered repairs.</span>
+            </label>
+
+            <label>
+              <span class="settings-label">Standard labor</span>
+              <div class="settings-input-group">
+                <span class="settings-input-affix">$</span>
+                <input type="number" min="0" step="0.01" [(ngModel)]="form.standardLabor" placeholder="Optional" />
+              </div>
+              <span class="settings-hint">Fallback labor for non-covered work.</span>
+            </label>
+
+            <label>
+              <span class="settings-label">Parts discount</span>
+              <div class="settings-input-group">
+                <input type="number" min="0" max="100" step="0.1" [(ngModel)]="form.partsDiscountPercent" />
+                <span class="settings-input-affix is-suffix">%</span>
+              </div>
+            </label>
+
+            <label>
+              <span class="settings-label">Service discount</span>
+              <div class="settings-input-group">
+                <input type="number" min="0" max="100" step="0.1" [(ngModel)]="form.serviceDiscountPercent" />
+                <span class="settings-input-affix is-suffix">%</span>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <section class="border-b border-app-border py-5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 class="text-sm font-semibold text-app-text">Tracked entitlements</h3>
+              <p class="mt-1 text-[11px] text-app-text-muted">
+                Define benefits Opscend should count, such as included diagnostics, screen protectors, or loaners.
+              </p>
+            </div>
+            <button type="button" class="settings-secondary-action cursor-pointer shrink-0" (click)="addEntitlement()">
+              <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+              Add entitlement
+            </button>
+          </div>
+
+          @if (!form.entitlements.length) {
+            <div class="mt-4 rounded-xl border border-dashed border-app-border bg-app-surface-muted/20 p-5 text-center">
+              <p class="text-xs font-medium text-app-text">No tracked allowances</p>
+              <p class="mt-1 text-[11px] text-app-text-muted">You can still list unlimited or informational benefits below.</p>
+            </div>
+          }
+
+          <div class="mt-4 space-y-3">
+            @for (entitlement of form.entitlements; track $index; let i = $index) {
+              <div class="rounded-xl border border-app-border bg-app-surface-muted/25 p-4">
+                <div class="grid gap-4 sm:grid-cols-12">
+                  <label class="sm:col-span-4">
+                    <span class="settings-label">Benefit name</span>
+                    <input class="settings-control" [(ngModel)]="entitlement.name" placeholder="Included diagnostics" />
+                  </label>
+
+                  <label class="sm:col-span-2">
+                    <span class="settings-label">Allowance</span>
+                    <input class="settings-control" type="number" min="1" [(ngModel)]="entitlement.allowanceQuantity" placeholder="Unlimited" />
+                  </label>
+
+                  <label class="sm:col-span-2">
+                    <span class="settings-label">Unit</span>
+                    <input class="settings-control" [(ngModel)]="entitlement.unitLabel" placeholder="uses" />
+                  </label>
+
+                  <label class="sm:col-span-3">
+                    <span class="settings-label">Resets</span>
+                    <select class="settings-control" [(ngModel)]="entitlement.resetPolicy">
+                      <option value="billing_period">Each billing period</option>
+                      <option value="month">Monthly</option>
+                      <option value="year">Yearly</option>
+                      <option value="never">Never</option>
+                    </select>
+                  </label>
+
+                  <div class="flex items-end sm:col-span-1">
+                    <button
+                      type="button"
+                      class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-app-text-muted transition hover:bg-rose-50 hover:text-rose-700"
+                      (click)="removeEntitlement(i)"
+                      aria-label="Remove entitlement"
+                    >
+                      <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+                    </button>
+                  </div>
+
+                  <label class="sm:col-span-12">
+                    <span class="settings-label">Description</span>
+                    <input class="settings-control" [(ngModel)]="entitlement.description" placeholder="What is included and when it applies." />
+                  </label>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="py-5">
+          <h3 class="text-sm font-semibold text-app-text">Included benefits</h3>
+          <p class="mt-1 text-[11px] text-app-text-muted">Enter one customer-facing benefit per line. These appear as plan benefits but are not usage-tracked.</p>
+          <textarea
+            class="settings-control mt-3 min-h-28"
+            [(ngModel)]="form.benefitsText"
+            placeholder="Unlimited screen protectors&#10;Priority scheduling&#10;Loaner device access"
+          ></textarea>
+
+          <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-app-border bg-app-surface-muted/20 p-4">
+            <input class="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-brand)]" type="checkbox" [(ngModel)]="form.isActive" />
+            <span>
+              <strong class="block text-xs font-semibold text-app-text">Plan is available for enrollment</strong>
+              <small class="mt-1 block text-[10.5px] leading-4 text-app-text-muted">
+                Inactive plans remain on existing enrollments but cannot be assigned to new accounts.
+              </small>
+            </span>
+          </label>
+        </section>
+      </div>
+
+      <footer class="fleet-plan-editor-footer flex items-center justify-end gap-2 border-t border-app-border bg-app-surface-muted/30 px-6 py-4">
+        <button type="button" class="settings-secondary-action cursor-pointer" (click)="closeEditor()">Cancel</button>
+        <button type="button" class="settings-primary-action cursor-pointer" [disabled]="saving()" (click)="save()">
+          @if (saving()) {
+            <lucide-icon [name]="icons.LoaderCircle" class="h-4 w-4 animate-spin"></lucide-icon>
+            Saving…
+          } @else {
+            Save plan
+          }
+        </button>
+      </footer>
+    </section>
+  </div>
+}

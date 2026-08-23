@@ -1,0 +1,410 @@
+<app-settings-layout pageTitle="Business & Fleet" pageDescription="Control business account features and build the agreements customers sign during enrollment.">
+  @if (loading()) {
+    <div class="settings-card flex min-h-56 items-center justify-center gap-2 text-sm text-app-text-muted">
+      <lucide-icon [name]="icons.LoaderCircle" class="h-5 w-5 animate-spin"></lucide-icon>
+      Loading business settings…
+    </div>
+  } @else if (featureState(); as feature) {
+    <div class="space-y-4">
+      <section class="settings-card">
+        <div class="settings-card-header">
+          <h2 class="settings-card-title">Business features</h2>
+          <p class="settings-card-description">Turn business account tools on only when your shop uses them. Existing records stay preserved when a feature is disabled.</p>
+        </div>
+
+        <div class="divide-y divide-app-border">
+          <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+              <span class="feature-icon"><lucide-icon [name]="icons.Building2" class="h-5 w-5"></lucide-icon></span>
+              <div>
+                <h3 class="text-sm font-semibold text-app-text">Business Accounts</h3>
+                <p class="mt-1 max-w-2xl text-xs leading-5 text-app-text-muted">Company profiles, contacts, billing terms, statements, business portal access, and contract history.</p>
+                @if (!feature.blockers.canDisableBusinessAccounts) {
+                  <p class="mt-2 text-xs font-medium text-amber-700">{{ blockingAgreementCount(feature) }} active or signed business agreement{{ blockingAgreementCount(feature) === 1 ? '' : 's' }} currently protect this feature from being disabled.</p>
+                } @else if (feature.settings.fleetManagementEnabled) {
+                  <p class="mt-2 text-xs font-medium text-amber-700">Turn off Fleet Management before turning off Business Accounts.</p>
+                }
+              </div>
+            </div>
+            <label class="feature-switch" [class.disabled]="!canWrite || savingFeatures() || feature.settings.fleetManagementEnabled || !feature.blockers.canDisableBusinessAccounts">
+              <input type="checkbox" [checked]="feature.settings.businessAccountsEnabled" [disabled]="!canWrite || savingFeatures() || (feature.settings.businessAccountsEnabled && (feature.settings.fleetManagementEnabled || !feature.blockers.canDisableBusinessAccounts))" (change)="setBusinessEnabled($any($event.target).checked)">
+              <span></span>
+            </label>
+          </div>
+
+          <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+              <span class="feature-icon"><lucide-icon [name]="icons.ShieldCheck" class="h-5 w-5"></lucide-icon></span>
+              <div>
+                <h3 class="text-sm font-semibold text-app-text">Fleet Management</h3>
+                <p class="mt-1 max-w-2xl text-xs leading-5 text-app-text-muted">Fleet plans, device coverage, enrollment, recurring plan billing, and customer Fleet controls.</p>
+                @if (!feature.settings.businessAccountsEnabled) {
+                  <p class="mt-2 text-xs font-medium text-amber-700">Business Accounts must be enabled first.</p>
+                } @else if (!feature.blockers.canDisableFleet) {
+                  <p class="mt-2 text-xs font-medium text-amber-700">{{ feature.blockers.activeFleetAgreements }} active or signed Fleet agreement{{ feature.blockers.activeFleetAgreements === 1 ? '' : 's' }} must end before Fleet Management can be turned off.</p>
+                }
+              </div>
+            </div>
+            <label class="feature-switch" [class.disabled]="!canWrite || savingFeatures() || !feature.settings.businessAccountsEnabled || (feature.settings.fleetManagementEnabled && !feature.blockers.canDisableFleet)">
+              <input type="checkbox" [checked]="feature.settings.fleetManagementEnabled" [disabled]="!canWrite || savingFeatures() || !feature.settings.businessAccountsEnabled || (feature.settings.fleetManagementEnabled && !feature.blockers.canDisableFleet)" (change)="setFleetEnabled($any($event.target).checked)">
+              <span></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <div class="settings-card-header flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="settings-card-title">Agreement builder</h2>
+            <p class="settings-card-description">Create reusable contract language with variables. Every enrollment freezes the exact rendered version before it is sent for signature.</p>
+          </div>
+          @if (canWrite) {
+            <button type="button" class="settings-primary-action cursor-pointer" (click)="openEditor()"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>New agreement</button>
+          }
+        </div>
+
+        <div class="border-b border-app-border p-5">
+          <label class="block max-w-xl">
+            <span class="settings-label">Shop default agreement</span>
+            <select class="settings-control" [ngModel]="feature.settings.defaultAgreementTemplateId || ''" [disabled]="!canWrite || savingFeatures()" (ngModelChange)="setDefaultTemplate($event)">
+              <option value="">Standard Fleet Service Agreement</option>
+              @for (template of activeTemplates(); track template.id) {
+                @if (!template.isBuiltin) { <option [value]="template.id">{{ template.name }} · v{{ template.version }}</option> }
+              }
+            </select>
+            <span class="settings-hint">Plans can override this default below. A template change only affects future enrollments.</span>
+          </label>
+        </div>
+
+        <div class="divide-y divide-app-border">
+          @for (template of templates(); track template.id) {
+            <article class="p-5">
+              <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-sm font-semibold text-app-text">{{ template.name }}</h3>
+                    <span class="template-pill">v{{ template.version }}</span>
+                    @if (template.isBuiltin) { <span class="template-pill is-built-in">Opscend starter</span> }
+                    @if (!template.isActive) { <span class="template-pill is-inactive">Inactive</span> }
+                  </div>
+                  <p class="mt-1 text-sm font-medium text-app-text">{{ template.title }}</p>
+                  @if(template.description){<p class="mt-1 max-w-3xl text-xs leading-5 text-app-text-muted">{{ template.description }}</p>}
+                  <p class="mt-2 text-[11px] text-app-text-muted">{{ template.sections.length }} section{{ template.sections.length === 1 ? '' : 's' }} · Signed copies remain unchanged when this template is edited.</p>
+                </div>
+                @if (canWrite) {
+                  <div class="flex shrink-0 flex-wrap gap-2">
+                    <button type="button" class="settings-secondary-action cursor-pointer" (click)="duplicate(template)"><lucide-icon [name]="icons.Copy" class="h-4 w-4"></lucide-icon>Duplicate</button>
+                    @if (!template.isBuiltin) {
+                      <button type="button" class="settings-secondary-action cursor-pointer" (click)="toggleTemplate(template)">{{ template.isActive ? 'Deactivate' : 'Activate' }}</button>
+                      <button type="button" class="settings-secondary-action cursor-pointer" (click)="openEditor(template)">Edit</button>
+                    }
+                  </div>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+
+      @if (feature.settings.fleetManagementEnabled) {
+        <section class="settings-card">
+          <div class="settings-card-header">
+            <h2 class="settings-card-title">Plan agreement assignments</h2>
+            <p class="settings-card-description">Choose a specific agreement for a Fleet plan, or let the plan inherit the shop default.</p>
+          </div>
+          @if (!plans().length) {
+            <div class="p-6 text-center text-xs text-app-text-muted">Create a Fleet plan to assign an agreement.</div>
+          } @else {
+            <div class="divide-y divide-app-border">
+              @for (plan of plans(); track plan.id) {
+                <div class="grid gap-3 p-5 md:grid-cols-[minmax(0,1fr)_minmax(260px,420px)] md:items-center">
+                  <div><strong class="text-sm text-app-text">{{ plan.name }}</strong><p class="mt-1 text-xs text-app-text-muted">{{ plan.description || 'Fleet plan' }}</p></div>
+                  <select class="settings-control" [ngModel]="bindingFor(plan.id)" [disabled]="!canWrite" (ngModelChange)="setPlanTemplate(plan.id, $event)">
+                    <option value="">Use shop default · {{ defaultTemplateName(feature.settings.defaultAgreementTemplateId) }}</option>
+                    @for (template of activeTemplates(); track template.id) { <option [value]="template.id">{{ template.name }} · v{{ template.version }}</option> }
+                  </select>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+    </div>
+  }
+</app-settings-layout>
+
+@if (editorOpen()) {
+  <div class="agreement-builder fixed inset-0 z-[1300] bg-[#f6f7f9] text-app-text">
+    <section class="flex h-full min-h-0 flex-col">
+      <header class="flex h-[76px] shrink-0 items-center justify-between gap-6 border-b border-[#dfe3e8] bg-white px-7 shadow-[0_1px_0_rgba(15,23,42,.02)]">
+        <div class="flex min-w-0 items-center gap-4">
+          <button type="button" class="builder-icon-button" aria-label="Close agreement builder" (click)="closeEditor()">
+            <lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon>
+          </button>
+          <div class="min-w-0">
+            <div class="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#f58549]">
+              <lucide-icon [name]="icons.FileSignature" class="h-3.5 w-3.5"></lucide-icon>
+              Agreement builder
+            </div>
+            <div class="flex min-w-0 items-center gap-3">
+              <h2 class="truncate text-[19px] font-semibold tracking-[-0.02em] text-[#25272b]">{{ editingId ? 'Edit agreement' : 'New agreement' }}</h2>
+              @if (editingId) {
+                <span class="hidden rounded-full border border-[#f5d3c2] bg-[#fff7f2] px-2.5 py-1 text-[10px] font-semibold text-[#c96331] sm:inline-flex">Creates a new version</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-2">
+          <button type="button" class="builder-button builder-button--secondary hidden sm:inline-flex" (click)="setEditorStep('preview')">
+            <lucide-icon [name]="icons.FileSignature" class="h-4 w-4"></lucide-icon>
+            Preview
+          </button>
+          <button type="button" class="builder-button builder-button--ghost" (click)="closeEditor()">Cancel</button>
+          <button type="button" class="builder-button builder-button--primary" [disabled]="savingTemplate()" (click)="saveTemplate()">
+            <lucide-icon [name]="savingTemplate() ? icons.LoaderCircle : icons.Save" [class.animate-spin]="savingTemplate()" class="h-4 w-4"></lucide-icon>
+            {{ savingTemplate() ? 'Saving…' : 'Save agreement' }}
+          </button>
+        </div>
+      </header>
+
+      <div class="relative grid min-h-0 flex-1 grid-cols-[228px_minmax(0,1fr)] max-md:grid-cols-1">
+        <aside class="hidden min-h-0 border-r border-[#dfe3e8] bg-white px-4 py-6 md:flex md:flex-col">
+          <p class="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9a9da3]">Build agreement</p>
+          <nav class="space-y-1">
+            <button type="button" class="builder-step" [class.is-active]="editorStep() === 'details'" (click)="setEditorStep('details')">
+              <span class="builder-step-number">1</span>
+              <span><strong>Details</strong><small>Name and introduction</small></span>
+            </button>
+            <button type="button" class="builder-step" [class.is-active]="editorStep() === 'terms'" (click)="setEditorStep('terms')">
+              <span class="builder-step-number">2</span>
+              <span><strong>Terms & clauses</strong><small>{{ form.sections.length }} section{{ form.sections.length === 1 ? '' : 's' }}</small></span>
+            </button>
+            <button type="button" class="builder-step" [class.is-active]="editorStep() === 'acceptance'" (click)="setEditorStep('acceptance')">
+              <span class="builder-step-number">3</span>
+              <span><strong>Acceptance</strong><small>Signature language</small></span>
+            </button>
+            <button type="button" class="builder-step" [class.is-active]="editorStep() === 'preview'" (click)="setEditorStep('preview')">
+              <span class="builder-step-number"><lucide-icon [name]="icons.FileSignature" class="h-3.5 w-3.5"></lucide-icon></span>
+              <span><strong>Preview</strong><small>Customer view</small></span>
+            </button>
+          </nav>
+
+          <div class="my-5 border-t border-[#eceef1]"></div>
+
+          <button type="button" class="builder-tool-button" [class.is-active]="variablesOpen()" (click)="variablesOpen.set(!variablesOpen())">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fff4ed] text-[#e66f34]"><lucide-icon [name]="icons.Sparkles" class="h-4 w-4"></lucide-icon></span>
+            <span class="min-w-0 flex-1 text-left"><strong>Dynamic variables</strong><small>{{ variables().length }} available</small></span>
+            <lucide-icon [name]="icons.ChevronDown" class="h-4 w-4 -rotate-90 text-[#a1a5ab]"></lucide-icon>
+          </button>
+
+          <div class="mt-auto rounded-xl border border-[#e5e7eb] bg-[#fafafa] p-3.5">
+            <div class="flex items-start gap-2.5">
+              <lucide-icon [name]="icons.ShieldCheck" class="mt-0.5 h-4 w-4 shrink-0 text-[#f58549]"></lucide-icon>
+              <p class="m-0 text-[10px] leading-4 text-[#777b82]">Signed copies are frozen. Editing this template never changes an agreement a customer already signed.</p>
+            </div>
+          </div>
+        </aside>
+
+        <main class="min-h-0 overflow-y-auto bg-[#f7f8fa]">
+          <div class="border-b border-[#e5e7eb] bg-white px-4 py-2 md:hidden">
+            <div class="flex gap-1 overflow-x-auto">
+              <button type="button" class="builder-mobile-tab" [class.is-active]="editorStep() === 'details'" (click)="setEditorStep('details')">Details</button>
+              <button type="button" class="builder-mobile-tab" [class.is-active]="editorStep() === 'terms'" (click)="setEditorStep('terms')">Terms</button>
+              <button type="button" class="builder-mobile-tab" [class.is-active]="editorStep() === 'acceptance'" (click)="setEditorStep('acceptance')">Acceptance</button>
+              <button type="button" class="builder-mobile-tab" [class.is-active]="editorStep() === 'preview'" (click)="setEditorStep('preview')">Preview</button>
+              <button type="button" class="builder-mobile-tab" [class.is-active]="variablesOpen()" (click)="variablesOpen.set(!variablesOpen())">Variables</button>
+            </div>
+          </div>
+
+          @switch (editorStep()) {
+            @case ('details') {
+              <div class="builder-page">
+                <div class="builder-page-heading">
+                  <span>Step 1 of 3</span>
+                  <h3>Agreement details</h3>
+                  <p>Set the internal template information and the opening language your customer will see.</p>
+                </div>
+
+                <section class="builder-surface">
+                  <div class="builder-surface-heading">
+                    <div><h4>Template information</h4><p>These fields help your team identify when to use this agreement.</p></div>
+                    <span class="builder-private-badge">Internal only</span>
+                  </div>
+                  <div class="grid gap-5 md:grid-cols-2">
+                    <label class="builder-field">
+                      <span>Template name</span>
+                      <input class="builder-input" [(ngModel)]="form.name" placeholder="Standard Business Fleet Agreement">
+                    </label>
+                    <label class="builder-field">
+                      <span>Internal description <em>Optional</em></span>
+                      <input class="builder-input" [(ngModel)]="form.description" placeholder="Example: Default agreement for monthly Fleet plans">
+                    </label>
+                  </div>
+                </section>
+
+                <section class="builder-surface">
+                  <div class="builder-surface-heading">
+                    <div><h4>Customer-facing introduction</h4><p>This is the first thing the customer reads before the agreement terms.</p></div>
+                  </div>
+                  <div class="space-y-5">
+                    <label class="builder-field">
+                      <span>Agreement title</span>
+                      <input class="builder-input builder-input--large" [(ngModel)]="form.title" (blur)="refreshPreview()" placeholder="Fleet Service Agreement">
+                    </label>
+                    <label class="builder-field">
+                      <span>Opening paragraph</span>
+                      <textarea class="builder-textarea min-h-[150px]" [(ngModel)]="form.introduction" (blur)="refreshPreview()" placeholder="Introduce the agreement and identify the parties entering into it."></textarea>
+                    </label>
+                    <button type="button" class="builder-inline-tool" (click)="variablesOpen.set(true)"><lucide-icon [name]="icons.Sparkles" class="h-3.5 w-3.5"></lucide-icon>Insert a dynamic value</button>
+                  </div>
+                </section>
+
+                <div class="flex justify-end pt-1">
+                  <button type="button" class="builder-button builder-button--primary" (click)="setEditorStep('terms')">Continue to terms <span aria-hidden="true">→</span></button>
+                </div>
+              </div>
+            }
+
+            @case ('terms') {
+              <div class="builder-page builder-page--wide">
+                <div class="builder-page-heading builder-page-heading--with-action">
+                  <div><span>Step 2 of 3</span><h3>Terms & clauses</h3><p>Build the agreement in the order the customer should read it. Keep each section focused on one topic.</p></div>
+                  <button type="button" class="builder-button builder-button--secondary" (click)="addSection()"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>Add section</button>
+                </div>
+
+                <div class="space-y-4">
+                  @for(section of form.sections; track section.id; let i = $index){
+                    <article class="clause-editor-card">
+                      <div class="flex items-center justify-between gap-4 border-b border-[#e9ebef] px-5 py-4">
+                        <div class="flex min-w-0 flex-1 items-center gap-3">
+                          <span class="clause-index">{{ i + 1 }}</span>
+                          <div class="min-w-0 flex-1">
+                            <label class="builder-field">
+                              <span class="sr-only">Section {{ i + 1 }} title</span>
+                              <input class="clause-title-input" [(ngModel)]="section.title" placeholder="Section title" (blur)="refreshPreview()">
+                            </label>
+                          </div>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-1">
+                          <button type="button" class="builder-icon-button builder-icon-button--small" aria-label="Move section up" [disabled]="i === 0" (click)="moveSection(i,-1)"><lucide-icon [name]="icons.ChevronUp" class="h-4 w-4"></lucide-icon></button>
+                          <button type="button" class="builder-icon-button builder-icon-button--small" aria-label="Move section down" [disabled]="i === form.sections.length - 1" (click)="moveSection(i,1)"><lucide-icon [name]="icons.ChevronDown" class="h-4 w-4"></lucide-icon></button>
+                          <button type="button" class="builder-icon-button builder-icon-button--small is-danger" aria-label="Delete section" (click)="removeSection(i)"><lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon></button>
+                        </div>
+                      </div>
+                      <div class="p-5">
+                        <label class="builder-field">
+                          <span>Section language</span>
+                          <textarea class="builder-textarea min-h-[190px]" [(ngModel)]="section.body" (blur)="refreshPreview()" placeholder="Write the terms for this section…"></textarea>
+                        </label>
+                        <details class="variable-insert mt-3">
+                          <summary><lucide-icon [name]="icons.Sparkles" class="h-3.5 w-3.5"></lucide-icon>Insert dynamic value</summary>
+                          <div class="variable-insert-list">
+                            @for(variable of variables(); track variable.key){
+                              <button type="button" (click)="insertVariable('section', variable, i)"><strong>{{ variable.label }}</strong><code>{{ variableToken(variable) }}</code></button>
+                            }
+                          </div>
+                        </details>
+                      </div>
+                    </article>
+                  }
+                </div>
+
+                <button type="button" class="builder-add-section" (click)="addSection()"><span class="flex h-8 w-8 items-center justify-center rounded-lg border border-[#d8dde5] bg-white"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon></span><span><strong>Add another section</strong><small>Create a separate clause or topic</small></span></button>
+
+                <div class="flex items-center justify-between pt-2">
+                  <button type="button" class="builder-button builder-button--ghost" (click)="setEditorStep('details')">← Back</button>
+                  <button type="button" class="builder-button builder-button--primary" (click)="setEditorStep('acceptance')">Continue to acceptance <span aria-hidden="true">→</span></button>
+                </div>
+              </div>
+            }
+
+            @case ('acceptance') {
+              <div class="builder-page">
+                <div class="builder-page-heading">
+                  <span>Step 3 of 3</span>
+                  <h3>Acceptance & availability</h3>
+                  <p>Define the statement the signer accepts and whether this template can be used for new enrollments.</p>
+                </div>
+
+                <section class="builder-surface">
+                  <div class="builder-surface-heading"><div><h4>Electronic signature statement</h4><p>Shown directly above the signature fields during enrollment.</p></div></div>
+                  <label class="builder-field">
+                    <span>Acceptance statement</span>
+                    <textarea class="builder-textarea min-h-[160px]" [(ngModel)]="form.signatureStatement" (blur)="refreshPreview()"></textarea>
+                  </label>
+                  <button type="button" class="builder-inline-tool mt-3" (click)="variablesOpen.set(true)"><lucide-icon [name]="icons.Sparkles" class="h-3.5 w-3.5"></lucide-icon>Insert a dynamic value</button>
+                </section>
+
+                <section class="builder-surface">
+                  <div class="builder-surface-heading"><div><h4>Template availability</h4><p>Control whether staff can select this agreement for future enrollments.</p></div></div>
+                  <label class="builder-status-row">
+                    <input type="checkbox" [(ngModel)]="form.isActive">
+                    <span class="builder-switch"><span></span></span>
+                    <span><strong>Available for new enrollments</strong><small>Disabling the template does not affect anything already sent or signed.</small></span>
+                  </label>
+                </section>
+
+                <div class="flex items-center justify-between pt-1">
+                  <button type="button" class="builder-button builder-button--ghost" (click)="setEditorStep('terms')">← Back</button>
+                  <button type="button" class="builder-button builder-button--primary" (click)="setEditorStep('preview')">Review agreement <span aria-hidden="true">→</span></button>
+                </div>
+              </div>
+            }
+
+            @case ('preview') {
+              <div class="builder-preview-page">
+                <div class="builder-preview-toolbar">
+                  <div><span>Customer preview</span><h3>Review before saving</h3><p>Rendered with example business and Fleet-plan values.</p></div>
+                  <button type="button" class="builder-button builder-button--secondary" [disabled]="previewing()" (click)="refreshPreview()"><lucide-icon [name]="previewing() ? icons.LoaderCircle : icons.FileSignature" [class.animate-spin]="previewing()" class="h-4 w-4"></lucide-icon>{{ previewing() ? 'Rendering…' : 'Refresh preview' }}</button>
+                </div>
+                <div class="px-5 pb-12 pt-7 md:px-8">
+                  @if(preview(); as rendered){
+                    <article class="agreement-preview-paper">
+                      <div class="agreement-preview-meta"><span>Example business agreement</span><span>Preview only</span></div>
+                      <h1>{{ rendered.title }}</h1>
+                      <p class="agreement-preview-intro">{{ rendered.introduction }}</p>
+                      @for(section of rendered.sections; track section.id){
+                        <section><h2>{{ section.title }}</h2><p>{{ section.body }}</p></section>
+                      }
+                      <div class="agreement-preview-acceptance">{{ rendered.signatureStatement }}</div>
+                      <div class="agreement-preview-signature"><div></div><strong>Electronic signature</strong><span>Signer name · title · date and time</span></div>
+                    </article>
+                  } @else {
+                    <div class="mx-auto mt-16 flex max-w-sm flex-col items-center rounded-2xl border border-dashed border-[#ccd2db] bg-white p-8 text-center">
+                      <span class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff4ed] text-[#e66f34]"><lucide-icon [name]="icons.FileSignature" class="h-5 w-5"></lucide-icon></span>
+                      <strong class="text-sm text-[#292c31]">Preview not rendered yet</strong>
+                      <p class="mb-4 mt-1 text-xs leading-5 text-[#858a92]">Render an example to review the exact agreement structure your customer will see.</p>
+                      <button type="button" class="builder-button builder-button--secondary" (click)="refreshPreview()">Render preview</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </main>
+
+        @if (variablesOpen()) {
+          <aside class="variables-drawer absolute inset-y-0 right-0 z-30 flex w-[360px] max-w-[92vw] flex-col border-l border-[#dfe3e8] bg-white shadow-[-18px_0_45px_rgba(15,23,42,.12)]">
+            <div class="flex items-start justify-between gap-4 border-b border-[#e7e9ed] px-5 py-5">
+              <div><div class="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#e66f34]"><lucide-icon [name]="icons.Sparkles" class="h-3.5 w-3.5"></lucide-icon>Dynamic variables</div><h3 class="m-0 text-[15px] font-semibold text-[#282b30]">Insert live agreement data</h3><p class="mb-0 mt-1 text-[11px] leading-4 text-[#858a92]">Click any value to copy it. Paste the token into a title or text field.</p></div>
+              <button type="button" class="builder-icon-button builder-icon-button--small" aria-label="Close variables" (click)="variablesOpen.set(false)"><lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon></button>
+            </div>
+            <div class="min-h-0 flex-1 overflow-y-auto p-4">
+              <div class="space-y-2">
+                @for(variable of variables(); track variable.key){
+                  <button type="button" class="variable-drawer-item" [title]="variable.example" (click)="copyVariable(variable)">
+                    <span><strong>{{ variable.label }}</strong><small>Example: {{ variable.example }}</small></span>
+                    <code>{{ variableToken(variable) }}</code>
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="border-t border-[#e7e9ed] bg-[#fafafa] px-5 py-4 text-[10px] leading-4 text-[#7f848c]">Variables are resolved and frozen when an enrollment is sent. Later changes to the customer or plan do not rewrite a signed agreement.</div>
+          </aside>
+        }
+      </div>
+    </section>
+  </div>
+}

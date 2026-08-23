@@ -167,9 +167,13 @@ export interface Repair {
   shopId: string;
   customerId: string;
   customerDeviceId: string;
+  businessAccountId?: string | null;
+  businessContactId?: string | null;
   orderId: string | null;
 
   customer?: any;
+  businessAccount?: { id: string; name: string; planName: string | null; planStatus: string } | null;
+  businessContact?: { id: string; name: string; email: string | null; phone: string | null } | null;
   customerDevice?: any;
 
   sourceQuote?: RepairSourceQuote | null;
@@ -349,6 +353,7 @@ export interface Order {
   sequence: number;
 
   customerId: string | null;
+  businessAccountId?: string | null;
   source: string;
 
   fulfillmentStatus: string;

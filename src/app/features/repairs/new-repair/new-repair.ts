@@ -840,6 +840,23 @@ export class NewRepair implements OnInit {
 
     this.selectCustomer(customer);
     this.currentStep.set('device');
+
+    const deviceId = params.get('deviceId')?.trim();
+    if (deviceId) {
+      const device = await this.customerDevicesStore.getById(deviceId);
+      if (device && device.customerId === customer.id) {
+        this.selectDevice(device);
+        this.currentStep.set('repair');
+        void this.loadPricingOptionsForCurrentDevice();
+        return;
+      }
+
+      this.toastService.error(
+        'Device could not be selected',
+        'Choose a device for this business account before continuing.',
+      );
+    }
+
     this.prepareDeviceStep();
   }
 

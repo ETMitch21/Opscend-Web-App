@@ -2,6 +2,7 @@ export interface CustomerDevice {
   id: string;
   shopId: string;
   customerId: string;
+  businessAccountId: string | null;
 
   catalogRef: string | null;
   displayName: string;
@@ -10,6 +11,12 @@ export interface CustomerDevice {
 
   nickname: string | null;
   notes: string | null;
+
+  assetTag: string | null;
+  assignedToName: string | null;
+  assignedToEmail: string | null;
+  department: string | null;
+  fleetStatus: 'active' | 'spare' | 'retired' | 'lost';
 
   imei: string | null;
   serial: string | null;

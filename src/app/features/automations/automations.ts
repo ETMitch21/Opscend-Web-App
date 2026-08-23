@@ -121,6 +121,14 @@ export class Automations implements OnInit {
     { value: 'customer_created', label: 'Customer created', description: 'A new customer record is created.', group: 'Customers' },
     { value: 'work_queue_overdue', label: 'Work Queue item overdue', description: 'An active queue item passes its due date.', group: 'Work Queue' },
     { value: 'form_submitted', label: 'Form submitted', description: 'A staff member or customer completes a form.', group: 'Forms' },
+    { value: 'business_device_added', label: 'Fleet device added', description: 'A managed device is added to a business account.', group: 'Business & Fleet' },
+    { value: 'business_plan_limit_reached', label: 'Fleet plan device limit reached', description: 'A business reaches its covered-device plan limit.', group: 'Business & Fleet' },
+    { value: 'business_contract_expiring', label: 'Business contract approaching renewal', description: 'A business contract is approaching its end or renewal date.', group: 'Business & Fleet' },
+    { value: 'business_statement_finalized', label: 'Business statement finalized', description: 'A consolidated business statement is finalized.', group: 'Business & Fleet' },
+    { value: 'business_statement_paid', label: 'Business statement paid', description: 'A consolidated business statement is paid.', group: 'Business & Fleet' },
+    { value: 'business_statement_payment_failed', label: 'Business statement payment failed', description: 'Stripe reports a failed or action-required consolidated invoice.', group: 'Business & Fleet' },
+    { value: 'business_statement_overdue', label: 'Business statement overdue', description: 'A consolidated business statement passes its due date with a balance remaining.', group: 'Business & Fleet' },
+    { value: 'business_plan_payment_failed', label: 'Fleet plan payment failed', description: 'Recurring fleet subscription billing needs attention.', group: 'Business & Fleet' },
   ];
 
   readonly actionOptions: Array<{
