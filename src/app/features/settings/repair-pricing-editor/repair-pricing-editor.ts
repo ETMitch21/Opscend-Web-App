@@ -61,6 +61,8 @@ import {
   TechSpecsService,
 } from '../../../core/techspecs/techspecs.service';
 import { ToastService } from '../../../core/toast/toast-service';
+import { QuickQuoteAttributeRequirement } from '../../../core/quick-quote/model';
+import { QuickQuoteService } from '../../../core/quick-quote/service';
 import {
   TypeaheadComponent,
   TypeaheadItem,
@@ -102,6 +104,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   private readonly servicesApi = inject(ServicesService);
   private readonly productsApi = inject(ProductsService);
   private readonly mobileSentrixApi = inject(MobileSentrixService);
+  private readonly quickQuoteApi = inject(QuickQuoteService);
   private readonly toast = inject(ToastService);
 
   readonly icons = {
@@ -136,6 +139,8 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   readonly bookingSettings = signal<BookingSettings | null>(null);
   readonly repairTypes = signal<RepairType[]>([]);
   readonly sourceOption = signal<PricingOption | null>(null);
+  readonly attributeRequirements = signal<QuickQuoteAttributeRequirement[]>([]);
+  readonly attributeValues = signal<Record<string, string>>({});
 
   readonly selectedModel = signal<ManagedDeviceCatalogModel | null>(null);
   readonly selectedRepairType = signal<RepairType | null>(null);
@@ -182,8 +187,12 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
 
   readonly optionId = this.route.snapshot.paramMap.get('id');
   readonly copyId = this.route.snapshot.queryParamMap.get('copy');
+  readonly variantOfId = this.route.snapshot.queryParamMap.get('variantOf');
   readonly isEditing = computed(() => Boolean(this.optionId));
   readonly isCopying = computed(() => !this.optionId && Boolean(this.copyId));
+  readonly isAddingVariant = computed(
+    () => !this.optionId && !this.copyId && Boolean(this.variantOfId),
+  );
   readonly isSetupWorkflow = computed(
     () => this.route.snapshot.queryParamMap.get('view') === 'setup',
   );
@@ -191,7 +200,22 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   readonly pageTitle = computed(() => {
     if (this.isEditing()) return 'Edit pricing option';
     if (this.isCopying()) return 'Duplicate pricing option';
+    if (this.isAddingVariant()) return 'Add product variant';
     return 'New pricing option';
+  });
+
+  readonly hasDeviceDetailRequirements = computed(
+    () => this.attributeRequirements().length > 0,
+  );
+
+  readonly deviceDetailSummary = computed(() => {
+    const values = this.attributeValues();
+    return this.attributeRequirements()
+      .map((requirement) => {
+        const value = values[requirement.key]?.trim();
+        return value ? `${requirement.label}: ${value}` : requirement.label;
+      })
+      .join(' · ');
   });
 
   readonly modelItems = computed<TypeaheadItem[]>(() =>
@@ -411,14 +435,20 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
         ),
       );
 
-      const sourceId = this.optionId || this.copyId;
+      const sourceId = this.optionId || this.copyId || this.variantOfId;
       if (sourceId) {
         const option = await firstValueFrom(this.pricingApi.getOption(sourceId));
         this.sourceOption.set(option);
-        await this.populateFromOption(option, Boolean(this.copyId && !this.optionId));
+        await this.populateFromOption(
+          option,
+          Boolean(this.copyId && !this.optionId),
+          Boolean(this.variantOfId && !this.optionId && !this.copyId),
+        );
       } else {
         await this.populateNewDefaults();
       }
+
+      await this.refreshAttributeRequirements();
 
       this.modelSearch$.next('');
       this.serviceSearch$.next('');
@@ -475,6 +505,8 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     this.selectedModel.set(model);
     this.form.controls.deviceCatalogModelId.setValue(model?.id ?? '');
     this.form.controls.deviceCatalogModelId.markAsDirty();
+    this.attributeValues.set({});
+    void this.refreshAttributeRequirements();
   }
 
   onRepairTypeSelected(item: TypeaheadItem | null): void {
@@ -484,6 +516,31 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     this.selectedRepairType.set(type);
     this.form.controls.repairNeedId.setValue(type?.id ?? '');
     this.form.controls.repairNeedId.markAsDirty();
+    this.attributeValues.set({});
+    void this.refreshAttributeRequirements();
+  }
+
+  setAttributeValue(key: string, value: string): void {
+    const previousGeneratedName = this.generatedAttributeVariantName();
+    const currentName = String(this.form.controls.variantName.value ?? '').trim();
+    this.attributeValues.update((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    this.form.markAsDirty();
+
+    if (!currentName || currentName === 'Standard' || currentName === previousGeneratedName) {
+      const generated = this.generatedAttributeVariantName();
+      if (generated) this.form.controls.variantName.setValue(generated);
+    }
+  }
+
+  chooseAttributeSuggestion(key: string, value: string): void {
+    this.setAttributeValue(key, value);
+  }
+
+  attributeValue(key: string): string {
+    return this.attributeValues()[key] ?? '';
   }
 
   onServiceSelected(item: TypeaheadItem | null): void {
@@ -772,6 +829,18 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     }
 
     const raw = this.form.getRawValue();
+    const requiredAttributes = this.attributeRequirements();
+    const attributeValues = this.attributeValues();
+    const missingAttribute = requiredAttributes.find(
+      (requirement) => !attributeValues[requirement.key]?.trim(),
+    );
+    if (missingAttribute) {
+      this.toast.error(
+        `${missingAttribute.label} required`,
+        `Choose the ${missingAttribute.label.toLowerCase()} so Opscend knows which product belongs to this device variant.`,
+      );
+      return;
+    }
     const fixedPriceCents = this.dollarsToCents(raw.fixedPriceDollars);
     if (raw.priceMode === 'fixed' && fixedPriceCents == null) {
       this.toast.error('Fixed price required');
@@ -810,6 +879,14 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       productSupplierId:
         raw.requiresProduct ? this.nullable(raw.productSupplierId) : null,
       requiresProduct: Boolean(raw.requiresProduct),
+      attributeValues: requiredAttributes.length
+        ? Object.fromEntries(
+            requiredAttributes.map((requirement) => [
+              requirement.key,
+              attributeValues[requirement.key]!.trim(),
+            ]),
+          )
+        : null,
       fixedPriceCents: raw.priceMode === 'fixed' ? fixedPriceCents : null,
       useDynamicPricing: Boolean(raw.requiresProduct) && raw.priceMode === 'dynamic',
       depositMode,
@@ -863,6 +940,110 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     }
   }
 
+  async saveAndAddVariant(): Promise<void> {
+    if (this.saving()) return;
+
+    this.form.markAllAsTouched();
+    const requiredAttributes = this.attributeRequirements();
+    if (!requiredAttributes.length) {
+      await this.save();
+      return;
+    }
+
+    const originalGoBack = this.goBack.bind(this);
+    // save() owns all validation and persistence. Temporarily intercept the
+    // normal return navigation so we can immediately start the next variant.
+    let savedId: string | null = null;
+    const raw = this.form.getRawValue();
+    const fixedPriceCents = this.dollarsToCents(raw.fixedPriceDollars);
+    const attributeValues = this.attributeValues();
+    const missingAttribute = requiredAttributes.find(
+      (requirement) => !attributeValues[requirement.key]?.trim(),
+    );
+    if (
+      this.form.invalid ||
+      !this.selectedModel() ||
+      !this.selectedRepairType() ||
+      missingAttribute ||
+      (raw.priceMode === 'fixed' && fixedPriceCents == null) ||
+      (raw.requiresProduct && raw.priceMode === 'dynamic' && this.productCostCents() == null) ||
+      this.depositPreview().error
+    ) {
+      await this.save();
+      return;
+    }
+
+    const depositMode = raw.depositMode as PricingOptionDepositMode;
+    const payload: PricingOptionInput = {
+      deviceCatalogModelId: this.selectedModel()!.id,
+      repairNeedId: this.selectedRepairType()!.id,
+      variantName: String(raw.variantName ?? '').trim(),
+      description: this.nullable(raw.description),
+      isActive: Boolean(raw.isActive),
+      isPublic: Boolean(raw.isPublic),
+      serviceId: this.nullable(raw.serviceId),
+      productId: raw.requiresProduct ? this.nullable(raw.productId) : null,
+      productSupplierId: raw.requiresProduct ? this.nullable(raw.productSupplierId) : null,
+      requiresProduct: Boolean(raw.requiresProduct),
+      attributeValues: Object.fromEntries(
+        requiredAttributes.map((requirement) => [
+          requirement.key,
+          attributeValues[requirement.key]!.trim(),
+        ]),
+      ),
+      fixedPriceCents: raw.priceMode === 'fixed' ? fixedPriceCents : null,
+      useDynamicPricing: Boolean(raw.requiresProduct) && raw.priceMode === 'dynamic',
+      depositMode,
+      depositAmountCents:
+        depositMode === 'custom' ? this.dollarsToCents(raw.depositAmountDollars) : null,
+      depositShippingCents:
+        depositMode === 'cost_recovery' ? this.dollarsToCents(raw.depositShippingDollars) : null,
+      depositIncludeProcessingFees:
+        depositMode === 'cost_recovery' ? Boolean(raw.depositIncludeProcessingFees) : null,
+      depositIncludeInstantPayoutFee:
+        depositMode === 'cost_recovery' ? Boolean(raw.depositIncludeInstantPayoutFee) : null,
+      laborCents: this.dollarsToCents(raw.laborDollars),
+      durationMins:
+        raw.durationMins == null ? null : Math.max(5, Math.round(Number(raw.durationMins))),
+      allowInstantConfirmation: Boolean(raw.allowInstantConfirmation),
+      requiresManualReview: Boolean(raw.requiresManualReview),
+    };
+
+    this.saving.set(true);
+    try {
+      const saved = this.optionId
+        ? await firstValueFrom(this.pricingApi.updateOption(this.optionId, payload))
+        : await firstValueFrom(this.pricingApi.createOption(payload));
+      savedId = saved.id;
+      this.form.markAsPristine();
+      this.toast.success('Product variant saved');
+    } catch (error: any) {
+      console.error(error);
+      const apiError = error?.error?.error;
+      if (apiError === 'pricing_option_already_exists') {
+        this.toast.error('This device variant already exists');
+      } else {
+        this.toast.error('Save failed', 'The product variant was not saved.');
+      }
+      return;
+    } finally {
+      this.saving.set(false);
+    }
+
+    if (!savedId) {
+      await originalGoBack();
+      return;
+    }
+
+    await this.router.navigate(['/settings/shop/repair-pricing/new'], {
+      queryParams: {
+        ...this.returnQueryParams(),
+        variantOf: savedId,
+        copy: null,
+      },
+    });
+  }
+
   cancel(): void {
     if (this.form.dirty) {
       this.toast.confirm(
@@ -881,6 +1062,16 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     void this.router.navigate(['/settings/shop/repair-pricing/new'], {
       queryParams: {
         copy: this.optionId,
+        ...this.returnQueryParams(),
+      },
+    });
+  }
+
+  addVariant(): void {
+    if (!this.optionId) return;
+    void this.router.navigate(['/settings/shop/repair-pricing/new'], {
+      queryParams: {
+        variantOf: this.optionId,
         ...this.returnQueryParams(),
       },
     });
@@ -933,6 +1124,96 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     return this.formValue().priceMode === 'dynamic'
       ? 'Part cost, markup, labor, and shop rounding are calculated at booking.'
       : 'The customer sees the same fixed amount every time.';
+  }
+
+  private async refreshAttributeRequirements(): Promise<void> {
+    const model = this.selectedModel();
+    const repairType = this.selectedRepairType();
+    if (!model || !repairType || !repairType.quoteAttributeKeys.length) {
+      this.attributeRequirements.set([]);
+      if (!repairType?.quoteAttributeKeys.length) this.attributeValues.set({});
+      return;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.quickQuoteApi.requirements({
+          deviceCatalogModelId: model.id,
+          repairNeedId: repairType.id,
+        }),
+      );
+      if (
+        this.selectedModel()?.id !== model.id ||
+        this.selectedRepairType()?.id !== repairType.id
+      ) {
+        return;
+      }
+      this.attributeRequirements.set(response.requirements ?? []);
+    } catch (error) {
+      console.error('Unable to load pricing device details', error);
+      const fallbackDefinitions: Record<
+        string,
+        Omit<QuickQuoteAttributeRequirement, 'key' | 'suggestions'>
+      > = {
+        color: {
+          label: 'Device color',
+          prompt: 'What color is the device?',
+          placeholder: 'e.g. Black',
+        },
+        storage: {
+          label: 'Storage capacity',
+          prompt: 'What storage capacity does the device have?',
+          placeholder: 'e.g. 256 GB',
+        },
+        carrier: {
+          label: 'Carrier',
+          prompt: 'Which carrier is the device for?',
+          placeholder: 'e.g. Verizon',
+        },
+        connectivity: {
+          label: 'Connectivity',
+          prompt: 'Which connectivity version is this device?',
+          placeholder: 'e.g. Wi-Fi + Cellular',
+        },
+        model_variant: {
+          label: 'Model variant',
+          prompt: 'Which model variant is this device?',
+          placeholder: 'e.g. US version',
+        },
+        region: {
+          label: 'Region',
+          prompt: 'Which regional version is this device?',
+          placeholder: 'e.g. US',
+        },
+        keyboard_layout: {
+          label: 'Keyboard layout',
+          prompt: 'Which keyboard layout does the device use?',
+          placeholder: 'e.g. US English',
+        },
+      };
+
+      this.attributeRequirements.set(
+        repairType.quoteAttributeKeys.map((key) => {
+          const fallback = fallbackDefinitions[key] ?? {
+            label: key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()),
+            prompt: `Which ${key.replaceAll('_', ' ')} applies to this device?`,
+            placeholder: 'Enter value',
+          };
+          return { key, ...fallback, suggestions: [] };
+        }),
+      );
+    }
+  }
+
+  private generatedAttributeVariantName(): string {
+    const values = this.attributeValues();
+    const parts = this.attributeRequirements()
+      .map((requirement) => {
+        const value = values[requirement.key]?.trim();
+        return value ? `${requirement.label}: ${value}` : null;
+      })
+      .filter((value): value is string => Boolean(value));
+    return parts.join(' · ');
   }
 
   private bindSearchStreams(): void {
@@ -1078,7 +1359,11 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     });
   }
 
-  private async populateFromOption(option: PricingOption, copying: boolean): Promise<void> {
+  private async populateFromOption(
+    option: PricingOption,
+    copying: boolean,
+    addingVariant = false,
+  ): Promise<void> {
     const [model, service, product] = await Promise.all([
       option.deviceCatalogModelId
         ? firstValueFrom(this.catalogApi.getManagedModel(option.deviceCatalogModelId))
@@ -1102,18 +1387,28 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     this.selectedModel.set(model);
     this.selectedRepairType.set(repairType);
     this.selectedService.set(service);
-    this.selectedProduct.set(product);
-    this.selectedSupplier.set(supplier);
+    this.selectedProduct.set(addingVariant ? null : product);
+    this.selectedSupplier.set(addingVariant ? null : supplier);
 
     if (model) this.modelSuggestions.set([model]);
     if (service) this.serviceSuggestions.set([service]);
-    if (product) this.productSuggestions.set([product]);
+    if (product && !addingVariant) this.productSuggestions.set([product]);
+
+    this.attributeValues.set(
+      addingVariant || (copying && Boolean(option.attributeSignature))
+        ? {}
+        : { ...(option.attributeValues ?? {}) },
+    );
 
     const settings = this.bookingSettings();
     this.form.reset({
       deviceCatalogModelId: model?.id ?? '',
       repairNeedId: repairType?.id ?? '',
-      variantName: copying ? `${option.variantName} Copy` : option.variantName,
+      variantName: copying
+        ? `${option.variantName} Copy`
+        : addingVariant
+          ? 'Standard'
+          : option.variantName,
       description: option.description ?? '',
       priceMode: option.useDynamicPricing ? 'dynamic' : 'fixed',
       fixedPriceDollars:
@@ -1121,8 +1416,8 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       laborDollars: option.laborCents == null ? null : option.laborCents / 100,
       durationMins: option.durationMins,
       serviceId: service?.id ?? '',
-      productId: product?.id ?? '',
-      productSupplierId: supplier?.id ?? '',
+      productId: addingVariant ? '' : product?.id ?? '',
+      productSupplierId: addingVariant ? '' : supplier?.id ?? '',
       requiresProduct: option.requiresProduct ?? true,
       depositMode: option.depositMode ?? 'inherit',
       depositAmountDollars:

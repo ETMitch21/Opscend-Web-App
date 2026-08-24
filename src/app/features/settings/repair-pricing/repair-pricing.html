@@ -216,7 +216,7 @@
                           <div class="flex items-center gap-2">
                             <span class="truncate text-sm font-semibold text-app-text">{{ row.repairType.label }}</span>
                             @if (row.optionCount > 1) {
-                              <span class="shrink-0 rounded-full bg-app-surface-muted px-1.5 py-0.5 text-[9px] font-semibold text-app-text-muted">{{ row.optionCount }} options</span>
+                              <span class="shrink-0 rounded-full bg-app-surface-muted px-1.5 py-0.5 text-[9px] font-semibold text-app-text-muted">{{ row.optionCount }} {{ row.repairType.quoteAttributeKeys.length ? 'variants' : 'options' }}</span>
                             }
                           </div>
                           <p class="mt-0.5 truncate text-[10px] text-app-text-muted">{{ setupStatusHint(row) }}</p>
@@ -238,7 +238,7 @@
                             class="mt-0.5 truncate text-xs font-medium"
                             [ngClass]="row.status === 'not_offered' ? 'text-app-text-muted' : (row.primaryOption && (!row.primaryOption.requiresProduct || row.primaryOption.productId) ? 'text-app-text' : 'text-amber-700')"
                           >
-                            {{ row.status === 'not_offered' ? 'Not applicable' : (row.primaryOption ? optionProductLabel(row.primaryOption) : 'Not linked') }}
+                            {{ row.status === 'not_offered' ? 'Not applicable' : setupProductLabel(row) }}
                           </p>
                         </div>
 
@@ -255,6 +255,17 @@
                             }
                             {{ setupStatusLabel(row.status) }}
                           </span>
+
+                          @if (row.status !== 'not_offered' && row.optionCount > 0 && row.repairType.quoteAttributeKeys.length) {
+                            <button
+                              type="button"
+                              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-app-border bg-app-surface px-2.5 py-1 text-[10px] font-semibold text-app-text transition hover:bg-app-surface-muted"
+                              (click)="addSetupVariant(card.model, row, $event)"
+                            >
+                              <lucide-icon [name]="icons.Plus" class="h-3 w-3"></lucide-icon>
+                              Add variant
+                            </button>
+                          }
 
                           @if (row.status === 'not_configured' || row.status === 'inactive') {
                             <button

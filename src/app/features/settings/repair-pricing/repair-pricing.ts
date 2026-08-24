@@ -506,6 +506,33 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     });
   }
 
+  addSetupVariant(
+    model: ManagedDeviceCatalogModel,
+    row: SetupRepairRow,
+    event?: Event,
+  ): void {
+    event?.stopPropagation();
+    if (!row.repairType.quoteAttributeKeys.length) return;
+
+    const source = row.primaryOption ?? row.options[0] ?? null;
+    if (!source) {
+      this.newOptionFor(model, row.repairType);
+      return;
+    }
+
+    void this.router.navigate(['/settings/shop/repair-pricing/new'], {
+      queryParams: {
+        ...this.returnQueryParams(),
+        view: 'setup',
+        category: model.categoryId,
+        brand: model.brandId,
+        model: model.id,
+        type: row.repairType.id,
+        variantOf: source.id,
+      },
+    });
+  }
+
   nextSetupItem(): void {
     const options = this.setupOptions();
     for (const model of this.brandModels()) {
@@ -765,8 +792,38 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     if (row.attentionCount > 1) {
       return `${row.attentionCount} options need attention`;
     }
+    if (row.optionCount > 1 && row.repairType.quoteAttributeKeys.length) {
+      const details = row.options
+        .map((option) => this.optionAttributeSummary(option))
+        .filter(Boolean);
+      return details.length ? details.join(' · ') : `${row.optionCount} product variants`;
+    }
     if (row.optionCount > 1) return `${row.optionCount} pricing options`;
     return row.primaryOption?.variantName ?? 'Standard';
+  }
+
+  setupProductLabel(row: SetupRepairRow): string {
+    if (!row.primaryOption) return 'Not linked';
+    const attributeVariants = row.options.filter(
+      (option) => Boolean(option.attributeSignature),
+    );
+    if (attributeVariants.length > 1) {
+      return `${attributeVariants.length} product variants`;
+    }
+    if (attributeVariants.length === 1) {
+      const detail = this.optionAttributeSummary(attributeVariants[0]!);
+      const product = this.optionProductLabel(attributeVariants[0]!);
+      return detail ? `${detail} · ${product}` : product;
+    }
+    return this.optionProductLabel(row.primaryOption);
+  }
+
+  optionAttributeSummary(option: PricingOption): string {
+    const values = option.attributeValues ?? {};
+    return Object.values(values)
+      .map((value) => String(value).trim())
+      .filter(Boolean)
+      .join(' · ');
   }
 
   setupStatusClass(status: SetupStatus): string {

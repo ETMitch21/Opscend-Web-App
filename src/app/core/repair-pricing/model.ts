@@ -126,6 +126,8 @@ export interface PricingOption {
   productId: string | null;
   productSupplierId: string | null;
   requiresProduct: boolean;
+  attributeSignature: string;
+  attributeValues: Record<string, string> | null;
   repairType: PricingOptionRepairTypeSummary;
   model: PricingOptionModelSummary | null;
   service: PricingOptionServiceSummary | null;
@@ -147,6 +149,7 @@ export interface PricingOptionInput {
   productId?: string | null;
   productSupplierId?: string | null;
   requiresProduct?: boolean;
+  attributeValues?: Record<string, string> | null;
   fixedPriceCents?: number | null;
   useDynamicPricing?: boolean;
   depositMode?: PricingOptionDepositMode;
