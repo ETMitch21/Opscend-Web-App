@@ -83,6 +83,12 @@ type PublicCalendarDay = {
   isToday: boolean;
 };
 
+type PublicPricingTier = {
+  key: string;
+  name: string;
+  options: PublicRepairPricingOption[];
+};
+
 const PAGE_SIZE = 50;
 const LOCAL_DISPLAY_INCREMENT = 5;
 const PUBLIC_SEARCH_DEBOUNCE_MS = 650;
@@ -315,6 +321,8 @@ export class PublicBooking implements OnDestroy {
   readonly selectedModel = signal<PublicDeviceModelOption | null>(null);
   readonly selectedRepairNeed = signal<PublicRepairNeed | null>(null);
   readonly selectedPricingOption = signal<PublicRepairPricingOption | null>(null);
+  readonly selectedPricingTierKey = signal<string | null>(null);
+  readonly selectedRepairAttributes = signal<Record<string, string>>({});
   readonly serviceMode = signal<'on_site' | 'in_shop'>('on_site');
 
   readonly quote = signal<PublicRepairQuote | null>(null);
@@ -882,6 +890,8 @@ export class PublicBooking implements OnDestroy {
     this.selectedModel.set(null);
     this.selectedRepairNeed.set(null);
     this.selectedPricingOption.set(null);
+    this.selectedPricingTierKey.set(null);
+    this.selectedRepairAttributes.set({});
     this.quote.set(null);
     this.slots.set([]);
     this.selectedSlotKey.set(null);
@@ -962,6 +972,8 @@ export class PublicBooking implements OnDestroy {
     this.selectedModel.set(null);
     this.selectedRepairNeed.set(null);
     this.selectedPricingOption.set(null);
+    this.selectedPricingTierKey.set(null);
+    this.selectedRepairAttributes.set({});
     this.quote.set(null);
     this.slots.set([]);
     this.selectedSlotKey.set(null);
@@ -1062,6 +1074,8 @@ export class PublicBooking implements OnDestroy {
     this.selectedModel.set(model);
     this.selectedRepairNeed.set(null);
     this.selectedPricingOption.set(null);
+    this.selectedPricingTierKey.set(null);
+    this.selectedRepairAttributes.set({});
     this.repairNeeds.set([]);
     this.quote.set(null);
     this.slots.set([]);
@@ -1092,15 +1106,305 @@ export class PublicBooking implements OnDestroy {
 
   chooseRepairNeed(need: PublicRepairNeed): void {
     this.selectedRepairNeed.set(need);
-    this.selectedPricingOption.set(
-      need.options.length === 1 ? need.options[0] : null,
-    );
+    this.selectedPricingOption.set(null);
+    this.selectedPricingTierKey.set(null);
+    this.selectedRepairAttributes.set({});
+
+    const tiers = this.pricingTiers(need);
+    if (tiers.length === 1) {
+      this.selectedPricingTierKey.set(tiers[0]!.key);
+      this.autoSelectSingleAttributeValues(need);
+      this.resolveSelectedPricingOption();
+    }
+
     this.error.set(null);
   }
 
   choosePricingOption(option: PublicRepairPricingOption): void {
+    this.selectedPricingTierKey.set(this.pricingTierKey(option));
+    this.selectedRepairAttributes.set({ ...(option.attributeValues ?? {}) });
     this.selectedPricingOption.set(option);
     this.error.set(null);
+  }
+
+  pricingTiers(need: PublicRepairNeed | null | undefined): PublicPricingTier[] {
+    if (!need?.options?.length) return [];
+
+    const groups = new Map<string, PublicPricingTier>();
+    for (const option of need.options) {
+      const name = option.tierName?.trim() || option.variantName?.trim() || 'Standard';
+      const key = name.toLowerCase();
+
+      const existing = groups.get(key);
+      if (existing) {
+        existing.options.push(option);
+      } else {
+        groups.set(key, { key, name, options: [option] });
+      }
+    }
+
+    return [...groups.values()];
+  }
+
+  pricingTierKey(option: PublicRepairPricingOption): string {
+    return (option.tierName?.trim() || option.variantName?.trim() || 'Standard').toLowerCase();
+  }
+
+  selectedPricingTier(need: PublicRepairNeed | null | undefined = this.selectedRepairNeed()): PublicPricingTier | null {
+    const key = this.selectedPricingTierKey();
+    if (!key) return null;
+    return this.pricingTiers(need).find((tier) => tier.key === key) ?? null;
+  }
+
+  choosePricingTier(tier: PublicPricingTier): void {
+    this.selectedPricingTierKey.set(tier.key);
+    this.selectedPricingOption.set(null);
+    this.selectedRepairAttributes.set({});
+    const need = this.selectedRepairNeed();
+    if (need) {
+      this.autoSelectSingleAttributeValues(need);
+      this.resolveSelectedPricingOption();
+    }
+    this.error.set(null);
+  }
+
+  repairNeedOptionSummary(need: PublicRepairNeed): string {
+    if (!need.options.length) return 'Select to continue';
+
+    const tierCount = this.pricingTiers(need).length;
+    const tierLabel = `${tierCount} option${tierCount === 1 ? '' : 's'}`;
+    const attributeKeys = need.quoteAttributeKeys ?? [];
+
+    if (attributeKeys.length === 1 && attributeKeys[0] === 'color') {
+      const colors = this.uniqueAttributeValues(need.options, 'color');
+      if (colors.length) {
+        return `${tierLabel} · ${colors.length} color${colors.length === 1 ? '' : 's'}`;
+      }
+    }
+
+    if (attributeKeys.length) {
+      const variantCount = new Set(
+        need.options.map((option) =>
+          attributeKeys
+            .map((key) => (option.attributeValues?.[key] ?? '').trim().toLowerCase())
+            .join('|'),
+        ),
+      ).size;
+      if (variantCount > 0) {
+        return `${tierLabel} · ${variantCount} device variant${variantCount === 1 ? '' : 's'}`;
+      }
+    }
+
+    return `${tierLabel} available`;
+  }
+
+  shouldShowTierSelector(need: PublicRepairNeed): boolean {
+    const tiers = this.pricingTiers(need);
+    return tiers.length > 1 || !(need.quoteAttributeKeys?.length);
+  }
+
+  pricingTierDescription(tier: PublicPricingTier): string {
+    return tier.options.find((option) => option.description?.trim())?.description?.trim()
+      || 'Shop-configured repair option.';
+  }
+
+  pricingTierPriceLabel(tier: PublicPricingTier): string {
+    const labels = [...new Set(tier.options.map((option) => this.pricingOptionPriceLabel(option)))];
+    if (labels.length === 1) return labels[0]!;
+    return 'Price varies by device';
+  }
+
+  attributeLabel(key: string): string {
+    switch (key) {
+      case 'color': return 'Device color';
+      case 'storage': return 'Storage capacity';
+      case 'carrier': return 'Carrier';
+      case 'connectivity': return 'Connectivity';
+      case 'model_variant': return 'Model variant';
+      case 'region': return 'Region';
+      case 'keyboard_layout': return 'Keyboard layout';
+      default:
+        return key
+          .replaceAll('_', ' ')
+          .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+  }
+
+  attributePrompt(key: string): string {
+    switch (key) {
+      case 'color': return 'Choose your device color';
+      case 'storage': return 'Choose the storage capacity';
+      case 'carrier': return 'Choose the carrier';
+      case 'connectivity': return 'Choose the connectivity version';
+      case 'model_variant': return 'Choose the model variant';
+      case 'region': return 'Choose the regional version';
+      case 'keyboard_layout': return 'Choose the keyboard layout';
+      default: return `Choose ${this.attributeLabel(key).toLowerCase()}`;
+    }
+  }
+
+  isColorAttribute(key: string): boolean {
+    return key === 'color';
+  }
+
+  selectedRepairAttribute(key: string): string | null {
+    return this.selectedRepairAttributes()[key] ?? null;
+  }
+
+  availableRepairAttributeValues(need: PublicRepairNeed, key: string): string[] {
+    const tier = this.selectedPricingTier(need);
+    if (!tier) return [];
+
+    const selected = this.selectedRepairAttributes();
+    const candidates = tier.options.filter((option) =>
+      (need.quoteAttributeKeys ?? [])
+        .filter((otherKey) => otherKey !== key)
+        .every((otherKey) => {
+          const selectedValue = selected[otherKey]?.trim();
+          if (!selectedValue) return true;
+          return this.sameAttributeValue(option.attributeValues?.[otherKey], selectedValue);
+        }),
+    );
+
+    return this.uniqueAttributeValues(candidates, key);
+  }
+
+  chooseRepairAttribute(key: string, value: string): void {
+    this.selectedRepairAttributes.update((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    this.resolveSelectedPricingOption();
+    this.error.set(null);
+  }
+
+  repairSelectionComplete(): boolean {
+    const need = this.selectedRepairNeed();
+    if (!need) return false;
+    if (!need.options.length) return true;
+    return Boolean(this.selectedPricingOption());
+  }
+
+  colorSwatch(value: string): string {
+    const normalized = value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const known: Record<string, string> = {
+      black: '#242424',
+      white: '#f7f7f5',
+      pink: '#f2a9bd',
+      blue: '#6d9fd3',
+      green: '#7da57a',
+      red: '#d94b4b',
+      purple: '#9b86c8',
+      yellow: '#e9cf62',
+      orange: '#e8954d',
+      gold: '#d8ba73',
+      silver: '#c8cdd2',
+      gray: '#8c9298',
+      grey: '#8c9298',
+      graphite: '#5f6062',
+      midnight: '#1d2730',
+      starlight: '#e8e0d2',
+      'rose gold': '#d9a39b',
+      'space gray': '#777b80',
+      'space grey': '#777b80',
+      'sierra blue': '#9bb5ce',
+      'alpine green': '#576b61',
+      'deep purple': '#66586e',
+      'natural titanium': '#b4aa98',
+      'blue titanium': '#53606c',
+      'white titanium': '#e6e4df',
+      'black titanium': '#3e3d3b',
+      'desert titanium': '#c2a78f',
+      ultramarine: '#5866ad',
+      teal: '#4d9b98',
+      aqua: '#70b7bd',
+      coral: '#e68072',
+      'product red': '#c92a2f',
+      lavender: '#b5a5cf',
+      mint: '#9bc7b1',
+      cream: '#ede3c9',
+    };
+
+    if (known[normalized]) return known[normalized]!;
+    if (normalized.includes('black')) return known['black']!;
+    if (normalized.includes('white')) return known['white']!;
+    if (normalized.includes('pink')) return known['pink']!;
+    if (normalized.includes('blue')) return known['blue']!;
+    if (normalized.includes('green')) return known['green']!;
+    if (normalized.includes('red')) return known['red']!;
+    if (normalized.includes('purple')) return known['purple']!;
+    if (normalized.includes('gold')) return known['gold']!;
+    if (normalized.includes('silver')) return known['silver']!;
+    if (normalized.includes('gray') || normalized.includes('grey')) return known['gray']!;
+
+    let hash = 0;
+    for (const char of normalized || value) {
+      hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue} 38% 62%)`;
+  }
+
+  private uniqueAttributeValues(options: PublicRepairPricingOption[], key: string): string[] {
+    const seen = new Set<string>();
+    const values: string[] = [];
+
+    for (const option of options) {
+      const value = option.attributeValues?.[key]?.trim();
+      if (!value) continue;
+      const normalized = value.toLowerCase();
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      values.push(value);
+    }
+
+    return values;
+  }
+
+  private sameAttributeValue(left: string | null | undefined, right: string | null | undefined): boolean {
+    return String(left ?? '').trim().toLowerCase() === String(right ?? '').trim().toLowerCase();
+  }
+
+  private autoSelectSingleAttributeValues(need: PublicRepairNeed): void {
+    for (const key of need.quoteAttributeKeys ?? []) {
+      const values = this.availableRepairAttributeValues(need, key);
+      if (values.length === 1) {
+        this.selectedRepairAttributes.update((current) => ({
+          ...current,
+          [key]: values[0]!,
+        }));
+      }
+    }
+  }
+
+  private resolveSelectedPricingOption(): void {
+    const need = this.selectedRepairNeed();
+    const tier = this.selectedPricingTier(need);
+    if (!need || !tier) {
+      this.selectedPricingOption.set(null);
+      return;
+    }
+
+    const selected = this.selectedRepairAttributes();
+    const requiredKeys = need.quoteAttributeKeys ?? [];
+    if (requiredKeys.some((key) => !selected[key]?.trim())) {
+      this.selectedPricingOption.set(null);
+      return;
+    }
+
+    const match = tier.options.find((option) =>
+      requiredKeys.every((key) =>
+        this.sameAttributeValue(option.attributeValues?.[key], selected[key]),
+      ),
+    ) ?? (requiredKeys.length === 0 ? tier.options[0] ?? null : null);
+
+    this.selectedPricingOption.set(match);
   }
 
   goToLocation(): void {
@@ -1109,9 +1413,7 @@ export class PublicBooking implements OnDestroy {
       return;
     }
 
-    const selectedNeed = this.selectedRepairNeed();
-
-    if (selectedNeed?.options.length && !this.selectedPricingOption()) {
+    if (!this.repairSelectionComplete()) {
       this.error.set('pricing_option_required');
       return;
     }
@@ -1166,7 +1468,7 @@ export class PublicBooking implements OnDestroy {
       return;
     }
 
-    if (repairNeed.options.length && !pricingOption) {
+    if (!this.repairSelectionComplete() || (repairNeed.options.length && !pricingOption)) {
       this.error.set('pricing_option_required');
       return;
     }
@@ -1763,18 +2065,33 @@ export class PublicBooking implements OnDestroy {
   }
 
   quoteRepairLabel(quote: PublicRepairQuote): string {
-    return [quote.repairNeed.label, quote.template?.variantName]
-      .filter((value): value is string => Boolean(value?.trim()))
+    const tier = quote.template?.variantName?.trim();
+    const attributes = Object.values(quote.template?.attributeValues ?? {})
+      .map((value) => value?.trim())
+      .filter(Boolean);
+
+    return [
+      quote.repairNeed.label,
+      tier && tier.toLowerCase() !== 'standard' ? tier : null,
+      ...attributes,
+    ]
+      .filter((value): value is string => Boolean(value))
       .join(' — ');
   }
 
   selectionSummary(): string {
+    const tier = this.selectedPricingTier()?.name;
+    const attributes = Object.values(this.selectedRepairAttributes())
+      .map((value) => value?.trim())
+      .filter(Boolean);
+
     return [
       this.selectedCategory(),
       this.selectedBrand(),
       this.selectedModel()?.model,
       this.selectedRepairNeed()?.label,
-      this.selectedPricingOption()?.variantName,
+      tier && tier.toLowerCase() !== 'standard' ? tier : null,
+      ...attributes,
       this.locationSummary(),
     ]
       .filter(Boolean)

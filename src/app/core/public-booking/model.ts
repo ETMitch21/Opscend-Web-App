@@ -47,6 +47,8 @@ export interface PublicDeviceModelOption {
 export interface PublicRepairPricingOption {
   id: string;
   variantName: string;
+  tierName: string;
+  attributeValues: Record<string, string> | null;
   description: string | null;
   fixedPriceCents: number | null;
   useDynamicPricing: boolean;
@@ -63,6 +65,7 @@ export interface PublicRepairNeed {
   sortOrder: number;
   requiresManualReview: boolean;
   defaultDurationMins: number | null;
+  quoteAttributeKeys: string[];
   options: PublicRepairPricingOption[];
 }
 
@@ -90,6 +93,7 @@ export interface PublicQuoteTemplateSummary {
   id: string;
   name: string;
   variantName: string;
+  attributeValues: Record<string, string> | null;
   description: string | null;
   allowInstantConfirmation: boolean;
 }

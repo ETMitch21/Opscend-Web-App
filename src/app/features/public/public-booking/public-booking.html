@@ -410,11 +410,7 @@
             <span class="block text-sm font-semibold">{{ need.label }}</span>
             <span class="mt-1 block text-xs"
               [ngClass]="selectedRepairNeed()?.id === need.id ? 'text-white/70' : 'text-gray-500'">
-              @if (need.options.length) {
-              {{ need.options.length }} option{{ need.options.length === 1 ? '' : 's' }} available
-              } @else {
-              Select to continue
-              }
+              {{ repairNeedOptionSummary(need) }}
             </span>
           </span>
           @if (selectedRepairNeed()?.id === need.id) {
@@ -427,41 +423,101 @@
       </div>
 
       @if (selectedRepairNeed(); as selectedNeed) {
-      <div class="mt-5 border-t border-gray-100 pt-5">
+      <div class="mt-5 space-y-5 border-t border-gray-100 pt-5">
         @if (selectedNeed.options.length) {
-        <div class="mb-3">
-          <p class="text-xs font-semibold uppercase tracking-[0.15em] text-gray-400">{{ selectedNeed.label }} options</p>
-          <p class="mt-1 text-sm text-gray-500">Choose the parts quality or service level you prefer.</p>
-        </div>
+          @if (shouldShowTierSelector(selectedNeed)) {
+          <div>
+            <div class="mb-3">
+              <p class="text-xs font-semibold uppercase tracking-[0.15em] text-gray-400">Repair option</p>
+              <p class="mt-1 text-sm text-gray-500">Choose the parts quality or service level you prefer.</p>
+            </div>
 
-        <div class="space-y-3">
-          @for (option of selectedNeed.options; track option.id) {
-          <button type="button"
-            class="flex w-full cursor-pointer items-start gap-4 rounded-[1.5rem] p-4 text-left ring-1 transition"
-            [ngClass]="selectedPricingOption()?.id === option.id ? 'bg-[var(--booking-brand-tint-strong)] ring-[var(--booking-brand)]' : 'bg-gray-50/90 ring-black/5 hover:bg-white'"
-            (click)="choosePricingOption(option)">
-            <span
-              class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-              [ngClass]="selectedPricingOption()?.id === option.id ? 'bg-[var(--booking-brand)] text-[var(--booking-brand-contrast)]' : 'bg-white text-gray-500 ring-1 ring-black/5'">
-              @if (selectedPricingOption()?.id === option.id) {
-              <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
-              } @else {
-              <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+            <div class="space-y-3">
+              @for (tier of pricingTiers(selectedNeed); track tier.key) {
+              <button type="button"
+                class="flex w-full cursor-pointer items-start gap-4 rounded-[1.5rem] p-4 text-left ring-1 transition"
+                [ngClass]="selectedPricingTierKey() === tier.key ? 'bg-[var(--booking-brand-tint-strong)] ring-[var(--booking-brand)]' : 'bg-gray-50/90 ring-black/5 hover:bg-white'"
+                (click)="choosePricingTier(tier)">
+                <span
+                  class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                  [ngClass]="selectedPricingTierKey() === tier.key ? 'bg-[var(--booking-brand)] text-[var(--booking-brand-contrast)]' : 'bg-white text-gray-500 ring-1 ring-black/5'">
+                  @if (selectedPricingTierKey() === tier.key) {
+                  <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                  } @else {
+                  <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+                  }
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="text-sm font-semibold text-gray-950">{{ tier.name }}</span>
+                    <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-gray-900 ring-1 ring-black/5">{{ pricingTierPriceLabel(tier) }}</span>
+                  </span>
+                  <span class="mt-1 block text-xs leading-5 text-gray-500">{{ pricingTierDescription(tier) }}</span>
+                  @if (tier.options[0]?.requiresManualReview) {
+                  <span class="mt-2 inline-flex rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Final confirmation required</span>
+                  }
+                </span>
+              </button>
               }
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-sm font-semibold text-gray-950">{{ option.variantName }}</span>
-                <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-gray-900 ring-1 ring-black/5">{{ pricingOptionPriceLabel(option) }}</span>
-              </span>
-              <span class="mt-1 block text-xs leading-5 text-gray-500">{{ option.description || 'Shop-configured repair option.' }}</span>
-              @if (option.requiresManualReview) {
-              <span class="mt-2 inline-flex rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Final confirmation required</span>
-              }
-            </span>
-          </button>
+            </div>
+          </div>
           }
-        </div>
+
+          @if (selectedPricingTier(selectedNeed); as selectedTier) {
+            @if (selectedNeed.quoteAttributeKeys.length) {
+            <div>
+              @for (attributeKey of selectedNeed.quoteAttributeKeys; track attributeKey) {
+              <div class="mb-5 last:mb-0">
+                <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.15em] text-gray-400">{{ attributeLabel(attributeKey) }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ attributePrompt(attributeKey) }}.</p>
+                  </div>
+                  @if (selectedNeed.quoteAttributeKeys.length === 1) {
+                  <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-gray-900 ring-1 ring-black/5">
+                    {{ selectedPricingOption() ? pricingOptionPriceLabel(selectedPricingOption()!) : pricingTierPriceLabel(selectedTier) }}
+                  </span>
+                  }
+                </div>
+
+                @if (isColorAttribute(attributeKey)) {
+                <div class="flex flex-wrap gap-2.5">
+                  @for (value of availableRepairAttributeValues(selectedNeed, attributeKey); track value) {
+                  <button type="button"
+                    class="group flex min-w-[7.25rem] cursor-pointer items-center gap-3 rounded-[1.1rem] px-3 py-2.5 text-left ring-1 transition"
+                    [ngClass]="selectedRepairAttribute(attributeKey) === value ? 'bg-[var(--booking-brand-tint-strong)] ring-[var(--booking-brand)] shadow-sm' : 'bg-gray-50/90 ring-black/5 hover:bg-white'"
+                    (click)="chooseRepairAttribute(attributeKey, value)">
+                    <span class="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white p-[3px] shadow-sm ring-1 ring-black/10">
+                      <span class="h-full w-full rounded-full ring-1 ring-inset ring-black/10" [style.background]="colorSwatch(value)"></span>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-sm font-semibold text-gray-950">{{ value }}</span>
+                    </span>
+                    @if (selectedRepairAttribute(attributeKey) === value) {
+                    <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--booking-brand)] text-[var(--booking-brand-contrast)]">
+                      <lucide-icon [name]="icons.Check" class="h-3 w-3"></lucide-icon>
+                    </span>
+                    }
+                  </button>
+                  }
+                </div>
+                } @else {
+                <div class="flex flex-wrap gap-2">
+                  @for (value of availableRepairAttributeValues(selectedNeed, attributeKey); track value) {
+                  <button type="button"
+                    class="cursor-pointer rounded-full px-3.5 py-2 text-sm font-semibold ring-1 transition"
+                    [ngClass]="selectedRepairAttribute(attributeKey) === value ? 'bg-[var(--booking-brand)] text-[var(--booking-brand-contrast)] ring-[var(--booking-brand)]' : 'bg-gray-50/90 text-gray-800 ring-black/5 hover:bg-white'"
+                    (click)="chooseRepairAttribute(attributeKey, value)">
+                    {{ value }}
+                  </button>
+                  }
+                </div>
+                }
+              </div>
+              }
+            </div>
+            }
+          }
         } @else {
         <div class="rounded-[1.5rem] bg-gray-50/90 p-4 ring-1 ring-black/5">
           <p class="text-sm font-semibold text-gray-950">{{ selectedNeed.label }} selected</p>
@@ -475,7 +531,7 @@
 
       <button type="button"
         class="mt-5 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-        [disabled]="!selectedRepairNeed() || (selectedRepairNeed()!.options.length > 0 && !selectedPricingOption())" (click)="goToLocation()">
+        [disabled]="!repairSelectionComplete()" (click)="goToLocation()">
         Continue
       </button>
       }

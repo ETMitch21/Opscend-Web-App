@@ -521,18 +521,11 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   }
 
   setAttributeValue(key: string, value: string): void {
-    const previousGeneratedName = this.generatedAttributeVariantName();
-    const currentName = String(this.form.controls.variantName.value ?? '').trim();
     this.attributeValues.update((current) => ({
       ...current,
       [key]: value,
     }));
     this.form.markAsDirty();
-
-    if (!currentName || currentName === 'Standard' || currentName === previousGeneratedName) {
-      const generated = this.generatedAttributeVariantName();
-      if (generated) this.form.controls.variantName.setValue(generated);
-    }
   }
 
   chooseAttributeSuggestion(key: string, value: string): void {
@@ -1205,15 +1198,111 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     }
   }
 
-  private generatedAttributeVariantName(): string {
-    const values = this.attributeValues();
-    const parts = this.attributeRequirements()
-      .map((requirement) => {
-        const value = values[requirement.key]?.trim();
-        return value ? `${requirement.label}: ${value}` : null;
-      })
-      .filter((value): value is string => Boolean(value));
-    return parts.join(' · ');
+  private pricingAttributeLabel(key: string): string {
+    const known: Record<string, string> = {
+      color: 'Device color',
+      storage: 'Storage capacity',
+      carrier: 'Carrier',
+      connectivity: 'Connectivity',
+      model_variant: 'Model variant',
+      region: 'Region',
+      keyboard_layout: 'Keyboard layout',
+    };
+    const normalized = key.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    return known[normalized]
+      ?? normalized
+        .split('_')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+  }
+
+  private normalizedTierNameForOption(option: PricingOption): string {
+    const name = option.variantName?.trim() || 'Standard';
+    const values = option.attributeValues ?? {};
+    if (!Object.keys(values).length) return name;
+
+    const actualSegments = new Set(
+      name
+        .split('·')
+        .map((part) => part.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const expectedSegments = new Set(
+      Object.entries(values)
+        .filter(([, value]) => Boolean(value?.trim()))
+        .map(([key, value]) => `${this.pricingAttributeLabel(key)}: ${value.trim()}`.toLowerCase()),
+    );
+
+    if (
+      actualSegments.size === expectedSegments.size
+      && [...expectedSegments].every((segment) => actualSegments.has(segment))
+    ) {
+      return 'Standard';
+    }
+
+    return name;
+  }
+
+  isColorAttribute(key: string): boolean {
+    return key.trim().toLowerCase() === 'color';
+  }
+
+  colorSwatch(value: string): string {
+    const normalized = value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const known: Record<string, string> = {
+      black: '#242424',
+      white: '#f7f7f5',
+      pink: '#f2a9bd',
+      blue: '#6d9fd3',
+      green: '#7da57a',
+      red: '#d94b4b',
+      purple: '#9b86c8',
+      yellow: '#e9cf62',
+      orange: '#e8954d',
+      gold: '#d8ba73',
+      silver: '#c8cdd2',
+      gray: '#8c9298',
+      grey: '#8c9298',
+      graphite: '#5f6062',
+      midnight: '#1d2730',
+      starlight: '#e8e0d2',
+      'rose gold': '#d9a39b',
+      'space gray': '#777b80',
+      'space grey': '#777b80',
+      'sierra blue': '#9bb5ce',
+      'alpine green': '#576b61',
+      'deep purple': '#66586e',
+      'natural titanium': '#b4aa98',
+      'blue titanium': '#53606c',
+      'white titanium': '#e6e4df',
+      'black titanium': '#3e3d3b',
+      'desert titanium': '#c2a78f',
+      ultramarine: '#5866ad',
+      teal: '#4d9b98',
+      aqua: '#70b7bd',
+      coral: '#e68072',
+      lavender: '#b5a5cf',
+      mint: '#9bc7b1',
+      cream: '#ede3c9',
+    };
+
+    if (known[normalized]) return known[normalized]!;
+    for (const base of ['black', 'white', 'pink', 'blue', 'green', 'red', 'purple', 'gold', 'silver', 'gray', 'grey']) {
+      if (normalized.includes(base)) return known[base]!;
+    }
+
+    let hash = 0;
+    for (const char of normalized || value) {
+      hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+    }
+    return `hsl(${Math.abs(hash) % 360} 38% 62%)`;
   }
 
   private bindSearchStreams(): void {
@@ -1405,10 +1494,8 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       deviceCatalogModelId: model?.id ?? '',
       repairNeedId: repairType?.id ?? '',
       variantName: copying
-        ? `${option.variantName} Copy`
-        : addingVariant
-          ? 'Standard'
-          : option.variantName,
+        ? `${this.normalizedTierNameForOption(option)} Copy`
+        : this.normalizedTierNameForOption(option),
       description: option.description ?? '',
       priceMode: option.useDynamicPricing ? 'dynamic' : 'fixed',
       fixedPriceDollars:

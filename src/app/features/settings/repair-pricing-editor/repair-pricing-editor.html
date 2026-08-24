@@ -97,9 +97,9 @@
                   </div>
 
                   <div class="settings-field is-half">
-                    <label class="settings-label" for="pricing-variant-name">Option name</label>
-                    <input id="pricing-variant-name" type="text" class="settings-control" formControlName="variantName" placeholder="Premium" />
-                    <p class="settings-hint">Use a customer-friendly tier such as Essential, Premium, or OEM.</p>
+                    <label class="settings-label" for="pricing-variant-name">Repair tier</label>
+                    <input id="pricing-variant-name" type="text" class="settings-control" formControlName="variantName" placeholder="Standard" />
+                    <p class="settings-hint">Keep device details separate. Use this only for customer-facing tiers such as Standard, Premium, or OEM.</p>
                   </div>
 
                   <div class="settings-field is-half">
@@ -228,10 +228,17 @@
                                 @for (suggestion of requirement.suggestions; track suggestion) {
                                   <button
                                     type="button"
-                                    class="cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-semibold transition"
+                                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition"
                                     [ngClass]="attributeValue(requirement.key) === suggestion ? 'border-brand bg-brand text-white' : 'border-app-border bg-app-surface text-app-text-muted hover:text-app-text'"
                                     (click)="chooseAttributeSuggestion(requirement.key, suggestion)"
-                                  >{{ suggestion }}</button>
+                                  >
+                                    @if (isColorAttribute(requirement.key)) {
+                                      <span class="h-3.5 w-3.5 rounded-full bg-white p-[1px] ring-1 ring-black/10">
+                                        <span class="block h-full w-full rounded-full ring-1 ring-inset ring-black/10" [style.background]="colorSwatch(suggestion)"></span>
+                                      </span>
+                                    }
+                                    {{ suggestion }}
+                                  </button>
                                 }
                               </div>
                             }
