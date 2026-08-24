@@ -6,15 +6,30 @@
         Duplicate
       </button>
     }
-    <button type="button" class="settings-primary-action cursor-pointer" [disabled]="saving() || loading()" (click)="save()">
-      @if (saving()) {
-        <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
-        Saving…
-      } @else {
-        <lucide-icon [name]="icons.Save" class="h-4 w-4"></lucide-icon>
-        Save changes
-      }
-    </button>
+    @if (isSetupWorkflow()) {
+      <button type="button" class="settings-secondary-action cursor-pointer" [disabled]="saving() || loading()" (click)="save()">
+        Save & close
+      </button>
+      <button type="button" class="settings-primary-action cursor-pointer" [disabled]="saving() || loading()" (click)="save(true)">
+        @if (saving()) {
+          <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+          Saving…
+        } @else {
+          <lucide-icon [name]="icons.Save" class="h-4 w-4"></lucide-icon>
+          Save & next
+        }
+      </button>
+    } @else {
+      <button type="button" class="settings-primary-action cursor-pointer" [disabled]="saving() || loading()" (click)="save()">
+        @if (saving()) {
+          <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+          Saving…
+        } @else {
+          <lucide-icon [name]="icons.Save" class="h-4 w-4"></lucide-icon>
+          Save changes
+        }
+      </button>
+    }
   </div>
 
   <div class="mx-auto max-w-[1320px]">

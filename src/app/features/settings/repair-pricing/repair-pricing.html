@@ -1,4 +1,4 @@
-<app-settings-layout>
+<app-settings-layout pageDescription="Set up pricing by device, spot missing links, and manage every repair option in one place.">
   <div settings-actions class="flex flex-wrap items-center justify-end gap-2">
     <a routerLink="/settings/shop/repair-pricing/types" class="settings-secondary-action cursor-pointer">
       <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
@@ -12,11 +12,305 @@
   </div>
 
   <div class="space-y-4">
-
     @if (error()) {
       <div class="settings-alert is-error">{{ error() }}</div>
     }
 
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="settings-segmented self-start">
+        <button type="button" class="cursor-pointer" [class.is-active]="viewMode() === 'setup'" (click)="setViewMode('setup')">
+          <lucide-icon [name]="icons.Smartphone" class="h-3.5 w-3.5"></lucide-icon>
+          Setup
+        </button>
+        <button type="button" class="cursor-pointer" [class.is-active]="viewMode() === 'list'" (click)="setViewMode('list')">
+          <lucide-icon [name]="icons.Sliders" class="h-3.5 w-3.5"></lucide-icon>
+          All pricing options
+        </button>
+      </div>
+      @if (viewMode() === 'setup' && selectedBrand()) {
+        <p class="text-xs text-app-text-muted">{{ selectedCategory()?.name }} · {{ selectedBrand()?.name }}</p>
+      }
+    </div>
+
+    @if (initialLoading()) {
+      <section class="settings-card flex min-h-72 items-center justify-center gap-2 text-sm text-app-text-muted">
+        <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+        Loading repair pricing…
+      </section>
+    } @else {
+
+    @if (viewMode() === 'setup') {
+      <div class="space-y-4">
+        <section class="settings-card overflow-hidden">
+          <div class="border-b border-app-border px-4 py-4 sm:px-5">
+            <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-app-text-muted">1 · Choose a category</p>
+                <div class="mt-2 flex max-w-full gap-2 overflow-x-auto pb-1">
+                  @for (category of categories(); track category.id) {
+                    <button
+                      type="button"
+                      class="shrink-0 cursor-pointer rounded-xl border px-3.5 py-2 text-left transition"
+                      [ngClass]="selectedCategoryId() === category.id ? 'border-brand bg-brand/5 shadow-sm' : 'border-app-border bg-app-surface hover:bg-app-surface-muted'"
+                      (click)="selectCategory(category)"
+                    >
+                      <span class="block text-sm font-semibold" [ngClass]="selectedCategoryId() === category.id ? 'text-brand' : 'text-app-text'">{{ category.name }}</span>
+                      <span class="mt-0.5 block text-[10px] text-app-text-muted">{{ category.modelCount }} models</span>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              @if (selectedCategory()) {
+                <div class="min-w-0 xl:max-w-[55%]">
+                  <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-app-text-muted">2 · Choose a brand</p>
+                  <div class="mt-2 flex max-w-full gap-2 overflow-x-auto pb-1 xl:justify-end">
+                    @for (brand of brands(); track brand.id) {
+                      <button
+                        type="button"
+                        class="shrink-0 cursor-pointer rounded-xl border px-3.5 py-2 text-left transition"
+                        [ngClass]="selectedBrandId() === brand.id ? 'border-brand bg-brand/5 shadow-sm' : 'border-app-border bg-app-surface hover:bg-app-surface-muted'"
+                        (click)="selectBrand(brand)"
+                      >
+                        <span class="block text-sm font-semibold" [ngClass]="selectedBrandId() === brand.id ? 'text-brand' : 'text-app-text'">{{ brand.name }}</span>
+                        <span class="mt-0.5 block text-[10px] text-app-text-muted">{{ brand.modelCount }} models</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (!categories().length) {
+            <div class="px-6 py-12 text-center">
+              <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-text-muted">
+                <lucide-icon [name]="icons.Smartphone" class="h-5 w-5"></lucide-icon>
+              </div>
+              <h2 class="mt-4 text-sm font-semibold text-app-text">Add devices before setting up pricing</h2>
+              <p class="mx-auto mt-1 max-w-md text-sm leading-6 text-app-text-muted">Your device catalog provides the categories, brands, and models used by pricing setup.</p>
+              <a routerLink="/settings/shop/device-catalog" class="settings-primary-action mt-5 cursor-pointer">Open device catalog</a>
+            </div>
+          } @else if (!brands().length && !setupLoading()) {
+            <div class="px-6 py-12 text-center">
+              <h2 class="text-sm font-semibold text-app-text">No active brands in {{ selectedCategory()?.name }}</h2>
+              <p class="mx-auto mt-1 max-w-md text-sm leading-6 text-app-text-muted">Add or activate a brand in the device catalog, then come back here to configure pricing.</p>
+            </div>
+          }
+        </section>
+
+        @if (selectedBrand() && activeRepairTypes().length) {
+          <section class="settings-card overflow-hidden">
+            <div class="grid gap-5 px-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-lg font-semibold text-app-text">{{ selectedBrand()?.name }} · {{ selectedCategory()?.name }}</h2>
+                  <span class="rounded-full bg-app-surface-muted px-2 py-1 text-[10px] font-semibold text-app-text-muted">{{ brandModels().length }} model{{ brandModels().length === 1 ? '' : 's' }}</span>
+                </div>
+                <p class="mt-1 text-sm text-app-text-muted">Work down the stack and make sure every applicable repair has the right service, product, price, and deposit setup.</p>
+
+                <div class="mt-4 flex items-center gap-3">
+                  <div class="h-2 flex-1 overflow-hidden rounded-full bg-app-surface-muted">
+                    <div class="h-full rounded-full bg-brand transition-all" [style.width.%]="setupMetrics().percent"></div>
+                  </div>
+                  <span class="shrink-0 text-sm font-semibold text-app-text">{{ setupMetrics().percent }}%</span>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-medium text-app-text-muted">
+                  <span><strong class="text-app-text">{{ setupMetrics().ready }}</strong> ready</span>
+                  <span><strong class="text-app-text">{{ setupMetrics().notOffered }}</strong> not offered</span>
+                  <span><strong class="text-amber-700">{{ setupMetrics().attention }}</strong> need attention</span>
+                  <span><strong class="text-app-text">{{ setupMetrics().missing }}</strong> not configured</span>
+                </div>
+              </div>
+
+              @if (setupMetrics().attention > 0) {
+                <button type="button" class="settings-primary-action cursor-pointer lg:justify-self-end" (click)="nextSetupItem()">
+                  Next item needing attention
+                  <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
+                </button>
+              } @else if (setupMetrics().total > 0) {
+                <div class="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3.5 py-2.5 text-sm font-semibold text-emerald-700">
+                  <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
+                  Brand setup complete
+                </div>
+              }
+            </div>
+          </section>
+
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="settings-segmented self-start">
+              <button type="button" class="cursor-pointer" [class.is-active]="setupFilter() === 'attention'" (click)="setSetupFilter('attention')">Needs attention</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="setupFilter() === 'all'" (click)="setSetupFilter('all')">All</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="setupFilter() === 'ready'" (click)="setSetupFilter('ready')">Ready</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="setupFilter() === 'not_configured'" (click)="setSetupFilter('not_configured')">Not configured</button>
+              <button type="button" class="cursor-pointer" [class.is-active]="setupFilter() === 'not_offered'" (click)="setSetupFilter('not_offered')">Not offered</button>
+            </div>
+            <p class="text-[11px] text-app-text-muted">Each active repair type is checked against every active model. Mark repairs that do not apply as Not offered.</p>
+          </div>
+
+          @if (setupLoading()) {
+            <section class="settings-card flex min-h-64 items-center justify-center gap-2 text-sm text-app-text-muted">
+              <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+              Loading {{ selectedBrand()?.name }} pricing…
+            </section>
+          } @else if (!brandModels().length) {
+            <section class="settings-card px-6 py-14 text-center">
+              <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-text-muted">
+                <lucide-icon [name]="icons.Smartphone" class="h-5 w-5"></lucide-icon>
+              </div>
+              <h2 class="mt-4 text-sm font-semibold text-app-text">No active {{ selectedBrand()?.name }} models</h2>
+              <p class="mx-auto mt-1 max-w-md text-sm leading-6 text-app-text-muted">Add or activate models in the device catalog before configuring pricing.</p>
+            </section>
+          } @else if (!setupCards().length) {
+            <section class="settings-card px-6 py-14 text-center">
+              <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                <lucide-icon [name]="icons.Check" class="h-5 w-5"></lucide-icon>
+              </div>
+              <h2 class="mt-4 text-sm font-semibold text-app-text">Nothing to show in this view</h2>
+              <p class="mx-auto mt-1 max-w-md text-sm leading-6 text-app-text-muted">
+                {{ setupFilter() === 'attention' ? 'Every repair in this brand has been reviewed.' : 'Try another setup filter.' }}
+              </p>
+              @if (setupFilter() !== 'all') {
+                <button type="button" class="settings-secondary-action mt-5 cursor-pointer" (click)="setSetupFilter('all')">Show all pricing</button>
+              }
+            </section>
+          } @else {
+            <div class="space-y-3">
+              @for (card of setupCards(); track card.model.id) {
+                <section class="settings-card overflow-hidden">
+                  <div class="flex flex-col gap-3 border-b border-app-border bg-app-surface-muted/35 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="truncate text-sm font-semibold text-app-text">{{ card.model.name }}</h3>
+                        @if (card.model.releaseYear) {
+                          <span class="rounded-full bg-app-surface px-2 py-0.5 text-[10px] font-semibold text-app-text-muted ring-1 ring-inset ring-app-border">{{ card.model.releaseYear }}</span>
+                        }
+                      </div>
+                      <p class="mt-1 text-[11px] text-app-text-muted">
+                        {{ card.completeCount }} of {{ card.totalCount }} reviewed
+                        @if (card.notOfferedCount) {
+                          · {{ card.notOfferedCount }} not offered
+                        }
+                      </p>
+                    </div>
+
+                    <div class="flex min-w-[180px] items-center gap-3">
+                      <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-app-surface-muted">
+                        <div class="h-full rounded-full bg-brand" [style.width.%]="card.percent"></div>
+                      </div>
+                      <span class="w-9 text-right text-xs font-semibold text-app-text">{{ card.percent }}%</span>
+                    </div>
+                  </div>
+
+                  <div class="divide-y divide-app-border">
+                    @for (row of card.visibleRows; track row.repairType.id) {
+                      <div
+                        role="button"
+                        [attr.tabindex]="row.status === 'not_offered' ? null : 0"
+                        class="grid w-full gap-3 px-4 py-3.5 text-left transition md:grid-cols-[minmax(170px,0.8fr)_minmax(190px,1fr)_minmax(220px,1.2fr)_minmax(230px,auto)_24px] md:items-center"
+                        [ngClass]="row.status === 'not_offered' ? 'cursor-default bg-app-surface-muted/20' : 'cursor-pointer hover:bg-app-surface-muted/45'"
+                        (click)="openSetupRow(card.model, row)"
+                        (keydown.enter)="openSetupRow(card.model, row)"
+                      >
+                        <div class="min-w-0">
+                          <div class="flex items-center gap-2">
+                            <span class="truncate text-sm font-semibold text-app-text">{{ row.repairType.label }}</span>
+                            @if (row.optionCount > 1) {
+                              <span class="shrink-0 rounded-full bg-app-surface-muted px-1.5 py-0.5 text-[9px] font-semibold text-app-text-muted">{{ row.optionCount }} options</span>
+                            }
+                          </div>
+                          <p class="mt-0.5 truncate text-[10px] text-app-text-muted">{{ setupStatusHint(row) }}</p>
+                        </div>
+
+                        <div class="min-w-0">
+                          <p class="text-[9px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">Service</p>
+                          <p
+                            class="mt-0.5 truncate text-xs font-medium"
+                            [ngClass]="row.status === 'not_offered' ? 'text-app-text-muted' : (row.primaryOption?.serviceId ? 'text-app-text' : 'text-amber-700')"
+                          >
+                            {{ row.status === 'not_offered' ? 'Not applicable' : (row.primaryOption ? optionServiceLabel(row.primaryOption) : 'Not linked') }}
+                          </p>
+                        </div>
+
+                        <div class="min-w-0">
+                          <p class="text-[9px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">Product</p>
+                          <p
+                            class="mt-0.5 truncate text-xs font-medium"
+                            [ngClass]="row.status === 'not_offered' ? 'text-app-text-muted' : (row.primaryOption?.productId ? 'text-app-text' : 'text-amber-700')"
+                          >
+                            {{ row.status === 'not_offered' ? 'Not applicable' : (row.primaryOption ? optionProductLabel(row.primaryOption) : 'Not linked') }}
+                          </p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-start gap-2 md:justify-end" (click)="$event.stopPropagation()">
+                          <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset" [ngClass]="setupStatusClass(row.status)">
+                            @if (row.ready) {
+                              <lucide-icon [name]="icons.Check" class="h-3 w-3"></lucide-icon>
+                            } @else if (row.status === 'not_configured') {
+                              <lucide-icon [name]="icons.Plus" class="h-3 w-3"></lucide-icon>
+                            } @else if (row.status === 'not_offered') {
+                              <lucide-icon [name]="icons.EyeOff" class="h-3 w-3"></lucide-icon>
+                            } @else {
+                              <lucide-icon [name]="icons.Alert" class="h-3 w-3"></lucide-icon>
+                            }
+                            {{ setupStatusLabel(row.status) }}
+                          </span>
+
+                          @if (row.status === 'not_configured' || row.status === 'inactive') {
+                            <button
+                              type="button"
+                              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-60"
+                              [disabled]="isSetupRowSaving(card.model, row.repairType)"
+                              (click)="markNotOffered(card.model, row, $event)"
+                            >
+                              @if (isSetupRowSaving(card.model, row.repairType)) {
+                                <lucide-icon [name]="icons.Loader" class="h-3 w-3 animate-spin"></lucide-icon>
+                              } @else {
+                                <lucide-icon [name]="icons.EyeOff" class="h-3 w-3"></lucide-icon>
+                              }
+                              Not offered
+                            </button>
+                          } @else if (row.status === 'not_offered') {
+                            <button
+                              type="button"
+                              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-app-border bg-app-surface px-2.5 py-1 text-[10px] font-semibold text-app-text transition hover:bg-app-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+                              [disabled]="isSetupRowSaving(card.model, row.repairType)"
+                              (click)="offerRepair(card.model, row, $event)"
+                            >
+                              @if (isSetupRowSaving(card.model, row.repairType)) {
+                                <lucide-icon [name]="icons.Loader" class="h-3 w-3 animate-spin"></lucide-icon>
+                              } @else {
+                                <lucide-icon [name]="icons.Plus" class="h-3 w-3"></lucide-icon>
+                              }
+                              Offer repair
+                            </button>
+                          }
+                        </div>
+
+                        <lucide-icon
+                          [name]="icons.ChevronRight"
+                          class="hidden h-4 w-4 text-app-text-muted md:block"
+                          [ngClass]="row.status === 'not_offered' ? 'opacity-0' : ''"
+                        ></lucide-icon>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          }
+        } @else if (selectedBrand() && !activeRepairTypes().length) {
+          <section class="settings-card px-6 py-14 text-center">
+            <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-text-muted">
+              <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
+            </div>
+            <h2 class="mt-4 text-sm font-semibold text-app-text">Create a repair type first</h2>
+            <p class="mx-auto mt-1 max-w-md text-sm leading-6 text-app-text-muted">Repair types define the services you want to work through for each device model.</p>
+            <a routerLink="/settings/shop/repair-pricing/types" class="settings-primary-action mt-5 cursor-pointer">Manage repair types</a>
+          </section>
+        }
+      </div>
+    } @else {
     <section class="settings-card overflow-visible">
       <div class="border-b border-app-border px-4 py-3.5">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center">
@@ -194,9 +488,12 @@
         </div>
       }
     </section>
+    }
+
+    }
   </div>
 
-  @if (selectedCount()) {
+  @if (viewMode() === 'list' && selectedCount()) {
     <div class="fixed inset-x-0 bottom-5 z-50 flex justify-center px-4">
       <div class="flex max-w-full flex-wrap items-center gap-2 rounded-xl border border-app-border bg-gray-950 px-3 py-2.5 text-white shadow-2xl">
         <span class="px-1 text-xs font-semibold">{{ selectedCount() }} selected</span>

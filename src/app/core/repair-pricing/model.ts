@@ -161,9 +161,42 @@ export interface PricingOptionInput {
 export interface PricingOptionListParams {
   modelId?: string;
   repairTypeId?: string;
+  categoryId?: string;
+  brandId?: string;
   includeInactive?: boolean;
   includePrivate?: boolean;
   search?: string;
+}
+
+export interface PricingNotOffered {
+  id: string;
+  shopId: string;
+  deviceCatalogModelId: string;
+  repairNeedId: string;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PricingNotOfferedInput {
+  deviceCatalogModelId: string;
+  repairNeedId: string;
+}
+
+export interface PricingNotOfferedListParams {
+  modelId?: string;
+  repairTypeId?: string;
+  categoryId?: string;
+  brandId?: string;
+}
+
+export interface PricingNotOfferedResponse {
+  data: PricingNotOffered;
+  deactivatedOptionCount: number;
+}
+
+export interface PricingNotOfferedClearResponse {
+  cleared: boolean;
 }
 
 export interface PricingOptionBulkAssignInput

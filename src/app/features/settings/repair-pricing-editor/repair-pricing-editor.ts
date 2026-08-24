@@ -168,6 +168,9 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   readonly copyId = this.route.snapshot.queryParamMap.get('copy');
   readonly isEditing = computed(() => Boolean(this.optionId));
   readonly isCopying = computed(() => !this.optionId && Boolean(this.copyId));
+  readonly isSetupWorkflow = computed(
+    () => this.route.snapshot.queryParamMap.get('view') === 'setup',
+  );
 
   readonly pageTitle = computed(() => {
     if (this.isEditing()) return 'Edit pricing option';
@@ -571,7 +574,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     this.form.controls[control].markAsDirty();
   }
 
-  async save(): Promise<void> {
+  async save(advanceAfterSave = false): Promise<void> {
     if (this.saving()) return;
 
     this.form.markAllAsTouched();
@@ -653,7 +656,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
         this.toast.success('Pricing option created');
       }
       this.form.markAsPristine();
-      await this.goBack();
+      await this.goBack(advanceAfterSave);
     } catch (error: any) {
       console.error(error);
       const apiError = error?.error?.error;
@@ -1094,13 +1097,18 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     }
   }
 
-  private async goBack(): Promise<void> {
+  private async goBack(advanceAfterSave = false): Promise<void> {
     await this.router.navigate(['/settings/shop/repair-pricing'], {
       queryParams: {
         ...this.returnQueryParams(),
-        model: this.selectedModel()?.id ?? this.returnQueryParams()['model'] ?? null,
-        type:
-          this.selectedRepairType()?.id ?? this.returnQueryParams()['type'] ?? null,
+        model: this.isSetupWorkflow()
+          ? null
+          : this.selectedModel()?.id ?? this.returnQueryParams()['model'] ?? null,
+        type: this.isSetupWorkflow()
+          ? null
+          : this.selectedRepairType()?.id ?? this.returnQueryParams()['type'] ?? null,
+        advance:
+          advanceAfterSave && this.isSetupWorkflow() ? '1' : null,
       },
     });
   }
@@ -1113,6 +1121,10 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       type: params.get('type'),
       status: params.get('status'),
       visibility: params.get('visibility'),
+      view: params.get('view'),
+      category: params.get('category'),
+      brand: params.get('brand'),
+      setup: params.get('setup'),
     };
   }
 

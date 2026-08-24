@@ -12,6 +12,11 @@ import {
   PricingOptionBulkAssignInput,
   PricingOptionInput,
   PricingOptionListParams,
+  PricingNotOffered,
+  PricingNotOfferedClearResponse,
+  PricingNotOfferedInput,
+  PricingNotOfferedListParams,
+  PricingNotOfferedResponse,
   RepairType,
   RepairTypeInput,
   ReorderResponse,
@@ -70,6 +75,12 @@ export class RepairPricingService {
     if (query.repairTypeId) {
       params = params.set('repairTypeId', query.repairTypeId);
     }
+    if (query.categoryId) {
+      params = params.set('categoryId', query.categoryId);
+    }
+    if (query.brandId) {
+      params = params.set('brandId', query.brandId);
+    }
     if (query.search?.trim()) {
       params = params.set('search', query.search.trim());
     }
@@ -77,6 +88,45 @@ export class RepairPricingService {
     return this.http.get<ListResponse<PricingOption>>(
       `${this.baseUrl}/options`,
       { params },
+    );
+  }
+
+  listNotOffered(
+    query: PricingNotOfferedListParams = {},
+  ): Observable<ListResponse<PricingNotOffered>> {
+    let params = new HttpParams();
+    if (query.modelId) params = params.set('modelId', query.modelId);
+    if (query.repairTypeId) {
+      params = params.set('repairTypeId', query.repairTypeId);
+    }
+    if (query.categoryId) {
+      params = params.set('categoryId', query.categoryId);
+    }
+    if (query.brandId) {
+      params = params.set('brandId', query.brandId);
+    }
+
+    return this.http.get<ListResponse<PricingNotOffered>>(
+      `${this.baseUrl}/not-offered`,
+      { params },
+    );
+  }
+
+  markNotOffered(
+    payload: PricingNotOfferedInput,
+  ): Observable<PricingNotOfferedResponse> {
+    return this.http.post<PricingNotOfferedResponse>(
+      `${this.baseUrl}/not-offered`,
+      payload,
+    );
+  }
+
+  clearNotOffered(
+    payload: PricingNotOfferedInput,
+  ): Observable<PricingNotOfferedClearResponse> {
+    return this.http.post<PricingNotOfferedClearResponse>(
+      `${this.baseUrl}/not-offered/clear`,
+      payload,
     );
   }
 
