@@ -120,7 +120,14 @@
                 </div>
                 <div class="settings-segmented">
                   <button type="button" class="cursor-pointer" [class.is-active]="formValue().priceMode === 'fixed'" (click)="setPriceMode('fixed')">Fixed</button>
-                  <button type="button" class="cursor-pointer" [class.is-active]="formValue().priceMode === 'dynamic'" (click)="setPriceMode('dynamic')">Dynamic</button>
+                  <button
+                    type="button"
+                    class="cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
+                    [class.is-active]="formValue().priceMode === 'dynamic'"
+                    [disabled]="!formValue().requiresProduct"
+                    [title]="formValue().requiresProduct ? 'Price from part cost, markup, and labor' : 'Dynamic pricing needs a product'"
+                    (click)="setPriceMode('dynamic')"
+                  >Dynamic</button>
                 </div>
               </div>
               <div class="settings-card-body">
@@ -165,10 +172,10 @@
               <div class="settings-card-header">
                 <div>
                   <h3 class="settings-card-title">Repair links</h3>
-                  <p class="settings-card-description">Connect operational records so booking creates the right service and reserves the right part.</p>
+                  <p class="settings-card-description">Connect the service and, when needed, the part used for this repair.</p>
                 </div>
               </div>
-              <div class="settings-card-body">
+              <div class="settings-card-body space-y-4">
                 <div class="settings-field-grid">
                   <div class="settings-field">
                     <label class="settings-label">Service</label>
@@ -186,38 +193,147 @@
                   </div>
 
                   <div class="settings-field">
-                    <label class="settings-label">Product</label>
-                    <app-typeahead
-                      [items]="productItems()"
-                      [selectedItem]="selectedProductItem()"
-                      [loading]="productLoading()"
-                      [filterLocally]="false"
-                      placeholder="Search products by name, SKU, or supplier SKU"
-                      emptyText="No active products match that search."
-                      (searchChange)="onProductSearch($event)"
-                      (selectedItemChange)="onProductSelected($event)"
-                    ></app-typeahead>
-                    <p class="settings-hint">The product cost drives dynamic pricing and cost-based deposits.</p>
+                    <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                      <label class="settings-label mb-0">Product</label>
+                      <button
+                        type="button"
+                        class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-semibold transition"
+                        [ngClass]="formValue().requiresProduct ? 'border-app-border bg-app-surface text-app-text-muted hover:text-app-text' : 'border-emerald-200 bg-emerald-50 text-emerald-700'"
+                        (click)="setProductRequired(!formValue().requiresProduct)"
+                      >
+                        @if (!formValue().requiresProduct) {
+                          <lucide-icon [name]="icons.Check" class="h-3 w-3"></lucide-icon>
+                        }
+                        {{ formValue().requiresProduct ? 'No product needed' : 'Use a product instead' }}
+                      </button>
+                    </div>
+
+                    @if (formValue().requiresProduct) {
+                      <app-typeahead
+                        [items]="productItems()"
+                        [selectedItem]="selectedProductItem()"
+                        [loading]="productLoading()"
+                        [filterLocally]="false"
+                        placeholder="Search products by name, SKU, or supplier SKU"
+                        emptyText="No active products match that search."
+                        (searchChange)="onProductSearch($event)"
+                        (selectedItemChange)="onProductSelected($event)"
+                      ></app-typeahead>
+                      <div class="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+                        <p class="settings-hint mt-0">The product cost drives dynamic pricing and cost-based deposits.</p>
+                        @if (connectedSupplierSearchAvailable()) {
+                          <button
+                            type="button"
+                            class="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-brand hover:underline"
+                            (click)="openConnectedSupplierSearch()"
+                          >
+                            <lucide-icon [name]="icons.Search" class="h-3.5 w-3.5"></lucide-icon>
+                            Search connected suppliers
+                          </button>
+                        }
+                      </div>
+                    } @else {
+                      <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-3">
+                        <div class="flex items-start gap-2.5">
+                          <lucide-icon [name]="icons.Check" class="mt-0.5 h-4 w-4 shrink-0 text-emerald-700"></lucide-icon>
+                          <div>
+                            <p class="text-xs font-semibold text-emerald-800">No product needed</p>
+                            <p class="mt-0.5 text-[11px] leading-5 text-emerald-700">Use this for diagnosis, labor-only work, and other services that do not consume or reserve a part.</p>
+                          </div>
+                        </div>
+                      </div>
+                    }
                   </div>
 
-                  <div class="settings-field">
-                    <label class="settings-label">Supplier link</label>
-                    <app-typeahead
-                      [items]="supplierItems()"
-                      [selectedItem]="selectedSupplierItem()"
-                      [loading]="supplierLoading()"
-                      [disabled]="!selectedProduct() || supplierLoading()"
-                      [clearable]="true"
-                      placeholder="Choose a supplier SKU"
-                      [emptyText]="selectedProduct() ? 'This product has no supplier links.' : 'Choose a product first.'"
-                      hint="Search by supplier name or supplier SKU"
-                      (selectedItemChange)="onSupplierSelected($event)"
-                    ></app-typeahead>
-                    <p class="settings-hint" [class.text-amber-700]="selectedProduct() && !supplierLoading() && !supplierLinks().length">
-                      {{ supplierStatusText() }}
-                    </p>
-                  </div>
+                  @if (formValue().requiresProduct) {
+                    <div class="settings-field">
+                      <label class="settings-label">Supplier link</label>
+                      <app-typeahead
+                        [items]="supplierItems()"
+                        [selectedItem]="selectedSupplierItem()"
+                        [loading]="supplierLoading()"
+                        [disabled]="!selectedProduct() || supplierLoading()"
+                        [clearable]="true"
+                        placeholder="Choose a supplier SKU"
+                        [emptyText]="selectedProduct() ? 'This product has no supplier links.' : 'Choose a product first.'"
+                        hint="Search by supplier name or supplier SKU"
+                        (selectedItemChange)="onSupplierSelected($event)"
+                      ></app-typeahead>
+                      <p class="settings-hint" [class.text-amber-700]="selectedProduct() && !supplierLoading() && !supplierLinks().length">
+                        {{ supplierStatusText() }}
+                      </p>
+                    </div>
+                  }
                 </div>
+
+                @if (connectedSupplierSearchOpen() && formValue().requiresProduct) {
+                  <div class="rounded-2xl border border-app-border bg-app-surface-muted/45 p-3.5 sm:p-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p class="text-xs font-semibold text-app-text">Search connected suppliers</p>
+                        <p class="mt-0.5 text-[11px] text-app-text-muted">Find a part that is not in Opscend yet, then add and select it without leaving pricing setup.</p>
+                      </div>
+                      <button type="button" class="text-[11px] font-semibold text-app-text-muted hover:text-app-text" (click)="closeConnectedSupplierSearch()">Close</button>
+                    </div>
+
+                    <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        class="settings-control flex-1"
+                        [value]="connectedSupplierSearchQuery()"
+                        placeholder="Search device, part, or supplier SKU"
+                        (input)="onConnectedSupplierSearchInput($event)"
+                        (keydown.enter)="searchConnectedSuppliers()"
+                      />
+                      <button
+                        type="button"
+                        class="settings-secondary-action cursor-pointer justify-center"
+                        [disabled]="connectedSupplierSearchLoading() || connectedSupplierSearchQuery().trim().length < 2"
+                        (click)="searchConnectedSuppliers()"
+                      >
+                        @if (connectedSupplierSearchLoading()) {
+                          <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+                        } @else {
+                          <lucide-icon [name]="icons.Search" class="h-4 w-4"></lucide-icon>
+                        }
+                        Search
+                      </button>
+                    </div>
+
+                    @if (!connectedSupplierSearchLoading() && connectedSupplierSearchResults().length) {
+                      <div class="mt-3 max-h-80 divide-y divide-app-border overflow-y-auto rounded-xl border border-app-border bg-app-surface">
+                        @for (result of connectedSupplierSearchResults(); track result.id) {
+                          <div class="flex flex-col gap-3 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="min-w-0">
+                              <p class="truncate text-xs font-semibold text-app-text">{{ result.title }}</p>
+                              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-app-text-muted">
+                                @if (result.sku) { <span>SKU {{ result.sku }}</span> }
+                                <span>{{ result.costCents == null ? 'Cost unavailable' : money(result.costCents) + ' cost' }}</span>
+                                <span [class.text-emerald-700]="result.inStock" [class.text-amber-700]="!result.inStock">{{ result.inStock ? 'In stock' : 'Out of stock' }}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              class="settings-primary-action shrink-0 cursor-pointer justify-center"
+                              [disabled]="supplierImportingId() !== null || !result.sku"
+                              (click)="importSupplierProduct(result)"
+                            >
+                              @if (supplierImportingId() === result.id) {
+                                <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
+                                Adding…
+                              } @else {
+                                <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+                                Add & use
+                              }
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    } @else if (!connectedSupplierSearchLoading() && connectedSupplierSearchQuery().trim().length >= 2) {
+                      <div class="mt-3 rounded-xl border border-dashed border-app-border px-4 py-6 text-center text-xs text-app-text-muted">No supplier products matched that search.</div>
+                    }
+                  </div>
+                }
               </div>
             </section>
           </div>
@@ -277,8 +393,8 @@
                   <select id="pricing-deposit-mode" class="settings-control cursor-pointer" formControlName="depositMode">
                     <option value="inherit">Inherit repair type or shop default</option>
                     <option value="none">No deposit</option>
-                    <option value="product_cost">Part cost only</option>
-                    <option value="cost_recovery">Part cost + shipping + fees</option>
+                    <option value="product_cost" [disabled]="!formValue().requiresProduct">Part cost only</option>
+                    <option value="cost_recovery" [disabled]="!formValue().requiresProduct">Part cost + shipping + fees</option>
                     <option value="custom">Fixed amount</option>
                   </select>
                 </div>

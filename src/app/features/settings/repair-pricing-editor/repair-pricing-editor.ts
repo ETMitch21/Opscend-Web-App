@@ -18,6 +18,8 @@ import {
   DollarSignIcon,
   EyeIcon,
   InfoIcon,
+  PlusIcon,
+  SearchIcon,
   LoaderCircleIcon,
   LucideAngularModule,
   PackageIcon,
@@ -42,6 +44,9 @@ import { BookingAdminService } from '../../../core/booking/service';
 import { BookingSettings } from '../../../core/booking/model';
 import { Product, ProductSupplierLink } from '../../../core/products/products-model';
 import { ProductsService } from '../../../core/products/products-service';
+import { MobileSentrixService } from '../../../core/mobilesentrix/mobilesentrix-service';
+import { MobileSentrixSearchResult } from '../../../core/mobilesentrix/mobilesentrix-model';
+import { mapMobileSentrixItems } from '../../../core/mobilesentrix/mobilesentrix-search-mapper';
 import {
   PricingOption,
   PricingOptionDepositMode,
@@ -96,6 +101,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   private readonly catalogApi = inject(TechSpecsService);
   private readonly servicesApi = inject(ServicesService);
   private readonly productsApi = inject(ProductsService);
+  private readonly mobileSentrixApi = inject(MobileSentrixService);
   private readonly toast = inject(ToastService);
 
   readonly icons = {
@@ -107,6 +113,8 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     Info: InfoIcon,
     Loader: LoaderCircleIcon,
     Package: PackageIcon,
+    Plus: PlusIcon,
+    Search: SearchIcon,
     Save: SaveIcon,
     Smartphone: SmartphoneIcon,
     Trash: Trash2Icon,
@@ -117,6 +125,13 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   readonly saving = signal(false);
   readonly deactivating = signal(false);
   readonly error = signal<string | null>(null);
+  readonly connectedSupplierSearchAvailable = signal(false);
+  readonly connectedSupplierSearchOpen = signal(false);
+  readonly connectedSupplierSearchQuery = signal('');
+  readonly connectedSupplierSearchResults = signal<MobileSentrixSearchResult[]>([]);
+  readonly connectedSupplierSearchLoading = signal(false);
+  readonly supplierImportingId = signal<string | null>(null);
+  readonly productSearchQuery = signal('');
 
   readonly bookingSettings = signal<BookingSettings | null>(null);
   readonly repairTypes = signal<RepairType[]>([]);
@@ -149,6 +164,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     serviceId: [''],
     productId: [''],
     productSupplierId: [''],
+    requiresProduct: [true],
     depositMode: ['inherit' as PricingOptionDepositMode, Validators.required],
     depositAmountDollars: [null as number | null, Validators.min(0.01)],
     depositShippingDollars: [null as number | null, Validators.min(0)],
@@ -298,6 +314,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   });
 
   readonly productCostCents = computed<number | null>(() => {
+    if (!this.formValue().requiresProduct) return null;
     const supplierCost = this.selectedSupplier()?.lastKnownCostCents;
     if (supplierCost != null && supplierCost > 0) return supplierCost;
 
@@ -380,12 +397,14 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     this.bindSearchStreams();
 
     try {
-      const [settings, repairTypesResponse] = await Promise.all([
+      const [settings, repairTypesResponse, mobileSentrixStatus] = await Promise.all([
         firstValueFrom(this.bookingApi.getSettings()),
         firstValueFrom(this.pricingApi.listRepairTypes()),
+        firstValueFrom(this.mobileSentrixApi.getStatus()).catch(() => null),
       ]);
 
       this.bookingSettings.set(settings);
+      this.connectedSupplierSearchAvailable.set(Boolean(mobileSentrixStatus?.connected));
       this.repairTypes.set(
         [...(repairTypesResponse.data ?? [])].sort(
           (a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label),
@@ -445,6 +464,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   }
 
   onProductSearch(value: string): void {
+    this.productSearchQuery.set(value);
     this.productSearch$.next(value);
   }
 
@@ -476,6 +496,167 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
 
     if (service?.duration && !this.form.controls.durationMins.value) {
       this.form.controls.durationMins.setValue(service.duration);
+    }
+  }
+
+  setProductRequired(required: boolean): void {
+    if (Boolean(this.form.controls.requiresProduct.value) === required) return;
+
+    this.form.controls.requiresProduct.setValue(required);
+    this.form.controls.requiresProduct.markAsDirty();
+
+    if (required) return;
+
+    ++this.productHydrationVersion;
+    this.applyProductSelection(null);
+    this.form.controls.productId.markAsDirty();
+    this.form.controls.productSupplierId.markAsDirty();
+    this.connectedSupplierSearchOpen.set(false);
+    this.connectedSupplierSearchResults.set([]);
+
+    if (this.form.controls.priceMode.value === 'dynamic') {
+      this.form.controls.priceMode.setValue('fixed');
+      this.form.controls.priceMode.markAsDirty();
+    }
+
+    const depositMode = this.form.controls.depositMode.value;
+    if (
+      depositMode === 'inherit' ||
+      depositMode === 'product_cost' ||
+      depositMode === 'cost_recovery'
+    ) {
+      this.form.controls.depositMode.setValue('none');
+      this.form.controls.depositMode.markAsDirty();
+    }
+  }
+
+  async openConnectedSupplierSearch(): Promise<void> {
+    if (!this.connectedSupplierSearchAvailable() || !this.form.controls.requiresProduct.value) {
+      return;
+    }
+
+    this.connectedSupplierSearchOpen.set(true);
+    if (!this.connectedSupplierSearchQuery().trim()) {
+      const query =
+        this.productSearchQuery().trim() ||
+        [this.selectedModel()?.name, this.selectedRepairType()?.label]
+          .filter(Boolean)
+          .join(' ');
+      this.connectedSupplierSearchQuery.set(query);
+    }
+
+    if (this.connectedSupplierSearchQuery().trim().length >= 2) {
+      await this.searchConnectedSuppliers();
+    }
+  }
+
+  closeConnectedSupplierSearch(): void {
+    this.connectedSupplierSearchOpen.set(false);
+  }
+
+  onConnectedSupplierSearchInput(event: Event): void {
+    this.connectedSupplierSearchQuery.set((event.target as HTMLInputElement).value);
+  }
+
+  async searchConnectedSuppliers(): Promise<void> {
+    const query = this.connectedSupplierSearchQuery().trim();
+    if (query.length < 2 || this.connectedSupplierSearchLoading()) return;
+
+    this.connectedSupplierSearchLoading.set(true);
+    try {
+      const response = await firstValueFrom(
+        this.mobileSentrixApi.search({ q: query, maxResults: 12 }),
+      );
+      this.connectedSupplierSearchResults.set(
+        mapMobileSentrixItems(response.items ?? []),
+      );
+      if (response.warning) {
+        this.toast.info('Supplier search', response.warning);
+      }
+    } catch (error) {
+      console.error('Unable to search connected suppliers', error);
+      this.connectedSupplierSearchResults.set([]);
+      this.toast.error(
+        'Supplier search unavailable',
+        'Opscend could not search your connected supplier right now.',
+      );
+    } finally {
+      this.connectedSupplierSearchLoading.set(false);
+    }
+  }
+
+  async importSupplierProduct(result: MobileSentrixSearchResult): Promise<void> {
+    if (this.supplierImportingId() || !result.sku) return;
+
+    this.supplierImportingId.set(result.id);
+    try {
+      const created = await firstValueFrom(
+        this.productsApi.create({
+          name: result.title,
+          sku: null,
+          priceCents: result.costCents ?? 0,
+          costCents: result.costCents,
+          tags: ['supplier-import', 'pricing-setup'],
+          supplierLink: {
+            provider: 'mobilesentrix',
+            supplierName: 'MobileSentrix',
+            supplierSku: result.sku,
+            supplierProductId: result.id,
+            supplierProductName: result.title,
+            supplierUrl: result.link,
+            lastKnownCostCents: result.costCents,
+            lastKnownInStock: result.inStock,
+            isPreferred: true,
+          },
+        }),
+      );
+
+      this.productSuggestions.update((rows) => [
+        created,
+        ...rows.filter((row) => row.id !== created.id),
+      ]);
+      this.applyProductSelection(created);
+      this.form.controls.productId.markAsDirty();
+      this.form.controls.productSupplierId.markAsDirty();
+      this.connectedSupplierSearchOpen.set(false);
+      this.toast.success('Product added', 'The supplier product is now linked to this pricing option.');
+    } catch (error: any) {
+      if (error?.status === 409 || error?.error?.error === 'duplicate_supplier_sku') {
+        const existing = await this.findExistingProductForSupplierSku(result.sku);
+        if (existing) {
+          this.productSuggestions.update((rows) => [
+            existing,
+            ...rows.filter((row) => row.id !== existing.id),
+          ]);
+          this.applyProductSelection(existing);
+          this.form.controls.productId.markAsDirty();
+          this.form.controls.productSupplierId.markAsDirty();
+          this.connectedSupplierSearchOpen.set(false);
+          this.toast.success('Existing product selected');
+          return;
+        }
+      }
+
+      console.error('Unable to add supplier product', error);
+      this.toast.error(
+        'Product could not be added',
+        'The supplier product was not added to Opscend.',
+      );
+    } finally {
+      this.supplierImportingId.set(null);
+    }
+  }
+
+  private async findExistingProductForSupplierSku(sku: string): Promise<Product | null> {
+    try {
+      const rows = await firstValueFrom(this.productsApi.search(sku, 25));
+      const match =
+        rows.find((product) =>
+          product.supplierLinks?.some((link) => link.supplierSku === sku),
+        ) ?? rows[0] ?? null;
+      return match ? await firstValueFrom(this.productsApi.getById(match.id)) : null;
+    } catch {
+      return null;
     }
   }
 
@@ -556,6 +737,13 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   }
 
   setPriceMode(mode: PriceMode): void {
+    if (mode === 'dynamic' && !this.form.controls.requiresProduct.value) {
+      this.toast.info(
+        'Dynamic pricing needs a product',
+        'Turn product required back on to price from supplier or part cost.',
+      );
+      return;
+    }
     this.form.controls.priceMode.setValue(mode);
     this.form.controls.priceMode.markAsDirty();
   }
@@ -590,7 +778,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       return;
     }
 
-    if (raw.priceMode === 'dynamic' && this.productCostCents() == null) {
+    if (raw.requiresProduct && raw.priceMode === 'dynamic' && this.productCostCents() == null) {
       this.toast.error(
         'Part cost required',
         'Dynamic pricing needs a linked product or supplier with a recorded cost.',
@@ -618,10 +806,12 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       isActive: Boolean(raw.isActive),
       isPublic: Boolean(raw.isPublic),
       serviceId: this.nullable(raw.serviceId),
-      productId: this.nullable(raw.productId),
-      productSupplierId: this.nullable(raw.productSupplierId),
+      productId: raw.requiresProduct ? this.nullable(raw.productId) : null,
+      productSupplierId:
+        raw.requiresProduct ? this.nullable(raw.productSupplierId) : null,
+      requiresProduct: Boolean(raw.requiresProduct),
       fixedPriceCents: raw.priceMode === 'fixed' ? fixedPriceCents : null,
-      useDynamicPricing: raw.priceMode === 'dynamic',
+      useDynamicPricing: Boolean(raw.requiresProduct) && raw.priceMode === 'dynamic',
       depositMode,
       depositAmountCents:
         depositMode === 'custom'
@@ -737,6 +927,9 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   }
 
   pricingModeDescription(): string {
+    if (!this.formValue().requiresProduct) {
+      return 'This is a service-only option, so pricing does not depend on a part cost.';
+    }
     return this.formValue().priceMode === 'dynamic'
       ? 'Part cost, markup, labor, and shop rounding are calculated at booking.'
       : 'The customer sees the same fixed amount every time.';
@@ -877,6 +1070,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
         settings?.defaultDepositIncludeProcessingFees ?? true,
       depositIncludeInstantPayoutFee:
         settings?.defaultDepositIncludeInstantPayoutFee ?? false,
+      requiresProduct: true,
       isActive: true,
       isPublic: false,
       allowInstantConfirmation: true,
@@ -929,6 +1123,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       serviceId: service?.id ?? '',
       productId: product?.id ?? '',
       productSupplierId: supplier?.id ?? '',
+      requiresProduct: option.requiresProduct ?? true,
       depositMode: option.depositMode ?? 'inherit',
       depositAmountDollars:
         option.depositAmountCents == null ? null : option.depositAmountCents / 100,
@@ -984,6 +1179,12 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       inheritedFrom,
       error: null,
     };
+
+    if (!value.requiresProduct && (mode === 'product_cost' || mode === 'cost_recovery')) {
+      result.mode = 'none';
+      result.inheritedFrom = 'option';
+      return result;
+    }
 
     if (mode === 'none') return result;
 

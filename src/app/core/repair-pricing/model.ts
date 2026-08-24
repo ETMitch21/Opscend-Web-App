@@ -125,6 +125,7 @@ export interface PricingOption {
   serviceId: string | null;
   productId: string | null;
   productSupplierId: string | null;
+  requiresProduct: boolean;
   repairType: PricingOptionRepairTypeSummary;
   model: PricingOptionModelSummary | null;
   service: PricingOptionServiceSummary | null;
@@ -145,6 +146,7 @@ export interface PricingOptionInput {
   serviceId?: string | null;
   productId?: string | null;
   productSupplierId?: string | null;
+  requiresProduct?: boolean;
   fixedPriceCents?: number | null;
   useDynamicPricing?: boolean;
   depositMode?: PricingOptionDepositMode;

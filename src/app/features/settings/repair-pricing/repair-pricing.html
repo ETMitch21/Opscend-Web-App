@@ -236,7 +236,7 @@
                           <p class="text-[9px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">Product</p>
                           <p
                             class="mt-0.5 truncate text-xs font-medium"
-                            [ngClass]="row.status === 'not_offered' ? 'text-app-text-muted' : (row.primaryOption?.productId ? 'text-app-text' : 'text-amber-700')"
+                            [ngClass]="row.status === 'not_offered' ? 'text-app-text-muted' : (row.primaryOption && (!row.primaryOption.requiresProduct || row.primaryOption.productId) ? 'text-app-text' : 'text-amber-700')"
                           >
                             {{ row.status === 'not_offered' ? 'Not applicable' : (row.primaryOption ? optionProductLabel(row.primaryOption) : 'Not linked') }}
                           </p>

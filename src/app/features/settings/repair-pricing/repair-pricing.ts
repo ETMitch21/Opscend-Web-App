@@ -716,6 +716,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   }
 
   optionProductLabel(option: PricingOption): string {
+    if (!option.requiresProduct) return 'No product needed';
     if (!option.product) return 'No product linked';
     const sku = option.productSupplier?.supplierSku || option.product.sku;
     return sku ? `${option.product.name} · ${sku}` : option.product.name;
@@ -1130,7 +1131,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   private optionSetupStatus(option: PricingOption): SetupStatus {
     if (!option.isActive) return 'inactive';
     if (!option.serviceId) return 'needs_service';
-    if (!option.productId) return 'needs_product';
+    if (option.requiresProduct && !option.productId) return 'needs_product';
     if (!option.useDynamicPricing && option.fixedPriceCents == null) {
       return 'needs_price';
     }
