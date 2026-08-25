@@ -43,6 +43,7 @@ import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
 import { PublicBookingService } from '../../../core/public-booking/service';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
+import { getDeviceColorSwatch } from '../../../core/ui/device-color-swatch';
 import {
   PublicAvailabilitySlot,
   PublicBookingPaymentChoice,
@@ -1286,69 +1287,7 @@ export class PublicBooking implements OnDestroy {
   }
 
   colorSwatch(value: string): string {
-    const normalized = value
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const known: Record<string, string> = {
-      black: '#242424',
-      white: '#f7f7f5',
-      pink: '#f2a9bd',
-      blue: '#6d9fd3',
-      green: '#7da57a',
-      red: '#d94b4b',
-      purple: '#9b86c8',
-      yellow: '#e9cf62',
-      orange: '#e8954d',
-      gold: '#d8ba73',
-      silver: '#c8cdd2',
-      gray: '#8c9298',
-      grey: '#8c9298',
-      graphite: '#5f6062',
-      midnight: '#1d2730',
-      starlight: '#e8e0d2',
-      'rose gold': '#d9a39b',
-      'space gray': '#777b80',
-      'space grey': '#777b80',
-      'sierra blue': '#9bb5ce',
-      'alpine green': '#576b61',
-      'deep purple': '#66586e',
-      'natural titanium': '#b4aa98',
-      'blue titanium': '#53606c',
-      'white titanium': '#e6e4df',
-      'black titanium': '#3e3d3b',
-      'desert titanium': '#c2a78f',
-      ultramarine: '#5866ad',
-      teal: '#4d9b98',
-      aqua: '#70b7bd',
-      coral: '#e68072',
-      'product red': '#c92a2f',
-      lavender: '#b5a5cf',
-      mint: '#9bc7b1',
-      cream: '#ede3c9',
-    };
-
-    if (known[normalized]) return known[normalized]!;
-    if (normalized.includes('black')) return known['black']!;
-    if (normalized.includes('white')) return known['white']!;
-    if (normalized.includes('pink')) return known['pink']!;
-    if (normalized.includes('blue')) return known['blue']!;
-    if (normalized.includes('green')) return known['green']!;
-    if (normalized.includes('red')) return known['red']!;
-    if (normalized.includes('purple')) return known['purple']!;
-    if (normalized.includes('gold')) return known['gold']!;
-    if (normalized.includes('silver')) return known['silver']!;
-    if (normalized.includes('gray') || normalized.includes('grey')) return known['gray']!;
-
-    let hash = 0;
-    for (const char of normalized || value) {
-      hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
-    }
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue} 38% 62%)`;
+    return getDeviceColorSwatch(value);
   }
 
   private uniqueAttributeValues(options: PublicRepairPricingOption[], key: string): string[] {

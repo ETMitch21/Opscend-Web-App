@@ -41,6 +41,7 @@ import {
 } from 'rxjs';
 
 import { BookingAdminService } from '../../../core/booking/service';
+import { getDeviceColorSwatch } from '../../../core/ui/device-color-swatch';
 import { BookingSettings } from '../../../core/booking/model';
 import { Product, ProductSupplierLink } from '../../../core/products/products-model';
 import { ProductsService } from '../../../core/products/products-service';
@@ -1249,60 +1250,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
   }
 
   colorSwatch(value: string): string {
-    const normalized = value
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const known: Record<string, string> = {
-      black: '#242424',
-      white: '#f7f7f5',
-      pink: '#f2a9bd',
-      blue: '#6d9fd3',
-      green: '#7da57a',
-      red: '#d94b4b',
-      purple: '#9b86c8',
-      yellow: '#e9cf62',
-      orange: '#e8954d',
-      gold: '#d8ba73',
-      silver: '#c8cdd2',
-      gray: '#8c9298',
-      grey: '#8c9298',
-      graphite: '#5f6062',
-      midnight: '#1d2730',
-      starlight: '#e8e0d2',
-      'rose gold': '#d9a39b',
-      'space gray': '#777b80',
-      'space grey': '#777b80',
-      'sierra blue': '#9bb5ce',
-      'alpine green': '#576b61',
-      'deep purple': '#66586e',
-      'natural titanium': '#b4aa98',
-      'blue titanium': '#53606c',
-      'white titanium': '#e6e4df',
-      'black titanium': '#3e3d3b',
-      'desert titanium': '#c2a78f',
-      ultramarine: '#5866ad',
-      teal: '#4d9b98',
-      aqua: '#70b7bd',
-      coral: '#e68072',
-      lavender: '#b5a5cf',
-      mint: '#9bc7b1',
-      cream: '#ede3c9',
-    };
-
-    if (known[normalized]) return known[normalized]!;
-    for (const base of ['black', 'white', 'pink', 'blue', 'green', 'red', 'purple', 'gold', 'silver', 'gray', 'grey']) {
-      if (normalized.includes(base)) return known[base]!;
-    }
-
-    let hash = 0;
-    for (const char of normalized || value) {
-      hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
-    }
-    return `hsl(${Math.abs(hash) % 360} 38% 62%)`;
+    return getDeviceColorSwatch(value);
   }
 
   private bindSearchStreams(): void {
