@@ -131,7 +131,7 @@
                     class="settings-control"
                     rows="3"
                     formControlName="greeting"
-                    placeholder="Thanks for calling {{ settings()?.twilioPhoneNumber || 'your shop' }}. I’m the automated quoting assistant. How can I help today?"
+                    placeholder="Thanks for calling {{ settings()?.voicePhoneNumber || 'your shop' }}. I’m the automated quoting assistant. How can I help today?"
                   ></textarea>
                   <span class="settings-hint">Leave blank to use the default greeting with your shop and agent name.</span>
                 </label>
@@ -198,6 +198,12 @@
 
               <div class="mt-4 settings-field-grid">
                 <label class="settings-field md:col-span-6">
+                  <span class="settings-label">AI voice phone number</span>
+                  <input class="settings-control" type="tel" formControlName="voicePhoneNumber" placeholder="+1 816 555 0100" />
+                  <span class="settings-hint">Dedicated Twilio number for AI calls. This does not change the shop’s SMS sender.</span>
+                </label>
+
+                <label class="settings-field md:col-span-6">
                   <span class="settings-label">Human transfer phone</span>
                   <input class="settings-control" type="tel" formControlName="transferPhone" placeholder="+1 816 555 0100" />
                   <span class="settings-hint">The agent transfers callers here when requested or when it cannot safely continue.</span>
@@ -236,7 +242,7 @@
               </div>
               <div class="setup-row" [class.is-complete]="settings()?.configured?.twilioNumber">
                 <span class="setup-state"><lucide-icon [img]="settings()?.configured?.twilioNumber ? icons.CheckCircle2 : icons.AlertCircle" [size]="15"></lucide-icon></span>
-                <span><strong>Shop Twilio number</strong><small>{{ settings()?.twilioPhoneNumber || 'Not configured' }}</small></span>
+                <span><strong>AI voice number</strong><small>{{ settings()?.voicePhoneNumber || 'Not configured' }}</small></span>
               </div>
             </div>
           </section>
@@ -245,7 +251,7 @@
             <div class="settings-card-header">
               <div>
                 <h2 class="settings-card-title">Twilio routing</h2>
-                <p class="settings-card-description">Use this as the number’s incoming Voice webhook with HTTP POST.</p>
+                <p class="settings-card-description">Configure this on the dedicated AI voice number in Twilio using HTTP POST.</p>
               </div>
             </div>
             <div class="settings-card-body space-y-3">
@@ -258,6 +264,20 @@
                   </button>
                 </div>
                 <p class="settings-hint">When TWILIO_VOICE_WEBHOOK_SECRET is configured, append <code>?secret=YOUR_SECRET</code> in Twilio.</p>
+              </div>
+
+              <div>
+                <span class="settings-label">Quote SMS sender</span>
+                <div class="copy-field">
+                  <code>
+                    @if (settings()?.smsMessagingServiceSid) {
+                      Messaging Service · {{ settings()?.smsMessagingServiceSid }}
+                    } @else {
+                      {{ settings()?.smsPhoneNumber || 'Not configured in shop communications' }}
+                    }
+                  </code>
+                </div>
+                <p class="settings-hint">Quote links still send through the shop’s normal SMS configuration; the AI voice number is never used for quote texts.</p>
               </div>
 
               <div>

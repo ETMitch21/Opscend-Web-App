@@ -17,12 +17,15 @@ export interface VoiceAgentSettings {
   model: string;
   voice: string;
   reasoningEffort: string;
+  voicePhoneNumber: string | null;
   transferPhone: string | null;
   allowAutoQuotes: boolean;
   autoSendQuoteSms: boolean;
   allowManualQuoteRequests: boolean;
   recordTranscripts: boolean;
-  twilioPhoneNumber: string | null;
+  smsPhoneNumber: string | null;
+  smsEnabled: boolean;
+  smsMessagingServiceSid: string | null;
   sipUri: string | null;
   webhookUrl: string | null;
   twilioVoiceWebhookUrl: string | null;
@@ -42,6 +45,7 @@ export type VoiceAgentSettingsPatch = Partial<
     | 'model'
     | 'voice'
     | 'reasoningEffort'
+    | 'voicePhoneNumber'
     | 'transferPhone'
     | 'allowAutoQuotes'
     | 'autoSendQuoteSms'
