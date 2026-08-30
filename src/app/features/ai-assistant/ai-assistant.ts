@@ -709,6 +709,11 @@ export class AiAssistant implements OnInit, OnDestroy {
   }
 
   private errorMessage(error: any, fallback: string): string {
-    return error?.error?.message || error?.message || fallback;
+    const requestId = error?.error?.requestId || error?.headers?.get?.('x-request-id') || null;
+    const message = error?.status === 0
+      ? 'The server connection was interrupted before Opscend AI could respond. Please try again.'
+      : (error?.error?.message || error?.message || fallback);
+
+    return requestId ? `${message} Reference: ${requestId}` : message;
   }
 }
