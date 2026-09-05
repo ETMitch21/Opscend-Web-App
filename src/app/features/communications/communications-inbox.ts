@@ -27,6 +27,11 @@ import {
   Trash2,
   AlertTriangle,
   PlusCircle,
+  Globe2,
+  Paperclip,
+  X,
+  FileText,
+  Image,
 } from 'lucide-angular';
 
 import { CommunicationService } from '../../core/communications/service';
@@ -80,6 +85,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     Trash2,
     AlertTriangle,
     PlusCircle,
+    Globe2,
+    Paperclip,
+    X,
+    FileText,
+    Image,
   };
 
   readonly conversations = signal<CommunicationConversation[]>([]);
@@ -97,6 +107,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly activeChannel = signal<ComposerChannel>('sms');
   readonly composeSubject = signal('');
   readonly composeBody = signal('');
+  readonly pendingAttachments = signal<File[]>([]);
+  readonly uploadingAttachments = signal(false);
   readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
 
@@ -598,7 +610,9 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     const body = this.composeBody().trim();
     const channel = this.activeChannel();
 
-    if (!conversation || !body || this.sending()) return;
+    const pendingFiles = this.pendingAttachments();
+    const hasAttachmentPayload = channel === 'web_chat' && pendingFiles.length > 0;
+    if (!conversation || (!body && !hasAttachmentPayload) || this.sending()) return;
 
     if (conversation.status === 'archived') {
       this.toast.info('Conversation is archived', 'Reopen this conversation before sending a message.');
@@ -629,9 +643,13 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     this.error.set(null);
 
     try {
+      const attachmentIds = channel === 'web_chat'
+        ? await this.uploadPendingAttachments(conversation.id)
+        : [];
       const request = {
         subject: this.composeSubject().trim() || undefined,
         body,
+        attachmentIds,
       };
 
       const response = await firstValueFrom(
@@ -650,20 +668,101 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
         lastMessageChannel: response.data.channel,
         lastMessageDirection: response.data.direction,
         messages: [...(conversation.messages ?? []), response.data],
+        timeline: conversation.timeline?.length
+          ? [...conversation.timeline, this.messageToTimelineItem(response.data)]
+          : conversation.timeline,
       };
 
       this.selectedConversation.set(next);
       this.upsertConversation(next);
       this.scheduleScrollToBottom();
       this.composeBody.set('');
+      this.pendingAttachments.set([]);
       if (channel === 'email') this.composeSubject.set('');
-      this.toast.success(channel === 'email' ? 'Email sent' : 'SMS sent');
+      this.toast.success(channel === 'email' ? 'Email sent' : channel === 'web_chat' ? 'Web chat sent' : 'SMS sent');
     } catch (error) {
       console.error(error);
-      this.toast.error(channel === 'email' ? 'Could not send email' : 'Could not send SMS');
-      this.error.set(channel === 'email' ? 'Could not send email.' : 'Could not send SMS.');
+      this.toast.error(channel === 'email' ? 'Could not send email' : channel === 'web_chat' ? 'Could not send web chat' : 'Could not send SMS');
+      this.error.set(channel === 'email' ? 'Could not send email.' : channel === 'web_chat' ? 'Could not send web chat.' : 'Could not send SMS.');
     } finally {
       this.sending.set(false);
+    }
+  }
+
+  onAttachmentFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length) return;
+
+    const maxBytes = 15 * 1024 * 1024;
+    const allowed = files.filter((file) => {
+      if (file.size <= 0 || file.size > maxBytes) {
+        this.toast.error('Attachment too large', `${file.name} must be 15 MB or smaller.`);
+        return false;
+      }
+      return true;
+    });
+    const next = [...this.pendingAttachments(), ...allowed].slice(0, 5);
+    if (this.pendingAttachments().length + allowed.length > 5) {
+      this.toast.info('Attachment limit', 'You can send up to 5 attachments at a time.');
+    }
+    this.pendingAttachments.set(next);
+  }
+
+  removePendingAttachment(index: number): void {
+    this.pendingAttachments.update((files) => files.filter((_, currentIndex) => currentIndex !== index));
+  }
+
+  isImageAttachment(contentType: string | null | undefined): boolean {
+    return String(contentType ?? '').toLowerCase().startsWith('image/');
+  }
+
+  formatAttachmentSize(bytes: number | null | undefined): string {
+    const value = Number(bytes ?? 0);
+    if (!value) return '';
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+    return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+  }
+
+  teammateInitials(item: CommunicationTimelineItem): string {
+    const name = this.timelineActor(item).trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    return (parts.length === 1 ? parts[0].slice(0, 2) : `${parts[0][0]}${parts[parts.length - 1][0]}`).toUpperCase();
+  }
+
+  private async uploadPendingAttachments(conversationId: string): Promise<string[]> {
+    const files = this.pendingAttachments();
+    if (!files.length) return [];
+    this.uploadingAttachments.set(true);
+    try {
+      const ids: string[] = [];
+      for (const file of files) {
+        const mimeType = file.type || 'application/octet-stream';
+        const init = await firstValueFrom(this.communicationApi.initAttachment(conversationId, {
+          filename: file.name,
+          mimeType,
+          sizeBytes: file.size,
+        }));
+        const uploadResponse = await fetch(init.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': mimeType },
+          body: file,
+        });
+        if (!uploadResponse.ok) throw new Error(`Attachment upload failed (${uploadResponse.status})`);
+        const completed = await firstValueFrom(this.communicationApi.completeAttachment(conversationId, {
+          filename: file.name,
+          mimeType,
+          sizeBytes: file.size,
+          storageKey: init.storageKey,
+        }));
+        ids.push(completed.data.id);
+      }
+      return ids;
+    } finally {
+      this.uploadingAttachments.set(false);
     }
   }
 
@@ -1302,8 +1401,49 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       subject: message.subject,
       actorLabel: this.messageSender(message),
       occurredAt: message.createdAt,
+      readAt: message.readAt,
+      attachments: message.attachments ?? [],
       tone: isInternalNote ? 'note' : message.direction === 'outbound' ? 'outbound' : 'inbound',
     };
+  }
+
+  webChatStateLabel(state: string | null | undefined): string {
+    switch (state) {
+      case 'ai': return 'AI handling';
+      case 'human_requested': return 'Needs teammate';
+      case 'human': return 'Teammate joined';
+      case 'closed': return 'Chat ended';
+      default: return 'Web visitor';
+    }
+  }
+
+  webChatStateClass(state: string | null | undefined): string {
+    switch (state) {
+      case 'ai': return 'bg-violet-50 text-violet-700 ring-violet-100';
+      case 'human_requested': return 'bg-amber-50 text-amber-700 ring-amber-100';
+      case 'human': return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+      default: return 'bg-app-surface-muted text-app-text-muted ring-app-border';
+    }
+  }
+
+  webChatHost(value: string | null | undefined): string | null {
+    if (!value) return null;
+    try {
+      return new URL(value).host.replace(/^www\./i, '');
+    } catch {
+      return value;
+    }
+  }
+
+  webChatPageLabel(title: string | null | undefined, url: string | null | undefined): string {
+    if (title?.trim()) return title.trim();
+    if (!url) return 'Website visitor';
+    try {
+      const parsed = new URL(url);
+      return parsed.pathname === '/' ? parsed.host : parsed.pathname;
+    } catch {
+      return url;
+    }
   }
 
   private scheduleScrollToBottom(delayMs = 50): void {
@@ -1448,6 +1588,9 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       conversation.lastMessagePreview ?? '',
       conversation.lastMessageChannel ?? '',
       conversation.lastMessageDirection ?? '',
+      conversation.webChatState ?? '',
+      conversation.webChatContext?.lastSeenAt ?? '',
+      conversation.webChatContext?.pageUrl ?? '',
       conversation.quote?.id ?? '',
       conversation.quote?.status ?? '',
       conversation.quote?.estimatedTotalCents ?? '',

@@ -10,6 +10,8 @@ import {
   CustomerCommunicationSummaryResponse,
   CommunicationMessageCreate,
   CommunicationMessageResponse,
+  CommunicationAttachmentUploadInit,
+  CommunicationAttachmentResponse,
 } from './model';
 
 @Injectable({ providedIn: 'root' })
@@ -123,6 +125,26 @@ export class CommunicationService {
   ): Observable<CommunicationMessageResponse> {
     return this.http.post<CommunicationMessageResponse>(
       `${this.baseUrl}/conversations/${encodeURIComponent(id)}/messages/sms`,
+      payload,
+    );
+  }
+
+  initAttachment(
+    id: string,
+    payload: { filename: string; mimeType: string; sizeBytes: number },
+  ): Observable<CommunicationAttachmentUploadInit> {
+    return this.http.post<CommunicationAttachmentUploadInit>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/attachments/init`,
+      payload,
+    );
+  }
+
+  completeAttachment(
+    id: string,
+    payload: { filename: string; mimeType: string; sizeBytes: number; storageKey: string },
+  ): Observable<CommunicationAttachmentResponse> {
+    return this.http.post<CommunicationAttachmentResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/attachments/complete`,
       payload,
     );
   }

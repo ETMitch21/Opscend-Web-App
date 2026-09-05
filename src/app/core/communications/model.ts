@@ -25,6 +25,15 @@ export type CommunicationMessageStatus =
   | string;
 export type CommunicationConversationStatus = 'open' | 'archived' | string;
 
+export interface CommunicationAttachment {
+  id: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number | null;
+  url: string;
+  thumbnailUrl: string | null;
+}
+
 export interface CommunicationMessage {
   id: string;
   conversationId: string;
@@ -49,6 +58,7 @@ export interface CommunicationMessage {
   receivedAt: string | null;
   failedAt: string | null;
   createdAt: string;
+  attachments: CommunicationAttachment[];
 }
 
 
@@ -64,6 +74,8 @@ export interface CommunicationTimelineItem {
   subject?: string | null;
   actorLabel?: string | null;
   occurredAt: string;
+  readAt?: string | null;
+  attachments?: CommunicationAttachment[];
   tone?: 'inbound' | 'outbound' | 'note' | 'system' | 'success' | 'danger' | 'info' | string | null;
 }
 
@@ -106,6 +118,18 @@ export interface CommunicationConversationDeviceSummary {
   updatedAt: string | null;
 }
 
+
+export interface CommunicationWebChatContext {
+  state: string;
+  visitorId: string | null;
+  origin: string | null;
+  pageUrl: string | null;
+  pageTitle: string | null;
+  referrer: string | null;
+  lastSeenAt: string | null;
+  startedAt: string | null;
+}
+
 export interface CommunicationConversation {
   id: string;
   shopId: string;
@@ -125,6 +149,7 @@ export interface CommunicationConversation {
   smsUnavailableReason: string | null;
   webChatEnabled: boolean;
   webChatState: string | null;
+  webChatContext: CommunicationWebChatContext | null;
   lastMessagePreview: string | null;
   lastMessageChannel: CommunicationChannel | null;
   lastMessageDirection: CommunicationDirection | null;
@@ -156,6 +181,17 @@ export interface CommunicationMessageResponse {
 export interface CommunicationMessageCreate {
   subject?: string;
   body: string;
+  attachmentIds?: string[];
+}
+
+export interface CommunicationAttachmentUploadInit {
+  uploadUrl: string;
+  storageKey: string;
+  expiresInSeconds: number;
+}
+
+export interface CommunicationAttachmentResponse {
+  data: CommunicationAttachment;
 }
 
 export interface CommunicationConversationListParams {

@@ -19,9 +19,11 @@ export interface WebChatSettings {
   primaryColor: string;
   position: 'left' | 'right';
   allowedOrigins: string[];
+  helpEnabled: boolean;
   originAllowed?: boolean;
   shop: WebChatShopSummary;
   embedScript?: string;
+  customLauncherScript?: string;
   scriptUrl?: string;
 }
 

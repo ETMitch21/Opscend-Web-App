@@ -51,6 +51,7 @@ export class WebChatSettingsComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly settings = signal<WebChatSettings | null>(null);
   readonly copied = signal(false);
+  readonly copiedCustom = signal(false);
 
   readonly form = this.fb.group({
     enabled: [false],
@@ -60,7 +61,7 @@ export class WebChatSettingsComponent implements OnInit {
     offlineMessage: ['', Validators.maxLength(800)],
     handoffEnabled: [true],
     requireContact: [false],
-    allowAttachments: [{ value: false, disabled: true }],
+    allowAttachments: [false],
     primaryColor: ['#111827', Validators.pattern(/^#[0-9a-fA-F]{6}$/)],
     position: ['right' as 'left' | 'right'],
     allowedOriginsText: [''],
@@ -135,6 +136,18 @@ export class WebChatSettingsComponent implements OnInit {
       window.setTimeout(() => this.copied.set(false), 1600);
     } catch {
       this.error.set('The embed code could not be copied.');
+    }
+  }
+
+  async copyCustomLauncher(): Promise<void> {
+    const embed = this.settings()?.customLauncherScript;
+    if (!embed) return;
+    try {
+      await navigator.clipboard.writeText(embed);
+      this.copiedCustom.set(true);
+      window.setTimeout(() => this.copiedCustom.set(false), 1600);
+    } catch {
+      this.error.set('The custom launcher code could not be copied.');
     }
   }
 

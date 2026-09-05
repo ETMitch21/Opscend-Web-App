@@ -353,7 +353,12 @@
             <div class="space-y-4">
               @for (item of selectedTimeline(); track item.id) {
                 @if (timelineIsBubble(item)) {
-                  <div class="flex" [class.justify-end]="timelineIsOutbound(item)" [class.justify-start]="!timelineIsOutbound(item)">
+                  <div class="flex items-end gap-2" [class.justify-end]="timelineIsOutbound(item)" [class.justify-start]="!timelineIsOutbound(item)">
+                    @if (item.channel === 'web_chat' && !timelineIsOutbound(item)) {
+                      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-app-surface-muted text-[10px] font-extrabold text-app-text-muted ring-1 ring-app-border">
+                        {{ teammateInitials(item) }}
+                      </div>
+                    }
                     <div
                       class="max-w-[72%] rounded-3xl px-4 py-3 shadow-sm ring-1"
                       [ngClass]="timelineBubbleClass(item)"
@@ -371,14 +376,43 @@
                       @if (item.subject) {
                         <p class="mb-2 text-sm font-semibold">{{ item.subject }}</p>
                       }
-                      <p class="whitespace-pre-line text-sm leading-6">{{ item.body }}</p>
+                      @if (item.body) {
+                        <p class="whitespace-pre-line text-sm leading-6">{{ item.body }}</p>
+                      }
+                      @if (item.attachments?.length) {
+                        <div class="mt-2 grid gap-2" [class.grid-cols-2]="(item.attachments?.length || 0) > 1">
+                          @for (attachment of item.attachments; track attachment.id) {
+                            @if (isImageAttachment(attachment.contentType)) {
+                              <a [href]="attachment.url" target="_blank" rel="noopener" class="block overflow-hidden rounded-2xl bg-black/5 ring-1 ring-black/10">
+                                <img [src]="attachment.thumbnailUrl || attachment.url" [alt]="attachment.fileName" class="max-h-56 w-full object-cover" />
+                              </a>
+                            } @else {
+                              <a [href]="attachment.url" target="_blank" rel="noopener" class="flex min-w-0 items-center gap-2 rounded-2xl bg-white/15 px-3 py-2 text-xs ring-1 ring-black/10">
+                                <lucide-icon [name]="icons.FileText" class="h-4 w-4 shrink-0"></lucide-icon>
+                                <span class="min-w-0 flex-1 truncate font-semibold">{{ attachment.fileName }}</span>
+                                <span class="shrink-0 opacity-70">{{ formatAttachmentSize(attachment.sizeBytes) }}</span>
+                              </a>
+                            }
+                          }
+                        </div>
+                      }
                       @if (timelineHasDeliveryProblem(item)) {
                         <p class="mt-2 rounded-2xl bg-white/70 px-3 py-2 text-xs font-semibold text-rose-700 ring-1 ring-rose-100">
                           {{ item.status === 'delayed' ? 'Delivery is delayed. SES may still retry.' : 'This email may not have reached the customer.' }}
                         </p>
                       }
-                      <p class="mt-2 text-[11px] opacity-70">{{ item.occurredAt | date:'MMM d, h:mm a' }}</p>
+                      <div class="mt-2 flex items-center gap-2 text-[11px] opacity-70">
+                        <span>{{ item.occurredAt | date:'MMM d, h:mm a' }}</span>
+                        @if (item.channel === 'web_chat' && timelineIsOutbound(item) && item.readAt) {
+                          <span>· Seen</span>
+                        }
+                      </div>
                     </div>
+                    @if (item.channel === 'web_chat' && timelineIsOutbound(item)) {
+                      <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[10px] font-extrabold text-white ring-1 ring-gray-800">
+                        {{ teammateInitials(item) }}
+                      </div>
+                    }
                   </div>
                 } @else {
                   <div class="flex justify-center">
@@ -472,7 +506,33 @@
             />
           }
 
+          @if (activeChannel() === 'web_chat' && pendingAttachments().length) {
+            <div class="mb-2 flex flex-wrap gap-2">
+              @for (file of pendingAttachments(); track file.name + file.size; let i = $index) {
+                <div class="inline-flex max-w-64 items-center gap-2 rounded-xl bg-app-surface-muted px-3 py-2 text-xs text-app-text ring-1 ring-app-border">
+                  <lucide-icon [name]="file.type.startsWith('image/') ? icons.Image : icons.FileText" class="h-4 w-4 shrink-0 text-app-text-muted"></lucide-icon>
+                  <span class="min-w-0 flex-1 truncate font-semibold">{{ file.name }}</span>
+                  <button type="button" class="cursor-pointer rounded-md p-0.5 text-app-text-muted hover:bg-white hover:text-app-text" (click)="removePendingAttachment(i)" aria-label="Remove attachment">
+                    <lucide-icon [name]="icons.X" class="h-3.5 w-3.5"></lucide-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
           <div class="flex items-end gap-3">
+            @if (activeChannel() === 'web_chat') {
+              <input #attachmentInput type="file" class="hidden" multiple (change)="onAttachmentFilesSelected($event)" />
+              <button
+                type="button"
+                class="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
+                [disabled]="sending() || uploadingAttachments() || !canSendActiveChannel(conversation)"
+                (click)="attachmentInput.click()"
+                title="Attach photo or file"
+              >
+                <lucide-icon [name]="icons.Paperclip" class="h-4 w-4"></lucide-icon>
+              </button>
+            }
             <textarea
               rows="3"
               class="min-h-20 flex-1 resize-none rounded-2xl border px-4 py-3 text-sm leading-6 outline-none focus:ring-2"
@@ -486,7 +546,7 @@
               type="button"
               class="inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               [ngClass]="activeChannel() === 'note' ? 'bg-amber-900 hover:bg-amber-800' : 'bg-brand'"
-              [disabled]="sending() || addingInternalNote() || !composeBody().trim() || !canSendActiveChannel(conversation)"
+              [disabled]="sending() || uploadingAttachments() || addingInternalNote() || (!composeBody().trim() && !(activeChannel() === 'web_chat' && pendingAttachments().length > 0)) || !canSendActiveChannel(conversation)"
               (click)="sendMessage()"
             >
               @if (sending() || addingInternalNote()) {
@@ -552,6 +612,59 @@
               </div>
             </div>
           </section>
+
+          @if (conversation.webChatContext; as web) {
+            <section class="rounded-3xl border border-app-border bg-app-surface p-4 shadow-sm">
+              <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 ring-1 ring-sky-100">
+                  <lucide-icon [name]="icons.Globe2" class="h-5 w-5"></lucide-icon>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-app-text-muted">Website visitor</p>
+                      <p class="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-app-text">{{ webChatPageLabel(web.pageTitle, web.pageUrl) }}</p>
+                    </div>
+                    <span class="shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ring-1" [ngClass]="webChatStateClass(web.state)">
+                      {{ webChatStateLabel(web.state) }}
+                    </span>
+                  </div>
+
+                  @if (web.pageUrl) {
+                    <a
+                      class="mt-2 flex min-w-0 items-center gap-1.5 text-xs font-semibold text-sky-700 hover:underline"
+                      [href]="web.pageUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span class="truncate">{{ webChatHost(web.pageUrl) }}</span>
+                      <lucide-icon [name]="icons.ExternalLink" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
+                    </a>
+                  } @else if (web.origin) {
+                    <p class="mt-2 truncate text-xs font-semibold text-app-text-muted">{{ webChatHost(web.origin) }}</p>
+                  }
+
+                  <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div class="rounded-2xl bg-app-surface-muted/70 px-3 py-2">
+                      <p class="text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Started</p>
+                      <p class="mt-1 font-semibold text-app-text">{{ web.startedAt ? (web.startedAt | date:'MMM d, h:mm a') : '—' }}</p>
+                    </div>
+                    <div class="rounded-2xl bg-app-surface-muted/70 px-3 py-2">
+                      <p class="text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Last active</p>
+                      <p class="mt-1 font-semibold text-app-text">{{ web.lastSeenAt ? (web.lastSeenAt | date:'MMM d, h:mm a') : '—' }}</p>
+                    </div>
+                  </div>
+
+                  @if (web.referrer) {
+                    <div class="mt-3 border-t border-app-border pt-3">
+                      <p class="text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Arrived from</p>
+                      <p class="mt-1 truncate text-xs text-app-text-muted" [title]="web.referrer">{{ webChatHost(web.referrer) }}</p>
+                    </div>
+                  }
+                </div>
+              </div>
+            </section>
+          }
 
           <section class="rounded-3xl border border-app-border bg-white/60 shadow-sm">
             <button

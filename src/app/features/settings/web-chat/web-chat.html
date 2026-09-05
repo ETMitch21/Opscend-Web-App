@@ -45,6 +45,56 @@
         </div>
       </section>
 
+      <section class="settings-card overflow-hidden p-0">
+        <div class="grid lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div class="p-5 md:p-6">
+            <div class="section-heading">
+              <div class="icon-tile"><lucide-icon [img]="icons.Wand" [size]="20"></lucide-icon></div>
+              <div>
+                <h2>Messenger experience</h2>
+                <p>The widget now opens into a customer-friendly home with Messages and Help spaces, while keeping quote/booking one tap away.</p>
+              </div>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-3">
+              <div class="feature-tile"><strong>Home</strong><span>Friendly welcome and quick actions.</span></div>
+              <div class="feature-tile"><strong>Messages</strong><span>Persistent web conversation history.</span></div>
+              <div class="feature-tile"><strong>Help</strong><span>Searches published public KB articles.</span></div>
+            </div>
+          </div>
+
+          <div class="messenger-preview-wrap" [style.--preview-brand]="form.controls.primaryColor.value || '#111827'">
+            <div class="messenger-preview">
+              <div class="preview-head">
+                <div class="preview-brand-row">
+                  <div class="preview-logo">
+                    @if (settings()?.shop?.logoUrl) {
+                      <img [src]="settings()?.shop?.logoUrl" alt="" />
+                    } @else {
+                      {{ (settings()?.shop?.name || 'O').slice(0, 1) }}
+                    }
+                  </div>
+                  <span>{{ settings()?.shop?.name || 'Your shop' }}</span>
+                </div>
+                <h3>{{ form.controls.greeting.value || 'Hi! How can we help?' }}</h3>
+                <p>{{ form.controls.assistantEnabled.value ? 'Ask a question and get an instant answer, or connect with our team.' : 'Send us a message and our team will get back to you.' }}</p>
+              </div>
+              <div class="preview-body">
+                <div class="preview-action">
+                  <span class="preview-action-icon"><lucide-icon [img]="icons.MessageCircle" [size]="17"></lucide-icon></span>
+                  <div><strong>Start a conversation</strong><small>{{ form.controls.assistantEnabled.value ? 'Usually replies instantly' : 'Message the team' }}</small></div>
+                  <span class="preview-chevron">›</span>
+                </div>
+                <div class="preview-grid">
+                  <div><strong>Get a quote</strong><small>Pricing & booking</small></div>
+                  <div><strong>Find an answer</strong><small>Search help articles</small></div>
+                </div>
+              </div>
+              <div class="preview-nav"><span class="active">Home</span><span>Messages</span><span>Help</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="settings-card p-5 md:p-6">
         <div class="section-heading">
           <div class="icon-tile"><lucide-icon [img]="icons.Bot" [size]="20"></lucide-icon></div>
@@ -66,6 +116,10 @@
           <label class="field checkbox-card">
             <input type="checkbox" formControlName="requireContact" />
             <span><strong>Require contact info</strong><small>Require a name, email, or phone number before a visitor can send a message.</small></span>
+          </label>
+          <label class="field checkbox-card md:col-span-2">
+            <input type="checkbox" formControlName="allowAttachments" />
+            <span><strong>Allow photos & files</strong><small>Visitors can send up to 5 secure attachments per message, up to 15 MB each. Images appear inline in the Messenger and Communications.</small></span>
           </label>
         </div>
       </section>
@@ -101,12 +155,24 @@
           <lucide-icon [img]="copied() ? icons.CheckCircle2 : icons.Copy" [size]="15"></lucide-icon>
           {{ copied() ? 'Copied' : 'Copy embed code' }}
         </button>
+
+        <div class="mt-5 border-t border-app-border pt-5">
+          <p class="text-sm font-bold text-app-text">Use your own chat button</p>
+          <p class="mt-1 text-sm leading-6 text-app-text-muted">Add <code>class=&quot;opscend-chat-open&quot;</code> to any button or link on your site, then use this version of the embed. Opscend will open the Messenger from that element.</p>
+          <div class="mt-3 rounded-2xl border border-app-border bg-slate-950 p-4 text-slate-100">
+            <code class="block overflow-x-auto whitespace-pre-wrap break-all text-xs leading-6">{{ settings()?.customLauncherScript || 'Save settings to generate custom launcher code.' }}</code>
+          </div>
+          <button type="button" class="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-app-border bg-white px-3 py-2 text-sm font-semibold text-app-text shadow-sm" [disabled]="!settings()?.customLauncherScript" (click)="copyCustomLauncher()">
+            <lucide-icon [img]="copiedCustom() ? icons.CheckCircle2 : icons.Copy" [size]="15"></lucide-icon>
+            {{ copiedCustom() ? 'Copied' : 'Copy custom launcher code' }}
+          </button>
+        </div>
       </section>
 
       <section class="settings-card p-5 md:p-6">
         <div class="flex items-start gap-3">
           <div class="icon-tile"><lucide-icon [img]="icons.User" [size]="20"></lucide-icon></div>
-          <div><h2 class="text-base font-bold text-app-text">Channel behavior</h2><p class="mt-1 text-sm leading-6 text-app-text-muted">Web Chat is stored directly in Communications. Visitors start anonymous, then Opscend links the conversation to an existing customer when a matching email or phone number is provided.</p><p class="mt-2 text-xs font-semibold text-amber-700">Attachments are intentionally disabled in this first version; SMS/email attachment behavior is unchanged.</p></div>
+          <div><h2 class="text-base font-bold text-app-text">Channel behavior</h2><p class="mt-1 text-sm leading-6 text-app-text-muted">Web Chat is stored directly in Communications. Visitors start anonymous, then Opscend links the conversation to an existing customer when a matching email or phone number is provided.</p><p class="mt-2 text-xs font-semibold text-emerald-700">Web Chat now supports secure attachments, read/seen state, named teammate replies, and in-chat AI quote creation.</p></div>
         </div>
       </section>
     </form>
