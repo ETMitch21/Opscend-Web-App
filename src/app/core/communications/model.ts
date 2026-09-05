@@ -1,6 +1,7 @@
 export type CommunicationChannel =
   | 'email'
   | 'sms'
+  | 'web_chat'
   | 'note'
   | 'system'
   | 'call'
@@ -122,6 +123,8 @@ export interface CommunicationConversation {
   unreadForShopCount: number;
   smsEnabled: boolean;
   smsUnavailableReason: string | null;
+  webChatEnabled: boolean;
+  webChatState: string | null;
   lastMessagePreview: string | null;
   lastMessageChannel: CommunicationChannel | null;
   lastMessageDirection: CommunicationDirection | null;

@@ -276,6 +276,13 @@ export const routes: Routes = [
                         ]
                     },
                     {
+                        path: 'web-chat',
+                        loadComponent: () =>
+                            import('./features/settings/web-chat/web-chat').then((m) => m.WebChatSettingsComponent),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'communications:read' }
+                    },
+                    {
                         path: 'voice-agent',
                         loadComponent: () =>
                             import('./features/settings/voice-agent/voice-agent').then((m) => m.VoiceAgentSettingsComponent),

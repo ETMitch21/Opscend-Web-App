@@ -5,6 +5,7 @@ import {
   Building2,
   MapPinIcon,
   PhoneCallIcon,
+  MessageCircle,
   CalendarClockIcon,
   CalendarCog,
   DollarSignIcon,
@@ -161,6 +162,14 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         icon: BlocksIcon,
         permission: 'shops:read',
         keywords: ['connections', 'mobilesentrix', 'stripe', 'supplier', 'api'],
+      },
+      {
+        label: 'Web Chat',
+        description: 'Website chat, AI answers, human handoff, appearance, and embed code.',
+        route: '/settings/shop/web-chat',
+        icon: MessageCircle,
+        permission: 'communications:read',
+        keywords: ['chat', 'website', 'webflow', 'ai', 'messages', 'widget', 'inbox'],
       },
       {
         label: 'AI phone agent',

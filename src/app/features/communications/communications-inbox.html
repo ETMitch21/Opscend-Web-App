@@ -405,6 +405,18 @@
           }
 
           <div class="mb-3 flex flex-wrap items-center gap-2">
+            @if (conversation.webChatEnabled) {
+              <button
+                type="button"
+                class="inline-flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                [ngClass]="activeChannel() === 'web_chat' ? 'bg-gray-900 text-white' : 'bg-app-surface-muted text-app-text-muted hover:text-app-text'"
+                [disabled]="!canSendWebChat(conversation)"
+                (click)="setChannel('web_chat')"
+              >
+                <lucide-icon [name]="icons.MessageSquare" class="h-4 w-4"></lucide-icon>
+                Web Chat
+              </button>
+            }
             <button
               type="button"
               class="inline-flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
@@ -441,6 +453,9 @@
             }
             @if (activeChannel() === 'email' && !canSendEmail(conversation)) {
               <span class="text-xs font-medium text-amber-700">No customer email on this conversation.</span>
+            }
+            @if (activeChannel() === 'web_chat' && !canSendWebChat(conversation)) {
+              <span class="text-xs font-medium text-amber-700">This website chat is no longer active.</span>
             }
             @if (activeChannel() === 'note') {
               <span class="text-xs font-medium text-amber-700">Only your shop can see internal notes.</span>

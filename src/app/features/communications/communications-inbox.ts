@@ -39,6 +39,8 @@ import {
 import { ToastService } from '../../core/toast/toast-service';
 import { PhonePipe } from '../../core/pipes/phone-pipe';
 
+type ComposerChannel = 'email' | 'sms' | 'web_chat' | 'note';
+
 @Component({
   selector: 'app-communications-inbox',
   standalone: true,
@@ -92,7 +94,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly searchTerm = signal('');
   readonly conversationStatusFilter = signal<'open' | 'archived' | 'all'>('open');
-  readonly activeChannel = signal<'email' | 'sms' | 'note'>('sms');
+  readonly activeChannel = signal<ComposerChannel>('sms');
   readonly composeSubject = signal('');
   readonly composeBody = signal('');
   readonly addingInternalNote = signal(false);
@@ -248,14 +250,14 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
   private parseRequestedChannel(
     value: string | null,
-  ): 'email' | 'sms' | 'note' | null {
-    return value === 'email' || value === 'sms' || value === 'note'
+  ): ComposerChannel | null {
+    return value === 'email' || value === 'sms' || value === 'web_chat' || value === 'note'
       ? value
       : null;
   }
 
   private applyRequestedChannel(
-    requestedChannel: 'email' | 'sms' | 'note' | null,
+    requestedChannel: ComposerChannel | null,
   ): void {
     const conversation = this.selectedConversation();
     if (!conversation || !requestedChannel) return;
@@ -270,6 +272,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       return;
     }
 
+    if (requestedChannel === 'web_chat' && this.canSendWebChat(conversation)) {
+      this.activeChannel.set('web_chat');
+      return;
+    }
+
     if (requestedChannel === 'email' && this.canSendEmail(conversation)) {
       this.activeChannel.set('email');
     }
@@ -278,7 +285,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   private async navigateToConversation(
     conversationId: string | null,
     replaceUrl = false,
-    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+    requestedChannel: ComposerChannel | null = null,
   ): Promise<void> {
     const queryParams: Record<string, string | null> = {
       conversationId,
@@ -371,15 +378,23 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       }
 
       if (this.activeChannel() !== 'note') {
+        if (this.activeChannel() === 'web_chat' && !this.canSendWebChat(threadResponse.data)) {
+          this.activeChannel.set(this.canSendSms(threadResponse.data) ? 'sms' : 'email');
+        }
         if (this.activeChannel() === 'sms' && !this.canSendSms(threadResponse.data)) {
-          this.activeChannel.set('email');
+          this.activeChannel.set(this.canSendWebChat(threadResponse.data) ? 'web_chat' : 'email');
         }
         if (
           this.activeChannel() === 'email' &&
-          !this.canSendEmail(threadResponse.data) &&
-          this.canSendSms(threadResponse.data)
+          !this.canSendEmail(threadResponse.data)
         ) {
-          this.activeChannel.set('sms');
+          this.activeChannel.set(
+            this.canSendWebChat(threadResponse.data)
+              ? 'web_chat'
+              : this.canSendSms(threadResponse.data)
+                ? 'sms'
+                : 'note',
+          );
         }
       }
 
@@ -427,7 +442,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
   async openQuoteConversation(
     quoteId: string,
-    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+    requestedChannel: ComposerChannel | null = null,
   ): Promise<void> {
     await this.openEnsuredConversation(
       () => this.communicationApi.ensureQuoteConversation(quoteId),
@@ -438,7 +453,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
   async openRepairConversation(
     repairId: string,
-    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+    requestedChannel: ComposerChannel | null = null,
   ): Promise<void> {
     await this.openEnsuredConversation(
       () => this.communicationApi.ensureRepairConversation(repairId),
@@ -449,7 +464,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
   async openCustomerConversation(
     customerId: string,
-    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+    requestedChannel: ComposerChannel | null = null,
   ): Promise<void> {
     await this.openEnsuredConversation(
       () => this.communicationApi.ensureCustomerConversation(customerId),
@@ -461,7 +476,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   private async openEnsuredConversation(
     request: () => ReturnType<CommunicationService['getConversation']>,
     errorMessage: string,
-    requestedChannel: 'email' | 'sms' | 'note' | null,
+    requestedChannel: ComposerChannel | null,
   ): Promise<void> {
     const requestVersion = ++this.threadRequestVersion;
     this.threadLoading.set(true);
@@ -498,7 +513,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   async openConversationById(
     id: string,
     showLoading = true,
-    requestedChannel: 'email' | 'sms' | 'note' | null = null,
+    requestedChannel: ComposerChannel | null = null,
   ): Promise<void> {
     const requestVersion = ++this.threadRequestVersion;
     this.requestedConversationId.set(id);
@@ -530,10 +545,20 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
   private setOpenedConversation(
     conversation: CommunicationConversation,
-    requestedChannel: 'email' | 'sms' | 'note' | null,
+    requestedChannel: ComposerChannel | null,
   ): void {
     this.selectedConversation.set(conversation);
-    this.activeChannel.set(this.canSendSms(conversation) ? 'sms' : 'email');
+    this.activeChannel.set(
+      conversation.lastMessageChannel === 'web_chat' && this.canSendWebChat(conversation)
+        ? 'web_chat'
+        : this.canSendSms(conversation)
+          ? 'sms'
+          : this.canSendEmail(conversation)
+            ? 'email'
+            : this.canSendWebChat(conversation)
+              ? 'web_chat'
+              : 'note',
+    );
     this.applyRequestedChannel(requestedChannel);
     this.upsertConversation(conversation);
     this.scheduleScrollToBottom();
@@ -595,6 +620,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       return;
     }
 
+    if (channel === 'web_chat' && !this.canSendWebChat(conversation)) {
+      this.toast.error('Web chat unavailable', 'This website chat is no longer active.');
+      return;
+    }
+
     this.sending.set(true);
     this.error.set(null);
 
@@ -607,7 +637,9 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       const response = await firstValueFrom(
         channel === 'email'
           ? this.communicationApi.sendEmailMessage(conversation.id, request)
-          : this.communicationApi.sendSmsMessage(conversation.id, request),
+          : channel === 'web_chat'
+            ? this.communicationApi.sendWebChatMessage(conversation.id, request)
+            : this.communicationApi.sendSmsMessage(conversation.id, request),
       );
 
       const next: CommunicationConversation = {
@@ -934,7 +966,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     this.relatedRepairsOpen.update((open) => !open);
   }
 
-  setChannel(channel: 'email' | 'sms' | 'note'): void {
+  setChannel(channel: ComposerChannel): void {
     this.activeChannel.set(channel);
     void this.router.navigate([], {
       relativeTo: this.route,
@@ -952,10 +984,15 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     return Boolean(conversation.customerPhone && conversation.smsEnabled);
   }
 
+  canSendWebChat(conversation: CommunicationConversation): boolean {
+    return Boolean(conversation.webChatEnabled && conversation.webChatState !== 'closed');
+  }
+
   canSendActiveChannel(conversation: CommunicationConversation): boolean {
     if (conversation.status === 'archived') return false;
     if (this.activeChannel() === 'note') return true;
 
+    if (this.activeChannel() === 'web_chat') return this.canSendWebChat(conversation);
     return this.activeChannel() === 'sms'
       ? this.canSendSms(conversation)
       : this.canSendEmail(conversation);
@@ -990,6 +1027,10 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       return 'Customer email required.';
     }
 
+    if (this.activeChannel() === 'web_chat' && !this.canSendWebChat(conversation)) {
+      return 'This website chat is no longer active.';
+    }
+
     return null;
   }
 
@@ -997,6 +1038,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     const unavailable = this.activeChannelUnavailableText(conversation);
     if (unavailable) return unavailable;
     if (this.activeChannel() === 'note') return 'Add an internal note...';
+    if (this.activeChannel() === 'web_chat') return 'Reply in website chat...';
     return this.activeChannel() === 'email' ? 'Write an email...' : 'Write an SMS...';
   }
 
@@ -1025,6 +1067,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   channelLabel(channel: CommunicationChannel | null | undefined): string {
     if (channel === 'sms') return 'SMS';
     if (channel === 'email') return 'Email';
+    if (channel === 'web_chat') return 'Web Chat';
     if (channel === 'note') return 'Note';
     if (channel === 'system') return 'System';
     return 'Message';

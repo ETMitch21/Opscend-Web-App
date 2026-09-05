@@ -126,4 +126,14 @@ export class CommunicationService {
       payload,
     );
   }
+
+  sendWebChatMessage(
+    id: string,
+    payload: CommunicationMessageCreate,
+  ): Observable<CommunicationMessageResponse> {
+    return this.http.post<CommunicationMessageResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/messages/web-chat`,
+      payload,
+    );
+  }
 }
