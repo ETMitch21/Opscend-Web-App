@@ -1,0 +1,55 @@
+<div class="w-full bg-transparent py-1" [style.--booking-launcher-color]="brandColor()" [style.--booking-launcher-contrast]="brandContrastColor()">
+  @if (loading()) {
+  <div class="grid min-h-14 w-full grid-cols-[1fr_1.35fr_auto] gap-2 opacity-70">
+    <div class="animate-pulse rounded-xl bg-gray-200/80"></div>
+    <div class="animate-pulse rounded-xl bg-gray-200/80"></div>
+    <div class="w-36 animate-pulse rounded-xl bg-gray-300/80"></div>
+  </div>
+  } @else if (error() && !brands().length) {
+  <div class="flex min-h-14 items-center rounded-xl border border-gray-200 bg-white/90 px-4 text-sm font-medium text-gray-600 shadow-sm">
+    {{ error() }}
+  </div>
+  } @else {
+  <form class="grid w-full grid-cols-[minmax(82px,0.85fr)_minmax(120px,1.35fr)_auto] gap-2" (submit)="$event.preventDefault(); submit()">
+    <label class="relative block min-w-0">
+      <span class="sr-only">Make</span>
+      <select
+        [formControl]="brandControl"
+        class="h-14 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 pr-9 text-[15px] font-semibold text-slate-700 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200">
+        <option value="">Make</option>
+        @for (brand of brands(); track brand) {
+        <option [value]="brand">{{ brand }}</option>
+        }
+      </select>
+      <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400">▼</span>
+    </label>
+
+    <label class="relative block min-w-0">
+      <span class="sr-only">Model</span>
+      <select
+        [formControl]="modelControl"
+        [disabled]="!brandControl.value || modelsLoading()"
+        class="h-14 w-full appearance-none rounded-xl border border-gray-300 bg-white px-4 pr-9 text-[15px] font-semibold text-slate-700 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400">
+        <option value="">
+          {{ modelsLoading() ? 'Loading models…' : (brandControl.value ? 'Model' : 'Choose make first') }}
+        </option>
+        @for (model of models(); track model.techspecsProductId) {
+        <option [value]="model.techspecsProductId">{{ model.model }}</option>
+        }
+      </select>
+      <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400">▼</span>
+    </label>
+
+    <button
+      type="submit"
+      [disabled]="!brandControl.value || !modelControl.value || modelsLoading()"
+      class="h-14 cursor-pointer whitespace-nowrap rounded-xl bg-[var(--booking-launcher-color,#e96f2d)] px-4 text-[14px] sm:px-6 sm:text-[15px] font-bold text-[var(--booking-launcher-contrast)] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-45">
+      Get My Price →
+    </button>
+  </form>
+
+  @if (error()) {
+  <p class="mt-1.5 text-xs font-medium text-red-600">{{ error() }}</p>
+  }
+  }
+</div>

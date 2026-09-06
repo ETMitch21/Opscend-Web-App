@@ -693,6 +693,7 @@ export class PublicBooking implements OnDestroy {
     this.bindSearchControls();
 
     await this.loadInitialData();
+    await this.applyDevicePrefillFromQuery();
 
     const paymentReturn = this.route.snapshot.queryParamMap.get('payment');
     const pendingBookingId =
@@ -855,6 +856,124 @@ export class PublicBooking implements OnDestroy {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private async applyDevicePrefillFromQuery(): Promise<void> {
+    if (this.error()) return;
+
+    const params = this.route.snapshot.queryParamMap;
+    const requestedCategory = params.get('category')?.trim();
+    const requestedBrand = params.get('brand')?.trim();
+    const requestedModelId = params.get('modelId')?.trim();
+    const requestedModelName = params.get('model')?.trim();
+
+    if (
+      !requestedCategory ||
+      !requestedBrand ||
+      (!requestedModelId && !requestedModelName)
+    ) {
+      return;
+    }
+
+    const category = this.findCaseInsensitive(
+      this.categories(),
+      requestedCategory,
+    );
+    if (!category) return;
+
+    this.loading.set(true);
+    try {
+      await this.chooseCategory(category);
+
+      let brand = this.findCaseInsensitive(this.brands(), requestedBrand);
+      let pageAttempts = 0;
+      while (!brand && this.canLoadMoreBrands() && pageAttempts < MAX_AUTO_SEARCH_PAGES) {
+        await this.loadMoreBrands();
+        brand = this.findCaseInsensitive(this.brands(), requestedBrand);
+        pageAttempts += 1;
+      }
+
+      if (!brand) return;
+      await this.chooseBrand(brand);
+
+      let model = this.findPrefilledModel(
+        this.models(),
+        requestedModelId,
+        requestedModelName,
+      );
+
+      if (!model && requestedModelName) {
+        const slug = this.shopSlug();
+        if (slug) {
+          const response = await firstValueFrom(
+            this.bookingService.listModels(slug, {
+              category,
+              brand,
+              page: 0,
+              size: PAGE_SIZE,
+              search: requestedModelName,
+              keepCasing: true,
+            }),
+          );
+          model = this.findPrefilledModel(
+            response.items ?? [],
+            requestedModelId,
+            requestedModelName,
+          );
+        }
+      }
+
+      pageAttempts = 0;
+      while (!model && this.canLoadMoreModels() && pageAttempts < MAX_AUTO_SEARCH_PAGES) {
+        await this.loadMoreModels();
+        model = this.findPrefilledModel(
+          this.models(),
+          requestedModelId,
+          requestedModelName,
+        );
+        pageAttempts += 1;
+      }
+
+      if (model) {
+        await this.chooseModel(model);
+      }
+    } catch (error) {
+      console.error('Could not apply quote-tool device prefill.', error);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private findCaseInsensitive(values: string[], expected: string): string | null {
+    const normalizedExpected = this.normalizeSearch(expected);
+    return (
+      values.find(
+        (value) => this.normalizeSearch(value) === normalizedExpected,
+      ) ?? null
+    );
+  }
+
+  private findPrefilledModel(
+    values: PublicDeviceModelOption[],
+    modelId: string | null | undefined,
+    modelName: string | null | undefined,
+  ): PublicDeviceModelOption | null {
+    if (modelId) {
+      const byId = values.find(
+        (value) => value.techspecsProductId === modelId,
+      );
+      if (byId) return byId;
+    }
+
+    if (modelName) {
+      const normalizedName = this.normalizeSearch(modelName);
+      const byName = values.find(
+        (value) => this.normalizeSearch(value.model) === normalizedName,
+      );
+      if (byName) return byName;
+    }
+
+    return null;
   }
 
   async loadMoreCategories(): Promise<void> {
