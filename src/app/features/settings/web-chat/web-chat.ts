@@ -109,6 +109,7 @@ export class WebChatSettingsComponent implements OnInit {
         offlineMessage: this.nullable(raw.offlineMessage),
         handoffEnabled: Boolean(raw.handoffEnabled),
         requireContact: Boolean(raw.requireContact),
+        allowAttachments: Boolean(raw.allowAttachments),
         primaryColor: String(raw.primaryColor ?? '').trim() || null,
         position: raw.position === 'left' ? 'left' : 'right',
         allowedOrigins: origins,

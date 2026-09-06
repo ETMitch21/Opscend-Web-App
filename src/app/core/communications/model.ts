@@ -128,6 +128,7 @@ export interface CommunicationWebChatContext {
   referrer: string | null;
   lastSeenAt: string | null;
   startedAt: string | null;
+  visitorTyping?: boolean;
 }
 
 export interface CommunicationConversation {

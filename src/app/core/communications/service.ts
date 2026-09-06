@@ -149,6 +149,13 @@ export class CommunicationService {
     );
   }
 
+  setWebChatTyping(id: string, typing: boolean): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/web-chat/typing`,
+      { typing },
+    );
+  }
+
   sendWebChatMessage(
     id: string,
     payload: CommunicationMessageCreate,

@@ -32,6 +32,7 @@ import {
   X,
   FileText,
   Image,
+  Zap,
 } from 'lucide-angular';
 
 import { CommunicationService } from '../../core/communications/service';
@@ -90,6 +91,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     X,
     FileText,
     Image,
+    Zap,
   };
 
   readonly conversations = signal<CommunicationConversation[]>([]);
@@ -109,6 +111,15 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly composeBody = signal('');
   readonly pendingAttachments = signal<File[]>([]);
   readonly uploadingAttachments = signal(false);
+  readonly quickRepliesOpen = signal(false);
+  readonly quickReplies = [
+    'Thanks for reaching out! How can I help today?',
+    'Absolutely — what device model do you have?',
+    'Can you send a photo so I can take a closer look?',
+    'Give me just a moment while I check that for you.',
+    'Your quote is ready. Let me know if you have any questions!',
+    'Is there anything else I can help with today?',
+  ] as const;
   readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
 
@@ -199,12 +210,15 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     return selectedCount > 0 && !this.allVisibleSelected();
   });
 
-  private readonly inboxPollMs = 4_000;
+  private readonly inboxPollMs = 2_000;
   private inboxRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private routeParamsSubscription: Subscription | null = null;
   private backgroundRefreshRunning = false;
   private threadRequestVersion = 0;
   private readonly markReadInFlight = new Set<string>();
+  private webChatTypingTimer: ReturnType<typeof setTimeout> | null = null;
+  private webChatTypingConversationId: string | null = null;
+  private webChatTypingLastPingAt = 0;
 
   async ngOnInit(): Promise<void> {
     await this.loadConversations();
@@ -324,6 +338,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     this.routeParamsSubscription?.unsubscribe();
     this.routeParamsSubscription = null;
+    void this.stopWebChatTyping();
   }
 
   private startInboxAutoRefresh(): void {
@@ -559,6 +574,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     conversation: CommunicationConversation,
     requestedChannel: ComposerChannel | null,
   ): void {
+    void this.stopWebChatTyping();
+    this.quickRepliesOpen.set(false);
     this.selectedConversation.set(conversation);
     this.activeChannel.set(
       conversation.lastMessageChannel === 'web_chat' && this.canSendWebChat(conversation)
@@ -641,6 +658,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     this.sending.set(true);
     this.error.set(null);
+    this.quickRepliesOpen.set(false);
+    if (channel === 'web_chat') void this.setWebChatTyping(false);
 
     try {
       const attachmentIds = channel === 'web_chat'
@@ -1066,6 +1085,10 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   setChannel(channel: ComposerChannel): void {
+    if (this.activeChannel() === 'web_chat' && channel !== 'web_chat') {
+      void this.stopWebChatTyping();
+    }
+    this.quickRepliesOpen.set(false);
     this.activeChannel.set(channel);
     void this.router.navigate([], {
       relativeTo: this.route,
@@ -1073,6 +1096,81 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  }
+
+  onComposeBodyChange(value: string): void {
+    this.composeBody.set(value);
+    const conversation = this.selectedConversation();
+    if (!conversation || this.activeChannel() !== 'web_chat' || !this.canSendWebChat(conversation)) return;
+
+    if (!value.trim()) {
+      void this.setWebChatTyping(false);
+      return;
+    }
+
+    void this.setWebChatTyping(true);
+    if (this.webChatTypingTimer) clearTimeout(this.webChatTypingTimer);
+    this.webChatTypingTimer = setTimeout(() => void this.setWebChatTyping(false), 2_600);
+  }
+
+  onComposerKeydown(event: KeyboardEvent): void {
+    if (event.key === '/' && !this.composeBody().trim() && this.activeChannel() !== 'note') {
+      event.preventDefault();
+      this.quickRepliesOpen.set(true);
+    }
+    if (event.key === 'Escape' && this.quickRepliesOpen()) {
+      this.quickRepliesOpen.set(false);
+    }
+  }
+
+  toggleQuickReplies(): void {
+    this.quickRepliesOpen.update((open) => !open);
+  }
+
+  useQuickReply(reply: string): void {
+    const customerName = this.selectedCustomerProfile()?.name?.trim() ?? '';
+    const firstName = customerName.split(/\s+/).filter(Boolean)[0] ?? '';
+    const resolved = reply.replaceAll('{{first_name}}', firstName || 'there');
+    this.composeBody.set(resolved);
+    this.quickRepliesOpen.set(false);
+    if (this.activeChannel() === 'web_chat') this.onComposeBodyChange(resolved);
+  }
+
+  private async setWebChatTyping(typing: boolean): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || !conversation.webChatEnabled) return;
+
+    if (this.webChatTypingTimer && !typing) {
+      clearTimeout(this.webChatTypingTimer);
+      this.webChatTypingTimer = null;
+    }
+    const now = Date.now();
+    if (typing && this.webChatTypingConversationId === conversation.id && now - this.webChatTypingLastPingAt < 2_500) {
+      return;
+    }
+    this.webChatTypingConversationId = typing ? conversation.id : null;
+    this.webChatTypingLastPingAt = typing ? now : 0;
+    try {
+      await firstValueFrom(this.communicationApi.setWebChatTyping(conversation.id, typing));
+    } catch {
+      // Typing presence is best-effort and must never block the composer.
+    }
+  }
+
+  private async stopWebChatTyping(): Promise<void> {
+    if (this.webChatTypingTimer) {
+      clearTimeout(this.webChatTypingTimer);
+      this.webChatTypingTimer = null;
+    }
+    const conversationId = this.webChatTypingConversationId ?? (this.activeChannel() === 'web_chat' ? this.selectedConversation()?.id ?? null : null);
+    this.webChatTypingConversationId = null;
+    this.webChatTypingLastPingAt = 0;
+    if (!conversationId) return;
+    try {
+      await firstValueFrom(this.communicationApi.setWebChatTyping(conversationId, false));
+    } catch {
+      // Best-effort cleanup; server-side presence expires automatically.
+    }
   }
 
   canSendEmail(conversation: CommunicationConversation): boolean {
@@ -1591,6 +1689,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       conversation.webChatState ?? '',
       conversation.webChatContext?.lastSeenAt ?? '',
       conversation.webChatContext?.pageUrl ?? '',
+      conversation.webChatContext?.visitorTyping ? 'typing' : '',
       conversation.quote?.id ?? '',
       conversation.quote?.status ?? '',
       conversation.quote?.estimatedTotalCents ?? '',

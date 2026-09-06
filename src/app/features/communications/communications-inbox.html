@@ -506,6 +506,51 @@
             />
           }
 
+          <div class="mb-2 flex min-h-7 items-center justify-between gap-3">
+            @if (activeChannel() !== 'note') {
+              <div class="relative">
+                <button
+                  type="button"
+                  class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                  (click)="toggleQuickReplies()"
+                  title="Quick replies (/)"
+                >
+                  <lucide-icon [name]="icons.Zap" class="h-3.5 w-3.5"></lucide-icon>
+                  Quick replies
+                  <span class="rounded bg-app-surface-muted px-1.5 py-0.5 text-[10px] font-bold text-app-text-muted">/</span>
+                </button>
+
+                @if (quickRepliesOpen()) {
+                  <div class="absolute bottom-full left-0 z-30 mb-2 w-[min(28rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-app-border bg-app-surface p-2 shadow-xl">
+                    <div class="px-2 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-app-text-muted">Quick replies</div>
+                    <div class="max-h-72 overflow-y-auto">
+                      @for (reply of quickReplies; track reply) {
+                        <button
+                          type="button"
+                          class="block w-full cursor-pointer rounded-xl px-3 py-2.5 text-left text-sm leading-5 text-app-text transition hover:bg-app-surface-muted"
+                          (click)="useQuickReply(reply)"
+                        >
+                          {{ reply }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (activeChannel() === 'web_chat' && conversation.webChatContext?.visitorTyping) {
+              <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                <span class="flex items-center gap-0.5" aria-hidden="true">
+                  <span class="h-1 w-1 animate-pulse rounded-full bg-emerald-500"></span>
+                  <span class="h-1 w-1 animate-pulse rounded-full bg-emerald-500 [animation-delay:120ms]"></span>
+                  <span class="h-1 w-1 animate-pulse rounded-full bg-emerald-500 [animation-delay:240ms]"></span>
+                </span>
+                Customer is typing…
+              </div>
+            }
+          </div>
+
           @if (activeChannel() === 'web_chat' && pendingAttachments().length) {
             <div class="mb-2 flex flex-wrap gap-2">
               @for (file of pendingAttachments(); track file.name + file.size; let i = $index) {
@@ -540,7 +585,8 @@
               [placeholder]="composePlaceholder(conversation)"
               [disabled]="!canSendActiveChannel(conversation)"
               [ngModel]="composeBody()"
-              (ngModelChange)="composeBody.set($event)"
+              (ngModelChange)="onComposeBodyChange($event)"
+              (keydown)="onComposerKeydown($event)"
             ></textarea>
             <button
               type="button"
