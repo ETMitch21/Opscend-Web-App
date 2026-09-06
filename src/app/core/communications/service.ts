@@ -12,6 +12,10 @@ import {
   CommunicationMessageResponse,
   CommunicationAttachmentUploadInit,
   CommunicationAttachmentResponse,
+  CommunicationQuickRepliesResponse,
+  CommunicationQuickReplyResponse,
+  CommunicationQuickReplyCreate,
+  CommunicationQuickReplyUpdate,
 } from './model';
 
 @Injectable({ providedIn: 'root' })
@@ -21,6 +25,29 @@ export class CommunicationService {
 
   private get baseUrl(): string {
     return `${this.appConfig.config.apiBase}/communications`;
+  }
+
+  listQuickReplies(): Observable<CommunicationQuickRepliesResponse> {
+    return this.http.get<CommunicationQuickRepliesResponse>(`${this.baseUrl}/quick-replies`);
+  }
+
+  createQuickReply(payload: CommunicationQuickReplyCreate): Observable<CommunicationQuickReplyResponse> {
+    return this.http.post<CommunicationQuickReplyResponse>(`${this.baseUrl}/quick-replies`, payload);
+  }
+
+  updateQuickReply(id: string, payload: CommunicationQuickReplyUpdate): Observable<CommunicationQuickReplyResponse> {
+    return this.http.patch<CommunicationQuickReplyResponse>(
+      `${this.baseUrl}/quick-replies/${encodeURIComponent(id)}`,
+      payload,
+    );
+  }
+
+  deleteQuickReply(id: string): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.baseUrl}/quick-replies/${encodeURIComponent(id)}`);
+  }
+
+  reorderQuickReplies(ids: string[]): Observable<CommunicationQuickRepliesResponse> {
+    return this.http.post<CommunicationQuickRepliesResponse>(`${this.baseUrl}/quick-replies/reorder`, { ids });
   }
 
   listConversations(

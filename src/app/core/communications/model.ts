@@ -179,6 +179,41 @@ export interface CommunicationMessageResponse {
   data: CommunicationMessage;
 }
 
+export type CommunicationQuickReplyChannel = 'sms' | 'email' | 'web_chat';
+
+export interface CommunicationQuickReply {
+  id: string;
+  title: string;
+  body: string;
+  channels: CommunicationQuickReplyChannel[];
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunicationQuickRepliesResponse {
+  data: CommunicationQuickReply[];
+}
+
+export interface CommunicationQuickReplyResponse {
+  data: CommunicationQuickReply;
+}
+
+export interface CommunicationQuickReplyCreate {
+  title: string;
+  body: string;
+  channels?: CommunicationQuickReplyChannel[];
+  isActive?: boolean;
+}
+
+export interface CommunicationQuickReplyUpdate {
+  title?: string;
+  body?: string;
+  channels?: CommunicationQuickReplyChannel[];
+  isActive?: boolean;
+}
+
 export interface CommunicationMessageCreate {
   subject?: string;
   body: string;

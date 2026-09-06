@@ -507,37 +507,63 @@
           }
 
           <div class="mb-2 flex min-h-7 items-center justify-between gap-3">
-            @if (activeChannel() !== 'note') {
-              <div class="relative">
+            <div class="flex items-center gap-1">
+              @if (activeChannel() !== 'note') {
+                <div class="relative">
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
+                    (click)="toggleQuickReplies()"
+                    title="Quick replies (/)"
+                  >
+                    <lucide-icon [name]="icons.Zap" class="h-3.5 w-3.5"></lucide-icon>
+                    Quick replies
+                    <span class="rounded bg-app-surface-muted px-1.5 py-0.5 text-[10px] font-bold text-app-text-muted">/</span>
+                  </button>
+
+                  @if (quickRepliesOpen()) {
+                    <div class="absolute bottom-full left-0 z-30 mb-2 w-[min(30rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-app-border bg-app-surface p-2 shadow-xl">
+                      <div class="flex items-center justify-between gap-3 px-2 pb-1.5 pt-1">
+                        <div class="text-[10px] font-bold uppercase tracking-[0.12em] text-app-text-muted">Quick replies</div>
+                        <a routerLink="/settings/shop/quick-replies" class="text-xs font-semibold text-brand hover:underline" (click)="quickRepliesOpen.set(false)">Manage</a>
+                      </div>
+                      <div class="max-h-72 overflow-y-auto">
+                        @for (reply of availableQuickReplies(); track reply.id) {
+                          <button
+                            type="button"
+                            class="block w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition hover:bg-app-surface-muted"
+                            (click)="useQuickReply(reply)"
+                          >
+                            <div class="text-xs font-bold text-app-text">{{ reply.title }}</div>
+                            <div class="mt-0.5 line-clamp-2 text-xs leading-5 text-app-text-muted">{{ reply.body }}</div>
+                          </button>
+                        } @empty {
+                          <div class="px-3 py-4 text-sm text-app-text-muted">No quick replies are enabled for this channel.</div>
+                        }
+                      </div>
+                      <a routerLink="/settings/shop/quick-replies" class="mt-1 flex items-center gap-2 rounded-xl border-t border-app-border px-3 py-2.5 text-xs font-semibold text-app-text-muted hover:bg-app-surface-muted hover:text-app-text" (click)="quickRepliesOpen.set(false)">
+                        <lucide-icon [name]="icons.PlusCircle" class="h-3.5 w-3.5"></lucide-icon>
+                        Add or edit quick replies
+                      </a>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (activeChannel() === 'web_chat') {
+                <input #attachmentInput type="file" class="hidden" multiple (change)="onAttachmentFilesSelected($event)" />
                 <button
                   type="button"
-                  class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
-                  (click)="toggleQuickReplies()"
-                  title="Quick replies (/)"
+                  class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="sending() || uploadingAttachments() || !canSendActiveChannel(conversation)"
+                  (click)="attachmentInput.click()"
+                  title="Attach photo or file"
                 >
-                  <lucide-icon [name]="icons.Zap" class="h-3.5 w-3.5"></lucide-icon>
-                  Quick replies
-                  <span class="rounded bg-app-surface-muted px-1.5 py-0.5 text-[10px] font-bold text-app-text-muted">/</span>
+                  <lucide-icon [name]="icons.Paperclip" class="h-3.5 w-3.5"></lucide-icon>
+                  Attach
                 </button>
-
-                @if (quickRepliesOpen()) {
-                  <div class="absolute bottom-full left-0 z-30 mb-2 w-[min(28rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-app-border bg-app-surface p-2 shadow-xl">
-                    <div class="px-2 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-app-text-muted">Quick replies</div>
-                    <div class="max-h-72 overflow-y-auto">
-                      @for (reply of quickReplies; track reply) {
-                        <button
-                          type="button"
-                          class="block w-full cursor-pointer rounded-xl px-3 py-2.5 text-left text-sm leading-5 text-app-text transition hover:bg-app-surface-muted"
-                          (click)="useQuickReply(reply)"
-                        >
-                          {{ reply }}
-                        </button>
-                      }
-                    </div>
-                  </div>
-                }
-              </div>
-            }
+              }
+            </div>
 
             @if (activeChannel() === 'web_chat' && conversation.webChatContext?.visitorTyping) {
               <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
@@ -566,18 +592,6 @@
           }
 
           <div class="flex items-end gap-3">
-            @if (activeChannel() === 'web_chat') {
-              <input #attachmentInput type="file" class="hidden" multiple (change)="onAttachmentFilesSelected($event)" />
-              <button
-                type="button"
-                class="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-app-border bg-app-surface text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
-                [disabled]="sending() || uploadingAttachments() || !canSendActiveChannel(conversation)"
-                (click)="attachmentInput.click()"
-                title="Attach photo or file"
-              >
-                <lucide-icon [name]="icons.Paperclip" class="h-4 w-4"></lucide-icon>
-              </button>
-            }
             <textarea
               rows="3"
               class="min-h-20 flex-1 resize-none rounded-2xl border px-4 py-3 text-sm leading-6 outline-none focus:ring-2"

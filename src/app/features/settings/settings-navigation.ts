@@ -6,6 +6,7 @@ import {
   MapPinIcon,
   PhoneCallIcon,
   MessageCircle,
+  Zap,
   CalendarClockIcon,
   CalendarCog,
   DollarSignIcon,
@@ -162,6 +163,14 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         icon: BlocksIcon,
         permission: 'shops:read',
         keywords: ['connections', 'mobilesentrix', 'stripe', 'supplier', 'api'],
+      },
+      {
+        label: 'Quick replies',
+        description: 'Reusable responses for Web Chat, SMS, and email.',
+        route: '/settings/shop/quick-replies',
+        icon: Zap,
+        permission: 'communications:write',
+        keywords: ['quick replies', 'saved replies', 'macros', 'snippets', 'messages', 'communications'],
       },
       {
         label: 'Web Chat',

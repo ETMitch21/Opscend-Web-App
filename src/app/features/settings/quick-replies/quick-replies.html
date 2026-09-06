@@ -1,0 +1,106 @@
+<app-settings-layout>
+  <div settings-actions>
+    <button type="button" class="settings-primary-action cursor-pointer" (click)="add()">
+      <lucide-icon [img]="icons.Plus" [size]="15"></lucide-icon>
+      Add quick reply
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{{ error() }}</div>
+  }
+
+  <section class="settings-card overflow-hidden p-0">
+    <div class="flex items-start gap-3 border-b border-app-border p-5 md:p-6">
+      <div class="icon-tile"><lucide-icon [img]="icons.Zap" [size]="20"></lucide-icon></div>
+      <div>
+        <h2 class="text-base font-bold text-app-text">Quick replies</h2>
+        <p class="mt-1 max-w-2xl text-sm leading-6 text-app-text-muted">Create reusable responses for Web Chat, SMS, and email. They appear in the Communications composer and can still be edited before sending.</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="grid min-h-56 place-items-center"><lucide-icon [img]="icons.Loader" [size]="24" class="animate-spin text-brand"></lucide-icon></div>
+    } @else if (!replies().length) {
+      <div class="grid min-h-56 place-items-center p-8 text-center">
+        <div>
+          <div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-app-surface-muted text-app-text-muted"><lucide-icon [img]="icons.Message" [size]="22"></lucide-icon></div>
+          <h3 class="mt-3 font-bold text-app-text">No quick replies yet</h3>
+          <p class="mt-1 text-sm text-app-text-muted">Add your first saved response for the team.</p>
+          <button type="button" class="settings-primary-action mt-4 cursor-pointer" (click)="add()"><lucide-icon [img]="icons.Plus" [size]="14"></lucide-icon>Add quick reply</button>
+        </div>
+      </div>
+    } @else {
+      <div class="divide-y divide-app-border">
+        @for (reply of replies(); track reply.id; let i = $index) {
+          <div class="flex items-start gap-3 p-4 md:px-5">
+            <div class="flex shrink-0 flex-col gap-1 pt-0.5">
+              <button type="button" class="grid h-7 w-7 cursor-pointer place-items-center rounded-lg text-app-text-muted hover:bg-app-surface-muted hover:text-app-text disabled:cursor-default disabled:opacity-25" [disabled]="i === 0" (click)="move(i, -1)" aria-label="Move up"><lucide-icon [img]="icons.ArrowUp" [size]="14"></lucide-icon></button>
+              <button type="button" class="grid h-7 w-7 cursor-pointer place-items-center rounded-lg text-app-text-muted hover:bg-app-surface-muted hover:text-app-text disabled:cursor-default disabled:opacity-25" [disabled]="i === replies().length - 1" (click)="move(i, 1)" aria-label="Move down"><lucide-icon [img]="icons.ArrowDown" [size]="14"></lucide-icon></button>
+            </div>
+            <button type="button" class="min-w-0 flex-1 cursor-pointer text-left" (click)="edit(reply)">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-bold text-app-text">{{ reply.title }}</span>
+                @if (!reply.isActive) { <span class="rounded-full bg-app-surface-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Disabled</span> }
+              </div>
+              <p class="mt-1 line-clamp-2 text-sm leading-6 text-app-text-muted">{{ reply.body }}</p>
+              <p class="mt-1 text-[11px] font-semibold text-app-text-muted">{{ channelLabel(reply) }}</p>
+            </button>
+            <div class="flex shrink-0 items-center gap-1">
+              <button type="button" class="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-app-text-muted hover:bg-app-surface-muted hover:text-app-text" (click)="edit(reply)" aria-label="Edit quick reply"><lucide-icon [img]="icons.Edit" [size]="15"></lucide-icon></button>
+              <button type="button" class="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-app-text-muted hover:bg-rose-50 hover:text-rose-600" (click)="remove(reply)" aria-label="Delete quick reply"><lucide-icon [img]="icons.Trash" [size]="15"></lucide-icon></button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  @if (editorOpen()) {
+    <div class="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" (click)="cancel()">
+      <section class="w-full max-w-xl overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-2xl" (click)="$event.stopPropagation()">
+        <header class="flex items-center justify-between border-b border-app-border px-5 py-4">
+          <div>
+            <h2 class="font-bold text-app-text">{{ editingId() ? 'Edit quick reply' : 'New quick reply' }}</h2>
+            <p class="mt-0.5 text-xs text-app-text-muted">Saved for this shop.</p>
+          </div>
+          <button type="button" class="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-app-text-muted hover:bg-app-surface-muted hover:text-app-text" (click)="cancel()"><lucide-icon [img]="icons.X" [size]="17"></lucide-icon></button>
+        </header>
+
+        <form [formGroup]="form" class="space-y-4 p-5" (ngSubmit)="save()">
+          <label class="block">
+            <span class="mb-1.5 block text-xs font-bold text-app-text">Name</span>
+            <input formControlName="title" class="w-full rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" placeholder="e.g. Request a photo" />
+          </label>
+          <label class="block">
+            <span class="mb-1.5 block text-xs font-bold text-app-text">Reply</span>
+            <textarea formControlName="body" rows="6" class="w-full resize-none rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm leading-6 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" placeholder="Write the saved response…"></textarea>
+            <span class="mt-1 block text-[11px] text-app-text-muted">Use <code>{{'{{first_name}}'}}</code> to insert the customer's first name.</span>
+          </label>
+
+          <div>
+            <div class="mb-2 text-xs font-bold text-app-text">Available in</div>
+            <div class="flex flex-wrap gap-2">
+              <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-app-border px-3 py-2 text-sm"><input type="checkbox" formControlName="webChat" /> Web Chat</label>
+              <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-app-border px-3 py-2 text-sm"><input type="checkbox" formControlName="sms" /> SMS</label>
+              <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-app-border px-3 py-2 text-sm"><input type="checkbox" formControlName="email" /> Email</label>
+            </div>
+          </div>
+
+          <label class="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-app-border p-3.5">
+            <span><strong class="block text-sm text-app-text">Enabled</strong><small class="mt-0.5 block text-xs text-app-text-muted">Show this response in the composer.</small></span>
+            <input type="checkbox" formControlName="isActive" />
+          </label>
+
+          <div class="flex justify-end gap-2 border-t border-app-border pt-4">
+            <button type="button" class="cursor-pointer rounded-xl px-4 py-2.5 text-sm font-semibold text-app-text-muted hover:bg-app-surface-muted" (click)="cancel()">Cancel</button>
+            <button type="submit" class="settings-primary-action cursor-pointer" [disabled]="saveState() === 'saving'">
+              @if (saveState() === 'saving') { <lucide-icon [img]="icons.Loader" [size]="14" class="animate-spin"></lucide-icon> Saving… }
+              @else { <lucide-icon [img]="icons.Save" [size]="14"></lucide-icon> Save quick reply }
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</app-settings-layout>

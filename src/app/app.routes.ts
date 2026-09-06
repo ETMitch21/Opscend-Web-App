@@ -276,6 +276,13 @@ export const routes: Routes = [
                         ]
                     },
                     {
+                        path: 'quick-replies',
+                        loadComponent: () =>
+                            import('./features/settings/quick-replies/quick-replies').then((m) => m.QuickRepliesSettingsComponent),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'communications:write' }
+                    },
+                    {
                         path: 'web-chat',
                         loadComponent: () =>
                             import('./features/settings/web-chat/web-chat').then((m) => m.WebChatSettingsComponent),

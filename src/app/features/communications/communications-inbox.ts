@@ -41,6 +41,7 @@ import {
   CommunicationConversation,
   CommunicationMessage,
   CommunicationTimelineItem,
+  CommunicationQuickReply,
 } from '../../core/communications/model';
 import { ToastService } from '../../core/toast/toast-service';
 import { PhonePipe } from '../../core/pipes/phone-pipe';
@@ -112,14 +113,12 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly pendingAttachments = signal<File[]>([]);
   readonly uploadingAttachments = signal(false);
   readonly quickRepliesOpen = signal(false);
-  readonly quickReplies = [
-    'Thanks for reaching out! How can I help today?',
-    'Absolutely — what device model do you have?',
-    'Can you send a photo so I can take a closer look?',
-    'Give me just a moment while I check that for you.',
-    'Your quote is ready. Let me know if you have any questions!',
-    'Is there anything else I can help with today?',
-  ] as const;
+  readonly quickReplies = signal<CommunicationQuickReply[]>([]);
+  readonly availableQuickReplies = computed(() => {
+    const channel = this.activeChannel();
+    if (channel === 'note') return [];
+    return this.quickReplies().filter((reply) => reply.isActive && reply.channels.includes(channel));
+  });
   readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
 
@@ -221,12 +220,21 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   private webChatTypingLastPingAt = 0;
 
   async ngOnInit(): Promise<void> {
-    await this.loadConversations();
+    await Promise.all([this.loadConversations(), this.loadQuickReplies()]);
     this.startInboxAutoRefresh();
 
     this.routeParamsSubscription = this.route.queryParamMap.subscribe((params) => {
       void this.handleRouteSelection(params);
     });
+  }
+
+  private async loadQuickReplies(): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.communicationApi.listQuickReplies());
+      this.quickReplies.set(response.data ?? []);
+    } catch {
+      this.quickReplies.set([]);
+    }
   }
 
   private async handleRouteSelection(params: ParamMap): Promise<void> {
@@ -1127,10 +1135,10 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     this.quickRepliesOpen.update((open) => !open);
   }
 
-  useQuickReply(reply: string): void {
+  useQuickReply(reply: CommunicationQuickReply): void {
     const customerName = this.selectedCustomerProfile()?.name?.trim() ?? '';
     const firstName = customerName.split(/\s+/).filter(Boolean)[0] ?? '';
-    const resolved = reply.replaceAll('{{first_name}}', firstName || 'there');
+    const resolved = reply.body.replaceAll('{{first_name}}', firstName || 'there');
     this.composeBody.set(resolved);
     this.quickRepliesOpen.set(false);
     if (this.activeChannel() === 'web_chat') this.onComposeBodyChange(resolved);
