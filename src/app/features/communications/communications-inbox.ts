@@ -152,7 +152,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly anotherTeammateTyping = computed(() => {
     const web = this.selectedConversation()?.webChatContext;
     if (!web?.teammateTyping) return null;
-    const currentUserId = this.auth.currentUserId();
+    const currentUserId = this.auth.getCurrentUserId();
     if (web.teammateTypingUserId && currentUserId && web.teammateTypingUserId === currentUserId) return null;
     return web.teammateTypingName || 'Another teammate';
   });
@@ -544,7 +544,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   async takeConversation(): Promise<void> {
-    const userId = this.auth.currentUserId();
+    const userId = this.auth.getCurrentUserId();
     if (!userId) return;
     await this.updateWorkflow({ assignedUserId: userId, snoozedUntil: null });
   }
