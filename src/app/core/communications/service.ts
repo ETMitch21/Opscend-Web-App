@@ -16,6 +16,10 @@ import {
   CommunicationQuickReplyResponse,
   CommunicationQuickReplyCreate,
   CommunicationQuickReplyUpdate,
+  CommunicationConversationWorkflowUpdate,
+  CommunicationAiAssistResponse,
+  CommunicationQuoteOptionsResponse,
+  CommunicationCreateQuoteResponse,
 } from './model';
 
 @Injectable({ providedIn: 'root' })
@@ -59,6 +63,8 @@ export class CommunicationService {
     if (params.cursor) httpParams = httpParams.set('cursor', params.cursor);
     if (params.q) httpParams = httpParams.set('q', params.q);
     if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.assignment) httpParams = httpParams.set('assignment', params.assignment);
+    if (params.snoozed) httpParams = httpParams.set('snoozed', params.snoozed);
 
     return this.http.get<CommunicationConversationListResponse>(
       `${this.baseUrl}/conversations`,
@@ -69,6 +75,33 @@ export class CommunicationService {
   getConversation(id: string): Observable<CommunicationConversationResponse> {
     return this.http.get<CommunicationConversationResponse>(
       `${this.baseUrl}/conversations/${encodeURIComponent(id)}`,
+    );
+  }
+
+  updateConversationWorkflow(id: string, payload: CommunicationConversationWorkflowUpdate): Observable<CommunicationConversationResponse> {
+    return this.http.patch<CommunicationConversationResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/workflow`,
+      payload,
+    );
+  }
+
+  getAiAssist(id: string, action: 'summary' | 'suggest_reply' | 'classify' | 'knowledge' | 'all' = 'all'): Observable<CommunicationAiAssistResponse> {
+    return this.http.post<CommunicationAiAssistResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/ai-assist`,
+      { action },
+    );
+  }
+
+  getConversationQuoteOptions(id: string): Observable<CommunicationQuoteOptionsResponse> {
+    return this.http.get<CommunicationQuoteOptionsResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/quote-options`,
+    );
+  }
+
+  createConversationQuote(id: string, payload: { templateId: string; serviceMode: 'in_shop' | 'on_site' }): Observable<CommunicationCreateQuoteResponse> {
+    return this.http.post<CommunicationCreateQuoteResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/create-quote`,
+      payload,
     );
   }
 

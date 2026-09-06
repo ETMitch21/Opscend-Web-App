@@ -12,11 +12,16 @@ import {
   ShieldCheckIcon,
   UserIcon,
   SparklesIcon,
+  PlusIcon,
+  PencilIcon,
+  Trash2Icon,
+  MegaphoneIcon,
+  StarIcon,
   LucideAngularModule,
 } from 'lucide-angular';
 import { firstValueFrom } from 'rxjs';
 
-import type { WebChatSettings } from '../../../core/web-chat/model';
+import type { WebChatProactiveRule, WebChatSettings } from '../../../core/web-chat/model';
 import { WebChatService } from '../../../core/web-chat/service';
 import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
@@ -44,6 +49,11 @@ export class WebChatSettingsComponent implements OnInit {
     Shield: ShieldCheckIcon,
     User: UserIcon,
     Wand: SparklesIcon,
+    Plus: PlusIcon,
+    Pencil: PencilIcon,
+    Trash: Trash2Icon,
+    Megaphone: MegaphoneIcon,
+    Star: StarIcon,
   };
 
   readonly loading = signal(true);
@@ -52,6 +62,10 @@ export class WebChatSettingsComponent implements OnInit {
   readonly settings = signal<WebChatSettings | null>(null);
   readonly copied = signal(false);
   readonly copiedCustom = signal(false);
+  readonly proactiveRules = signal<WebChatProactiveRule[]>([]);
+  readonly proactiveSaving = signal(false);
+  readonly editingProactiveRuleId = signal<string | null>(null);
+  readonly previewSpace = signal<'home' | 'messages' | 'help'>('home');
 
   readonly form = this.fb.group({
     enabled: [false],
@@ -62,9 +76,21 @@ export class WebChatSettingsComponent implements OnInit {
     handoffEnabled: [true],
     requireContact: [false],
     allowAttachments: [false],
+    proactiveEnabled: [false],
+    csatEnabled: [true],
     primaryColor: ['#111827', Validators.pattern(/^#[0-9a-fA-F]{6}$/)],
     position: ['right' as 'left' | 'right'],
     allowedOriginsText: [''],
+  });
+
+
+  readonly proactiveForm = this.fb.group({
+    name: ['Website helper', [Validators.required, Validators.maxLength(100)]],
+    pathContains: ['', Validators.maxLength(300)],
+    delaySeconds: [30, [Validators.required, Validators.min(5), Validators.max(600)]],
+    message: ['', [Validators.required, Validators.maxLength(500)]],
+    tag: ['', Validators.maxLength(80)],
+    intent: ['', Validators.maxLength(80)],
   });
 
   ngOnInit(): void {
@@ -78,6 +104,7 @@ export class WebChatSettingsComponent implements OnInit {
       const settings = await firstValueFrom(this.api.getSettings());
       this.settings.set(settings);
       this.patch(settings);
+      this.proactiveRules.set(settings.proactiveRules ?? []);
     } catch (error) {
       console.error(error);
       this.error.set('Web Chat settings could not be loaded.');
@@ -110,6 +137,8 @@ export class WebChatSettingsComponent implements OnInit {
         handoffEnabled: Boolean(raw.handoffEnabled),
         requireContact: Boolean(raw.requireContact),
         allowAttachments: Boolean(raw.allowAttachments),
+        proactiveEnabled: Boolean(raw.proactiveEnabled),
+        csatEnabled: Boolean(raw.csatEnabled),
         primaryColor: String(raw.primaryColor ?? '').trim() || null,
         position: raw.position === 'left' ? 'left' : 'right',
         allowedOrigins: origins,
@@ -117,6 +146,7 @@ export class WebChatSettingsComponent implements OnInit {
       const settings = await firstValueFrom(this.api.getSettings());
       this.settings.set(settings);
       this.patch(settings);
+      this.proactiveRules.set(settings.proactiveRules ?? []);
       this.saveState.set('saved');
       window.setTimeout(() => {
         if (this.saveState() === 'saved') this.saveState.set('idle');
@@ -152,6 +182,81 @@ export class WebChatSettingsComponent implements OnInit {
     }
   }
 
+  editProactiveRule(rule: WebChatProactiveRule): void {
+    this.editingProactiveRuleId.set(rule.id);
+    this.proactiveForm.patchValue({
+      name: rule.name,
+      pathContains: rule.pathContains ?? '',
+      delaySeconds: rule.delaySeconds,
+      message: rule.message,
+      tag: rule.tag ?? '',
+      intent: rule.intent ?? '',
+    });
+  }
+
+  resetProactiveRuleEditor(): void {
+    this.editingProactiveRuleId.set(null);
+    this.proactiveForm.reset({ name: 'Website helper', pathContains: '', delaySeconds: 30, message: '', tag: '', intent: '' });
+  }
+
+  async saveProactiveRule(): Promise<void> {
+    if (this.proactiveForm.invalid || this.proactiveSaving()) {
+      this.proactiveForm.markAllAsTouched();
+      return;
+    }
+    const raw = this.proactiveForm.getRawValue();
+    const editingId = this.editingProactiveRuleId();
+    const editingRule = editingId ? this.proactiveRules().find((rule) => rule.id === editingId) : null;
+    const payload = {
+      name: String(raw.name ?? '').trim(),
+      enabled: editingRule?.enabled ?? true,
+      pathContains: this.nullable(raw.pathContains),
+      delaySeconds: Number(raw.delaySeconds ?? 30),
+      message: String(raw.message ?? '').trim(),
+      tag: this.nullable(raw.tag),
+      intent: this.nullable(raw.intent),
+    };
+    this.proactiveSaving.set(true);
+    this.error.set(null);
+    try {
+      if (editingId) {
+        const response = await firstValueFrom(this.api.updateProactiveRule(editingId, payload));
+        this.proactiveRules.update((rules) => rules.map((rule) => rule.id === editingId ? response.data : rule));
+      } else {
+        const response = await firstValueFrom(this.api.createProactiveRule(payload));
+        this.proactiveRules.update((rules) => [...rules, response.data]);
+      }
+      this.resetProactiveRuleEditor();
+    } catch (error) {
+      console.error(error);
+      this.error.set('The proactive message could not be saved.');
+    } finally {
+      this.proactiveSaving.set(false);
+    }
+  }
+
+  async toggleProactiveRule(rule: WebChatProactiveRule): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.api.updateProactiveRule(rule.id, { enabled: !rule.enabled }));
+      this.proactiveRules.update((rules) => rules.map((item) => item.id === rule.id ? response.data : item));
+    } catch (error) {
+      console.error(error);
+      this.error.set('The proactive message could not be updated.');
+    }
+  }
+
+  async deleteProactiveRule(rule: WebChatProactiveRule): Promise<void> {
+    if (!window.confirm(`Delete “${rule.name}”?`)) return;
+    try {
+      await firstValueFrom(this.api.deleteProactiveRule(rule.id));
+      this.proactiveRules.update((rules) => rules.filter((item) => item.id !== rule.id));
+      if (this.editingProactiveRuleId() === rule.id) this.resetProactiveRuleEditor();
+    } catch (error) {
+      console.error(error);
+      this.error.set('The proactive message could not be deleted.');
+    }
+  }
+
   private patch(settings: WebChatSettings): void {
     this.form.patchValue({
       enabled: settings.enabled,
@@ -162,6 +267,8 @@ export class WebChatSettingsComponent implements OnInit {
       handoffEnabled: settings.handoffEnabled,
       requireContact: settings.requireContact,
       allowAttachments: settings.allowAttachments,
+      proactiveEnabled: settings.proactiveEnabled,
+      csatEnabled: settings.csatEnabled,
       primaryColor: settings.primaryColor || '#111827',
       position: settings.position,
       allowedOriginsText: settings.allowedOrigins.join('\n'),

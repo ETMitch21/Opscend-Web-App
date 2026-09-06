@@ -33,15 +33,24 @@ import {
   FileText,
   Image,
   Zap,
+  Clock3,
+  UserPlus,
+  Flag,
+  Tags,
+  Sparkles,
 } from 'lucide-angular';
 
 import { CommunicationService } from '../../core/communications/service';
+import { AuthService } from '../../core/auth/auth.service';
+import { UsersStore } from '../../core/users/users-store';
 import {
   CommunicationChannel,
   CommunicationConversation,
   CommunicationMessage,
   CommunicationTimelineItem,
   CommunicationQuickReply,
+  CommunicationKnowledgeSuggestion,
+  CommunicationQuoteOption,
 } from '../../core/communications/model';
 import { ToastService } from '../../core/toast/toast-service';
 import { PhonePipe } from '../../core/pipes/phone-pipe';
@@ -60,6 +69,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   private messageScrollContainer?: ElementRef<HTMLElement>;
 
   private readonly communicationApi = inject(CommunicationService);
+  private readonly auth = inject(AuthService);
+  readonly usersStore = inject(UsersStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -93,6 +104,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     FileText,
     Image,
     Zap,
+    Clock3,
+    UserPlus,
+    Flag,
+    Tags,
+    Sparkles,
   };
 
   readonly conversations = signal<CommunicationConversation[]>([]);
@@ -107,6 +123,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly searchTerm = signal('');
   readonly conversationStatusFilter = signal<'open' | 'archived' | 'all'>('open');
+  readonly assignmentFilter = signal<'all' | 'mine' | 'unassigned'>('all');
+  readonly snoozedFilter = signal<'exclude' | 'include' | 'only'>('exclude');
   readonly activeChannel = signal<ComposerChannel>('sms');
   readonly composeSubject = signal('');
   readonly composeBody = signal('');
@@ -121,6 +139,23 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   });
   readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
+  readonly workflowSaving = signal(false);
+  readonly aiAssistLoading = signal(false);
+  readonly suggestedReply = signal<string | null>(null);
+  readonly knowledgeSuggestions = signal<CommunicationKnowledgeSuggestion[]>([]);
+  readonly quoteOptions = signal<CommunicationQuoteOption[]>([]);
+  readonly quoteIdentityMissing = signal<string[]>([]);
+  readonly quoteOptionsLoading = signal(false);
+  readonly quoteCreating = signal(false);
+  readonly newTag = signal('');
+  readonly teammates = this.usersStore.assignableUsers;
+  readonly anotherTeammateTyping = computed(() => {
+    const web = this.selectedConversation()?.webChatContext;
+    if (!web?.teammateTyping) return null;
+    const currentUserId = this.auth.currentUserId();
+    if (web.teammateTypingUserId && currentUserId && web.teammateTypingUserId === currentUserId) return null;
+    return web.teammateTypingName || 'Another teammate';
+  });
 
   readonly relatedDevicesOpen = signal(true);
   readonly relatedQuotesOpen = signal(true);
@@ -220,6 +255,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   private webChatTypingLastPingAt = 0;
 
   async ngOnInit(): Promise<void> {
+    if (!this.usersStore.loaded()) void this.usersStore.load().catch(() => undefined);
     await Promise.all([this.loadConversations(), this.loadQuickReplies()]);
     this.startInboxAutoRefresh();
 
@@ -373,6 +409,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
           limit: 50,
           q: this.searchTerm().trim() || undefined,
           status: this.conversationStatusFilter(),
+          assignment: this.assignmentFilter(),
+          snoozed: this.snoozedFilter(),
         }),
       );
 
@@ -458,6 +496,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
           limit: 50,
           q: this.searchTerm().trim() || undefined,
           status: this.conversationStatusFilter(),
+          assignment: this.assignmentFilter(),
+          snoozed: this.snoozedFilter(),
         }),
       );
 
@@ -472,6 +512,179 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       this.nextCursor.set(null);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async setAssignmentFilter(value: 'all' | 'mine' | 'unassigned'): Promise<void> {
+    if (this.assignmentFilter() === value) return;
+    this.assignmentFilter.set(value);
+    await this.loadConversations();
+  }
+
+  async setSnoozedFilter(value: 'exclude' | 'include' | 'only'): Promise<void> {
+    if (this.snoozedFilter() === value) return;
+    this.snoozedFilter.set(value);
+    await this.loadConversations();
+  }
+
+  async updateWorkflow(payload: { assignedUserId?: string | null; snoozedUntil?: string | null; priority?: 'low' | 'normal' | 'high' | 'urgent'; tags?: string[]; intent?: string | null }): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.workflowSaving()) return;
+    this.workflowSaving.set(true);
+    try {
+      const response = await firstValueFrom(this.communicationApi.updateConversationWorkflow(conversation.id, payload));
+      this.selectedConversation.set(response.data);
+      this.upsertConversation(response.data);
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not update conversation');
+    } finally {
+      this.workflowSaving.set(false);
+    }
+  }
+
+  async takeConversation(): Promise<void> {
+    const userId = this.auth.currentUserId();
+    if (!userId) return;
+    await this.updateWorkflow({ assignedUserId: userId, snoozedUntil: null });
+  }
+
+  async assignConversation(userId: string | null): Promise<void> {
+    await this.updateWorkflow({ assignedUserId: userId || null });
+  }
+
+  async snoozeConversation(option: 'hour' | 'tomorrow' | 'week' | 'clear'): Promise<void> {
+    if (option === 'clear') {
+      await this.updateWorkflow({ snoozedUntil: null });
+      return;
+    }
+    const date = new Date();
+    if (option === 'hour') date.setHours(date.getHours() + 1);
+    if (option === 'tomorrow') date.setDate(date.getDate() + 1);
+    if (option === 'week') date.setDate(date.getDate() + 7);
+    await this.updateWorkflow({ snoozedUntil: date.toISOString() });
+  }
+
+  async setConversationPriority(priority: 'low' | 'normal' | 'high' | 'urgent'): Promise<void> {
+    await this.updateWorkflow({ priority });
+  }
+
+  async addConversationTag(): Promise<void> {
+    const conversation = this.selectedConversation();
+    const tag = this.newTag().trim();
+    if (!conversation || !tag) return;
+    const tags = [...new Set([...(conversation.tags ?? []), tag])].slice(0, 20);
+    this.newTag.set('');
+    await this.updateWorkflow({ tags });
+  }
+
+  async removeConversationTag(tag: string): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation) return;
+    await this.updateWorkflow({ tags: (conversation.tags ?? []).filter((item) => item !== tag) });
+  }
+
+  async refreshAiSummary(): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.aiAssistLoading()) return;
+    this.aiAssistLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.communicationApi.getAiAssist(conversation.id, 'all'));
+      if (response.conversation) {
+        this.selectedConversation.set(response.conversation);
+        this.upsertConversation(response.conversation);
+      }
+      this.suggestedReply.set(response.data.suggestedReply ?? null);
+      this.knowledgeSuggestions.set(response.data.knowledgeSuggestions ?? []);
+    } catch (error) {
+      console.error(error);
+      this.toast.error('AI assist is unavailable right now');
+    } finally {
+      this.aiAssistLoading.set(false);
+    }
+  }
+
+  async insertSuggestedReply(): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.aiAssistLoading()) return;
+    this.aiAssistLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.communicationApi.getAiAssist(conversation.id, 'suggest_reply'));
+      const suggestion = response.data.suggestedReply?.trim();
+      if (suggestion) {
+        this.suggestedReply.set(suggestion);
+        this.composeBody.set(suggestion);
+      }
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not generate a suggested reply');
+    } finally {
+      this.aiAssistLoading.set(false);
+    }
+  }
+
+  async findKnowledgeSuggestions(): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.aiAssistLoading()) return;
+    this.aiAssistLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.communicationApi.getAiAssist(conversation.id, 'knowledge'));
+      this.knowledgeSuggestions.set(response.data.knowledgeSuggestions ?? []);
+      if (!response.data.knowledgeSuggestions?.length) {
+        this.toast.success('No matching knowledge articles', 'There were no strong KB matches for this conversation.');
+      }
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not search the knowledge base');
+    } finally {
+      this.aiAssistLoading.set(false);
+    }
+  }
+
+  async loadQuoteOptionsFromConversation(): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation?.webChatContext || this.quoteOptionsLoading()) return;
+    this.quoteOptionsLoading.set(true);
+    this.quoteOptions.set([]);
+    this.quoteIdentityMissing.set([]);
+    try {
+      const response = await firstValueFrom(this.communicationApi.getConversationQuoteOptions(conversation.id));
+      this.quoteOptions.set(response.data ?? []);
+      this.quoteIdentityMissing.set(response.missingIdentity ?? []);
+      if (!response.identityReady) {
+        this.toast.error('Customer details needed', `Collect ${response.missingIdentity.join(', ')} before creating a quote.`);
+      } else if (!response.data?.length) {
+        this.toast.error('No exact quote found', 'This conversation does not map confidently to an instant pricing option.');
+      }
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not find quote options');
+    } finally {
+      this.quoteOptionsLoading.set(false);
+    }
+  }
+
+  async createQuoteFromConversation(option: CommunicationQuoteOption): Promise<void> {
+    const conversation = this.selectedConversation();
+    if (!conversation || this.quoteCreating()) return;
+    const confirmed = window.confirm(`Create and send ${option.deviceLabel} · ${option.repairLabel} (${option.variantName}) for ${this.money(option.totalCents)}?`);
+    if (!confirmed) return;
+    this.quoteCreating.set(true);
+    try {
+      const response = await firstValueFrom(this.communicationApi.createConversationQuote(conversation.id, {
+        templateId: option.templateId,
+        serviceMode: option.serviceMode,
+      }));
+      this.selectedConversation.set(response.conversation);
+      this.upsertConversation(response.conversation);
+      this.quoteOptions.set([]);
+      this.toast.success('Quote created', response.message);
+      this.scheduleScrollToBottom();
+    } catch (error: any) {
+      console.error(error);
+      this.toast.error('Quote not created', error?.error?.message || 'The quote could not be created from this conversation.');
+    } finally {
+      this.quoteCreating.set(false);
     }
   }
 
@@ -584,6 +797,10 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   ): void {
     void this.stopWebChatTyping();
     this.quickRepliesOpen.set(false);
+    this.knowledgeSuggestions.set([]);
+    this.quoteOptions.set([]);
+    this.quoteIdentityMissing.set([]);
+    this.suggestedReply.set(null);
     this.selectedConversation.set(conversation);
     this.activeChannel.set(
       conversation.lastMessageChannel === 'web_chat' && this.canSendWebChat(conversation)

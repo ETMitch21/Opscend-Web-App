@@ -79,17 +79,31 @@
                 <p>{{ form.controls.assistantEnabled.value ? 'Ask a question and get an instant answer, or connect with our team.' : 'Send us a message and our team will get back to you.' }}</p>
               </div>
               <div class="preview-body">
-                <div class="preview-action">
-                  <span class="preview-action-icon"><lucide-icon [img]="icons.MessageCircle" [size]="17"></lucide-icon></span>
-                  <div><strong>Start a conversation</strong><small>{{ form.controls.assistantEnabled.value ? 'Usually replies instantly' : 'Message the team' }}</small></div>
-                  <span class="preview-chevron">›</span>
-                </div>
-                <div class="preview-grid">
-                  <div><strong>Get a quote</strong><small>Start right here in chat</small></div>
-                  <div><strong>Find an answer</strong><small>Search help articles</small></div>
-                </div>
+                @if (previewSpace() === 'home') {
+                  <button type="button" class="preview-action w-full text-left" (click)="previewSpace.set('messages')">
+                    <span class="preview-action-icon"><lucide-icon [img]="icons.MessageCircle" [size]="17"></lucide-icon></span>
+                    <div><strong>Start a conversation</strong><small>{{ form.controls.assistantEnabled.value ? 'Usually replies instantly' : 'Message the team' }}</small></div>
+                    <span class="preview-chevron">›</span>
+                  </button>
+                  <div class="preview-grid">
+                    <button type="button" class="text-left" (click)="previewSpace.set('messages')"><strong>Get a quote</strong><small>Start right here in chat</small></button>
+                    <button type="button" class="text-left" (click)="previewSpace.set('help')"><strong>Find an answer</strong><small>Search help articles</small></button>
+                  </div>
+                } @else if (previewSpace() === 'messages') {
+                  <div class="rounded-2xl bg-white p-3 text-left ring-1 ring-app-border">
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-app-text-muted">Messages preview</p>
+                    <div class="mt-3 ml-auto w-fit max-w-[82%] rounded-2xl bg-[var(--preview-brand)] px-3 py-2 text-xs font-semibold text-white">Can you help with my phone?</div>
+                    <div class="mt-2 max-w-[88%] rounded-2xl bg-app-surface-muted px-3 py-2 text-xs leading-5 text-app-text">Absolutely. What device and repair do you need help with?</div>
+                  </div>
+                } @else {
+                  <div class="rounded-2xl bg-white p-3 text-left ring-1 ring-app-border">
+                    <p class="text-[11px] font-bold uppercase tracking-wide text-app-text-muted">Help preview</p>
+                    <div class="mt-3 flex items-center gap-2 rounded-xl border border-app-border bg-app-surface-muted/50 px-3 py-2 text-xs text-app-text-muted"><span>⌕</span><span>Search for answers…</span></div>
+                    <div class="mt-3 space-y-2"><div class="rounded-xl border border-app-border px-3 py-2"><strong class="text-xs text-app-text">Repair warranty</strong></div><div class="rounded-xl border border-app-border px-3 py-2"><strong class="text-xs text-app-text">Preparing your device</strong></div></div>
+                  </div>
+                }
               </div>
-              <div class="preview-nav"><span class="active">Home</span><span>Messages</span><span>Help</span></div>
+              <div class="preview-nav"><button type="button" [class.active]="previewSpace() === 'home'" (click)="previewSpace.set('home')">Home</button><button type="button" [class.active]="previewSpace() === 'messages'" (click)="previewSpace.set('messages')">Messages</button><button type="button" [class.active]="previewSpace() === 'help'" (click)="previewSpace.set('help')">Help</button></div>
             </div>
           </div>
         </div>
@@ -121,6 +135,56 @@
             <input type="checkbox" formControlName="allowAttachments" />
             <span><strong>Allow photos & files</strong><small>Visitors can send up to 5 secure attachments per message, up to 15 MB each. Images appear inline in the Messenger and Communications.</small></span>
           </label>
+          <label class="field checkbox-card md:col-span-2">
+            <input type="checkbox" formControlName="csatEnabled" />
+            <span><strong>Ask for conversation feedback</strong><small>When a visitor ends a Web Chat conversation, show a lightweight 1–5 satisfaction rating. The score appears in Communications.</small></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-card p-5 md:p-6">
+        <div class="flex items-start justify-between gap-5">
+          <div class="section-heading">
+            <div class="icon-tile"><lucide-icon [img]="icons.Megaphone" [size]="20"></lucide-icon></div>
+            <div><h2>Proactive messages</h2><p>Start useful conversations based on the page a visitor is viewing. Keep these specific and helpful rather than showing the same popup everywhere.</p></div>
+          </div>
+          <label class="switch-row shrink-0"><input type="checkbox" formControlName="proactiveEnabled" /><span class="switch"></span></label>
+        </div>
+
+        <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,.75fr)]">
+          <div class="space-y-3">
+            @for (rule of proactiveRules(); track rule.id) {
+              <div class="rounded-2xl border border-app-border bg-app-surface p-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2"><p class="truncate text-sm font-bold text-app-text">{{ rule.name }}</p><span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [ngClass]="rule.enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-app-surface-muted text-app-text-muted'">{{ rule.enabled ? 'Active' : 'Paused' }}</span></div>
+                    <p class="mt-1 text-xs text-app-text-muted">{{ rule.pathContains ? 'Pages containing “' + rule.pathContains + '”' : 'Any page' }} · after {{ rule.delaySeconds }}s</p>
+                    <p class="mt-3 text-sm leading-6 text-app-text">{{ rule.message }}</p>
+                    @if (rule.tag || rule.intent) {<div class="mt-2 flex flex-wrap gap-1.5">@if (rule.intent) {<span class="rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700">{{ rule.intent }}</span>}@if (rule.tag) {<span class="rounded-full bg-app-surface-muted px-2 py-1 text-[10px] font-bold text-app-text-muted">{{ rule.tag }}</span>}</div>}
+                  </div>
+                  <div class="flex shrink-0 items-center gap-1">
+                    <button type="button" class="cursor-pointer rounded-xl p-2 text-app-text-muted hover:bg-app-surface-muted hover:text-app-text" (click)="toggleProactiveRule(rule)" [title]="rule.enabled ? 'Pause' : 'Enable'"><span class="text-[11px] font-bold">{{ rule.enabled ? 'Pause' : 'Enable' }}</span></button>
+                    <button type="button" class="cursor-pointer rounded-xl p-2 text-app-text-muted hover:bg-app-surface-muted hover:text-app-text" (click)="editProactiveRule(rule)" title="Edit"><lucide-icon [img]="icons.Pencil" [size]="15"></lucide-icon></button>
+                    <button type="button" class="cursor-pointer rounded-xl p-2 text-app-text-muted hover:bg-rose-50 hover:text-rose-700" (click)="deleteProactiveRule(rule)" title="Delete"><lucide-icon [img]="icons.Trash" [size]="15"></lucide-icon></button>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="rounded-2xl border border-dashed border-app-border p-5 text-sm text-app-text-muted">No proactive messages yet. Create one for a high-intent page such as repairs, fleet, or protection.</div>
+            }
+          </div>
+
+          <div [formGroup]="proactiveForm" class="rounded-2xl border border-app-border bg-app-surface-muted/40 p-4">
+            <div class="flex items-center justify-between gap-3"><p class="text-sm font-bold text-app-text">{{ editingProactiveRuleId() ? 'Edit proactive message' : 'Add proactive message' }}</p>@if (editingProactiveRuleId()) {<button type="button" class="cursor-pointer text-xs font-semibold text-app-text-muted hover:text-app-text" (click)="resetProactiveRuleEditor()">Cancel</button>}</div>
+            <div class="mt-4 grid gap-3">
+              <label class="field"><span>Name</span><input type="text" formControlName="name" placeholder="iPhone repair helper" /></label>
+              <label class="field"><span>Page path contains</span><input type="text" formControlName="pathContains" placeholder="/iphone-repair" /><small>Leave blank to match any page.</small></label>
+              <label class="field"><span>Wait before showing (seconds)</span><input type="number" min="5" max="600" formControlName="delaySeconds" /></label>
+              <label class="field"><span>Message</span><textarea rows="3" formControlName="message" placeholder="Need help figuring out which repair you need?"></textarea></label>
+              <div class="grid gap-3 sm:grid-cols-2"><label class="field"><span>Apply tag</span><input type="text" formControlName="tag" placeholder="High Intent" /></label><label class="field"><span>Intent</span><input type="text" formControlName="intent" placeholder="Repair inquiry" /></label></div>
+              <button type="button" class="settings-primary-action mt-1 w-fit cursor-pointer" [disabled]="proactiveSaving()" (click)="saveProactiveRule()"><lucide-icon [img]="proactiveSaving() ? icons.Loader : icons.Save" [size]="14" [class.animate-spin]="proactiveSaving()"></lucide-icon>{{ editingProactiveRuleId() ? 'Save changes' : 'Add message' }}</button>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -1,3 +1,17 @@
+export interface WebChatProactiveRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  pathContains: string | null;
+  delaySeconds: number;
+  message: string;
+  tag: string | null;
+  intent: string | null;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface WebChatShopSummary {
   name: string;
   slug: string;
@@ -19,6 +33,9 @@ export interface WebChatSettings {
   primaryColor: string;
   position: 'left' | 'right';
   allowedOrigins: string[];
+  proactiveEnabled: boolean;
+  csatEnabled: boolean;
+  proactiveRules: WebChatProactiveRule[];
   helpEnabled: boolean;
   originAllowed?: boolean;
   shop: WebChatShopSummary;
@@ -39,4 +56,6 @@ export interface WebChatSettingsPatch {
   primaryColor?: string | null;
   position?: 'left' | 'right';
   allowedOrigins?: string[];
+  proactiveEnabled?: boolean;
+  csatEnabled?: boolean;
 }

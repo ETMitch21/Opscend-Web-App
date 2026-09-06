@@ -52,6 +52,7 @@ export interface CommunicationMessage {
   provider: string | null;
   providerMessageId: string | null;
   errorMessage: string | null;
+  metadata?: Record<string, unknown> | null;
   createdByUserId: string | null;
   readAt: string | null;
   sentAt: string | null;
@@ -129,6 +130,9 @@ export interface CommunicationWebChatContext {
   lastSeenAt: string | null;
   startedAt: string | null;
   visitorTyping?: boolean;
+  teammateTyping?: boolean;
+  teammateTypingName?: string | null;
+  teammateTypingUserId?: string | null;
 }
 
 export interface CommunicationConversation {
@@ -142,6 +146,18 @@ export interface CommunicationConversation {
   customerPhone: string | null;
   subject: string | null;
   status: CommunicationConversationStatus;
+  assignedUserId: string | null;
+  assignedUser: { id: string; name: string; email: string | null } | null;
+  assignedAt: string | null;
+  snoozedUntil: string | null;
+  priority: 'low' | 'normal' | 'high' | 'urgent' | string;
+  tags: string[];
+  intent: string | null;
+  aiSummary: string | null;
+  aiSummaryUpdatedAt: string | null;
+  csatRating: number | null;
+  csatComment: string | null;
+  csatSubmittedAt: string | null;
   lastMessageAt: string | null;
   lastInboundAt: string | null;
   lastOutboundAt: string | null;
@@ -235,6 +251,8 @@ export interface CommunicationConversationListParams {
   cursor?: string | null;
   q?: string;
   status?: 'open' | 'archived' | 'all';
+  assignment?: 'all' | 'mine' | 'unassigned';
+  snoozed?: 'include' | 'exclude' | 'only';
 }
 
 export interface CustomerCommunicationActivityItem {
@@ -278,4 +296,75 @@ export interface CustomerCommunicationSummary {
 
 export interface CustomerCommunicationSummaryResponse {
   data: CustomerCommunicationSummary;
+}
+
+export interface CommunicationConversationWorkflowUpdate {
+  assignedUserId?: string | null;
+  snoozedUntil?: string | null;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  tags?: string[];
+  intent?: string | null;
+}
+
+export interface CommunicationKnowledgeSuggestion {
+  id: string;
+  title: string;
+  summary: string | null;
+  visibility: string;
+}
+
+export interface CommunicationAiAssistResult {
+  summary: string | null;
+  suggestedReply: string | null;
+  intent: string | null;
+  tags: string[];
+  priority: 'low' | 'normal' | 'high' | 'urgent' | string;
+  confidence: number;
+  knowledgeSuggestions: CommunicationKnowledgeSuggestion[];
+}
+
+export interface CommunicationAiAssistResponse {
+  data: CommunicationAiAssistResult;
+  conversation?: CommunicationConversation;
+}
+
+
+export interface CommunicationQuoteOption {
+  templateId: string;
+  deviceModelId: string;
+  repairNeedId: string;
+  deviceLabel: string;
+  repairLabel: string;
+  variantName: string;
+  description: string | null;
+  serviceMode: 'in_shop' | 'on_site';
+  totalCents: number;
+  depositAmountCents: number | null;
+  partInStock: boolean | null;
+}
+
+export interface CommunicationQuoteOptionsResponse {
+  data: CommunicationQuoteOption[];
+  identityReady: boolean;
+  missingIdentity: string[];
+}
+
+export interface CommunicationCreatedQuoteCard {
+  id: string;
+  status: string;
+  kind: string;
+  deviceLabel: string;
+  repairLabel: string;
+  variantName: string | null;
+  totalCents: number | null;
+  depositAmountCents: number | null;
+  currency: string;
+  requiresManualReview: boolean;
+  approvalUrl: string | null;
+}
+
+export interface CommunicationCreateQuoteResponse {
+  data: CommunicationCreatedQuoteCard;
+  message: string;
+  conversation: CommunicationConversation;
 }
