@@ -1,3 +1,9 @@
+export type WebChatProactiveRepeatPolicy =
+  | 'once_per_visitor'
+  | 'once_per_session'
+  | 'after_days'
+  | 'every_visit';
+
 export interface WebChatProactiveRule {
   id: string;
   name: string;
@@ -7,6 +13,8 @@ export interface WebChatProactiveRule {
   message: string;
   tag: string | null;
   intent: string | null;
+  repeatPolicy: WebChatProactiveRepeatPolicy;
+  repeatAfterDays: number | null;
   sortOrder: number;
   createdAt?: string;
   updatedAt?: string;

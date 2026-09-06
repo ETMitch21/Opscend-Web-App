@@ -91,6 +91,8 @@ export class WebChatSettingsComponent implements OnInit {
     message: ['', [Validators.required, Validators.maxLength(500)]],
     tag: ['', Validators.maxLength(80)],
     intent: ['', Validators.maxLength(80)],
+    repeatPolicy: ['once_per_visitor' as 'once_per_visitor' | 'once_per_session' | 'after_days' | 'every_visit'],
+    repeatAfterDays: [7, [Validators.min(1), Validators.max(365)]],
   });
 
   ngOnInit(): void {
@@ -197,12 +199,23 @@ export class WebChatSettingsComponent implements OnInit {
       message: rule.message,
       tag: rule.tag ?? '',
       intent: rule.intent ?? '',
+      repeatPolicy: rule.repeatPolicy ?? 'once_per_visitor',
+      repeatAfterDays: rule.repeatAfterDays ?? 7,
     });
   }
 
   resetProactiveRuleEditor(): void {
     this.editingProactiveRuleId.set(null);
-    this.proactiveForm.reset({ name: 'Website helper', pathContains: '', delaySeconds: 30, message: '', tag: '', intent: '' });
+    this.proactiveForm.reset({
+      name: 'Website helper',
+      pathContains: '',
+      delaySeconds: 30,
+      message: '',
+      tag: '',
+      intent: '',
+      repeatPolicy: 'once_per_visitor',
+      repeatAfterDays: 7,
+    });
   }
 
   async saveProactiveRule(): Promise<void> {
@@ -221,6 +234,8 @@ export class WebChatSettingsComponent implements OnInit {
       message: String(raw.message ?? '').trim(),
       tag: this.nullable(raw.tag),
       intent: this.nullable(raw.intent),
+      repeatPolicy: raw.repeatPolicy ?? 'once_per_visitor',
+      repeatAfterDays: raw.repeatPolicy === 'after_days' ? Number(raw.repeatAfterDays ?? 7) : null,
     };
     this.proactiveSaving.set(true);
     this.error.set(null);
@@ -279,6 +294,20 @@ export class WebChatSettingsComponent implements OnInit {
       position: settings.position,
       allowedOriginsText: settings.allowedOrigins.join('\n'),
     }, { emitEvent: false });
+  }
+
+
+  proactiveRepeatLabel(rule: WebChatProactiveRule): string {
+    switch (rule.repeatPolicy) {
+      case 'once_per_session':
+        return 'Once per session';
+      case 'after_days':
+        return `Again after ${rule.repeatAfterDays ?? 7} day${(rule.repeatAfterDays ?? 7) === 1 ? '' : 's'}`;
+      case 'every_visit':
+        return 'Every qualifying visit';
+      default:
+        return 'Once per visitor';
+    }
   }
 
   private nullable(value: unknown): string | null {

@@ -81,11 +81,6 @@ export class App implements OnInit, OnDestroy {
     const path = String(url || '').split('?')[0] || '';
     this.standalonePublicRoute =
       path === '/portal' ||
-      path.startsWith('/portal/') ||
-      path.startsWith('/book/') ||
-      path.startsWith('/quote/') ||
-      path.startsWith('/track/') ||
-      path.startsWith('/business-enroll/') ||
-      path.startsWith('/form/');
+      path.startsWith('/portal/');
   }
 }
