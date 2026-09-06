@@ -182,6 +182,12 @@ export class WebChatSettingsComponent implements OnInit {
     }
   }
 
+  scrollToSection(sectionId: string): void {
+    const element = document.getElementById(sectionId);
+    if (!element) return;
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   editProactiveRule(rule: WebChatProactiveRule): void {
     this.editingProactiveRuleId.set(rule.id);
     this.proactiveForm.patchValue({

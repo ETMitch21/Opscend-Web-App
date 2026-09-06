@@ -29,7 +29,15 @@
     }
 
     <form [formGroup]="form" class="space-y-5">
-      <section class="settings-card p-5 md:p-6">
+      <nav class="web-chat-section-nav" aria-label="Web Chat settings sections">
+        <button type="button" (click)="scrollToSection('web-chat-overview')">Overview</button>
+        <button type="button" (click)="scrollToSection('web-chat-ai')">AI & handoff</button>
+        <button type="button" class="is-emphasis" (click)="scrollToSection('web-chat-proactive')">Proactive messages</button>
+        <button type="button" (click)="scrollToSection('web-chat-appearance')">Appearance</button>
+        <button type="button" (click)="scrollToSection('web-chat-install')">Install</button>
+      </nav>
+
+      <section id="web-chat-overview" class="settings-card p-5 md:p-6 scroll-mt-24">
         <div class="flex items-start justify-between gap-5">
           <div class="flex min-w-0 gap-3">
             <div class="icon-tile"><lucide-icon [img]="icons.MessageCircle" [size]="20"></lucide-icon></div>
@@ -109,7 +117,7 @@
         </div>
       </section>
 
-      <section class="settings-card p-5 md:p-6">
+      <section id="web-chat-ai" class="settings-card p-5 md:p-6 scroll-mt-24">
         <div class="section-heading">
           <div class="icon-tile"><lucide-icon [img]="icons.Bot" [size]="20"></lucide-icon></div>
           <div><h2>AI assistant</h2><p>Use your published customer-safe Knowledge Base to answer website visitors automatically.</p></div>
@@ -142,7 +150,7 @@
         </div>
       </section>
 
-      <section class="settings-card p-5 md:p-6">
+      <section id="web-chat-proactive" class="settings-card p-5 md:p-6 scroll-mt-24 ring-1 ring-transparent transition">
         <div class="flex items-start justify-between gap-5">
           <div class="section-heading">
             <div class="icon-tile"><lucide-icon [img]="icons.Megaphone" [size]="20"></lucide-icon></div>
@@ -188,7 +196,7 @@
         </div>
       </section>
 
-      <section class="settings-card p-5 md:p-6">
+      <section id="web-chat-appearance" class="settings-card p-5 md:p-6 scroll-mt-24">
         <div class="section-heading">
           <div class="icon-tile"><lucide-icon [img]="icons.Wand" [size]="20"></lucide-icon></div>
           <div><h2>Appearance</h2><p>Keep the widget matched to the shop’s site without building a separate theme.</p></div>
@@ -207,7 +215,7 @@
         <label class="field mt-5"><span>Allowed origins</span><textarea rows="4" formControlName="allowedOriginsText" placeholder="https://summitphonerepair.com&#10;https://www.summitphonerepair.com"></textarea><small>Use the website origin only—no page path.</small></label>
       </section>
 
-      <section class="settings-card p-5 md:p-6">
+      <section id="web-chat-install" class="settings-card p-5 md:p-6 scroll-mt-24">
         <div class="section-heading">
           <div class="icon-tile"><lucide-icon [img]="icons.Globe" [size]="20"></lucide-icon></div>
           <div><h2>Install on your website</h2><p>Paste this once before the closing <code>&lt;/body&gt;</code> tag or into your site’s custom code area.</p></div>

@@ -174,11 +174,11 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
       },
       {
         label: 'Web Chat',
-        description: 'Website chat, AI answers, human handoff, appearance, and embed code.',
+        description: 'Messenger, AI handoff, proactive page messages, appearance, and embed code.',
         route: '/settings/shop/web-chat',
         icon: MessageCircle,
         permission: 'communications:read',
-        keywords: ['chat', 'website', 'webflow', 'ai', 'messages', 'widget', 'inbox'],
+        keywords: ['chat', 'website', 'webflow', 'ai', 'messages', 'widget', 'inbox', 'proactive', 'page specific', 'targeted messages'],
       },
       {
         label: 'AI phone agent',
