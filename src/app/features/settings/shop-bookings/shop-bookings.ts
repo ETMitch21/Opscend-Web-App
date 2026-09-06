@@ -79,7 +79,7 @@ export class ShopBookingsComponent implements OnInit {
   readonly launcherIframeCode = computed(() => {
     const url = this.launcherUrl();
     return url
-      ? `<iframe src="${url}" width="100%" height="68" style="border:0; background:transparent; overflow:hidden;" scrolling="no" loading="eager" title="Get my repair price"></iframe>`
+      ? `<iframe src="${url}" width="100%" height="58" style="border:0; background:transparent; overflow:hidden;" scrolling="no" loading="eager" title="Get my repair price"></iframe>`
       : '';
   });
 

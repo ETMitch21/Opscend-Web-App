@@ -140,19 +140,23 @@ export class PublicBookingLauncher implements OnInit, OnDestroy {
       return;
     }
 
-    // A launcher is normally embedded in a site's hero. Move the whole browser
-    // into the full quote flow so the compact hero iframe does not suddenly
-    // become an 850px booking experience.
-    try {
-      if (window.top) {
-        window.top.location.assign(bookingUrl.toString());
-        return;
-      }
-    } catch (error) {
-      console.warn('Could not navigate the parent window; opening the quote here instead.', error);
-    }
+    // The launcher is intentionally tiny and should never turn into the full
+    // booking flow inside its iframe. Using window.top.location.assign() from a
+    // cross-origin embed can be rejected by the browser because it requires
+    // reading the parent Location object. A _top navigation is the browser-safe
+    // frame-busting path and keeps the customer's click as the user activation.
+    const destination = bookingUrl.toString();
+    const topWindow = window.open(destination, '_top');
 
-    window.location.assign(bookingUrl.toString());
+    if (topWindow) return;
+
+    // If the host page sandboxed the iframe and blocked top navigation, open the
+    // quote as a separate page rather than ever rendering it inside the 58px
+    // launcher frame.
+    const newWindow = window.open(destination, '_blank', 'noopener,noreferrer');
+    if (!newWindow) {
+      this.error.set('Open the full quote tool to continue.');
+    }
   }
 
   private async onBrandChanged(brand: string): Promise<void> {
