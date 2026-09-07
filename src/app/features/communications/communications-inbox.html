@@ -47,112 +47,125 @@
         </div>
       </div>
 
-      <!-- Primary conversation status tabs -->
-      <div class="mt-2.5 flex items-end gap-5 border-b border-app-border px-0.5">
+      <!-- Primary conversation status: icon-only tabs -->
+      <div class="mt-3 grid grid-cols-3 border-b border-app-border/70">
         <button
           type="button"
-          class="relative cursor-pointer pb-2 text-xs font-semibold transition-colors"
+          class="group relative flex h-9 cursor-pointer items-center justify-center text-app-text-muted transition-colors hover:text-app-text"
           [ngClass]="conversationStatusFilter() === 'open'
-            ? 'text-app-text after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand'
-            : 'text-app-text-muted hover:text-app-text'"
+            ? 'text-brand after:absolute after:inset-x-5 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand'
+            : ''"
           (click)="setConversationStatusFilter('open')"
+          aria-label="Open conversations"
         >
-          Open
+          <lucide-icon [name]="icons.MessageSquare" class="h-[18px] w-[18px]"></lucide-icon>
+          <span class="pointer-events-none absolute top-full z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Open</span>
         </button>
 
         <button
           type="button"
-          class="relative cursor-pointer pb-2 text-xs font-semibold transition-colors"
+          class="group relative flex h-9 cursor-pointer items-center justify-center text-app-text-muted transition-colors hover:text-app-text"
           [ngClass]="conversationStatusFilter() === 'archived'
-            ? 'text-app-text after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand'
-            : 'text-app-text-muted hover:text-app-text'"
+            ? 'text-brand after:absolute after:inset-x-5 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand'
+            : ''"
           (click)="setConversationStatusFilter('archived')"
+          aria-label="Archived conversations"
         >
-          Archived
+          <lucide-icon [name]="icons.Archive" class="h-[18px] w-[18px]"></lucide-icon>
+          <span class="pointer-events-none absolute top-full z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Archived</span>
         </button>
 
         <button
           type="button"
-          class="relative cursor-pointer pb-2 text-xs font-semibold transition-colors"
+          class="group relative flex h-9 cursor-pointer items-center justify-center text-app-text-muted transition-colors hover:text-app-text"
           [ngClass]="conversationStatusFilter() === 'all'
-            ? 'text-app-text after:absolute after:inset-x-0 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand'
-            : 'text-app-text-muted hover:text-app-text'"
+            ? 'text-brand after:absolute after:inset-x-5 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand'
+            : ''"
           (click)="setConversationStatusFilter('all')"
+          aria-label="All conversations"
         >
-          All
+          <lucide-icon [name]="icons.Inbox" class="h-[18px] w-[18px]"></lucide-icon>
+          <span class="pointer-events-none absolute top-full z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">All conversations</span>
         </button>
       </div>
 
-      <!-- Secondary inbox filters -->
-      <div class="mt-2 flex items-center justify-between gap-2">
-        <div class="flex min-w-0 items-center gap-3 px-0.5">
+      <!-- Secondary ownership + activity filters -->
+      <div class="mt-2 flex items-center justify-between border-b border-app-border/50 pb-2">
+        <div class="flex items-center gap-1">
           <button
             type="button"
-            class="cursor-pointer text-[11px] font-semibold transition-colors"
-            [ngClass]="assignmentFilter() === 'all' ? 'text-app-text' : 'text-app-text-muted hover:text-app-text'"
+            class="group relative flex h-8 w-9 cursor-pointer items-center justify-center text-app-text-muted transition-colors hover:text-app-text"
+            [ngClass]="assignmentFilter() === 'all'
+              ? 'text-brand after:absolute after:inset-x-1 after:bottom-[-9px] after:h-0.5 after:rounded-full after:bg-brand'
+              : ''"
             (click)="setAssignmentFilter('all')"
+            aria-label="All owners"
           >
-            All
+            <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="3.5"></circle>
+              <path d="M17 11a4 4 0 0 1 4 4v4"></path>
+              <path d="M16 3.3a3.5 3.5 0 0 1 0 6.4"></path>
+            </svg>
+            <span class="pointer-events-none absolute top-full z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">All owners</span>
           </button>
 
           <button
             type="button"
-            class="cursor-pointer text-[11px] font-semibold transition-colors"
-            [ngClass]="assignmentFilter() === 'mine' ? 'text-app-text' : 'text-app-text-muted hover:text-app-text'"
+            class="group relative flex h-8 w-9 cursor-pointer items-center justify-center text-app-text-muted transition-colors hover:text-app-text"
+            [ngClass]="assignmentFilter() === 'mine'
+              ? 'text-brand after:absolute after:inset-x-1 after:bottom-[-9px] after:h-0.5 after:rounded-full after:bg-brand'
+              : ''"
             (click)="setAssignmentFilter('mine')"
+            aria-label="Assigned to me"
           >
-            Mine
+            <lucide-icon [name]="icons.UserRound" class="h-[18px] w-[18px]"></lucide-icon>
+            <span class="pointer-events-none absolute top-full z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Mine</span>
           </button>
 
           <button
             type="button"
-            class="cursor-pointer text-[11px] font-semibold transition-colors"
-            [ngClass]="assignmentFilter() === 'unassigned' ? 'text-app-text' : 'text-app-text-muted hover:text-app-text'"
+            class="group relative flex h-8 w-9 cursor-pointer items-center justify-center text-app-text-muted transition-colors hover:text-app-text"
+            [ngClass]="assignmentFilter() === 'unassigned'
+              ? 'text-brand after:absolute after:inset-x-1 after:bottom-[-9px] after:h-0.5 after:rounded-full after:bg-brand'
+              : ''"
             (click)="setAssignmentFilter('unassigned')"
+            aria-label="Unassigned conversations"
           >
-            Unassigned
+            <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <path d="m17 8 5 5"></path>
+              <path d="m22 8-5 5"></path>
+            </svg>
+            <span class="pointer-events-none absolute top-full z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Unassigned</span>
           </button>
         </div>
 
-        <select
-          class="h-7 max-w-[116px] shrink-0 cursor-pointer rounded-md border border-app-border bg-app-surface px-2 text-[10px] font-semibold text-app-text-muted outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
-          [ngModel]="snoozedFilter()"
-          (ngModelChange)="setSnoozedFilter($event)"
+        <div class="mx-1 h-6 w-px bg-app-border/70"></div>
+
+        <div
+          class="group relative flex h-8 min-w-[52px] items-center justify-center gap-1 rounded-lg text-app-text-muted transition-colors hover:bg-app-surface-muted hover:text-app-text"
+          [ngClass]="snoozedFilter() !== 'exclude' ? 'text-brand' : ''"
           aria-label="Activity filter"
         >
-          <option value="exclude">Active</option>
-          <option value="include">All activity</option>
-          <option value="only">Snoozed</option>
-        </select>
-      </div>
-
-
-      @if (conversations().length > 0) {
-        <div class="mt-1.5 flex items-center justify-between gap-3 px-0.5">
-          <label class="inline-flex cursor-pointer items-center gap-2 text-[11px] font-semibold text-app-text-muted">
-            <input
-              type="checkbox"
-              class="h-3.5 w-3.5 cursor-pointer rounded border-app-border text-brand focus:ring-brand/30"
-              [checked]="allVisibleSelected()"
-              [indeterminate]="someVisibleSelected()"
-              [disabled]="bulkActionRunning()"
-              (change)="toggleSelectAllVisible($any($event.target).checked)"
-            />
-            Select all
-          </label>
-
-          @if (selectedConversationCount() > 0) {
-            <button
-              type="button"
-              class="cursor-pointer text-xs font-semibold text-app-text-muted transition hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
-              [disabled]="bulkActionRunning()"
-              (click)="clearBulkSelection()"
-            >
-              Clear
-            </button>
-          }
+          <lucide-icon [name]="icons.Clock3" class="h-[17px] w-[17px]"></lucide-icon>
+          <lucide-icon [name]="icons.ChevronDown" class="h-3 w-3"></lucide-icon>
+          <select
+            class="absolute inset-0 cursor-pointer opacity-0"
+            [ngModel]="snoozedFilter()"
+            (ngModelChange)="setSnoozedFilter($event)"
+            aria-label="Activity filter"
+          >
+            <option value="exclude">Active conversations</option>
+            <option value="include">All activity</option>
+            <option value="only">Snoozed</option>
+          </select>
+          <span class="pointer-events-none absolute top-full right-0 z-30 mt-2 whitespace-nowrap rounded-lg bg-gray-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+            {{ snoozedFilter() === 'exclude' ? 'Active conversations' : snoozedFilter() === 'include' ? 'All activity' : 'Snoozed' }}
+          </span>
         </div>
-      }
+      </div>
 
       @if (selectedConversationCount() > 0) {
         <div class="mt-3 rounded-2xl border border-brand/20 bg-brand/[0.04] p-3">
@@ -160,9 +173,21 @@
             <p class="text-xs font-bold text-app-text">
               {{ selectedConversationCount() }} selected
             </p>
-            @if (bulkActionRunning()) {
-              <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin text-brand"></lucide-icon>
-            }
+            <div class="flex items-center gap-2">
+              @if (!allVisibleSelected()) {
+                <button
+                  type="button"
+                  class="cursor-pointer text-[11px] font-semibold text-brand transition hover:text-brand/80 disabled:opacity-50"
+                  [disabled]="bulkActionRunning()"
+                  (click)="toggleSelectAllVisible(true)"
+                >
+                  Select all
+                </button>
+              }
+              @if (bulkActionRunning()) {
+                <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin text-brand"></lucide-icon>
+              }
+            </div>
           </div>
 
           <div class="mt-2 flex flex-wrap gap-2">
@@ -233,16 +258,25 @@
           <p class="mt-1 text-xs leading-4 text-app-text-muted">{{ conversationStatusFilter() === 'archived' ? 'Archived conversations will show here.' : conversationStatusFilter() === 'all' ? 'Try changing the search or clearing filters.' : 'Quote and customer messages will show here.' }}</p>
         </div>
       } @else {
-        <div class="divide-y divide-app-border">
+        <div class="space-y-0.5 p-1.5">
           @for (conversation of conversations(); track conversation.id) {
             <div
-              class="group relative flex items-start gap-2 border-l-2 border-l-transparent px-2.5 py-2.5 transition hover:bg-app-surface-muted/70"
-              [ngClass]="selectedConversation()?.id === conversation.id ? 'border-l-brand bg-brand/[0.06]' : isConversationBulkSelected(conversation.id) ? 'bg-brand/[0.05]' : conversation.unreadForShopCount > 0 ? 'bg-brand/[0.025]' : ''"
+              class="group relative rounded-xl px-2 py-2 transition-colors hover:bg-app-surface-muted/70"
+              [ngClass]="selectedConversation()?.id === conversation.id
+                ? 'bg-brand/[0.07] ring-1 ring-brand/10'
+                : isConversationBulkSelected(conversation.id)
+                  ? 'bg-brand/[0.05]'
+                  : conversation.unreadForShopCount > 0
+                    ? 'bg-brand/[0.025]'
+                    : ''"
             >
-              <div class="pt-1 transition-opacity" [ngClass]="isConversationBulkSelected(conversation.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'">
+              <div
+                class="absolute left-1 top-1 z-10 transition-opacity"
+                [ngClass]="isConversationBulkSelected(conversation.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'"
+              >
                 <input
                   type="checkbox"
-                  class="h-3.5 w-3.5 cursor-pointer rounded border-app-border text-brand focus:ring-brand/30"
+                  class="h-3.5 w-3.5 cursor-pointer rounded border-app-border bg-app-surface text-brand shadow-sm focus:ring-brand/30"
                   [checked]="isConversationBulkSelected(conversation.id)"
                   [disabled]="bulkActionRunning()"
                   [attr.aria-label]="'Select ' + conversationTitle(conversation)"
@@ -252,42 +286,68 @@
 
               <button
                 type="button"
-                class="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 text-left"
+                class="flex w-full min-w-0 cursor-pointer items-center gap-2.5 text-left"
                 (click)="openConversation(conversation)"
               >
-                <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                  [ngClass]="conversation.unreadForShopCount > 0 ? 'bg-brand/10 text-brand' : 'bg-app-surface-muted text-app-text-muted'">
-                  <lucide-icon [name]="conversation.lastMessageChannel === 'email' ? icons.Mail : icons.MessageSquare" class="h-4 w-4"></lucide-icon>
+                <div class="relative shrink-0">
+                  <div
+                    class="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold"
+                    [ngClass]="conversation.unreadForShopCount > 0 ? 'bg-brand/12 text-brand' : 'bg-app-surface-muted text-app-text-muted'"
+                  >
+                    {{ conversationTitle(conversation).slice(0, 1).toUpperCase() }}
+                  </div>
+                  @if (conversation.lastMessageChannel) {
+                    <span class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-app-surface text-app-text-muted ring-2 ring-app-surface">
+                      <lucide-icon
+                        [name]="conversation.lastMessageChannel === 'email' ? icons.Mail : conversation.lastMessageChannel === 'sms' ? icons.Phone : icons.MessageSquare"
+                        class="h-2.5 w-2.5"
+                      ></lucide-icon>
+                    </span>
+                  }
                 </div>
 
                 <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <p class="min-w-0 flex-1 truncate text-[13px] text-app-text" [class.font-bold]="conversation.unreadForShopCount > 0" [class.font-semibold]="conversation.unreadForShopCount === 0">{{ conversationTitle(conversation) }}</p>
-                    <span class="shrink-0 text-[10px] font-medium text-app-text-muted">{{ formatConversationDate(conversation.lastMessageAt || conversation.updatedAt) }}</span>
-                  </div>
-                  @if (conversation.lastMessagePreview) {
-                    <p class="mt-1 truncate text-xs leading-4" [ngClass]="conversation.unreadForShopCount > 0 ? 'font-medium text-app-text' : 'text-app-text-muted'">
-                      {{ conversation.lastMessageDirection === 'outbound' ? 'You: ' : '' }}{{ conversation.lastMessagePreview }}
+                  <div class="flex items-center gap-1.5">
+                    <p
+                      class="min-w-0 flex-1 truncate text-[12.5px] text-app-text"
+                      [class.font-bold]="conversation.unreadForShopCount > 0"
+                      [class.font-semibold]="conversation.unreadForShopCount === 0"
+                    >
+                      {{ conversationTitle(conversation) }}
                     </p>
-                  } @else {
-                    <p class="mt-1 truncate text-xs leading-4 text-app-text-muted">{{ conversationSubtitle(conversation) }}</p>
-                  }
-                  <div class="mt-1.5 flex min-w-0 items-center gap-1.5 text-[10px] font-medium text-app-text-muted">
-                    @if (conversation.lastMessageChannel) {
-                      <span class="shrink-0">{{ channelLabel(conversation.lastMessageChannel) }}</span>
-                    }
-                    @if (conversation.unreadForShopCount > 0) {
-                      <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-brand"></span>
-                      <span class="shrink-0 font-bold text-brand">{{ conversation.unreadForShopCount }} unread</span>
-                    }
                     @if (conversation.priority === 'urgent' || conversation.priority === 'high') {
-                      <span class="shrink-0 rounded-full px-1.5 py-0.5" [ngClass]="conversation.priority === 'urgent' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'">{{ conversation.priority }}</span>
-                    }
-                    @if (conversation.assignedUser?.name) {
-                      <span class="min-w-0 truncate text-violet-700">· {{ conversation.assignedUser?.name }}</span>
+                      <span
+                        class="h-1.5 w-1.5 shrink-0 rounded-full"
+                        [ngClass]="conversation.priority === 'urgent' ? 'bg-rose-500' : 'bg-amber-500'"
+                        [attr.title]="conversation.priority === 'urgent' ? 'Urgent priority' : 'High priority'"
+                      ></span>
                     }
                     @if (conversation.snoozedUntil) {
-                      <span class="shrink-0 text-sky-700">· Snoozed</span>
+                      <lucide-icon [name]="icons.Clock3" class="h-3 w-3 shrink-0 text-sky-600" title="Snoozed"></lucide-icon>
+                    }
+                    <span class="shrink-0 text-[10px] font-medium text-app-text-muted">
+                      {{ formatConversationDate(conversation.lastMessageAt || conversation.updatedAt) }}
+                    </span>
+                  </div>
+
+                  <div class="mt-0.5 flex min-w-0 items-center gap-2">
+                    @if (conversation.lastMessagePreview) {
+                      <p
+                        class="min-w-0 flex-1 truncate text-[11.5px] leading-4"
+                        [ngClass]="conversation.unreadForShopCount > 0 ? 'font-medium text-app-text' : 'text-app-text-muted'"
+                      >
+                        {{ conversation.lastMessageDirection === 'outbound' ? 'You: ' : '' }}{{ conversation.lastMessagePreview }}
+                      </p>
+                    } @else {
+                      <p class="min-w-0 flex-1 truncate text-[11.5px] leading-4 text-app-text-muted">
+                        {{ conversationSubtitle(conversation) }}
+                      </p>
+                    }
+
+                    @if (conversation.unreadForShopCount > 0) {
+                      <span class="inline-flex min-w-[18px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">
+                        {{ conversation.unreadForShopCount }}
+                      </span>
                     }
                   </div>
                 </div>
