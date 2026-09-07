@@ -1,10 +1,10 @@
 <div class="-m-4 flex h-[calc(100vh-4rem)] overflow-hidden bg-app-surface">
-  <aside class="flex w-full max-w-md flex-col border-r border-app-border bg-app-surface">
+  <aside class="flex w-full flex-col border-r border-app-border bg-app-surface lg:w-[24rem] lg:shrink-0">
     <div class="border-b border-app-border p-5">
       <div class="flex items-start justify-between gap-3">
         <div>
           <h1 class="text-2xl font-semibold tracking-tight text-app-text">Inbox</h1>
-          <p class="mt-1 text-sm text-app-text-muted">Email and SMS conversations with customers.</p>
+          <p class="mt-1 text-sm text-app-text-muted">Web chat, SMS & email in one place.</p>
           <div class="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-app-text-muted">
             <span class="rounded-full bg-app-surface-muted px-2.5 py-1">{{ visibleConversationCount() }} shown</span>
             @if (totalUnreadCount() > 0) {
@@ -24,35 +24,37 @@
         </button>
       </div>
 
-      <div class="mt-4 flex gap-2">
+      <div class="mt-4 flex items-center gap-2">
         <div class="relative min-w-0 flex-1">
-          <span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-11 items-center justify-center text-app-text-muted" aria-hidden="true">
-            <lucide-icon [name]="icons.Search" [size]="16" class="block"></lucide-icon>
+          <span class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center text-app-text-muted" aria-hidden="true">
+            <lucide-icon [name]="icons.Search" [size]="15" class="block"></lucide-icon>
           </span>
           <input
             type="text"
-            class="w-full rounded-2xl border border-app-border bg-app-surface py-2.5 pl-12 pr-3 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
-            placeholder="Search conversations..."
+            class="w-full rounded-xl border border-app-border bg-app-surface py-2.5 pl-10 pr-10 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15"
+            placeholder="Search inbox"
             [ngModel]="searchTerm()"
             (ngModelChange)="setSearchTerm($event)"
             (keydown.enter)="applySearch()"
           />
+          @if (searchTerm().trim()) {
+            <button
+              type="button"
+              class="absolute inset-y-0 right-0 flex w-9 cursor-pointer items-center justify-center text-app-text-muted transition hover:text-app-text"
+              (click)="clearSearch()"
+              aria-label="Clear search"
+            >
+              <lucide-icon [name]="icons.X" class="h-3.5 w-3.5"></lucide-icon>
+            </button>
+          }
         </div>
-        @if (searchTerm().trim()) {
-          <button
-            type="button"
-            class="cursor-pointer rounded-2xl border border-app-border px-3 py-2.5 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text"
-            (click)="clearSearch()"
-          >
-            Clear
-          </button>
-        }
         <button
           type="button"
-          class="cursor-pointer rounded-2xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800"
+          class="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-gray-900 text-white transition hover:bg-gray-800"
           (click)="applySearch()"
+          aria-label="Search conversations"
         >
-          Search
+          <lucide-icon [name]="icons.Search" class="h-4 w-4"></lucide-icon>
         </button>
       </div>
 
@@ -60,7 +62,7 @@
         <button
           type="button"
           class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold transition"
-          [ngClass]="conversationStatusFilter() === 'open' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted hover:text-app-text'"
+          [ngClass]="conversationStatusFilter() === 'open' ? 'bg-app-surface text-app-text ring-1 ring-app-border' : 'text-app-text-muted hover:text-app-text'"
           (click)="setConversationStatusFilter('open')"
         >
           Open
@@ -68,7 +70,7 @@
         <button
           type="button"
           class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold transition"
-          [ngClass]="conversationStatusFilter() === 'archived' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted hover:text-app-text'"
+          [ngClass]="conversationStatusFilter() === 'archived' ? 'bg-app-surface text-app-text ring-1 ring-app-border' : 'text-app-text-muted hover:text-app-text'"
           (click)="setConversationStatusFilter('archived')"
         >
           Archived
@@ -76,30 +78,30 @@
         <button
           type="button"
           class="cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold transition"
-          [ngClass]="conversationStatusFilter() === 'all' ? 'bg-app-surface text-app-text shadow-sm' : 'text-app-text-muted hover:text-app-text'"
+          [ngClass]="conversationStatusFilter() === 'all' ? 'bg-app-surface text-app-text ring-1 ring-app-border' : 'text-app-text-muted hover:text-app-text'"
           (click)="setConversationStatusFilter('all')"
         >
           All
         </button>
       </div>
 
-      <div class="mt-3 flex flex-wrap items-center gap-2">
-        <div class="inline-flex rounded-xl border border-app-border bg-app-surface p-1">
-          <button type="button" class="cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold transition" [ngClass]="assignmentFilter() === 'all' ? 'bg-gray-900 text-white' : 'text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'" (click)="setAssignmentFilter('all')">All owners</button>
-          <button type="button" class="cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold transition" [ngClass]="assignmentFilter() === 'mine' ? 'bg-gray-900 text-white' : 'text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'" (click)="setAssignmentFilter('mine')">Mine</button>
-          <button type="button" class="cursor-pointer rounded-lg px-2.5 py-1.5 text-xs font-semibold transition" [ngClass]="assignmentFilter() === 'unassigned' ? 'bg-gray-900 text-white' : 'text-app-text-muted hover:bg-app-surface-muted hover:text-app-text'" (click)="setAssignmentFilter('unassigned')">Unassigned</button>
+      <div class="mt-3 flex items-center gap-2">
+        <div class="inline-flex min-w-0 flex-1 rounded-xl bg-app-surface-muted p-1">
+          <button type="button" class="min-w-0 flex-1 cursor-pointer rounded-lg px-2 py-1.5 text-xs font-semibold transition" [ngClass]="assignmentFilter() === 'all' ? 'bg-app-surface text-app-text ring-1 ring-app-border' : 'text-app-text-muted hover:text-app-text'" (click)="setAssignmentFilter('all')">All</button>
+          <button type="button" class="min-w-0 flex-1 cursor-pointer rounded-lg px-2 py-1.5 text-xs font-semibold transition" [ngClass]="assignmentFilter() === 'mine' ? 'bg-app-surface text-app-text ring-1 ring-app-border' : 'text-app-text-muted hover:text-app-text'" (click)="setAssignmentFilter('mine')">Mine</button>
+          <button type="button" class="min-w-0 flex-1 cursor-pointer rounded-lg px-2 py-1.5 text-xs font-semibold transition" [ngClass]="assignmentFilter() === 'unassigned' ? 'bg-app-surface text-app-text ring-1 ring-app-border' : 'text-app-text-muted hover:text-app-text'" (click)="setAssignmentFilter('unassigned')">Unassigned</button>
         </div>
-        <select class="cursor-pointer rounded-xl border border-app-border bg-app-surface px-2.5 py-2 text-xs font-semibold text-app-text-muted outline-none focus:border-brand" [ngModel]="snoozedFilter()" (ngModelChange)="setSnoozedFilter($event)">
+        <select class="max-w-32 cursor-pointer rounded-xl border border-app-border bg-app-surface px-2.5 py-2 text-xs font-semibold text-app-text-muted outline-none focus:border-brand" [ngModel]="snoozedFilter()" (ngModelChange)="setSnoozedFilter($event)" aria-label="Snooze filter">
           <option value="exclude">Active</option>
-          <option value="include">Include snoozed</option>
+          <option value="include">All activity</option>
           <option value="only">Snoozed</option>
         </select>
       </div>
 
 
       @if (conversations().length > 0) {
-        <div class="mt-3 flex items-center justify-between gap-3">
-          <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-app-text-muted">
+        <div class="mt-2 flex items-center justify-between gap-3 px-1">
+          <label class="inline-flex cursor-pointer items-center gap-2 text-[11px] font-semibold text-app-text-muted">
             <input
               type="checkbox"
               class="h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand/30"
@@ -108,7 +110,7 @@
               [disabled]="bulkActionRunning()"
               (change)="toggleSelectAllVisible($any($event.target).checked)"
             />
-            Select all shown
+            Select all
           </label>
 
           @if (selectedConversationCount() > 0) {
@@ -206,10 +208,10 @@
         <div class="divide-y divide-app-border">
           @for (conversation of conversations(); track conversation.id) {
             <div
-              class="group flex items-start gap-3 px-4 py-4 transition hover:bg-app-surface-muted"
-              [ngClass]="selectedConversation()?.id === conversation.id ? 'bg-brand/8' : isConversationBulkSelected(conversation.id) ? 'bg-brand/[0.05]' : conversation.unreadForShopCount > 0 ? 'bg-brand/[0.03]' : ''"
+              class="group relative flex items-start gap-2.5 border-l-2 border-l-transparent px-3.5 py-3.5 transition hover:bg-app-surface-muted/70"
+              [ngClass]="selectedConversation()?.id === conversation.id ? 'border-l-brand bg-brand/[0.06]' : isConversationBulkSelected(conversation.id) ? 'bg-brand/[0.05]' : conversation.unreadForShopCount > 0 ? 'bg-brand/[0.025]' : ''"
             >
-              <div class="pt-1.5">
+              <div class="pt-1.5 transition-opacity" [ngClass]="isConversationBulkSelected(conversation.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'">
                 <input
                   type="checkbox"
                   class="h-4 w-4 cursor-pointer rounded border-app-border text-brand focus:ring-brand/30"
@@ -225,9 +227,9 @@
                 class="flex min-w-0 flex-1 cursor-pointer items-start gap-3 text-left"
                 (click)="openConversation(conversation)"
               >
-                <div class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
                   [ngClass]="conversation.unreadForShopCount > 0 ? 'bg-brand/10 text-brand' : 'bg-app-surface-muted text-app-text-muted'">
-                  <lucide-icon [name]="conversation.lastMessageChannel === 'email' ? icons.Mail : icons.MessageSquare" class="h-5 w-5"></lucide-icon>
+                  <lucide-icon [name]="conversation.lastMessageChannel === 'email' ? icons.Mail : icons.MessageSquare" class="h-4 w-4"></lucide-icon>
                 </div>
 
                 <div class="min-w-0 flex-1">
@@ -267,7 +269,7 @@
     </div>
   </aside>
 
-  <section class="hidden min-h-0 min-w-0 flex-1 overflow-hidden bg-[#f7f7fa] lg:grid lg:grid-cols-[minmax(0,1fr)_360px]">
+  <section class="hidden min-h-0 min-w-0 flex-1 overflow-hidden bg-[#f8f9fb] lg:grid lg:grid-cols-[minmax(0,1fr)_330px]">
     @if (threadLoading()) {
       <div class="col-span-2 flex h-full items-center justify-center text-sm text-app-text-muted">
         <lucide-icon [name]="icons.Loader2" class="mr-2 h-4 w-4 animate-spin"></lucide-icon>
@@ -275,7 +277,7 @@
       </div>
     } @else if (selectedConversation(); as conversation) {
       <div class="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-        <header class="border-b border-app-border bg-app-surface/95 px-6 py-4 backdrop-blur">
+        <header class="border-b border-app-border bg-app-surface/95 px-5 py-3.5 backdrop-blur">
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
               <div class="flex items-center gap-3">
@@ -302,66 +304,61 @@
               </div>
             </div>
 
-            <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
-              @if (!conversation.assignedUserId) {
-                <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-gray-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50" [disabled]="workflowSaving()" (click)="takeConversation()">
-                  <lucide-icon [name]="icons.UserPlus" class="h-4 w-4"></lucide-icon>Take
-                </button>
-              }
-              <select class="cursor-pointer rounded-2xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-text-muted outline-none focus:border-brand" [disabled]="workflowSaving()" [ngModel]="conversation.assignedUserId || ''" (ngModelChange)="assignConversation($event || null)" title="Assign conversation">
-                <option value="">Unassigned</option>
-                @for (user of teammates(); track user.id) { <option [value]="user.id">{{ user.name }}</option> }
-              </select>
-              <select class="cursor-pointer rounded-2xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-text-muted outline-none focus:border-brand" [disabled]="workflowSaving()" [ngModel]="conversation.priority || 'normal'" (ngModelChange)="setConversationPriority($event)" title="Priority">
-                <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
-              </select>
-              <select class="cursor-pointer rounded-2xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-text-muted outline-none focus:border-brand" [disabled]="workflowSaving()" [ngModel]="''" (ngModelChange)="$event && snoozeConversation($event)" title="Snooze">
-                <option value="">Snooze…</option>
-                <option value="hour">1 hour</option><option value="tomorrow">Until tomorrow</option><option value="week">1 week</option>
-                @if (conversation.snoozedUntil) { <option value="clear">Unsnooze</option> }
-              </select>
+            <div class="flex shrink-0 items-center gap-2">
               @if (conversation.status === 'archived') {
+                <span class="hidden rounded-full bg-app-surface-muted px-2.5 py-1 text-[11px] font-semibold text-app-text-muted xl:inline-flex">Archived</span>
                 <button
                   type="button"
-                  class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-app-border bg-app-surface px-3 text-xs font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
                   [disabled]="conversationActionRunning()"
                   (click)="reopenSelectedConversation()"
                 >
                   @if (conversationActionRunning()) {
-                    <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
-                    Reopening
+                    <lucide-icon [name]="icons.Loader2" class="h-3.5 w-3.5 animate-spin"></lucide-icon>
                   } @else {
-                    <lucide-icon [name]="icons.ArchiveRestore" class="h-4 w-4"></lucide-icon>
-                    Reopen
+                    <lucide-icon [name]="icons.ArchiveRestore" class="h-3.5 w-3.5"></lucide-icon>
                   }
+                  Reopen
                 </button>
               } @else {
                 <button
                   type="button"
-                  class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text-muted transition hover:bg-app-surface-muted hover:text-app-text disabled:cursor-not-allowed disabled:opacity-50"
                   [disabled]="conversationActionRunning()"
                   (click)="archiveSelectedConversation()"
+                  title="Archive conversation"
+                  aria-label="Archive conversation"
                 >
                   @if (conversationActionRunning()) {
-                    <lucide-icon [name]="icons.Loader2" class="h-4 w-4 animate-spin"></lucide-icon>
-                    Working
+                    <lucide-icon [name]="icons.Loader2" class="h-3.5 w-3.5 animate-spin"></lucide-icon>
                   } @else {
-                    <lucide-icon [name]="icons.Archive" class="h-4 w-4"></lucide-icon>
-                    Archive
+                    <lucide-icon [name]="icons.Archive" class="h-3.5 w-3.5"></lucide-icon>
                   }
                 </button>
               }
-
               <button
                 type="button"
-                class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text-muted transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 [disabled]="conversationActionRunning()"
                 (click)="deleteSelectedConversation()"
+                title="Delete conversation"
+                aria-label="Delete conversation"
               >
-                <lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon>
-                Delete
+                <lucide-icon [name]="icons.Trash2" class="h-3.5 w-3.5"></lucide-icon>
               </button>
             </div>
+          </div>
+          <div class="mt-2 flex flex-wrap items-center gap-1.5 pl-[3.25rem] text-[11px] font-semibold text-app-text-muted">
+            @if (conversation.lastMessageChannel) {
+              <span class="rounded-full bg-app-surface-muted px-2 py-0.5">{{ channelLabel(conversation.lastMessageChannel) }}</span>
+            }
+            <span class="rounded-full bg-app-surface-muted px-2 py-0.5">{{ conversation.assignedUser?.name || 'Unassigned' }}</span>
+            @if (conversation.priority === 'high' || conversation.priority === 'urgent') {
+              <span class="rounded-full px-2 py-0.5" [ngClass]="conversation.priority === 'urgent' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'">{{ conversation.priority }}</span>
+            }
+            @if (conversation.webChatContext?.state === 'human_requested') {
+              <span class="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">Needs teammate</span>
+            }
           </div>
         </header>
 
@@ -422,15 +419,15 @@
           </div>
         }
 
-        <div #messageScrollContainer class="min-h-0 flex-1 overflow-y-auto px-6 py-5 pb-6">
+        <div #messageScrollContainer class="min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-6 xl:px-7">
           @if (selectedTimeline().length === 0) {
             <div class="flex h-full items-center justify-center text-center">
               <div>
-                <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-app-surface text-app-text-muted shadow-sm ring-1 ring-app-border">
+                <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-app-surface text-app-text-muted ring-1 ring-app-border">
                   <lucide-icon [name]="icons.MessageSquare" class="h-5 w-5"></lucide-icon>
                 </div>
-                <p class="mt-4 text-sm font-semibold text-app-text">No timeline yet</p>
-                <p class="mt-1 text-sm text-app-text-muted">Send a message or add an internal note to start the customer timeline.</p>
+                <p class="mt-3 text-sm font-semibold text-app-text">No messages yet</p>
+                <p class="mt-1 max-w-sm text-sm text-app-text-muted">{{ conversation.status === 'archived' ? 'This archived conversation has no message history.' : 'Send a message or add an internal note to start the conversation.' }}</p>
               </div>
             </div>
           } @else {
@@ -444,7 +441,7 @@
                       </div>
                     }
                     <div
-                      class="max-w-[72%] rounded-3xl px-4 py-3 shadow-sm ring-1"
+                      class="max-w-[76%] rounded-2xl px-4 py-3 ring-1"
                       [ngClass]="timelineBubbleClass(item)"
                     >
                       <div class="mb-1 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide opacity-75">
@@ -500,7 +497,7 @@
                   </div>
                 } @else {
                   <div class="flex justify-center">
-                    <div class="inline-flex max-w-[82%] items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-[12px] text-app-text-muted shadow-sm ring-1 ring-app-border backdrop-blur">
+                    <div class="inline-flex max-w-[82%] items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[12px] text-app-text-muted ring-1 ring-app-border">
                       <span class="h-1.5 w-1.5 shrink-0 rounded-full" [ngClass]="timelineEventDotClass(item)"></span>
                       <span class="truncate font-semibold text-app-text">{{ timelineTitle(item) }}</span>
                       @if (timelineEventDetail(item); as detail) {
@@ -515,7 +512,26 @@
           }
         </div>
 
-        <footer class="shrink-0 border-t border-app-border bg-app-surface px-6 py-4">
+        @if (conversation.status === 'archived') {
+          <footer class="shrink-0 border-t border-app-border bg-app-surface px-5 py-3">
+            <div class="flex items-center justify-between gap-4 rounded-xl bg-app-surface-muted/70 px-4 py-3">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-app-text">This conversation is archived</p>
+                <p class="mt-0.5 text-xs text-app-text-muted">Reopen it to send a reply or add an internal note.</p>
+              </div>
+              <button
+                type="button"
+                class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50"
+                [disabled]="conversationActionRunning()"
+                (click)="reopenSelectedConversation()"
+              >
+                <lucide-icon [name]="conversationActionRunning() ? icons.Loader2 : icons.ArchiveRestore" class="h-3.5 w-3.5" [class.animate-spin]="conversationActionRunning()"></lucide-icon>
+                Reopen
+              </button>
+            </div>
+          </footer>
+        } @else {
+        <footer class="shrink-0 border-t border-app-border bg-app-surface px-5 py-3">
           @if (error()) {
             <div class="mb-3 rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 ring-1 ring-rose-100">
               {{ error() }}
@@ -677,8 +693,8 @@
 
           <div class="flex items-end gap-3">
             <textarea
-              rows="3"
-              class="min-h-20 flex-1 resize-none rounded-2xl border px-4 py-3 text-sm leading-6 outline-none focus:ring-2"
+              rows="2"
+              class="min-h-16 flex-1 resize-none rounded-xl border px-4 py-3 text-sm leading-6 outline-none focus:ring-2"
               [ngClass]="activeChannel() === 'note' ? 'border-amber-100 bg-amber-50/70 text-amber-950 placeholder:text-amber-700/50 focus:border-amber-300 focus:ring-amber-200' : 'border-app-border bg-app-surface focus:border-brand focus:ring-brand/20'"
               [placeholder]="composePlaceholder(conversation)"
               [disabled]="!canSendActiveChannel(conversation)"
@@ -688,7 +704,7 @@
             ></textarea>
             <button
               type="button"
-              class="inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               [ngClass]="activeChannel() === 'note' ? 'bg-amber-900 hover:bg-amber-800' : 'bg-brand'"
               [disabled]="sending() || uploadingAttachments() || addingInternalNote() || (!composeBody().trim() && !(activeChannel() === 'web_chat' && pendingAttachments().length > 0)) || !canSendActiveChannel(conversation)"
               (click)="sendMessage()"
@@ -703,10 +719,11 @@
             </button>
           </div>
         </footer>
+        }
       </div>
 
-      <aside class="h-full min-h-0 overflow-y-auto overscroll-contain border-l border-app-border bg-app-surface px-5 py-5">
-        <div class="mb-4 rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4">
+      <aside class="h-full min-h-0 overflow-y-auto overscroll-contain border-l border-app-border bg-[#fbfbfc] px-4 py-4">
+        <div class="mb-3 rounded-2xl border border-indigo-100 bg-app-surface p-4">
           <div class="flex items-start gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700"><lucide-icon [name]="icons.Sparkles" class="h-5 w-5"></lucide-icon></div>
             <div class="min-w-0 flex-1">
@@ -750,7 +767,7 @@
           }
         </div>
 
-        <section class="mb-4 rounded-3xl border border-app-border bg-app-surface p-4">
+        <section class="mb-3 rounded-2xl border border-app-border bg-app-surface p-4">
           <div class="flex items-center justify-between gap-3"><div><p class="text-[11px] font-bold uppercase tracking-[0.14em] text-app-text-muted">Workflow</p><p class="mt-1 text-sm font-semibold text-app-text">{{ conversation.assignedUser?.name || 'Unassigned' }}</p></div><span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase" [ngClass]="conversation.priority === 'urgent' ? 'bg-rose-100 text-rose-700' : conversation.priority === 'high' ? 'bg-amber-100 text-amber-700' : 'bg-app-surface-muted text-app-text-muted'">{{ conversation.priority || 'normal' }}</span></div>
           <div class="mt-3 grid gap-2">
             @if (!conversation.assignedUserId) {
@@ -764,8 +781,8 @@
           </div>
           @if (conversation.snoozedUntil) {<div class="mt-3 flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700"><lucide-icon [name]="icons.Clock3" class="h-3.5 w-3.5"></lucide-icon>Snoozed until {{ conversation.snoozedUntil | date:'MMM d, h:mm a' }}</div>}
         </section>
-        <div class="space-y-5">
-          <section class="rounded-3xl border border-app-border bg-app-surface p-4 shadow-sm">
+        <div class="space-y-3">
+          <section class="rounded-2xl border border-app-border bg-app-surface p-4">
             <div class="flex items-start gap-3">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-app-surface-muted text-app-text-muted">
                 <lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon>
@@ -815,20 +832,24 @@
             </div>
           </section>
 
-          <section class="rounded-3xl border border-app-border bg-app-surface p-4 shadow-sm">
+          <section class="rounded-2xl border border-app-border bg-app-surface p-4">
             <div class="flex items-center justify-between gap-3">
-              <div><p class="text-[11px] font-bold uppercase tracking-[0.14em] text-app-text-muted">Conversation</p><p class="mt-1 text-sm font-semibold text-app-text">{{ conversation.assignedUser?.name || 'Unassigned' }}</p></div>
-              <span class="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase" [ngClass]="conversation.priority === 'urgent' ? 'bg-rose-100 text-rose-700' : conversation.priority === 'high' ? 'bg-amber-100 text-amber-700' : 'bg-app-surface-muted text-app-text-muted'">{{ conversation.priority || 'normal' }}</span>
+              <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-app-text-muted">Details</p>
+              <button type="button" class="cursor-pointer text-[11px] font-semibold text-brand hover:underline" [disabled]="aiAssistLoading()" (click)="refreshAiSummary()">Classify with AI</button>
             </div>
-            @if (conversation.snoozedUntil) {
-              <div class="mt-3 flex items-center gap-2 rounded-2xl bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700"><lucide-icon [name]="icons.Clock3" class="h-3.5 w-3.5"></lucide-icon>Snoozed until {{ conversation.snoozedUntil | date:'MMM d, h:mm a' }}</div>
+            @if (conversation.intent) {
+              <div class="mt-3">
+                <p class="text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Intent</p>
+                <p class="mt-1 text-xs font-semibold text-app-text">{{ conversation.intent }}</p>
+              </div>
             }
-            <div class="mt-4 border-t border-app-border pt-3">
-              <div class="flex items-center justify-between"><p class="text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Intent & tags</p><button type="button" class="cursor-pointer text-[11px] font-semibold text-brand hover:underline" [disabled]="aiAssistLoading()" (click)="refreshAiSummary()">Classify with AI</button></div>
-              @if (conversation.intent) { <p class="mt-2 text-xs font-semibold text-app-text">{{ conversation.intent }}</p> }
+            <div class="mt-3">
+              <p class="text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Tags</p>
               <div class="mt-2 flex flex-wrap gap-1.5">
                 @for (tag of conversation.tags || []; track tag) {
                   <button type="button" class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-app-surface-muted px-2 py-1 text-[11px] font-semibold text-app-text-muted hover:text-rose-700" (click)="removeConversationTag(tag)">{{ tag }} <span aria-hidden="true">×</span></button>
+                } @empty {
+                  <span class="text-xs text-app-text-muted">No tags yet</span>
                 }
               </div>
               <div class="mt-2 flex gap-2"><input class="min-w-0 flex-1 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs outline-none focus:border-brand" placeholder="Add tag" [ngModel]="newTag()" (ngModelChange)="newTag.set($event)" (keydown.enter)="$event.preventDefault(); addConversationTag()"/><button type="button" class="cursor-pointer rounded-xl border border-app-border px-2.5 py-2 text-xs font-bold text-app-text-muted hover:bg-app-surface-muted" (click)="addConversationTag()">Add</button></div>
@@ -839,7 +860,7 @@
           </section>
 
           @if (conversation.webChatContext; as web) {
-            <section class="rounded-3xl border border-app-border bg-app-surface p-4 shadow-sm">
+            <section class="rounded-2xl border border-app-border bg-app-surface p-4">
               <div class="flex items-start gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 ring-1 ring-sky-100">
                   <lucide-icon [name]="icons.Globe2" class="h-5 w-5"></lucide-icon>
@@ -891,7 +912,7 @@
             </section>
           }
 
-          <section class="rounded-3xl border border-app-border bg-white/60 shadow-sm">
+          <section class="rounded-2xl border border-app-border bg-app-surface">
             <button
               type="button"
               class="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-app-surface-muted/70"
@@ -910,7 +931,7 @@
             @if (relatedDevicesOpen()) {
               <div class="space-y-2 px-3 pb-3">
                 @for (device of selectedRelatedDevices(); track device.id) {
-                  <div class="rounded-2xl border border-app-border bg-white/80 p-3 shadow-sm">
+                  <div class="rounded-xl border border-app-border bg-app-surface p-3">
                     <div class="flex items-start gap-3">
                       <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-app-surface-muted text-app-text-muted">
                         <lucide-icon [name]="icons.SmartphoneIcon" class="h-4 w-4"></lucide-icon>
@@ -930,7 +951,7 @@
             }
           </section>
 
-          <section class="rounded-3xl border border-app-border bg-white/60 shadow-sm">
+          <section class="rounded-2xl border border-app-border bg-app-surface">
             <button
               type="button"
               class="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-app-surface-muted/70"
@@ -949,7 +970,7 @@
             @if (relatedQuotesOpen()) {
               <div class="space-y-2 px-3 pb-3">
                 @for (quote of selectedRelatedQuotes(); track quote.id) {
-                  <div class="rounded-2xl border border-app-border bg-white/80 p-3 shadow-sm">
+                  <div class="rounded-xl border border-app-border bg-app-surface p-3">
                     <div class="flex items-start justify-between gap-3">
                       <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-app-text">{{ quote.repairLabel }}</p>
@@ -979,7 +1000,7 @@
             }
           </section>
 
-          <section class="rounded-3xl border border-app-border bg-white/60 shadow-sm">
+          <section class="rounded-2xl border border-app-border bg-app-surface">
             <button
               type="button"
               class="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-app-surface-muted/70"
@@ -998,7 +1019,7 @@
             @if (relatedRepairsOpen()) {
               <div class="space-y-2 px-3 pb-3">
                 @for (repair of selectedRelatedRepairs(); track repair.id) {
-                  <div class="rounded-2xl border border-app-border bg-white/80 p-3 shadow-sm">
+                  <div class="rounded-xl border border-app-border bg-app-surface p-3">
                     <div class="flex items-start gap-3">
                       <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-app-surface-muted text-app-text-muted">
                         <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
