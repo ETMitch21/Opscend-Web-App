@@ -111,6 +111,7 @@ export class VoiceAgentSettingsComponent implements OnInit {
   readonly pbxForm = this.fb.group({
     enabled: [false],
     routingMode: ['ai_first' as 'ai_first' | 'ring_group_first'],
+    afterHoursRoutingMode: ['voicemail' as 'voicemail' | 'ai'],
     greetingEnabled: [true],
     greeting: ['', Validators.maxLength(2000)],
     ringTimeoutSeconds: [25, [Validators.required, Validators.min(5), Validators.max(120)]],
@@ -193,6 +194,7 @@ export class VoiceAgentSettingsComponent implements OnInit {
     const pbxPayload: PbxSettingsPatch = {
       enabled: Boolean(pbxRaw.enabled),
       routingMode: pbxRaw.routingMode === 'ring_group_first' ? 'ring_group_first' : 'ai_first',
+      afterHoursRoutingMode: pbxRaw.afterHoursRoutingMode === 'ai' ? 'ai' : 'voicemail',
       greetingEnabled: Boolean(pbxRaw.greetingEnabled),
       greeting: this.nullable(pbxRaw.greeting),
       ringTimeoutSeconds: Number(pbxRaw.ringTimeoutSeconds ?? 25),
@@ -389,6 +391,7 @@ export class VoiceAgentSettingsComponent implements OnInit {
     this.pbxForm.patchValue({
       enabled: settings.enabled,
       routingMode: settings.routingMode,
+      afterHoursRoutingMode: settings.afterHoursRoutingMode,
       greetingEnabled: settings.greetingEnabled,
       greeting: settings.greeting ?? '',
       ringTimeoutSeconds: settings.ringTimeoutSeconds,

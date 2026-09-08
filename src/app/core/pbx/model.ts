@@ -1,4 +1,5 @@
 export type PbxRoutingMode = 'ai_first' | 'ring_group_first';
+export type PbxAfterHoursRoutingMode = 'voicemail' | 'ai';
 
 export interface PbxRingGroupMember {
   userId: string;
@@ -32,6 +33,7 @@ export interface PbxSettings {
   shopId: string;
   enabled: boolean;
   routingMode: PbxRoutingMode;
+  afterHoursRoutingMode: PbxAfterHoursRoutingMode;
   greetingEnabled: boolean;
   greeting: string | null;
   ringTimeoutSeconds: number;
@@ -53,6 +55,7 @@ export type PbxSettingsPatch = Partial<Pick<
   PbxSettings,
   | 'enabled'
   | 'routingMode'
+  | 'afterHoursRoutingMode'
   | 'greetingEnabled'
   | 'greeting'
   | 'ringTimeoutSeconds'

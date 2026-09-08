@@ -93,6 +93,14 @@
                     </select>
                     <span class="settings-hint">AI can hand the caller into the default Opscend ring group without leaving Twilio.</span>
                   </label>
+                  <label class="settings-field md:col-span-6">
+                    <span class="settings-label">After-hours calls</span>
+                    <select class="settings-control cursor-pointer" formControlName="afterHoursRoutingMode">
+                      <option value="voicemail">Send directly to voicemail</option>
+                      <option value="ai">Send to AI quoting assistant</option>
+                    </select>
+                    <span class="settings-hint">Uses the shop business hours and overrides already configured in Opscend. Opscend Mobile never rings while the shop is closed.</span>
+                  </label>
                   <label class="settings-field md:col-span-3"><span class="settings-label">Ring timeout</span><input class="settings-control" type="number" min="5" max="120" formControlName="ringTimeoutSeconds" /><span class="settings-hint">Seconds before voicemail.</span></label>
                   <label class="settings-field md:col-span-3"><span class="settings-label">Voicemail max</span><input class="settings-control" type="number" min="15" max="300" formControlName="voicemailMaxSeconds" /><span class="settings-hint">Maximum message length.</span></label>
                   <label class="permission-card md:col-span-6 cursor-pointer">
