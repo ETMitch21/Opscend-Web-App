@@ -181,12 +181,12 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         keywords: ['chat', 'website', 'webflow', 'ai', 'messages', 'widget', 'inbox', 'proactive', 'page specific', 'targeted messages'],
       },
       {
-        label: 'AI phone agent',
-        description: 'Answer calls, create exact quotes, capture review requests, and transfer callers.',
+        label: 'Phone system & AI',
+        description: 'Manage call routing, ring groups, voicemail, hold music, and the AI quoting assistant.',
         route: '/settings/shop/voice-agent',
         icon: PhoneCallIcon,
         permission: 'voiceAgent:read',
-        keywords: ['phone', 'calls', 'twilio', 'openai', 'voice', 'quotes', 'agent'],
+        keywords: ['phone', 'calls', 'twilio', 'openai', 'voice', 'quotes', 'agent', 'pbx', 'voicemail', 'ring groups', 'hold music'],
       },
       {
         label: 'Payouts',
