@@ -113,17 +113,17 @@
                   <label class="settings-field">
                     <span class="settings-label">Pre-ring greeting</span>
                     <textarea class="settings-control" rows="3" formControlName="greeting" placeholder="Thanks for calling. Please hold while we connect your call."></textarea>
-                    <span class="settings-hint">Leave blank for the shop-name default.</span>
+                    <span class="settings-hint">Leave blank for the shop-name default. PBX greetings use a natural neural voice with pronunciation tuning for known brand names and web addresses.</span>
                   </label>
                   <label class="settings-field">
                     <span class="settings-label">Voicemail greeting</span>
                     <textarea class="settings-control" rows="3" formControlName="voicemailGreeting" placeholder="We're sorry we missed your call. Please leave a message after the tone."></textarea>
-                    <span class="settings-hint">Leave blank for the Opscend default.</span>
+                    <span class="settings-hint">Leave blank for the Opscend default. Voicemail uses the same natural neural voice as the pre-ring greeting.</span>
                   </label>
                   <label class="settings-field">
                     <span class="settings-label">Custom hold music URL</span>
                     <input class="settings-control" type="url" formControlName="holdMusicUrl" placeholder="https://…/hold-music.mp3" />
-                    <span class="settings-hint">Optional. Leave blank to use Twilio's default conference hold music.</span>
+                    <span class="settings-hint">Optional. This now plays during normal PBX Hold and transfer waiting. Use a public direct MP3/WAV URL. For Dropbox, replace <code>dl=0</code> with <code>raw=1</code> rather than keeping both.</span>
                   </label>
                 </div>
               </div>
