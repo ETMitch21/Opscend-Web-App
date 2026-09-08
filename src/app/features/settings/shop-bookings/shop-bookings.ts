@@ -67,7 +67,19 @@ export class ShopBookingsComponent implements OnInit {
   readonly iframeCode = computed(() => {
     const url = this.publicBookingUrl();
     return url
-      ? `<iframe src="${url}" width="100%" height="850" style="border:0; border-radius:24px;" loading="lazy"></iframe>`
+      ? `<iframe src="${url}" width="100%" height="850" style="border:0; border-radius:24px;" loading="lazy" title="Repair quote"></iframe>`
+      : '';
+  });
+
+  readonly launcherUrl = computed(() => {
+    const url = this.publicBookingUrl();
+    return url ? `${url}/launcher?category=Smartphones` : '';
+  });
+
+  readonly launcherIframeCode = computed(() => {
+    const url = this.launcherUrl();
+    return url
+      ? `<iframe src="${url}" width="100%" height="58" style="border:0; background:transparent; overflow:hidden;" scrolling="no" loading="eager" title="Get my repair price"></iframe>`
       : '';
   });
 
@@ -247,10 +259,20 @@ export class ShopBookingsComponent implements OnInit {
   }
 
   copyIframeCode(): void {
-    const code = this.iframeCode();
+    this.copyEmbedCode(this.iframeCode(), 'Could not copy iframe code.');
+  }
+
+  copyLauncherIframeCode(): void {
+    this.copyEmbedCode(
+      this.launcherIframeCode(),
+      'Could not copy quick quote launcher code.',
+    );
+  }
+
+  private copyEmbedCode(code: string, errorMessage: string): void {
     if (!code || typeof navigator === 'undefined' || !navigator.clipboard) return;
     navigator.clipboard.writeText(code).catch((error) => {
-      console.error('Could not copy iframe code.', error);
+      console.error(errorMessage, error);
     });
   }
 

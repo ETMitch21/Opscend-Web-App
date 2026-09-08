@@ -433,8 +433,8 @@
         <section class="settings-card">
           <div class="settings-card-header">
             <div>
-              <h2 class="settings-card-title">Iframe embed code</h2>
-              <p class="settings-card-description">Paste this code into a custom HTML block on your website.</p>
+              <h2 class="settings-card-title">Full quote embed</h2>
+              <p class="settings-card-description">Paste this code into a custom HTML block for the complete quote and booking flow.</p>
             </div>
             @if (iframeCode()) {
             <button type="button" class="settings-secondary-action cursor-pointer" (click)="copyIframeCode()">Copy code</button>
@@ -447,6 +447,30 @@
             </code>
             } @else {
             <div class="settings-inline-note">Embed code is unavailable until the shop has a public slug.</div>
+            }
+          </div>
+        </section>
+
+        <section class="settings-card xl:col-span-2">
+          <div class="settings-card-header">
+            <div>
+              <h2 class="settings-card-title">Quick quote launcher</h2>
+              <p class="settings-card-description">A compact Make + Model + Get My Price form for a homepage hero. It opens the full quote flow with the device already selected.</p>
+            </div>
+            @if (launcherIframeCode()) {
+            <button type="button" class="settings-secondary-action cursor-pointer" (click)="copyLauncherIframeCode()">Copy code</button>
+            }
+          </div>
+          <div class="settings-card-body space-y-3">
+            @if (launcherIframeCode()) {
+            <code class="block max-h-48 overflow-auto whitespace-pre-wrap rounded-[10px] bg-gray-900 px-3 py-2.5 text-xs leading-5 text-white">
+              {{ launcherIframeCode() }}
+            </code>
+            <div class="settings-inline-note">
+              The launcher defaults to the Smartphones category. After a model is selected, it leaves the hero and opens the full Opscend quote page with the device already selected.
+            </div>
+            } @else {
+            <div class="settings-inline-note">Launcher code is unavailable until the shop has a public slug.</div>
             }
           </div>
         </section>

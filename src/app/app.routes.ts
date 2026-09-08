@@ -61,6 +61,11 @@ export const routes: Routes = [
         component: PublicQuoteApproval
     },
     {
+        path: 'book/:shopSlug/launcher',
+        loadComponent: () =>
+            import('./features/public/public-booking-launcher/public-booking-launcher').then((m) => m.PublicBookingLauncher)
+    },
+    {
         path: 'book/:shopSlug',
         component: PublicBooking
     },
