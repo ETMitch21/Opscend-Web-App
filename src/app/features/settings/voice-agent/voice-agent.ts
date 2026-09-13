@@ -20,6 +20,8 @@ import {
   Music2Icon,
   PlusIcon,
   Trash2Icon,
+  ArrowUpIcon,
+  ArrowDownIcon,
   LucideAngularModule,
 } from 'lucide-angular';
 import { firstValueFrom, forkJoin } from 'rxjs';
@@ -72,6 +74,8 @@ export class VoiceAgentSettingsComponent implements OnInit {
     Music: Music2Icon,
     Plus: PlusIcon,
     Trash: Trash2Icon,
+    ArrowUp: ArrowUpIcon,
+    ArrowDown: ArrowDownIcon,
   };
 
   readonly voiceOptions = [
@@ -92,6 +96,8 @@ export class VoiceAgentSettingsComponent implements OnInit {
   readonly groupMembers = signal<Record<string, string[]>>({});
   readonly groupNames = signal<Partial<Record<string, string>>>({});
   readonly groupTimeouts = signal<Partial<Record<string, number>>>({});
+  readonly groupMemberTimeouts = signal<Partial<Record<string, number>>>({});
+  readonly groupStrategies = signal<Partial<Record<string, "simultaneous" | "sequential">>>({});
   readonly groupSaving = signal<string | null>(null);
   readonly calls = signal<VoiceAgentCall[]>([]);
   readonly expandedCallId = signal<string | null>(null);
@@ -250,6 +256,32 @@ export class VoiceAgentSettingsComponent implements OnInit {
     this.groupTimeouts.update((current) => ({ ...current, [groupId]: seconds }));
   }
 
+  setGroupMemberTimeout(groupId: string, value: unknown): void {
+    const seconds = Math.max(5, Math.min(60, Number(value) || 12));
+    this.groupMemberTimeouts.update((current) => ({ ...current, [groupId]: seconds }));
+  }
+
+  setGroupStrategy(groupId: string, value: unknown): void {
+    const strategy = value === 'sequential' ? 'sequential' : 'simultaneous';
+    this.groupStrategies.update((current) => ({ ...current, [groupId]: strategy }));
+  }
+
+  moveGroupMember(groupId: string, userId: string, direction: -1 | 1): void {
+    this.groupMembers.update((current) => {
+      const members = [...(current[groupId] ?? [])];
+      const index = members.indexOf(userId);
+      if (index < 0) return current;
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= members.length) return current;
+      [members[index], members[nextIndex]] = [members[nextIndex], members[index]];
+      return { ...current, [groupId]: members };
+    });
+  }
+
+  groupMemberName(userId: string): string {
+    return this.pbxSettings()?.users.find((user) => user.id === userId)?.name ?? 'Unknown user';
+  }
+
   makeDefaultGroup(group: PbxRingGroup): void {
     this.groupSaving.set(group.id);
     this.pbxApi.updateRingGroup(group.id, { isDefault: true }).subscribe({
@@ -265,8 +297,9 @@ export class VoiceAgentSettingsComponent implements OnInit {
       name: (this.groupNames()[group.id] ?? group.name).trim() || group.name,
       enabled: group.enabled,
       isDefault: group.isDefault,
-      strategy: 'simultaneous',
+      strategy: this.groupStrategies()[group.id] ?? group.strategy,
       timeoutSeconds: this.groupTimeouts()[group.id] ?? group.timeoutSeconds,
+      memberTimeoutSeconds: this.groupMemberTimeouts()[group.id] ?? group.memberTimeoutSeconds,
       sortOrder: group.sortOrder,
       userIds: this.groupMembers()[group.id] ?? [],
     }).subscribe({
@@ -283,6 +316,7 @@ export class VoiceAgentSettingsComponent implements OnInit {
       isDefault: (this.pbxSettings()?.groups.length ?? 0) === 0,
       strategy: 'simultaneous',
       timeoutSeconds: Number(this.pbxForm.controls.ringTimeoutSeconds.value ?? 25),
+      memberTimeoutSeconds: 12,
       userIds: [],
     }).subscribe({
       next: () => { this.groupSaving.set(null); void this.load(true); },
@@ -404,6 +438,8 @@ export class VoiceAgentSettingsComponent implements OnInit {
     this.groupMembers.set(Object.fromEntries(settings.groups.map((group) => [group.id, group.members.filter((member) => member.enabled).map((member) => member.userId)])));
     this.groupNames.set(Object.fromEntries(settings.groups.map((group) => [group.id, group.name])));
     this.groupTimeouts.set(Object.fromEntries(settings.groups.map((group) => [group.id, group.timeoutSeconds])));
+    this.groupMemberTimeouts.set(Object.fromEntries(settings.groups.map((group) => [group.id, group.memberTimeoutSeconds])));
+    this.groupStrategies.set(Object.fromEntries(settings.groups.map((group) => [group.id, group.strategy])));
   }
 
   private nullable(value: unknown): string | null {

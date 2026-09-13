@@ -153,10 +153,23 @@
                         <span class="settings-label">Group name</span>
                         <input class="settings-control" type="text" [value]="groupNames()[group.id] ?? group.name" (input)="setGroupName(group.id, $any($event.target).value)" />
                       </div>
+                      <div class="w-36">
+                        <span class="settings-label">Strategy</span>
+                        <select class="settings-control cursor-pointer" [value]="groupStrategies()[group.id] ?? group.strategy" (change)="setGroupStrategy(group.id, $any($event.target).value)">
+                          <option value="simultaneous">Ring all</option>
+                          <option value="sequential">Sequential</option>
+                        </select>
+                      </div>
                       <div class="w-28">
-                        <span class="settings-label">Ring seconds</span>
+                        <span class="settings-label">Max wait</span>
                         <input class="settings-control" type="number" min="5" max="120" [value]="groupTimeouts()[group.id] ?? group.timeoutSeconds" (input)="setGroupTimeout(group.id, $any($event.target).value)" />
                       </div>
+                      @if ((groupStrategies()[group.id] ?? group.strategy) === 'sequential') {
+                        <div class="w-28">
+                          <span class="settings-label">Per person</span>
+                          <input class="settings-control" type="number" min="5" max="60" [value]="groupMemberTimeouts()[group.id] ?? group.memberTimeoutSeconds" (input)="setGroupMemberTimeout(group.id, $any($event.target).value)" />
+                        </div>
+                      }
                       <div class="flex items-center gap-2 pt-5">
                         @if (group.isDefault) { <span class="status-pill status-ready">Default</span> }
                         @else { <button type="button" class="settings-secondary-action cursor-pointer" [disabled]="groupSaving() !== null" (click)="makeDefaultGroup(group)">Make default</button> }
@@ -173,6 +186,24 @@
                         </label>
                       }
                     </div>
+                    @if ((groupStrategies()[group.id] ?? group.strategy) === 'sequential' && (groupMembers()[group.id]?.length ?? 0) > 0) {
+                      <div class="mt-3 rounded-xl bg-app-surface-muted p-3">
+                        <div class="mb-2">
+                          <strong class="text-[11px] text-app-text">Sequential ring order</strong>
+                          <p class="settings-hint">Opscend rings one person at a time in this order, then sends the caller to voicemail when the group max wait is reached.</p>
+                        </div>
+                        <div class="space-y-1.5">
+                          @for (userId of groupMembers()[group.id] ?? []; track userId; let index = $index; let first = $first; let last = $last) {
+                            <div class="flex items-center gap-2 rounded-lg border border-app-border bg-app-surface px-2.5 py-2">
+                              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-app-surface-muted text-[10px] font-semibold text-app-text-muted">{{ index + 1 }}</span>
+                              <span class="min-w-0 flex-1 truncate text-[11px] font-medium text-app-text">{{ groupMemberName(userId) }}</span>
+                              <button type="button" class="settings-secondary-action cursor-pointer" [disabled]="first" (click)="moveGroupMember(group.id, userId, -1)" title="Move earlier"><lucide-icon [img]="icons.ArrowUp" [size]="13"></lucide-icon></button>
+                              <button type="button" class="settings-secondary-action cursor-pointer" [disabled]="last" (click)="moveGroupMember(group.id, userId, 1)" title="Move later"><lucide-icon [img]="icons.ArrowDown" [size]="13"></lucide-icon></button>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -189,8 +220,8 @@
               </div>
             </section>
             <section class="settings-card">
-              <div class="settings-card-header"><div><h2 class="settings-card-title">AI handoff</h2><p class="settings-card-description">The quoting assistant now prefers Opscend's default ring group for live transfers.</p></div></div>
-              <div class="settings-card-body text-[11px] leading-5 text-app-text-muted">During a transfer the caller waits in a Twilio conference with hold music while available Opscend Mobile users ring. The first person to answer is connected; unanswered transfers fall through to voicemail.</div>
+              <div class="settings-card-header"><div><h2 class="settings-card-title">AI handoff</h2><p class="settings-card-description">The quoting assistant hands the human useful context instead of just dropping the call into a group.</p></div></div>
+              <div class="settings-card-body text-[11px] leading-5 text-app-text-muted">AI transfers include a concise handoff summary and priority in Opscend Mobile. The caller waits in the PBX conference while the configured ring group rings. Human-to-human transfers can now be consultative warm transfers or immediate transfers.</div>
             </section>
           </aside>
         </div>

@@ -14,8 +14,9 @@ export interface PbxRingGroup {
   name: string;
   enabled: boolean;
   isDefault: boolean;
-  strategy: string;
+  strategy: 'simultaneous' | 'sequential';
   timeoutSeconds: number;
+  memberTimeoutSeconds: number;
   sortOrder: number;
   members: PbxRingGroupMember[];
   createdAt: string;
@@ -70,8 +71,9 @@ export interface PbxRingGroupInput {
   name: string;
   enabled?: boolean;
   isDefault?: boolean;
-  strategy?: string;
+  strategy?: 'simultaneous' | 'sequential';
   timeoutSeconds?: number;
+  memberTimeoutSeconds?: number;
   sortOrder?: number;
   userIds?: string[];
 }
