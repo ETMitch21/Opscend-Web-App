@@ -132,6 +132,13 @@ export class CommunicationService {
     );
   }
 
+  ensureCrmContactConversation(contactId: string): Observable<CommunicationConversationResponse> {
+    return this.http.post<CommunicationConversationResponse>(
+      `${this.baseUrl}/conversations/crm-contact/${encodeURIComponent(contactId)}`,
+      {},
+    );
+  }
+
   addInternalNote(
     id: string,
     body: string,

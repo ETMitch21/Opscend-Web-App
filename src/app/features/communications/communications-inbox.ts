@@ -132,10 +132,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly uploadingAttachments = signal(false);
   readonly quickRepliesOpen = signal(false);
   readonly quickReplies = signal<CommunicationQuickReply[]>([]);
+  readonly crmContextActive = signal(false);
   readonly availableQuickReplies = computed(() => {
     const channel = this.activeChannel();
     if (channel === 'note') return [];
-    return this.quickReplies().filter((reply) => reply.isActive && reply.channels.includes(channel));
+    return this.quickReplies().filter((reply) => reply.isActive && (this.crmContextActive() || reply.category !== 'CRM') && reply.channels.includes(channel));
   });
   readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
@@ -278,7 +279,9 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     const repairId = params.get('repairId')?.trim();
     const quoteId = params.get('quoteId')?.trim();
     const customerId = params.get('customerId')?.trim();
+    const crmContactId = params.get('crmContactId')?.trim();
     const requestedChannel = this.parseRequestedChannel(params.get('channel'));
+    this.crmContextActive.set(params.get('crm') === '1' || Boolean(crmContactId));
 
     if (conversationId) {
       this.requestedConversationId.set(conversationId);
@@ -305,6 +308,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     if (customerId) {
       await this.openCustomerConversation(customerId, requestedChannel);
+      return;
+    }
+
+    if (crmContactId) {
+      await this.openCrmContactConversation(crmContactId, requestedChannel);
       return;
     }
 
@@ -362,6 +370,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       repairId: null,
       quoteId: null,
       customerId: null,
+      crmContactId: null,
     };
 
     if (requestedChannel) queryParams['channel'] = requestedChannel;
@@ -717,6 +726,17 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     await this.openEnsuredConversation(
       () => this.communicationApi.ensureCustomerConversation(customerId),
       'Could not open the customer conversation.',
+      requestedChannel,
+    );
+  }
+
+  async openCrmContactConversation(
+    contactId: string,
+    requestedChannel: ComposerChannel | null = null,
+  ): Promise<void> {
+    await this.openEnsuredConversation(
+      () => this.communicationApi.ensureCrmContactConversation(contactId),
+      'Could not open the CRM contact conversation.',
       requestedChannel,
     );
   }
@@ -1353,10 +1373,26 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   }
 
   useQuickReply(reply: CommunicationQuickReply): void {
-    const customerName = this.selectedCustomerProfile()?.name?.trim() ?? '';
-    const firstName = customerName.split(/\s+/).filter(Boolean)[0] ?? '';
-    const resolved = reply.body.replaceAll('{{first_name}}', firstName || 'there');
+    const conversation = this.selectedConversation();
+    const contactName = this.selectedCustomerProfile()?.name?.trim() ?? '';
+    const firstName = contactName.split(/\s+/).filter(Boolean)[0] ?? '';
+    const subjectContext = conversation?.subject?.trim() ?? '';
+    const companyName = this.crmContextActive() && subjectContext.includes(' · ')
+      ? subjectContext.split(' · ')[0]?.trim() ?? ''
+      : '';
+    const resolve = (value: string) => value
+      .replaceAll('{{first_name}}', firstName || 'there')
+      .replaceAll('{{firstName}}', firstName || 'there')
+      .replaceAll('{{contact_name}}', contactName)
+      .replaceAll('{{contactName}}', contactName)
+      .replaceAll('{{company_name}}', companyName)
+      .replaceAll('{{companyName}}', companyName)
+      .replaceAll('{{company}}', companyName);
+    const resolved = resolve(reply.body);
     this.composeBody.set(resolved);
+    if (this.activeChannel() === 'email' && reply.subject) {
+      this.composeSubject.set(resolve(reply.subject));
+    }
     this.quickRepliesOpen.set(false);
     if (this.activeChannel() === 'web_chat') this.onComposeBodyChange(resolved);
   }

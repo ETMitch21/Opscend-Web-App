@@ -76,6 +76,23 @@ export const routes: Routes = [
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
     { path: "dashboard", component: DashboardComponent, canActivate: [PermissionGuard], data: { permission: "repairs:read" } },
     {
+        path: "crm",
+        children: [
+            {
+                path: '',
+                loadComponent: () =>
+                    import('./features/crm/crm-overview/crm-overview').then((m) => m.CrmOverviewComponent)
+            },
+            {
+                path: ':id',
+                loadComponent: () =>
+                    import('./features/crm/crm-company-detail/crm-company-detail').then((m) => m.CrmCompanyDetailComponent)
+            }
+        ],
+        canActivate: [PermissionGuard],
+        data: { permission: 'crm:read' }
+    },
+    {
         path: "business-accounts",
         children: [
             {
@@ -490,5 +507,10 @@ export const routes: Routes = [
         canActivate: [PermissionGuard],
         data: { permission: 'contractorPayouts:read' }
     },
-    { path: "", redirectTo: "dashboard", pathMatch: "full" }
+    {
+        path: "",
+        pathMatch: "full",
+        loadComponent: () =>
+            import('./features/home-redirect/home-redirect').then((m) => m.HomeRedirectComponent)
+    }
 ];

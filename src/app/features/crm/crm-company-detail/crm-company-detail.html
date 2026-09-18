@@ -1,0 +1,204 @@
+<div class="detail-page">
+  @if (loading()) {
+    <div class="loading-state"><lucide-icon class="spin" [img]="loadingIcon" [size]="24"></lucide-icon> Loading company…</div>
+  } @else if (company(); as c) {
+    <button class="back-btn" type="button" (click)="back()"><lucide-icon [img]="backIcon" [size]="17"></lucide-icon> CRM</button>
+
+    <header class="company-header">
+      <div class="company-identity">
+        <span class="company-logo">{{ c.name.slice(0, 2).toUpperCase() }}</span>
+        <div>
+          <div class="eyebrow"><lucide-icon [img]="crmIcon" [size]="14"></lucide-icon> Company 360°</div>
+          <div class="title-line"><h1>{{ c.name }}</h1><span class="status" [class.customer]="c.status === 'customer'">{{ c.status === 'customer' ? 'Customer' : c.status === 'lost' ? 'Lost' : 'Prospect' }}</span></div>
+          <p>@if (c.primaryContact) { {{ c.primaryContact.name }} @if (c.primaryContact.title) { · {{ c.primaryContact.title }} } } @else { No primary contact yet } @if (c.industry) { · {{ c.industry }} } · Owner: {{ c.owner?.name || 'Unassigned' }}</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        @if (canWrite) {
+          <button class="secondary-btn" type="button" (click)="startActivity('call')"><lucide-icon [img]="phoneIcon" [size]="16"></lucide-icon> Log call</button>
+          <button class="secondary-btn" type="button" (click)="openCommunications('sms')"><lucide-icon [img]="noteIcon" [size]="16"></lucide-icon> Text</button>
+          <button class="secondary-btn" type="button" (click)="openCommunications('email')"><lucide-icon [img]="emailIcon" [size]="16"></lucide-icon> Email</button>
+          <button class="secondary-btn" type="button" (click)="startActivity('note')"><lucide-icon [img]="noteIcon" [size]="16"></lucide-icon> Add note</button>
+          <button class="secondary-btn" type="button" (click)="startActivity('task')"><lucide-icon [img]="followIcon" [size]="16"></lucide-icon> Follow-up</button>
+          <button class="primary-btn" type="button" (click)="startOpportunity()"><lucide-icon [img]="plusIcon" [size]="16"></lucide-icon> Opportunity</button>
+        }
+      </div>
+    </header>
+
+    <section class="summary-strip">
+      <div><span><lucide-icon [img]="targetIcon" [size]="16"></lucide-icon> Open deals</span><strong>{{ c.openOpportunityCount }}</strong></div>
+      <div><span><lucide-icon [img]="moneyIcon" [size]="16"></lucide-icon> Raw pipeline</span><strong>{{ money(c.openMonthlyValueCents) }}/mo · {{ money(c.openOneTimeValueCents) }}</strong></div>
+      <div><span><lucide-icon [img]="moneyIcon" [size]="16"></lucide-icon> Weighted pipeline</span><strong>{{ money(weightedMonthly()) }}/mo · {{ money(weightedOneTime()) }}</strong></div>
+      <div><span><lucide-icon [img]="followIcon" [size]="16"></lucide-icon> Next follow-up</span><strong>{{ c.nextFollowUpAt ? formatDate(c.nextFollowUpAt, true) : 'None' }}</strong></div>
+    </section>
+
+    <nav class="company-tabs" aria-label="Company sections">
+      <button [class.active]="section() === 'overview'" (click)="section.set('overview')"><lucide-icon [img]="overviewIcon" [size]="15"></lucide-icon> Overview</button>
+      <button [class.active]="section() === 'opportunities'" (click)="section.set('opportunities')"><lucide-icon [img]="targetIcon" [size]="15"></lucide-icon> Opportunities <span>{{ c.opportunities.length }}</span></button>
+      <button [class.active]="section() === 'contacts'" (click)="section.set('contacts')"><lucide-icon [img]="usersIcon" [size]="15"></lucide-icon> Contacts <span>{{ c.contacts.length }}</span></button>
+      <button [class.active]="section() === 'activity'" (click)="section.set('activity')"><lucide-icon [img]="historyIcon" [size]="15"></lucide-icon> Activity</button>
+      <button [class.active]="section() === 'sales'" (click)="section.set('sales')">Sales tools</button>
+      <button [class.active]="section() === 'business'" (click)="section.set('business')"><lucide-icon [img]="buildingIcon" [size]="15"></lucide-icon> Business / Fleet</button>
+    </nav>
+
+    @if (section() === 'overview') {
+      <div class="detail-grid overview-grid">
+        <main class="main-column">
+          <section class="panel">
+            <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="targetIcon" [size]="17"></lucide-icon></span><div><h2>Open opportunities</h2><p>Active deals and their weighted value.</p></div></div>@if (canWrite) { <button class="small-btn" type="button" (click)="startOpportunity()"><lucide-icon [img]="plusIcon" [size]="15"></lucide-icon> Add</button> }</header>
+            @if (activeOpportunities().length) {
+              <div class="opportunity-list compact-opportunities">
+                @for (opportunity of activeOpportunities(); track opportunity.id) {
+                  <article class="opportunity-card">
+                    <div class="opportunity-main"><strong>{{ opportunity.title }}</strong><span>{{ stageLabel(opportunity.stage) }} · {{ opportunity.probability }}% probability @if (opportunity.expectedCloseAt) { · Close {{ formatDate(opportunity.expectedCloseAt) }} }</span></div>
+                    <div class="opportunity-value"><strong>{{ money((opportunity.monthlyValueCents ?? 0) * opportunity.probability / 100) }}<small>/mo weighted</small></strong><span>{{ money((opportunity.oneTimeValueCents ?? 0) * opportunity.probability / 100) }} one-time weighted</span></div>
+                    <div class="opportunity-owner"><span>{{ opportunity.owner?.name || 'Unassigned' }}</span></div>
+                    <span class="stage-pill">{{ stageLabel(opportunity.stage) }}</span>
+                  </article>
+                }
+              </div>
+            } @else { <div class="empty-state compact"><strong>No open opportunities</strong><span>This company has no active deals.</span></div> }
+          </section>
+
+          <section class="panel">
+            <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="historyIcon" [size]="17"></lucide-icon></span><div><h2>Recent activity</h2><p>The latest touches across this relationship.</p></div></div><button class="small-btn" type="button" (click)="section.set('activity')">View all</button></header>
+            <div class="timeline overview-timeline">
+              @for (activity of recentActivities(); track activity.id) {
+                <article class="timeline-row" [class.task]="activity.type === 'task'" [class.completed]="activity.completedAt">
+                  <span class="timeline-icon"><lucide-icon [img]="activityIcon(activity.type)" [size]="15"></lucide-icon></span>
+                  <div class="timeline-body"><div class="timeline-title"><strong>{{ activity.subject }}</strong><span>{{ activityLabel(activity.type) }} · {{ formatDate(activity.occurredAt, true) }}</span></div>@if (activity.body) { <p>{{ activity.body }}</p> }</div>
+                </article>
+              } @empty { <div class="empty-state compact"><strong>No activity yet</strong><span>Log the first conversation or note.</span></div> }
+            </div>
+          </section>
+        </main>
+
+        <aside class="side-column">
+          <section class="panel primary-contact-panel">
+            <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="userIcon" [size]="17"></lucide-icon></span><div><h2>Primary contact</h2><p>Your main relationship at this company.</p></div></div></header>
+            @if (c.primaryContact; as contact) {
+              <div class="primary-contact-card"><span class="contact-avatar"><lucide-icon [img]="userIcon" [size]="19"></lucide-icon></span><div><strong>{{ contact.name }}</strong><span>{{ contact.title || 'Business contact' }}</span>@if (contact.email) { <a [href]="'mailto:' + contact.email">{{ contact.email }}</a> }@if (contact.phone) { <a [href]="'tel:' + contact.phone">{{ contact.phone }}</a> }<div class="contact-comm-actions">@if (contact.phone) { <button type="button" (click)="openCommunications('sms', contact.id)">Text</button> }@if (contact.email) { <button type="button" (click)="openCommunications('email', contact.id)">Email</button> }</div></div></div>
+            } @else { <div class="empty-contact">No primary contact yet.</div> }
+          </section>
+
+          <section class="panel info-panel">
+            <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="buildingIcon" [size]="17"></lucide-icon></span><div><h2>Company details</h2><p>Sales context and ownership.</p></div></div></header>
+            <div class="detail-form">
+              <label><span>Website</span><input [(ngModel)]="detailForm.website" [disabled]="!canWrite" placeholder="company.com" /></label>
+              <label><span>Industry</span><input [(ngModel)]="detailForm.industry" [disabled]="!canWrite" placeholder="Industry" /></label>
+              <label><span>Lead source</span><input [(ngModel)]="detailForm.source" [disabled]="!canWrite" placeholder="Referral, chamber…" /></label>
+              <label><span>Source detail</span><input [(ngModel)]="detailForm.sourceDetail" [disabled]="!canWrite" placeholder="Who referred them, campaign, event…" /></label>
+              <label><span>Renewal date</span><input type="date" [(ngModel)]="detailForm.renewalDate" [disabled]="!canWrite" /></label>
+              <label><span>Account health</span><select [(ngModel)]="detailForm.accountHealth" [disabled]="!canWrite"><option value="">Not reviewed</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="watch">Watch</option><option value="at_risk">At risk</option><option value="poor">Poor</option></select></label>
+              <label class="span-two"><span>Account health notes</span><textarea rows="3" [(ngModel)]="detailForm.accountHealthNote" [disabled]="!canWrite" placeholder="Renewal risk, expansion opportunity, relationship notes…"></textarea></label>
+              <label><span>Estimated devices</span><input type="number" min="0" [(ngModel)]="detailForm.estimatedDeviceCount" [disabled]="!canWrite" /></label>
+              @if (canAssign) { <label><span>Account owner</span><select [(ngModel)]="detailForm.ownerUserId"><option value="">Unassigned</option>@for (owner of owners(); track owner.id) { <option [value]="owner.id">{{ owner.name }}</option> }</select></label> }
+              @else { <div class="read-row"><span>Account owner</span><strong>{{ c.owner?.name || 'Unassigned' }}</strong></div> }
+              <label><span>Notes</span><textarea rows="5" [(ngModel)]="detailForm.notes" [disabled]="!canWrite" placeholder="Company context, objections, preferences…"></textarea></label>
+              @if (canWrite) { <button class="save-btn" type="button" [disabled]="saving()" (click)="saveDetails()"><lucide-icon [img]="saveIcon" [size]="15"></lucide-icon> Save details</button> }
+            </div>
+          </section>
+        </aside>
+      </div>
+    } @else if (section() === 'opportunities') {
+      <section class="panel section-panel">
+        <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="targetIcon" [size]="17"></lucide-icon></span><div><h2>Opportunities</h2><p>Every active and closed deal for {{ c.name }}.</p></div></div>@if (canWrite) { <button class="small-btn" type="button" (click)="startOpportunity()"><lucide-icon [img]="plusIcon" [size]="15"></lucide-icon> Add opportunity</button> }</header>
+        <div class="opportunity-list">
+          @for (opportunity of allOpportunities(); track opportunity.id) {
+            <article class="opportunity-card">
+              <div class="opportunity-main"><strong>{{ opportunity.title }}</strong><span>@if (opportunity.estimatedDeviceCount !== null) { {{ opportunity.estimatedDeviceCount }} devices · } {{ opportunity.probability }}% probability @if (opportunity.expectedCloseAt) { · Close {{ formatDate(opportunity.expectedCloseAt) }} }@if (opportunity.closedAt) { · Closed {{ formatDate(opportunity.closedAt) }} }</span>@if (opportunity.closeReason) { <span class="close-reason"><b>{{ stageLabel(opportunity.stage) }}:</b> {{ closeReasonLabel(opportunity.closeReason) }}@if (opportunity.closeReasonNote) { · {{ opportunity.closeReasonNote }} }</span> }</div>
+              <div class="opportunity-value">@if ((opportunity.monthlyValueCents ?? 0) > 0) { <strong>{{ money(opportunity.monthlyValueCents) }}<small>/mo</small></strong> }@if ((opportunity.oneTimeValueCents ?? 0) > 0) { <span>{{ money(opportunity.oneTimeValueCents) }} one-time</span> }</div>
+              <div class="opportunity-owner"><span>{{ opportunity.owner?.name || 'Unassigned' }}</span></div>
+              @if (canWrite) { <select [ngModel]="opportunity.stage" (ngModelChange)="changeStage(opportunity, $event)">@for (stage of stages; track stage.key) { <option [value]="stage.key">{{ stage.label }}</option> }</select> } @else { <span class="stage-pill">{{ stageLabel(opportunity.stage) }}</span> }
+            </article>
+          } @empty { <div class="empty-state"><strong>No opportunities</strong><span>Add the first sales opportunity for this company.</span></div> }
+        </div>
+      </section>
+    } @else if (section() === 'contacts') {
+      <section class="panel section-panel">
+        <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="usersIcon" [size]="17"></lucide-icon></span><div><h2>Contacts</h2><p>Decision makers and people connected to this relationship.</p></div></div>@if (canWrite) { <button class="small-btn" type="button" (click)="startContact()"><lucide-icon [img]="plusIcon" [size]="15"></lucide-icon> Add contact</button> }</header>
+        <div class="contact-grid">
+          @for (contact of c.contacts; track contact.id) {
+            <article class="contact-card large-contact"><span class="contact-avatar"><lucide-icon [img]="userIcon" [size]="17"></lucide-icon></span><div><div><strong>{{ contact.name }}</strong>@if (contact.isPrimary) { <em>Primary</em> }</div><span>{{ contact.title || 'Business contact' }}</span>@if (contact.email) { <a [href]="'mailto:' + contact.email">{{ contact.email }}</a> }@if (contact.phone) { <a [href]="'tel:' + contact.phone">{{ contact.phone }}</a> }@if (contact.notes) { <p>{{ contact.notes }}</p> }<div class="contact-comm-actions">@if (contact.phone) { <button type="button" (click)="openCommunications('sms', contact.id)">Text</button> }@if (contact.email) { <button type="button" (click)="openCommunications('email', contact.id)">Email</button> }</div></div></article>
+          } @empty { <div class="empty-state"><strong>No contacts yet</strong><span>Add the first person at this company.</span></div> }
+        </div>
+      </section>
+    } @else if (section() === 'activity') {
+      <section class="panel section-panel">
+        <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="historyIcon" [size]="17"></lucide-icon></span><div><h2>Activity timeline</h2><p>Calls, emails, meetings, notes, stage changes, and follow-ups.</p></div></div></header>
+        @if (canWrite) {
+          <div class="activity-actions"><button (click)="startActivity('note')"><lucide-icon [img]="noteIcon" [size]="15"></lucide-icon> Note</button><button (click)="startActivity('call')"><lucide-icon [img]="phoneIcon" [size]="15"></lucide-icon> Call</button><button (click)="openCommunications('email')"><lucide-icon [img]="emailIcon" [size]="15"></lucide-icon> Email</button><button (click)="openCommunications('sms')"><lucide-icon [img]="noteIcon" [size]="15"></lucide-icon> Text</button><button (click)="startActivity('meeting')"><lucide-icon [img]="meetingIcon" [size]="15"></lucide-icon> Meeting</button><button class="task-action" (click)="startActivity('task')"><lucide-icon [img]="taskIcon" [size]="15"></lucide-icon> Follow-up</button></div>
+        }
+        <div class="timeline full-timeline">
+          @for (activity of c.activities; track activity.id) {
+            <article class="timeline-row" [class.task]="activity.type === 'task'" [class.completed]="activity.completedAt">
+              <span class="timeline-icon"><lucide-icon [img]="activityIcon(activity.type)" [size]="15"></lucide-icon></span>
+              <div class="timeline-body"><div class="timeline-title"><strong>{{ activity.subject }}</strong><span>{{ activityLabel(activity.type) }} · {{ formatDate(activity.occurredAt, true) }}</span></div>@if (activity.body) { <p>{{ activity.body }}</p> }@if (activity.type === 'task') { <div class="task-meta"><span>@if (activity.completedAt) { Completed {{ formatDate(activity.completedAt, true) }} } @else if (activity.dueAt) { Due {{ formatDate(activity.dueAt, true) }} } @else { No due date }</span><div class="timeline-actions">@if (canWrite) { <button type="button" class="edit-action" (click)="editActivity(activity)">Edit</button> }@if (!activity.completedAt && canWrite) { <button type="button" (click)="completeTask(activity)"><lucide-icon [img]="checkIcon" [size]="14"></lucide-icon> Complete</button> }</div></div> } @else if (canWrite) { <div class="timeline-edit"><button type="button" (click)="editActivity(activity)">Edit activity</button></div> }</div>
+            </article>
+          } @empty { <div class="empty-state"><strong>No activity yet</strong><span>Log the first touchpoint or schedule a follow-up.</span></div> }
+        </div>
+      </section>
+    } @else if (section() === 'sales') {
+      <div class="sales-tools-grid">
+        <section class="panel section-panel">
+          <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="targetIcon" [size]="17"></lucide-icon></span><div><h2>Fleet sales calculator</h2><p>Estimate MRR, ARR, setup revenue, and annual repair margin.</p></div></div></header>
+          <div class="tool-form">
+            <div class="form-grid two">
+              <label><span>Devices</span><input type="number" min="0" [(ngModel)]="calculatorForm.devices" /></label>
+              <label><span>Monthly / device</span><input type="number" min="0" step="0.01" [(ngModel)]="calculatorForm.monthlyPerDevice" /></label>
+              <label><span>Setup fee</span><input type="number" min="0" step="0.01" [(ngModel)]="calculatorForm.setupFee" /></label>
+              <label><span>Repairs / year</span><input type="number" min="0" [(ngModel)]="calculatorForm.expectedRepairsPerYear" /></label>
+              <label><span>Avg repair revenue</span><input type="number" min="0" step="0.01" [(ngModel)]="calculatorForm.averageRepairRevenue" /></label>
+              <label><span>Avg repair cost</span><input type="number" min="0" step="0.01" [(ngModel)]="calculatorForm.averageRepairCost" /></label>
+            </div>
+            <div class="calculator-results"><div><span>MRR</span><strong>{{ money(calculatorMrr()) }}</strong></div><div><span>ARR</span><strong>{{ money(calculatorArr()) }}</strong></div><div><span>Setup</span><strong>{{ money(calculatorSetup()) }}</strong></div><div><span>Annual repair margin</span><strong>{{ money(calculatorRepairMargin()) }}</strong></div></div>
+            @if (activeOpportunities().length) { <label><span>Apply estimate to opportunity</span><select #calcOpp><option value="">Choose opportunity…</option>@for (opp of activeOpportunities(); track opp.id) { <option [value]="opp.id">{{ opp.title }}</option> }</select></label><button class="secondary-btn" type="button" [disabled]="!calcOpp.value" (click)="applyCalculatorById(calcOpp.value)">Apply estimate</button> }
+          </div>
+        </section>
+
+        <section class="panel section-panel proposal-builder">
+          <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="moneyIcon" [size]="17"></lucide-icon></span><div><h2>Proposal builder</h2><p>Create reusable one-time and recurring pricing proposals.</p></div></div></header>
+          <div class="tool-form">
+            <div class="form-grid two"><label class="span-two"><span>Proposal title</span><input [(ngModel)]="proposalForm.title" placeholder="{{ c.name }} service proposal" /></label><label><span>Opportunity</span><select [(ngModel)]="proposalForm.opportunityId"><option value="">General proposal</option>@for (opp of c.opportunities; track opp.id) { <option [value]="opp.id">{{ opp.title }}</option> }</select></label><label><span>Valid until</span><input type="date" [(ngModel)]="proposalForm.validUntil" /></label><label class="span-two"><span>Introduction</span><textarea rows="3" [(ngModel)]="proposalForm.intro"></textarea></label></div>
+            <div class="proposal-lines">@for (line of proposalForm.lines; track $index; let i = $index) { <div class="proposal-line"><input [(ngModel)]="line.description" placeholder="Line item" /><input type="number" min="1" [(ngModel)]="line.quantity" /><input type="number" min="0" step="0.01" [(ngModel)]="line.unitAmount" /><select [(ngModel)]="line.billingType"><option value="one_time">One-time</option><option value="monthly">Monthly</option></select><button class="icon-btn" type="button" (click)="removeProposalLine(i)">×</button></div> }</div>
+            <div class="tool-actions"><button class="secondary-btn" type="button" (click)="addProposalLine()">+ Line item</button><button class="primary-btn" type="button" [disabled]="!proposalForm.title.trim()" (click)="createProposal()">Create proposal</button></div>
+            <div class="proposal-list">@for (proposal of proposals(); track proposal.id) { <article><div><strong>{{ proposal.title }}</strong><span>{{ proposal.status }} · {{ money(proposal.monthlyTotalCents) }}/mo · {{ money(proposal.oneTimeTotalCents) }} one-time</span></div><select [ngModel]="proposal.status" (ngModelChange)="setProposalStatus(proposal,$event)"><option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="declined">Declined</option><option value="expired">Expired</option></select></article> } @empty { <div class="empty-state compact"><strong>No proposals yet</strong><span>Create the first proposal above.</span></div> }</div>
+          </div>
+        </section>
+
+        <section class="panel section-panel">
+          <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="noteIcon" [size]="17"></lucide-icon></span><div><h2>Files & attachments</h2><p>Keep contracts, proposals, pricing sheets, and sales documents with the company.</p></div></div><label class="small-btn file-upload">Upload<input type="file" (change)="uploadAttachment($event)" /></label></header>
+          <div class="attachment-list">@for (file of attachments(); track file.id) { <article><a [href]="file.url" target="_blank" rel="noopener">{{ file.filename }}</a><span>{{ file.sizeBytes ? (file.sizeBytes / 1024 | number:'1.0-0') + ' KB' : '' }}</span>@if (canWrite) { <button class="text-danger" type="button" (click)="removeAttachment(file)">Delete</button> }</article> } @empty { <div class="empty-state compact"><strong>No files attached</strong><span>Upload proposals, contracts, or other sales documents.</span></div> }</div>
+        </section>
+      </div>
+    } @else {
+      <section class="panel section-panel business-relationship-panel">
+        <header class="panel-header"><div><span class="section-icon"><lucide-icon [img]="buildingIcon" [size]="17"></lucide-icon></span><div><h2>Business & Fleet relationship</h2><p>Operational account connection after the sale.</p></div></div></header>
+        @if (c.businessAccountId) {
+          <div class="relationship-state linked"><span class="relationship-icon"><lucide-icon [img]="checkIcon" [size]="22"></lucide-icon></span><div><strong>Business Account linked</strong><p>This CRM company is connected to an active Opscend Business Account. CRM retains the sales relationship while Business/Fleet handles operational account management.</p></div>@if (canViewBusiness) { <button class="primary-btn" type="button" (click)="openBusinessAccount()">Open Business Account <lucide-icon [img]="chevronIcon" [size]="16"></lucide-icon></button> }</div>
+        } @else {
+          <div class="relationship-state"><span class="relationship-icon"><lucide-icon [img]="buildingIcon" [size]="22"></lucide-icon></span><div><strong>CRM-only relationship</strong><p>This company can remain in CRM indefinitely. If they become a commercial account, convert them without losing any contacts, opportunities, or activity history.</p></div>@if (canConvert) { <button class="primary-btn" type="button" [disabled]="converting()" (click)="convertToBusiness()">@if (converting()) { <lucide-icon class="spin" [img]="loadingIcon" [size]="16"></lucide-icon> Converting… } @else { Convert to Business Account }</button> }</div>
+        }
+      </section>
+    }
+  }
+</div>
+@if (closeOpen() && closingOpportunity(); as opportunity) {
+  <div class="modal-backdrop" (mousedown)="closeCloseDeal()"><section class="modal small-modal" (mousedown)="$event.stopPropagation()"><header><div><span class="eyebrow">Close opportunity</span><h2>Mark {{ opportunity.title }} {{ closeStage() === 'won' ? 'won' : 'lost' }}</h2></div><button (click)="closeCloseDeal()"><lucide-icon [img]="closeIcon" [size]="19"></lucide-icon></button></header><div class="modal-body"><div class="form-grid"><label><span>{{ closeStage() === 'won' ? 'Win reason' : 'Loss reason' }} *</span><select [(ngModel)]="closeReason"><option value="">Choose a reason…</option>@for (reason of closeReasonOptions(); track reason[0]) { <option [value]="reason[0]">{{ reason[1] }}</option> }</select></label><label><span>Details</span><textarea rows="4" [(ngModel)]="closeReasonNote" placeholder="Optional context about the outcome…"></textarea></label></div></div><footer><button class="secondary-btn" (click)="closeCloseDeal()">Cancel</button><button class="primary-btn" [disabled]="saving() || !closeReason" (click)="confirmCloseDeal()">{{ closeStage() === 'won' ? 'Mark won' : 'Mark lost' }}</button></footer></section></div>
+}
+
+@if (opportunityOpen()) {
+  <div class="modal-backdrop" (mousedown)="opportunityOpen.set(false)"><section class="modal" (mousedown)="$event.stopPropagation()"><header><div><span class="eyebrow">Opportunity</span><h2>Add an opportunity</h2></div><button (click)="opportunityOpen.set(false)"><lucide-icon [img]="closeIcon" [size]="19"></lucide-icon></button></header><div class="modal-body"><div class="form-grid two"><label class="span-two"><span>Name *</span><input [(ngModel)]="opportunityForm.title" /></label><label><span>Stage</span><select [(ngModel)]="opportunityForm.stage">@for (stage of stages; track stage.key) { <option [value]="stage.key">{{ stage.label }}</option> }</select></label><label><span>Probability %</span><input type="number" min="0" max="100" [(ngModel)]="opportunityForm.probability" /></label><label><span>Estimated devices</span><input type="number" min="0" [(ngModel)]="opportunityForm.estimatedDeviceCount" /></label><label><span>Expected close</span><input type="date" [(ngModel)]="opportunityForm.expectedCloseDate" /></label><label><span>Monthly value</span><div class="money-input"><span>$</span><input type="number" min="0" step="0.01" [(ngModel)]="opportunityForm.monthlyValue" /></div></label><label><span>One-time value</span><div class="money-input"><span>$</span><input type="number" min="0" step="0.01" [(ngModel)]="opportunityForm.oneTimeValue" /></div></label>@if (canAssign) { <label class="span-two"><span>Owner</span><select [(ngModel)]="opportunityForm.ownerUserId"><option value="">Use company owner</option>@for (owner of owners(); track owner.id) { <option [value]="owner.id">{{ owner.name }}</option> }</select></label> }<label class="span-two"><span>Notes</span><textarea rows="3" [(ngModel)]="opportunityForm.notes"></textarea></label></div></div><footer><button class="secondary-btn" (click)="opportunityOpen.set(false)">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="addOpportunity()">Add opportunity</button></footer></section></div>
+}
+
+@if (contactOpen()) {
+  <div class="modal-backdrop" (mousedown)="contactOpen.set(false)"><section class="modal small-modal" (mousedown)="$event.stopPropagation()"><header><div><span class="eyebrow">Contact</span><h2>Add a business contact</h2></div><button (click)="contactOpen.set(false)"><lucide-icon [img]="closeIcon" [size]="19"></lucide-icon></button></header><div class="modal-body"><div class="form-grid two"><label><span>Name *</span><input [(ngModel)]="contactForm.name" /></label><label><span>Title</span><input [(ngModel)]="contactForm.title" /></label><label><span>Email</span><input type="email" [(ngModel)]="contactForm.email" /></label><label><span>Phone</span><input [(ngModel)]="contactForm.phone" /></label><label class="check-row span-two"><input type="checkbox" [(ngModel)]="contactForm.isPrimary" /><span>Make primary contact</span></label><label class="span-two"><span>Notes</span><textarea rows="3" [(ngModel)]="contactForm.notes"></textarea></label></div></div><footer><button class="secondary-btn" (click)="contactOpen.set(false)">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="addContact()">Add contact</button></footer></section></div>
+}
+
+@if (activityOpen()) {
+  <div class="modal-backdrop" (mousedown)="activityOpen.set(false)"><section class="modal small-modal" (mousedown)="$event.stopPropagation()"><header><div><span class="eyebrow">{{ activityLabel(activityForm.type) }}</span><h2>{{ activityForm.type === 'task' ? 'Schedule a follow-up' : 'Log activity' }}</h2></div><button (click)="activityOpen.set(false)"><lucide-icon [img]="closeIcon" [size]="19"></lucide-icon></button></header><div class="modal-body"><div class="form-grid"><label><span>Subject *</span><input [(ngModel)]="activityForm.subject" [placeholder]="activityForm.type === 'task' ? 'Follow up on proposal' : 'What happened?'" /></label>@if (allOpportunities().length) { <label><span>Opportunity</span><select [(ngModel)]="activityForm.opportunityId"><option value="">General company activity</option>@for (opportunity of allOpportunities(); track opportunity.id) { <option [value]="opportunity.id">{{ opportunity.title }}</option> }</select></label> }@if (activityForm.type === 'task') { <label><span>Due</span><input type="datetime-local" [(ngModel)]="activityForm.dueAt" /></label> }<label><span>Details</span><textarea rows="4" [(ngModel)]="activityForm.body"></textarea></label></div></div><footer><button class="secondary-btn" (click)="activityOpen.set(false)">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="addActivity()">{{ activityForm.type === 'task' ? 'Schedule follow-up' : 'Save activity' }}</button></footer></section></div>
+}
+
+@if (activityEditOpen()) {
+  <div class="modal-backdrop" (mousedown)="closeActivityEdit()"><section class="modal small-modal" (mousedown)="$event.stopPropagation()"><header><div><span class="eyebrow">{{ activityLabel(activityForm.type) }}</span><h2>Edit {{ activityForm.type === 'task' ? 'follow-up' : 'activity' }}</h2></div><button (click)="closeActivityEdit()"><lucide-icon [img]="closeIcon" [size]="19"></lucide-icon></button></header><div class="modal-body"><div class="form-grid"><label><span>Subject *</span><input [(ngModel)]="activityForm.subject" /></label>@if (activityForm.type === 'task') { <label><span>Due</span><input type="datetime-local" [(ngModel)]="activityForm.dueAt" /></label> }<label><span>Details</span><textarea rows="5" [(ngModel)]="activityForm.body"></textarea></label></div></div><footer><button class="secondary-btn" (click)="closeActivityEdit()">Cancel</button><button class="primary-btn" [disabled]="saving()" (click)="saveActivityEdit()">Save changes</button></footer></section></div>
+}

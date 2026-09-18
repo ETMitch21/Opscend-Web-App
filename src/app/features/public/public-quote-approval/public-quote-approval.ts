@@ -25,7 +25,11 @@ import {
 } from 'lucide-angular';
 
 import { PublicBookingService } from '../../../core/public-booking/service';
-import { PublicQuoteApproval as PublicQuoteApprovalModel } from '../../../core/public-booking/model';
+import {
+  PublicAvailabilitySlot,
+  PublicQuoteApproval as PublicQuoteApprovalModel,
+  PublicScheduleResponse,
+} from '../../../core/public-booking/model';
 
 @Component({
   selector: 'app-public-quote-approval',
@@ -54,10 +58,15 @@ export class PublicQuoteApproval implements OnInit {
   };
 
   readonly loading = signal(true);
-  readonly actioning = signal<'accept' | 'decline' | 'deposit' | null>(null);
+  readonly actioning = signal<'accept' | 'decline' | 'deposit' | 'schedule' | null>(null);
   readonly quote = signal<PublicQuoteApprovalModel | null>(null);
   readonly error = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
+  readonly availabilityLoading = signal(false);
+  readonly availabilityError = signal<string | null>(null);
+  readonly availabilitySlots = signal<PublicAvailabilitySlot[]>([]);
+  readonly selectedSlot = signal<PublicAvailabilitySlot | null>(null);
+  readonly scheduledResult = signal<PublicScheduleResponse | null>(null);
 
   readonly token = computed(() => this.route.snapshot.paramMap.get('token') ?? '');
 
@@ -98,6 +107,9 @@ export class PublicQuoteApproval implements OnInit {
       const quote = await firstValueFrom(this.publicBookingApi.getPublicQuote(token));
       this.quote.set(quote);
       this.applyDepositReturnNotice(quote);
+      if (this.canSelfSchedule(quote)) {
+        void this.loadAvailability(quote);
+      }
     } catch {
       this.error.set('We could not find this quote. The link may be expired or invalid.');
     } finally {
@@ -121,8 +133,11 @@ export class PublicQuoteApproval implements OnInit {
       this.notice.set(
         response.data.depositRequired && !response.data.depositPaidAt
           ? 'Quote accepted. Please pay the deposit to continue.'
-          : 'Quote accepted. The shop will follow up with next steps.'
+          : 'Quote accepted. Choose an appointment time below.'
       );
+      if (this.canSelfSchedule(response.data)) {
+        void this.loadAvailability(response.data);
+      }
     } catch {
       this.error.set('We could not accept this quote. Please contact the shop for help.');
     } finally {
@@ -178,7 +193,10 @@ export class PublicQuoteApproval implements OnInit {
 
     if (depositResult === 'success') {
       if (this.isDepositPaid(quote)) {
-        this.notice.set('Deposit paid. The shop has been notified and will follow up with next steps.');
+        this.notice.set('Deposit paid. Choose an appointment time below to finish booking.');
+        if (this.canSelfSchedule(quote)) {
+          void this.loadAvailability(quote);
+        }
         return;
       }
 
@@ -210,7 +228,7 @@ export class PublicQuoteApproval implements OnInit {
       this.quote.set(quote);
 
       if (this.isDepositPaid(quote)) {
-        this.notice.set('Deposit paid. The shop has been notified and will follow up with next steps.');
+        this.notice.set('Deposit paid. Choose an appointment time below to finish booking.');
         return;
       }
 
@@ -218,6 +236,138 @@ export class PublicQuoteApproval implements OnInit {
     } catch {
       // Keep the current quote displayed. The customer can refresh or contact the shop if needed.
     }
+  }
+
+
+  canSelfSchedule(quote: PublicQuoteApprovalModel): boolean {
+    if (['scheduled', 'converted', 'declined', 'expired', 'canceled'].includes(String(quote.status))) {
+      return false;
+    }
+
+    if (quote.depositRequired && !this.isDepositPaid(quote)) {
+      return false;
+    }
+
+    return ['accepted', 'deposit_paid'].includes(String(quote.status));
+  }
+
+  async loadAvailability(quote: PublicQuoteApprovalModel = this.quote()!): Promise<void> {
+    if (!quote?.shop?.slug || !this.canSelfSchedule(quote) || this.scheduledResult()) return;
+
+    this.availabilityLoading.set(true);
+    this.availabilityError.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.publicBookingApi.getAvailability(quote.shop.slug, {
+          quoteId: quote.quoteId,
+          days: 14,
+          slotMinutes: 15,
+        })
+      );
+      this.availabilitySlots.set(response.data);
+
+      const selected = this.selectedSlot();
+      if (selected && !response.data.some((slot) => this.sameSlot(slot, selected))) {
+        this.selectedSlot.set(null);
+      }
+    } catch {
+      this.availabilityError.set('We could not load appointment times. Please try again.');
+    } finally {
+      this.availabilityLoading.set(false);
+    }
+  }
+
+  selectSlot(slot: PublicAvailabilitySlot): void {
+    this.selectedSlot.set(slot);
+    this.availabilityError.set(null);
+  }
+
+  async scheduleSelectedSlot(): Promise<void> {
+    const quote = this.quote();
+    const slot = this.selectedSlot();
+
+    if (!quote || !slot || !quote.shop.slug || !this.canSelfSchedule(quote)) return;
+
+    const address = quote.request.address;
+    if (quote.serviceMode === 'on_site' && (!address?.line1 || !address.city || !address.state || !address.postalCode)) {
+      this.availabilityError.set('This on-site quote is missing a complete service address. Please contact the shop so they can update it.');
+      return;
+    }
+
+    this.actioning.set('schedule');
+    this.availabilityError.set(null);
+    this.error.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.publicBookingApi.schedule(quote.shop.slug, {
+          quoteId: quote.quoteId,
+          startAt: slot.startAt,
+          endAt: slot.endAt,
+          candidateType: slot.candidateType === 'contractor' ? 'contractor' : 'internal',
+          assignedUserId: slot.assignedUserId,
+          contractorId: slot.contractorId,
+          customer: {
+            name: quote.customer.name ?? undefined,
+            email: quote.customer.email ?? undefined,
+            phone: quote.customer.phone ?? undefined,
+          },
+          address: quote.serviceMode === 'on_site' && address?.line1 && address.city && address.state && address.postalCode
+            ? {
+                label: address.label ?? undefined,
+                line1: address.line1,
+                line2: address.line2 ?? undefined,
+                city: address.city,
+                state: address.state,
+                postalCode: address.postalCode,
+                country: address.country ?? 'US',
+                notes: address.notes ?? undefined,
+              }
+            : undefined,
+          notes: quote.request.customerNotes ?? undefined,
+        })
+      );
+
+      this.scheduledResult.set(response);
+      this.availabilitySlots.set([]);
+      this.selectedSlot.set(null);
+      this.notice.set('Your repair appointment is scheduled. You are all set!');
+      await this.loadQuote();
+    } catch (err: any) {
+      const code = err?.error?.error;
+      if (code === 'slot_no_longer_available') {
+        this.availabilityError.set('That appointment time was just taken. Please choose another time.');
+        await this.loadAvailability(quote);
+      } else if (code === 'quote_already_scheduled') {
+        this.availabilityError.set('This quote has already been scheduled. Refresh the page to see the latest status.');
+      } else {
+        this.availabilityError.set('We could not schedule that appointment. Please try another time or contact the shop.');
+      }
+    } finally {
+      this.actioning.set(null);
+    }
+  }
+
+  slotDayLabel(slot: PublicAvailabilitySlot): string {
+    return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(slot.startAt));
+  }
+
+  slotTimeLabel(slot: PublicAvailabilitySlot): string {
+    return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(slot.startAt));
+  }
+
+  sameSlot(a: PublicAvailabilitySlot, b: PublicAvailabilitySlot): boolean {
+    return a.startAt === b.startAt && a.endAt === b.endAt && a.assignedUserId === b.assignedUserId && a.contractorId === b.contractorId;
+  }
+
+  isSelectedSlot(slot: PublicAvailabilitySlot): boolean {
+    const selected = this.selectedSlot();
+    return Boolean(selected && this.sameSlot(slot, selected));
+  }
+
+  trackingUrl(result: PublicScheduleResponse): string | null {
+    return result.publicTrackingToken ? `/track/${encodeURIComponent(result.publicTrackingToken)}` : null;
   }
 
 

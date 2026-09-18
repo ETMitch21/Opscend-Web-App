@@ -141,6 +141,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private workQueueService = inject(WorkQueueService);
   private readonly sessionIdle = inject(SessionIdleService);
   private readonly businessSettings = inject(BusinessSettingsService);
+  private readonly crmFeatureEnabled = signal(true);
   private readonly businessAccountsFeatureEnabled = signal(true);
   private readonly currentUser = toSignal(this.auth.currentUser$, {
     initialValue: this.auth.getCurrentUser(),
@@ -180,6 +181,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
   readonly locationLoadingIcon = LoaderCircleIcon;
   readonly quickQuoteIcon = CalculatorIcon;
   readonly businessAccountsIcon = Building2Icon;
+  readonly crmIcon = HandshakeIcon;
 
   private readonly notificationPollMs = 15_000;
   private readonly communicationPollMs = 5_000;
@@ -255,6 +257,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       badgeCount: () => this.newQuoteRequestCount(),
     },
     { label: 'Customers', route: '/customers', icon: this.usersIcon, permission: 'customers:read' },
+    { label: 'CRM', route: '/crm', icon: this.crmIcon, permission: 'crm:read' },
     { label: 'Business', route: '/business-accounts', icon: this.businessAccountsIcon, permission: 'businessAccounts:read' },
     { label: 'Balances', route: '/balances', icon: this.walletCardsIcon, permission: 'orders:read' },
     { label: 'Services', route: '/services', icon: this.toolboxIcon, permission: 'services:read' },
@@ -356,6 +359,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
       }))
       .filter((item) => {
         if (!this.canAccess(item.permission)) return false;
+        if (item.label === 'CRM' && !this.crmFeatureEnabled()) return false;
         if (item.label === 'Business' && !this.businessAccountsFeatureEnabled()) return false;
         if (item.children && item.children.length === 0) return false;
         return true;
@@ -418,9 +422,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
   }
 
   private async refreshBusinessFeatureVisibility(): Promise<void> {
-    if (!this.canAccess('businessAccounts:read') && !this.canAccess('shops:read')) return;
+    if (!this.canAccess('businessAccounts:read') && !this.canAccess('shops:read') && !this.canAccess('crm:read')) return;
     try {
       const state = await firstValueFrom(this.businessSettings.getFeatures());
+      this.crmFeatureEnabled.set(state.settings.crmEnabled);
       this.businessAccountsFeatureEnabled.set(state.settings.businessAccountsEnabled);
     } catch {
       // Keep the current navigation visible if settings cannot be checked.

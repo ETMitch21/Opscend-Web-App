@@ -200,7 +200,9 @@ export type CommunicationQuickReplyChannel = 'sms' | 'email' | 'web_chat';
 export interface CommunicationQuickReply {
   id: string;
   title: string;
+  subject: string | null;
   body: string;
+  category: string;
   channels: CommunicationQuickReplyChannel[];
   isActive: boolean;
   sortOrder: number;
@@ -218,14 +220,18 @@ export interface CommunicationQuickReplyResponse {
 
 export interface CommunicationQuickReplyCreate {
   title: string;
+  subject?: string | null;
   body: string;
+  category?: string;
   channels?: CommunicationQuickReplyChannel[];
   isActive?: boolean;
 }
 
 export interface CommunicationQuickReplyUpdate {
   title?: string;
+  subject?: string | null;
   body?: string;
+  category?: string;
   channels?: CommunicationQuickReplyChannel[];
   isActive?: boolean;
 }

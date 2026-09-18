@@ -1,18 +1,32 @@
-<app-settings-layout pageTitle="Business & Fleet" pageDescription="Control business account features and build the agreements customers sign during enrollment.">
+<app-settings-layout pageTitle="CRM, Business & Fleet" pageDescription="Choose the sales and business tools this shop uses. CRM stands alone; Fleet Management builds on Business Accounts.">
   @if (loading()) {
     <div class="settings-card flex min-h-56 items-center justify-center gap-2 text-sm text-app-text-muted">
       <lucide-icon [name]="icons.LoaderCircle" class="h-5 w-5 animate-spin"></lucide-icon>
-      Loading business settings…
+      Loading CRM, Business & Fleet settings…
     </div>
   } @else if (featureState(); as feature) {
     <div class="space-y-4">
       <section class="settings-card">
         <div class="settings-card-header">
-          <h2 class="settings-card-title">Business features</h2>
-          <p class="settings-card-description">Turn business account tools on only when your shop uses them. Existing records stay preserved when a feature is disabled.</p>
+          <h2 class="settings-card-title">Sales & business features</h2>
+          <p class="settings-card-description">Enable only the tools this shop needs. Existing records stay preserved when a feature is disabled.</p>
         </div>
 
         <div class="divide-y divide-app-border">
+          <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+              <span class="feature-icon"><lucide-icon [name]="icons.Sparkles" class="h-5 w-5"></lucide-icon></span>
+              <div>
+                <h3 class="text-sm font-semibold text-app-text">CRM</h3>
+                <p class="mt-1 max-w-2xl text-xs leading-5 text-app-text-muted">Companies, contacts, sales opportunities, follow-ups, ownership, and pipeline tracking. CRM works independently of Business Accounts and Fleet Management.</p>
+              </div>
+            </div>
+            <label class="feature-switch" [class.disabled]="!canWrite || savingFeatures()">
+              <input type="checkbox" [checked]="feature.settings.crmEnabled" [disabled]="!canWrite || savingFeatures()" (change)="setCrmEnabled($any($event.target).checked)">
+              <span></span>
+            </label>
+          </div>
+
           <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-start gap-3">
               <span class="feature-icon"><lucide-icon [name]="icons.Building2" class="h-5 w-5"></lucide-icon></span>
@@ -53,6 +67,7 @@
         </div>
       </section>
 
+      @if (feature.settings.fleetManagementEnabled) {
       <section class="settings-card">
         <div class="settings-card-header flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -107,7 +122,6 @@
         </div>
       </section>
 
-      @if (feature.settings.fleetManagementEnabled) {
         <section class="settings-card">
           <div class="settings-card-header">
             <h2 class="settings-card-title">Plan agreement assignments</h2>

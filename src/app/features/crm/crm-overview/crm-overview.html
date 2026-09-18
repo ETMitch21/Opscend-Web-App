@@ -1,0 +1,432 @@
+<div class="crm-page">
+  <header class="crm-header">
+    <div>
+      <div class="eyebrow"><lucide-icon [img]="crmIcon" [size]="15"></lucide-icon> CRM & sales</div>
+      <h1>Sales pipeline</h1>
+      <p>Track company relationships, opportunities, and follow-ups from first conversation through a won or lost deal.</p>
+    </div>
+    @if (canWrite) {
+      <button class="primary-btn" type="button" (click)="openCreate()">
+        <lucide-icon [img]="plusIcon" [size]="18"></lucide-icon>
+        New prospect
+      </button>
+    }
+  </header>
+
+  @if (loading()) {
+    <section class="loading-state"><lucide-icon class="spin" [img]="loadingIcon" [size]="24"></lucide-icon> Loading CRM…</section>
+  } @else if (overview(); as data) {
+    <section class="metric-grid">
+      <article class="metric-card">
+        <span class="metric-icon"><lucide-icon [img]="moneyIcon" [size]="19"></lucide-icon></span>
+        <div><strong>{{ money(data.stats.openMonthlyValueCents) }}/mo</strong><span>Recurring pipeline · {{ money(data.stats.openOneTimeValueCents) }} one-time</span></div>
+      </article>
+      <article class="metric-card">
+        <span class="metric-icon"><lucide-icon [img]="pipelineIcon" [size]="19"></lucide-icon></span>
+        <div><strong>{{ data.stats.openOpportunities }}</strong><span>Open opportunities</span></div>
+      </article>
+      <article class="metric-card">
+        <span class="metric-icon"><lucide-icon [img]="companyIcon" [size]="19"></lucide-icon></span>
+        <div><strong>{{ data.stats.prospects }}</strong><span>Prospect companies</span></div>
+      </article>
+      <article class="metric-card" [class.attention]="data.stats.followUpsDue > 0">
+        <span class="metric-icon"><lucide-icon [img]="followUpIcon" [size]="19"></lucide-icon></span>
+        <div><strong>{{ data.stats.followUpsDue }}</strong><span>Follow-ups due</span></div>
+      </article>
+    </section>
+
+    <section class="work-panels">
+      <article class="work-panel">
+        <header class="work-panel-header">
+          <div>
+            <span class="work-icon"><lucide-icon [img]="followUpIcon" [size]="17"></lucide-icon></span>
+            <div><h2>Follow-ups</h2><p>Who needs your attention next.</p></div>
+          </div>
+          <span class="work-count" [class.alert]="overdueFollowUps() > 0">{{ overdueFollowUps() }} overdue</span>
+        </header>
+        <div class="work-list">
+          @for (company of followUpCompanies(); track company.id) {
+            <button type="button" class="work-row" (click)="openCompany(company.id)">
+              <span class="work-avatar">{{ company.name.slice(0, 2).toUpperCase() }}</span>
+              <span class="work-main"><strong>{{ company.name }}</strong><small>{{ company.primaryContact?.name || 'No primary contact' }}</small></span>
+              <span class="work-date" [class.overdue]="relativeFollowUp(company.nextFollowUpAt).includes('overdue')"><strong>{{ relativeFollowUp(company.nextFollowUpAt) }}</strong><small>{{ shortDate(company.nextFollowUpAt) }}</small></span>
+              <lucide-icon [img]="arrowIcon" [size]="16"></lucide-icon>
+            </button>
+          } @empty {
+            <div class="work-empty"><strong>Nothing scheduled.</strong><span>Your follow-up queue is clear.</span></div>
+          }
+        </div>
+      </article>
+
+      <article class="work-panel">
+        <header class="work-panel-header">
+          <div>
+            <span class="work-icon stale"><lucide-icon [img]="pipelineIcon" [size]="17"></lucide-icon></span>
+            <div><h2>Sales automation</h2><p>Deals missing a next action or going quiet.</p></div>
+          </div>
+          <span class="work-count" [class.alert]="noNextActionOpportunities().length > 0">{{ noNextActionOpportunities().length }} no next action</span>
+        </header>
+        <div class="work-list">
+          @for (opportunity of noNextActionOpportunities(); track opportunity.id) {
+            <button type="button" class="work-row" (click)="openCompany(opportunity.companyId)">
+              <span class="work-avatar stale">{{ (opportunity.companyName || '?').slice(0, 2).toUpperCase() }}</span>
+              <span class="work-main"><strong>{{ opportunity.companyName }}</strong><small>{{ opportunity.title }}</small></span>
+              <span class="work-date overdue"><strong>No next action</strong><small>Schedule follow-up</small></span>
+              <lucide-icon [img]="arrowIcon" [size]="16"></lucide-icon>
+            </button>
+          }
+          @for (opportunity of staleWithNextAction(); track opportunity.id) {
+            <button type="button" class="work-row" (click)="openCompany(opportunity.companyId)">
+              <span class="work-avatar stale">{{ (opportunity.companyName || '?').slice(0, 2).toUpperCase() }}</span>
+              <span class="work-main"><strong>{{ opportunity.companyName }}</strong><small>{{ opportunity.title }}</small></span>
+              <span class="work-date"><strong>{{ daysSince(opportunity.lastActivityAt || opportunity.updatedAt) }}d quiet</strong><small>Needs a touchpoint</small></span>
+              <lucide-icon [img]="arrowIcon" [size]="16"></lucide-icon>
+            </button>
+          }
+          @if (noNextActionOpportunities().length === 0 && staleWithNextAction().length === 0) {
+            <div class="work-empty"><strong>Pipeline looks healthy.</strong><span>Every open deal has a next action and nothing has gone quiet for 14+ days.</span></div>
+          }
+        </div>
+      </article>
+    </section>
+
+    <section class="workspace-card">
+      <div class="workspace-tabs">
+        <button type="button" [class.active]="tab() === 'pipeline'" (click)="tab.set('pipeline')">
+          <lucide-icon [img]="pipelineIcon" [size]="17"></lucide-icon> Pipeline
+        </button>
+        <button type="button" [class.active]="tab() === 'companies'" (click)="tab.set('companies')">
+          <lucide-icon [img]="companyIcon" [size]="17"></lucide-icon> Companies
+        </button>
+        <button type="button" [class.active]="tab() === 'reports'" (click)="tab.set('reports')">
+          <lucide-icon [img]="reportsIcon" [size]="17"></lucide-icon> Reporting
+        </button>
+        @if (canManage) {
+          <button type="button" [class.active]="tab() === 'admin'" (click)="tab.set('admin')">CRM setup</button>
+        }
+        <span class="workspace-spacer"></span>
+        <span class="won-pill">{{ data.stats.wonThisMonth }} won this month</span>
+      </div>
+
+      @if (tab() === 'pipeline') {
+        <div class="weighted-banner">
+          <div><span>Weighted recurring pipeline</span><strong>{{ money(data.stats.weightedMonthlyValueCents) }}/mo</strong></div>
+          <div><span>Weighted one-time pipeline</span><strong>{{ money(data.stats.weightedOneTimeValueCents) }}</strong></div>
+          <p>Weighted values use each opportunity's probability and update automatically as deals move through the pipeline.</p>
+        </div>
+        <div class="pipeline-board">
+          @for (stage of stages; track stage.key) {
+            <section class="pipeline-column" [class.drop-target-active]="dragOverStage() === stage.key">
+              <header>
+                <div><strong>{{ stage.label }}</strong><span>{{ stage.hint }} · {{ stageProbability(stage.key) }}%</span></div>
+                <div class="stage-total"><b>{{ pipelineFor(stage.key).length }}</b><span>{{ money(stageWeightedMonthly(stage.key)) }}/mo weighted</span>@if (stageWeightedOneTime(stage.key) > 0) { <span>{{ money(stageWeightedOneTime(stage.key)) }} weighted</span> }</div>
+              </header>
+              <div
+                class="pipeline-stack"
+                [id]="'crm-stage-' + stage.key"
+                cdkDropList
+                [cdkDropListData]="pipelineFor(stage.key)"
+                [cdkDropListConnectedTo]="stageDropListIds"
+                [cdkDropListSortingDisabled]="true"
+                (cdkDropListEntered)="onStageDragEnter(stage.key)"
+                (cdkDropListDropped)="onOpportunityDrop($event, stage.key)"
+              >
+                @for (opportunity of pipelineFor(stage.key); track opportunity.id) {
+                  <article
+                    class="deal-card"
+                    tabindex="0"
+                    cdkDrag
+                    [cdkDragDisabled]="!canWrite"
+                    [cdkDragData]="opportunity"
+                    [class.is-dragging]="draggedOpportunityId() === opportunity.id"
+                    (cdkDragStarted)="onOpportunityDragStart(opportunity)"
+                    (cdkDragEnded)="onOpportunityDragEnd()"
+                    (click)="openCompany(opportunity.companyId)"
+                    (keyup.enter)="openCompany(opportunity.companyId)"
+                  >
+                    <div class="deal-topline">
+                      <span class="company-avatar">{{ (opportunity.companyName || '?').slice(0, 2).toUpperCase() }}</span>
+                      <div><strong>{{ opportunity.companyName }}</strong><span>{{ opportunity.title }}</span></div>
+                      @if (canWrite) { <span class="drag-hint" title="Drag to move" aria-hidden="true"><lucide-icon [img]="dragIcon" [size]="15"></lucide-icon></span> }
+                    </div>
+                    <div class="deal-value">
+                      <div>
+                        @if ((opportunity.monthlyValueCents ?? 0) > 0) { <strong>{{ money(opportunity.monthlyValueCents) }}<small>/mo</small></strong> }
+                        @if ((opportunity.oneTimeValueCents ?? 0) > 0) { <small class="one-time-value">{{ money(opportunity.oneTimeValueCents) }} one-time</small> }
+                        @if ((opportunity.monthlyValueCents ?? 0) === 0 && (opportunity.oneTimeValueCents ?? 0) === 0) { <strong>Value TBD</strong> }
+                      </div>
+                      <span class="probability-pill">{{ opportunity.probability }}%</span>
+                    </div>
+                    <div class="weighted-line">
+                      <span>Weighted</span>
+                      <strong>@if ((opportunity.monthlyValueCents ?? 0) > 0) { {{ money((opportunity.monthlyValueCents ?? 0) * opportunity.probability / 100) }}/mo } @if ((opportunity.oneTimeValueCents ?? 0) > 0) { · {{ money((opportunity.oneTimeValueCents ?? 0) * opportunity.probability / 100) }} }</strong>
+                    </div>
+                    <div class="deal-meta">
+                      <span>{{ opportunity.owner?.name || 'Unassigned' }}</span>
+                      <span>{{ opportunity.expectedCloseAt ? shortDate(opportunity.expectedCloseAt) : 'No close date' }}</span>
+                    </div>
+                    @if (canWrite) {
+                      <select class="stage-select" [ngModel]="opportunity.stage" (click)="$event.stopPropagation()" (ngModelChange)="changeStage(opportunity, $event)">
+                        @for (option of stages; track option.key) { <option [value]="option.key">{{ option.label }}</option> }
+                        <option value="won">Won</option>
+                        <option value="lost">Lost</option>
+                      </select>
+                    }
+                  </article>
+                } @empty {
+                  <div class="column-empty">No opportunities here</div>
+                }
+              </div>
+            </section>
+          }
+        </div>
+      } @else if (tab() === 'companies') {
+        <div class="company-toolbar">
+          <label class="search-field">
+            <lucide-icon [img]="searchIcon" [size]="17"></lucide-icon>
+            <input [(ngModel)]="search" placeholder="Search company, contact, industry, or source…" />
+          </label>
+          <span>{{ filteredCompanies.length }} companies</span>
+        </div>
+        <div class="company-list">
+          @for (company of filteredCompanies; track company.id) {
+            <button type="button" class="company-row" (click)="openCompany(company.id)">
+              <span class="company-mark">{{ company.name.slice(0, 2).toUpperCase() }}</span>
+              <span class="company-main">
+                <span class="title-line"><strong>{{ company.name }}</strong><em [class.customer]="company.status === 'customer'">{{ company.status === 'customer' ? 'Customer' : company.status === 'lost' ? 'Lost' : 'Prospect' }}</em></span>
+                <span>{{ company.primaryContact?.name || 'No contact yet' }} @if (company.industry) { · {{ company.industry }} }</span>
+              </span>
+              <span class="company-stat"><strong>{{ company.estimatedDeviceCount ?? '—' }}</strong><small>devices</small></span>
+              <span class="company-stat">
+                @if (company.openMonthlyValueCents > 0) {
+                  <strong>{{ money(company.openMonthlyValueCents) }}/mo</strong>
+                  <small>{{ company.openOneTimeValueCents > 0 ? money(company.openOneTimeValueCents) + ' one-time' : 'recurring pipeline' }}</small>
+                } @else {
+                  <strong>{{ money(company.openOneTimeValueCents) }}</strong><small>open one-time</small>
+                }
+              </span>
+              <span class="owner-cell"><b>{{ ownerInitials(company.owner?.name) }}</b><span>{{ company.owner?.name || 'Unassigned' }}</span></span>
+              <span class="follow-cell" [class.overdue]="company.nextFollowUpAt && relativeFollowUp(company.nextFollowUpAt).includes('overdue')"><strong>{{ relativeFollowUp(company.nextFollowUpAt) }}</strong><small>{{ company.nextFollowUpAt ? shortDate(company.nextFollowUpAt) : '—' }}</small></span>
+              <lucide-icon [img]="arrowIcon" [size]="18"></lucide-icon>
+            </button>
+          } @empty {
+            <div class="company-empty"><lucide-icon [img]="companyIcon" [size]="26"></lucide-icon><strong>No companies match that search.</strong></div>
+          }
+        </div>
+      } @else if (tab() === 'reports') {
+        <div class="reports-page">
+          <section class="report-metrics">
+            <article><span><lucide-icon [img]="trendIcon" [size]="16"></lucide-icon> Weighted pipeline</span><strong>{{ money(data.stats.weightedMonthlyValueCents) }}/mo</strong><small>{{ money(data.stats.weightedOneTimeValueCents) }} one-time</small></article>
+            <article><span>Win rate</span><strong>{{ percent(data.stats.winRate) }}</strong><small>{{ data.stats.wonThisMonth }} won · {{ data.stats.lostThisMonth }} lost this month</small></article>
+            <article><span>Won this month</span><strong>{{ money(data.reporting.wonMonthlyValueCents) }}/mo</strong><small>{{ money(data.reporting.wonOneTimeValueCents) }} one-time</small></article>
+            <article><span>Average won deal</span><strong>{{ money(data.reporting.averageWonMonthlyValueCents) }}/mo</strong><small>{{ money(data.reporting.averageWonOneTimeValueCents) }} one-time</small></article>
+          </section>
+
+          <div class="report-grid">
+            <section class="report-panel">
+              <header><div><h2>Pipeline by stage</h2><p>Raw and probability-weighted value across the sales funnel.</p></div></header>
+              <div class="stage-report">
+                @for (row of data.reporting.stageBreakdown; track row.stage) {
+                  <div class="stage-report-row">
+                    <div><strong>{{ stageLabel(row.stage) }}</strong><span>{{ row.count }} opportunities</span></div>
+                    <div><strong>{{ money(row.weightedMonthlyValueCents) }}/mo</strong><span>{{ money(row.weightedOneTimeValueCents) }} weighted</span></div>
+                    <div class="stage-bar"><span [style.width.%]="row.stage === 'won' ? 100 : row.stage === 'lost' ? 0 : stageProbability(row.stage)"></span></div>
+                  </div>
+                }
+              </div>
+            </section>
+
+            <section class="report-panel">
+              <header><div><h2>Sales performance</h2><p>Pipeline ownership and closed results by salesperson.</p></div></header>
+              <div class="owner-report">
+                @for (owner of data.reporting.ownerPerformance; track owner.ownerUserId || 'unassigned') {
+                  <div class="owner-report-row">
+                    <span class="owner-report-avatar">{{ ownerInitials(owner.ownerName) }}</span>
+                    <div class="owner-report-main"><strong>{{ owner.ownerName }}</strong><span>{{ owner.openCount }} open · {{ owner.wonCount }} won · {{ owner.lostCount }} lost</span></div>
+                    <div class="owner-report-value"><strong>{{ money(owner.weightedMonthlyValueCents) }}/mo</strong><span>{{ money(owner.weightedOneTimeValueCents) }} weighted pipeline</span></div>
+                    <div class="owner-report-value"><strong>{{ money(owner.wonMonthlyValueCents) }}/mo</strong><span>{{ money(owner.wonOneTimeValueCents) }} won</span></div>
+                  </div>
+                } @empty {
+                  <div class="report-empty">No sales performance data yet.</div>
+                }
+              </div>
+            </section>
+
+            <section class="report-panel reason-panel">
+              <header><div><h2>Why deals close</h2><p>Structured win and loss reasons so you can see what is actually driving outcomes.</p></div></header>
+              <div class="reason-report">
+                @for (row of data.reporting.closeReasonBreakdown; track row.stage + ':' + row.reason) {
+                  <div class="reason-report-row" [class.won]="row.stage === 'won'" [class.lost]="row.stage === 'lost'">
+                    <span class="reason-status">{{ row.stage === 'won' ? 'Won' : 'Lost' }}</span>
+                    <div><strong>{{ closeReasonLabel(row.reason) }}</strong><span>{{ row.count }} {{ row.count === 1 ? 'deal' : 'deals' }}</span></div>
+                    <div><strong>{{ money(row.monthlyValueCents) }}/mo</strong><span>{{ money(row.oneTimeValueCents) }} one-time</span></div>
+                  </div>
+                } @empty {
+                  <div class="report-empty">Close reasons will appear here as opportunities are won and lost.</div>
+                }
+              </div>
+            </section>
+
+            @if (insights(); as insight) {
+              <section class="report-panel">
+                <header><div><h2>Lead source performance</h2><p>See which channels create customers and revenue.</p></div></header>
+                <div class="owner-report">
+                  @for (source of insight.sourcePerformance; track source.source) {
+                    <div class="owner-report-row">
+                      <div class="owner-report-main"><strong>{{ source.source }}</strong><span>{{ source.companies }} companies · {{ source.won }} won</span></div>
+                      <div class="owner-report-value"><strong>{{ money(source.wonMonthlyValueCents) }}/mo</strong><span>{{ money(source.wonOneTimeValueCents) }} won</span></div>
+                    </div>
+                  } @empty { <div class="report-empty">Lead source results will appear as deals close.</div> }
+                </div>
+              </section>
+
+              <section class="report-panel">
+                <header><div><h2>Rep goals & leaderboard</h2><p>Monthly closed revenue, follow-ups, and progress against goals.</p></div><input type="month" [ngModel]="period()" (ngModelChange)="changePeriod($event)" /></header>
+                <div class="owner-report">
+                  @for (rep of insight.leaderboard; track rep.userId || rep.name) {
+                    <div class="owner-report-row">
+                      <span class="owner-report-avatar">{{ ownerInitials(rep.name) }}</span>
+                      <div class="owner-report-main"><strong>{{ rep.name }}</strong><span>{{ rep.wonCount }} won · {{ rep.followUpsCompleted }} follow-ups</span></div>
+                      <div class="owner-report-value"><strong>{{ money(rep.wonMonthlyValueCents) }}/mo</strong><span>Goal {{ money(rep.goal?.wonMonthlyGoalCents || 0) }}/mo</span></div>
+                      <div class="owner-report-value"><strong>{{ money(rep.wonOneTimeValueCents) }}</strong><span>Goal {{ money(rep.goal?.wonOneTimeGoalCents || 0) }}</span></div>
+                    </div>
+                  } @empty { <div class="report-empty">No rep activity this month.</div> }
+                </div>
+              </section>
+
+              <section class="report-panel">
+                <header><div><h2>Renewals & account health</h2><p>Upcoming renewals and accounts that need attention.</p></div></header>
+                <div class="owner-report">
+                  @for (company of insight.renewals; track company.id) {
+                    <button class="owner-report-row crm-row-button" type="button" (click)="openCompany(company.id)">
+                      <div class="owner-report-main"><strong>{{ company.name }}</strong><span>{{ company.accountHealth || 'Not reviewed' }}</span></div>
+                      <div class="owner-report-value"><strong>{{ shortDate(company.renewalAt) }}</strong><span>Renewal</span></div>
+                    </button>
+                  } @empty { <div class="report-empty">No upcoming renewals.</div> }
+                </div>
+              </section>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="reports-page crm-admin-page">
+          <section class="report-panel">
+            <header><div><h2>Pipeline stages</h2><p>Add custom open stages, reorder them, and control weighted probability.</p></div></header>
+            <div class="crm-admin-list">
+              @for (stage of pipelineStages(); track stage.id) {
+                <div class="crm-admin-row">
+                  <input [(ngModel)]="stage.label" />
+                  <input type="number" min="0" max="100" [(ngModel)]="stage.probability" title="Probability" />
+                  <input type="number" min="0" [(ngModel)]="stage.position" title="Order" />
+                  <button class="secondary-btn" type="button" (click)="updateStage(stage)">Save</button>
+                  @if (stage.kind === 'open' && !['lead','contacted','qualified','proposal','negotiation'].includes(stage.key)) { <button class="icon-btn" type="button" (click)="deleteStage(stage)">×</button> }
+                </div>
+              }
+              <div class="crm-admin-row add-row">
+                <input [(ngModel)]="stageForm.label" placeholder="New stage name" />
+                <input [(ngModel)]="stageForm.key" placeholder="stage-key" />
+                <input type="number" min="0" max="100" [(ngModel)]="stageForm.probability" />
+                <button class="primary-btn" type="button" (click)="addStage()">Add stage</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="report-panel">
+            <header><div><h2>CSV import</h2><p>Import companies, contacts, opportunities, source and values in bulk.</p></div></header>
+            <label class="csv-drop"><input type="file" accept=".csv,text/csv" (change)="importCsv($event)" [disabled]="importing()" /><strong>{{ importing() ? 'Importing…' : 'Choose CSV file' }}</strong><span>Headers supported: Company Name, Contact Name, Email, Phone, Industry, Lead Source, Opportunity, Stage, Monthly Value, One-Time Value.</span></label>
+          </section>
+
+          @if (insights(); as insight) {
+            <section class="report-panel">
+              <header><div><h2>Rep goals</h2><p>Set monthly recurring, one-time revenue, opportunity, and follow-up targets.</p></div><input type="month" [ngModel]="period()" (ngModelChange)="changePeriod($event)" /></header>
+              <div class="crm-admin-list">
+                @for (rep of insight.leaderboard; track rep.userId || rep.name) {
+                  @if (rep.userId) {
+                    <div class="goal-row">
+                      <strong>{{ rep.name }}</strong>
+                      <label><span>MRR goal</span><input type="number" min="0" [(ngModel)]="goalForm[rep.userId].monthly" /></label>
+                      <label><span>One-time</span><input type="number" min="0" [(ngModel)]="goalForm[rep.userId].oneTime" /></label>
+                      <label><span>Deals</span><input type="number" min="0" [(ngModel)]="goalForm[rep.userId].opportunities" /></label>
+                      <label><span>Follow-ups</span><input type="number" min="0" [(ngModel)]="goalForm[rep.userId].followUps" /></label>
+                      <button class="secondary-btn" type="button" (click)="saveGoal(rep.userId)">Save</button>
+                    </div>
+                  }
+                }
+              </div>
+            </section>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>
+
+@if (closeOpen() && closingOpportunity(); as opportunity) {
+  <div class="modal-backdrop" (mousedown)="closeCloseDeal()">
+    <section class="modal close-modal" role="dialog" aria-modal="true" (mousedown)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div><span class="eyebrow">Close opportunity</span><h2>Mark {{ opportunity.title }} {{ closeStage() === 'won' ? 'won' : 'lost' }}</h2><p>Capture the reason so reporting can tell you why deals are closing.</p></div>
+        <button class="icon-btn" type="button" (click)="closeCloseDeal()" aria-label="Close"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button>
+      </header>
+      <div class="modal-body">
+        <div class="form-section">
+          <div class="form-grid">
+            <label><span>{{ closeStage() === 'won' ? 'Win reason' : 'Loss reason' }} *</span><select [(ngModel)]="closeReason"><option value="">Choose a reason…</option>@for (reason of closeReasonOptions(); track reason[0]) { <option [value]="reason[0]">{{ reason[1] }}</option> }</select></label>
+            <label><span>Details</span><textarea rows="4" [(ngModel)]="closeReasonNote" placeholder="Optional context about the outcome…"></textarea></label>
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer"><button class="secondary-btn" type="button" (click)="closeCloseDeal()">Cancel</button><button class="primary-btn" type="button" [disabled]="saving() || !closeReason" (click)="confirmCloseDeal()">{{ closeStage() === 'won' ? 'Mark won' : 'Mark lost' }}</button></footer>
+    </section>
+  </div>
+}
+
+@if (createOpen()) {
+  <div class="modal-backdrop" (mousedown)="closeCreate()">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="crm-create-title" (mousedown)="$event.stopPropagation()">
+      <header class="modal-header">
+        <div><span class="eyebrow">New prospect</span><h2 id="crm-create-title">Start a business relationship</h2><p>Create the company, primary contact, and first sales opportunity together.</p></div>
+        <button class="icon-btn" type="button" (click)="closeCreate()" aria-label="Close"><lucide-icon [img]="closeIcon" [size]="20"></lucide-icon></button>
+      </header>
+      <div class="modal-body">
+        <div class="form-section">
+          <h3>Company</h3>
+          <div class="form-grid two">
+            <label><span>Company name *</span><input [(ngModel)]="form.companyName" placeholder="Acme Plumbing" /></label>
+            <label><span>Website</span><input [(ngModel)]="form.website" placeholder="acmeplumbing.com" /></label>
+            <label><span>Industry</span><input [(ngModel)]="form.industry" placeholder="Plumbing & HVAC" /></label>
+            <label><span>Lead source</span><input [(ngModel)]="form.source" placeholder="Chamber, referral, outbound…" /></label>
+          </div>
+        </div>
+        <div class="form-section">
+          <h3>Primary contact</h3>
+          <div class="form-grid two">
+            <label><span>Name</span><input [(ngModel)]="form.contactName" placeholder="Jordan Smith" /></label>
+            <label><span>Title</span><input [(ngModel)]="form.contactTitle" placeholder="Operations Manager" /></label>
+            <label><span>Email</span><input type="email" [(ngModel)]="form.contactEmail" placeholder="jordan@company.com" /></label>
+            <label><span>Phone</span><input [(ngModel)]="form.contactPhone" placeholder="(816) 555-0123" /></label>
+          </div>
+        </div>
+        <div class="form-section opportunity-section">
+          <h3>First opportunity</h3>
+          <div class="form-grid two">
+            <label class="span-two"><span>Opportunity name</span><input [(ngModel)]="form.opportunityTitle" [placeholder]="form.companyName ? form.companyName + ' Opportunity' : 'New opportunity'" /></label>
+            <label><span>Estimated devices</span><input type="number" min="0" [(ngModel)]="form.estimatedDevices" placeholder="25" /></label>
+            <label><span>Estimated monthly value</span><div class="money-input"><span>$</span><input type="number" min="0" step="0.01" [(ngModel)]="form.monthlyValue" placeholder="1475" /></div></label>
+            <label><span>Estimated one-time value</span><div class="money-input"><span>$</span><input type="number" min="0" step="0.01" [(ngModel)]="form.oneTimeValue" placeholder="3500" /></div></label>
+            @if (canAssign) {
+              <label class="span-two"><span>Account owner</span><select [(ngModel)]="form.ownerUserId"><option value="">Assign to me</option>@for (owner of owners(); track owner.id) { <option [value]="owner.id">{{ owner.name }}</option> }</select></label>
+            }
+          </div>
+        </div>
+        <div class="form-section"><label><span>Internal notes</span><textarea rows="3" [(ngModel)]="form.notes" placeholder="Anything useful before the next conversation…"></textarea></label></div>
+      </div>
+      <footer class="modal-footer">
+        <button class="secondary-btn" type="button" (click)="closeCreate()">Cancel</button>
+        <button class="primary-btn" type="button" [disabled]="saving()" (click)="createProspect()">
+          @if (saving()) { <lucide-icon class="spin" [img]="loadingIcon" [size]="17"></lucide-icon> Creating… } @else { Create prospect }
+        </button>
+      </footer>
+    </section>
+  </div>
+}

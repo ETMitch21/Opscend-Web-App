@@ -15,7 +15,7 @@
       <div class="icon-tile"><lucide-icon [img]="icons.Zap" [size]="20"></lucide-icon></div>
       <div>
         <h2 class="text-base font-bold text-app-text">Quick replies</h2>
-        <p class="mt-1 max-w-2xl text-sm leading-6 text-app-text-muted">Create reusable responses for Web Chat, SMS, and email. They appear in the Communications composer and can still be edited before sending.</p>
+        <p class="mt-1 max-w-2xl text-sm leading-6 text-app-text-muted">Create reusable responses for Web Chat, SMS, email, and CRM outreach. One library powers every communication surface.</p>
       </div>
     </div>
 
@@ -44,7 +44,7 @@
                 @if (!reply.isActive) { <span class="rounded-full bg-app-surface-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-app-text-muted">Disabled</span> }
               </div>
               <p class="mt-1 line-clamp-2 text-sm leading-6 text-app-text-muted">{{ reply.body }}</p>
-              <p class="mt-1 text-[11px] font-semibold text-app-text-muted">{{ channelLabel(reply) }}</p>
+              <p class="mt-1 text-[11px] font-semibold text-app-text-muted">{{ reply.category }} · {{ channelLabel(reply) }}</p>
             </button>
             <div class="flex shrink-0 items-center gap-1">
               <button type="button" class="grid h-9 w-9 cursor-pointer place-items-center rounded-xl text-app-text-muted hover:bg-app-surface-muted hover:text-app-text" (click)="edit(reply)" aria-label="Edit quick reply"><lucide-icon [img]="icons.Edit" [size]="15"></lucide-icon></button>
@@ -72,10 +72,20 @@
             <span class="mb-1.5 block text-xs font-bold text-app-text">Name</span>
             <input formControlName="title" class="w-full rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" placeholder="e.g. Request a photo" />
           </label>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="block">
+              <span class="mb-1.5 block text-xs font-bold text-app-text">Category</span>
+              <input formControlName="category" class="w-full rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" placeholder="General or CRM" />
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-xs font-bold text-app-text">Email subject <span class="font-normal text-app-text-muted">(optional)</span></span>
+              <input formControlName="subject" class="w-full rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" placeholder="Following up" />
+            </label>
+          </div>
           <label class="block">
             <span class="mb-1.5 block text-xs font-bold text-app-text">Reply</span>
             <textarea formControlName="body" rows="6" class="w-full resize-none rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm leading-6 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20" placeholder="Write the saved response…"></textarea>
-            <span class="mt-1 block text-[11px] text-app-text-muted">Use <code>{{'{{first_name}}'}}</code> to insert the customer's first name.</span>
+            <span class="mt-1 block text-[11px] text-app-text-muted">Merge fields: <code>{{'{{first_name}}'}}</code> in Communications; CRM also supports <code>{{'{{firstName}}'}}</code>, <code>{{'{{contactName}}'}}</code>, and <code>{{'{{companyName}}'}}</code>.</span>
           </label>
 
           <div>

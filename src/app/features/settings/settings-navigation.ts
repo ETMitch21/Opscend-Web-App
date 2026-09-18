@@ -105,12 +105,12 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         keywords: ['health', 'integrity', 'issues', 'diagnostics', 'orders', 'balances', 'inventory', 'automations'],
       },
       {
-        label: 'Business & Fleet',
-        description: 'Business account features, Fleet controls, and agreement templates.',
+        label: 'CRM, Business & Fleet',
+        description: 'CRM, business account features, Fleet controls, and agreement templates.',
         route: '/settings/shop/business-fleet',
         icon: Building2,
         permission: 'shops:read',
-        keywords: ['business accounts', 'fleet', 'contracts', 'agreements', 'templates', 'features'],
+        keywords: ['crm', 'sales', 'business accounts', 'fleet', 'contracts', 'agreements', 'templates', 'features'],
       },
       {
         label: 'Fleet plans',

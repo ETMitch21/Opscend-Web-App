@@ -306,7 +306,7 @@ export interface PublicQuoteApproval {
     address: PublicQuoteApprovalAddress | null;
   };
 
-  shop: PublicBookingSettings['shop'];
+  shop: PublicBookingSettings['shop'] & { slug: string };
 
   quoteSentAt: string | null;
   acceptedAt: string | null;

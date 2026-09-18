@@ -1,4 +1,5 @@
 export interface BusinessFeatureSettings {
+  crmEnabled: boolean;
   businessAccountsEnabled: boolean;
   fleetManagementEnabled: boolean;
   defaultAgreementTemplateId: string | null;

@@ -59,7 +59,9 @@ export class QuickRepliesSettingsComponent implements OnInit {
 
   readonly form = this.fb.group({
     title: ['', [Validators.required, Validators.maxLength(80)]],
+    subject: ['', [Validators.maxLength(200)]],
     body: ['', [Validators.required, Validators.maxLength(4000)]],
+    category: ['General', [Validators.required, Validators.maxLength(60)]],
     sms: [true],
     email: [true],
     webChat: [true],
@@ -86,7 +88,7 @@ export class QuickRepliesSettingsComponent implements OnInit {
 
   add(): void {
     this.editingId.set(null);
-    this.form.reset({ title: '', body: '', sms: true, email: true, webChat: true, isActive: true });
+    this.form.reset({ title: '', subject: '', body: '', category: 'General', sms: true, email: true, webChat: true, isActive: true });
     this.editorOpen.set(true);
     this.saveState.set('idle');
   }
@@ -95,7 +97,9 @@ export class QuickRepliesSettingsComponent implements OnInit {
     this.editingId.set(reply.id);
     this.form.reset({
       title: reply.title,
+      subject: reply.subject ?? '',
       body: reply.body,
+      category: reply.category || 'General',
       sms: reply.channels.includes('sms'),
       email: reply.channels.includes('email'),
       webChat: reply.channels.includes('web_chat'),
@@ -132,7 +136,9 @@ export class QuickRepliesSettingsComponent implements OnInit {
     try {
       const payload = {
         title: String(raw.title ?? '').trim(),
+        subject: String(raw.subject ?? '').trim() || null,
         body: String(raw.body ?? '').trim(),
+        category: String(raw.category ?? 'General').trim() || 'General',
         channels,
         isActive: Boolean(raw.isActive),
       };

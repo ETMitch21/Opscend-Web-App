@@ -95,7 +95,7 @@ export class BusinessFleetSettings implements OnInit {
       await this.loadPlansIfEnabled();
     } catch (error) {
       console.error(error);
-      this.toast.error('Business & Fleet settings could not be loaded.');
+      this.toast.error('CRM, Business & Fleet settings could not be loaded.');
     } finally {
       this.loading.set(false);
     }
@@ -113,6 +113,11 @@ export class BusinessFleetSettings implements OnInit {
       console.error(error);
       this.plans.set([]);
     }
+  }
+
+  async setCrmEnabled(enabled: boolean): Promise<void> {
+    if (!this.canWrite || !this.featureState()) return;
+    await this.updateFeatures({ crmEnabled: enabled });
   }
 
   async setFleetEnabled(enabled: boolean): Promise<void> {
@@ -134,7 +139,7 @@ export class BusinessFleetSettings implements OnInit {
     try {
       const state = await firstValueFrom(this.api.updateFeatures(payload));
       this.featureState.set(state);
-      this.toast.success('Business settings updated.');
+      this.toast.success('Feature settings updated.');
       await this.loadPlansIfEnabled();
     } catch (error: any) {
       console.error(error);
