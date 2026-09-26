@@ -450,7 +450,9 @@
                 <span class="min-w-0 flex-1">
                   <span class="flex flex-wrap items-center justify-between gap-2">
                     <span class="text-sm font-semibold text-gray-950">{{ tier.name }}</span>
+                    @if (canRevealRepairSelectionPrices()) {
                     <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-gray-900 ring-1 ring-black/5">{{ pricingTierPriceLabel(tier) }}</span>
+                    }
                   </span>
                   <span class="mt-1 block text-xs leading-5 text-gray-500">{{ pricingTierDescription(tier) }}</span>
                   @if (tier.options[0]?.requiresManualReview) {
@@ -473,7 +475,7 @@
                     <p class="text-xs font-semibold uppercase tracking-[0.15em] text-gray-400">{{ attributeLabel(attributeKey) }}</p>
                     <p class="mt-1 text-sm text-gray-500">{{ attributePrompt(attributeKey) }}.</p>
                   </div>
-                  @if (selectedNeed.quoteAttributeKeys.length === 1) {
+                  @if (selectedNeed.quoteAttributeKeys.length === 1 && canRevealRepairSelectionPrices()) {
                   <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-gray-900 ring-1 ring-black/5">
                     {{ selectedPricingOption() ? pricingOptionPriceLabel(selectedPricingOption()!) : pricingTierPriceLabel(selectedTier) }}
                   </span>

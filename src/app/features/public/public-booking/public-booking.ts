@@ -330,6 +330,9 @@ export class PublicBooking implements OnDestroy {
   readonly selectedUpsellIds = signal<Set<string>>(new Set());
 
   readonly quote = signal<PublicRepairQuote | null>(null);
+  readonly canRevealRepairSelectionPrices = computed(() =>
+    this.settings()?.publicFunnel?.requireContactBeforePrice === false
+  );
   readonly slots = signal<PublicAvailabilitySlot[]>([]);
   readonly selectedSlotKey = signal<string | null>(null);
   readonly selectedDate = signal<string | null>(null);
