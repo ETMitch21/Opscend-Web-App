@@ -24,6 +24,10 @@ import {
   ContractorPayoutStatus,
 } from '../../core/contractor-payout/contractor-payout.model';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 type PayoutFilter =
   | 'pending'
   | 'approved'
@@ -44,12 +48,13 @@ type PayoutActivityEvent = {
 @Component({
   selector: 'app-contractor-payouts',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule],
+  imports: [CommonModule, RouterLink, LucideAngularModule, TablePagination, TablePageSize],
   templateUrl: './contractor-payouts.html',
   styleUrl: './contractor-payouts.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContractorPayouts {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly toast = inject(ToastService);
 
   readonly payoutsStore = inject(ContractorPayoutsStore);

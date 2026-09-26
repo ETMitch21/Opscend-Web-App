@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  HostListener,
   computed,
   effect,
   inject,
@@ -26,6 +27,7 @@ import {
   CreditCard,
   FilePlus2,
   LoaderCircle,
+  Menu,
   LucideAngularModule,
   Package2,
   Pencil,
@@ -102,6 +104,7 @@ export class RepairOrderCard {
   readonly searchFocused = signal(false);
   readonly expandedItemIndex = signal<number | null>(null);
   readonly paymentsExpanded = signal(false);
+  readonly orderMenuOpen = signal(false);
 
   readonly paymentMethod = signal<PaymentMethod>('card');
   readonly refundMethod = signal<PaymentMethod>('card');
@@ -118,6 +121,7 @@ export class RepairOrderCard {
     RotateCcw,
     XCircle,
     LoaderCircle,
+    Menu,
     Package2,
     Search,
     Plus,
@@ -315,6 +319,24 @@ export class RepairOrderCard {
     });
 
     void this.loadStripeStatus();
+  }
+
+  toggleOrderMenu(): void {
+    this.orderMenuOpen.update((open) => !open);
+  }
+
+  closeOrderMenu(): void {
+    this.orderMenuOpen.set(false);
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.closeOrderMenu();
+  }
+
+  @HostListener('document:keydown.escape')
+  onDocumentEscape(): void {
+    this.closeOrderMenu();
   }
 
   async loadCatalogItems(): Promise<void> {

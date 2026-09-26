@@ -346,110 +346,6 @@
 
 
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex items-center gap-2">
-                        <lucide-icon [name]="icons.MessageSquareText" class="h-4 w-4 text-gray-500"></lucide-icon>
-                        <div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="text-base font-semibold text-gray-900">Messages</h2>
-
-                                @if (repairMessageUnreadCount() > 0) {
-                                <span
-                                    class="rounded-full bg-brand px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm">
-                                    {{ repairMessageUnreadCount() }} unread
-                                </span>
-                                }
-                            </div>
-
-                            <p class="mt-1 text-sm text-gray-500">
-                                Repair-scoped communication for customers, contractors, and the shop.
-                            </p>
-                        </div>
-                    </div>
-
-                    <button type="button"
-                        class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-                        [disabled]="repairMessagesLoading()" (click)="loadRepairMessages()">
-                        Refresh
-                    </button>
-                </div>
-
-                <form class="mt-5 space-y-3" [formGroup]="messageForm">
-                    <div class="grid gap-3 sm:grid-cols-[220px_1fr_auto]">
-                        <select formControlName="visibility"
-                            class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand">
-                            <option value="customer_shop">Customer ↔ Shop</option>
-                            <option value="customer_contractor">Customer ↔ Contractor</option>
-                            <option value="contractor_shop">Contractor ↔ Shop</option>
-                            <option value="internal">Internal</option>
-                        </select>
-
-                        <input type="text" formControlName="message" placeholder="Send a repair message..."
-                            class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-gray-400 focus:border-brand" />
-
-                        <button type="button"
-                            class="cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-                            [disabled]="repairMessageSaving() || messageForm.invalid" (click)="sendRepairMessage()">
-                            <lucide-icon [name]="icons.Send" class="h-4 w-4"></lucide-icon>
-                            Send
-                        </button>
-                    </div>
-
-                    <p class="text-xs leading-5 text-gray-400">
-                        Customer and contractor conversations stay inside Opscend. Direct phone numbers and emails are
-                        not shared here by default.
-                    </p>
-                </form>
-
-                <div class="mt-6 space-y-3">
-                    @if (repairMessagesLoading()) {
-                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">
-                        Loading messages...
-                    </div>
-                    } @else if (repairMessagesError()) {
-                    <div class="rounded-xl border border-rose-100 bg-rose-50 p-5 text-sm text-rose-700">
-                        {{ repairMessagesError() }}
-                    </div>
-                    } @else {
-                    @for (message of repairMessages(); track message.id) {
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold"
-                                    [ngClass]="messageRoleClasses(message.role)">
-                                    {{ prettyMessageRole(message.role) }}
-                                </span>
-
-                                <span class="rounded-full border px-2.5 py-1 text-xs font-semibold"
-                                    [ngClass]="messageVisibilityClasses(message.visibility)">
-                                    {{ prettyMessageVisibility(message.visibility) }}
-                                </span>
-                            </div>
-
-                            <span class="text-xs text-gray-500">{{ formatDate(message.createdAt) }}</span>
-                        </div>
-
-                        <p class="whitespace-pre-wrap text-sm leading-6 text-gray-700">{{ message.message }}</p>
-
-                        @if (messageReadReceipt(message); as receipt) {
-                        <div class="mt-3 text-right text-[11px] font-medium text-gray-400">
-                            {{ receipt }}
-                        </div>
-                        }
-                    </div>
-                    } @empty {
-                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5">
-                        <p class="text-sm font-medium text-gray-800">No messages yet.</p>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Send the first repair-scoped message from this card.
-                        </p>
-                    </div>
-                    }
-                    }
-                </div>
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div class="flex items-center gap-2">
                     <lucide-icon [name]="icons.Clock3" class="h-4 w-4 text-gray-500"></lucide-icon>
                     <h2 class="text-base font-semibold text-gray-900">Timeline</h2>
@@ -596,66 +492,78 @@
             </div>
             }
 
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        @if (repairValue.customer?.name) {
-                        <div
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
-                            {{ getInitials(repairValue.customer?.name) }}
-                        </div>
-                        } @else {
-                        <div
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
-                            <lucide-icon [name]="icons.UserRound" class="h-4 w-4"></lucide-icon>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex min-w-0 items-start gap-3.5">
+                    @if (repairValue.customer?.name) {
+                    <div
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">
+                        {{ getInitials(repairValue.customer?.name) }}
+                    </div>
+                    } @else {
+                    <div
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                        <lucide-icon [name]="icons.UserRound" class="h-4 w-4"></lucide-icon>
+                    </div>
+                    }
+
+                    <div class="min-w-0 flex-1 pt-0.5">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Customer</p>
+                        <p class="mt-0.5 truncate text-base font-semibold leading-tight text-slate-950">
+                            {{ repairValue.customer?.name || 'Unassigned' }}
+                        </p>
+
+                        @if (repairValue.customer) {
+                        <div class="mt-2.5 space-y-1.5">
+                            @if (repairValue.customer.phone) {
+                            <div class="flex min-w-0 items-center gap-2 text-xs text-slate-600">
+                                <lucide-icon [name]="icons.PhoneIcon" class="h-3.5 w-3.5 shrink-0 text-slate-400"></lucide-icon>
+                                <span class="truncate">{{ repairValue.customer.phone | phone }}</span>
+                            </div>
+                            }
+                            @if (repairValue.customer.email) {
+                            <div class="flex min-w-0 items-center gap-2 text-xs text-slate-600">
+                                <lucide-icon [name]="icons.MailIcon" class="h-3.5 w-3.5 shrink-0 text-slate-400"></lucide-icon>
+                                <span class="truncate">{{ repairValue.customer.email }}</span>
+                            </div>
+                            }
                         </div>
                         }
-
-                        <div class="min-w-0">
-                            <p class="text-xs font-medium uppercase tracking-wide text-gray-400">Customer</p>
-                            <p class="truncate text-sm font-semibold text-gray-900 mb-1">
-                                {{ repairValue.customer?.name || 'Unassigned' }}
-                            </p>
-                            <p class="text-xs font-light text-gray-800">
-                                {{ repairValue.customer?.phone | phone }}
-                            </p>
-                            <p class="text-xs font-light text-gray-800">
-                                {{ repairValue.customer?.email }}
-                            </p>
-                        </div>
                     </div>
                 </div>
-
-                <div class="my-4 h-px w-full bg-gray-100"></div>
 
                 @if (repairValue.customer) {
-                <div class="space-y-3">
-                    <div class="flex justify-center items-center gap-3">
-                        @if (repairValue.customer.phone) {
-                        <a [href]="'tel:' + repairValue.customer.phone" type="button"
-                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand">
-                            <lucide-icon [name]="icons.PhoneIcon" class="h-3 w-3"></lucide-icon> Call
-                        </a>
-                        }
-                        @if (repairValue.customer.email) {
-                        <a [href]="'mailto:' + repairValue.customer.email" type="button"
-                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand">
-                            <lucide-icon [name]="icons.MailIcon" class="h-3 w-3"></lucide-icon> Email
-                        </a>
-                        }
-                        <button type="button"
-                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
-                            (click)="openRepairConversation()">
-                            <lucide-icon [name]="icons.MessageSquareText" class="h-3 w-3"></lucide-icon> Inbox
-                        </button>
-                        <a [routerLink]="['/customers', repair()?.customerId, 'edit']" type="button"
-                            class="flex justify-center items-center gap-2 cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand">
-                            View Profile <lucide-icon [name]="icons.ArrowRight" class="h-3 w-3"></lucide-icon>
-                        </a>
-                    </div>
+                <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+                    @if (repairValue.customer.phone) {
+                    <a [href]="'tel:' + repairValue.customer.phone"
+                        class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950">
+                        <lucide-icon [name]="icons.PhoneIcon" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
+                        <span>Call</span>
+                    </a>
+                    }
+
+                    @if (repairValue.customer.email) {
+                    <a [href]="'mailto:' + repairValue.customer.email"
+                        class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950">
+                        <lucide-icon [name]="icons.MailIcon" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
+                        <span>Email</span>
+                    </a>
+                    }
+
+                    <button type="button"
+                        class="inline-flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-brand/40 hover:bg-brand/5 hover:text-brand"
+                        (click)="openRepairConversation()">
+                        <lucide-icon [name]="icons.MessageSquareText" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
+                        <span>Message</span>
+                    </button>
                 </div>
+
+                <a [routerLink]="['/customers', repair()?.customerId, 'edit']"
+                    class="mt-2.5 flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">
+                    <span>View customer profile</span>
+                    <lucide-icon [name]="icons.ArrowRight" class="h-3.5 w-3.5"></lucide-icon>
+                </a>
                 } @else {
-                <div class="flex items-center justify-center py-4 text-sm text-gray-400">
+                <div class="mt-5 border-t border-slate-100 pt-4 text-center text-sm text-slate-400">
                     No customer assigned
                 </div>
                 }

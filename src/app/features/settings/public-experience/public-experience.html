@@ -1,0 +1,132 @@
+<app-settings-layout>
+  <button settings-actions type="button" class="settings-primary-action cursor-pointer"
+    [disabled]="saving() || loading()" (click)="save()">
+    {{ saving() ? 'Saving...' : 'Save changes' }}
+  </button>
+
+  @if (loading()) {
+  <div class="settings-card"><div class="settings-card-body py-10 text-center text-sm text-app-text-muted">Loading public experience settings...</div></div>
+  } @else {
+  <div class="space-y-3">
+    @if (error()) { <div class="settings-alert is-error">{{ error() }}</div> }
+    @if (success()) { <div class="settings-alert is-success">{{ success() }}</div> }
+
+    <section class="settings-card">
+      <div class="settings-card-header">
+        <div>
+          <h2 class="settings-card-title">Public Experience</h2>
+          <p class="settings-card-description">Control how customers discover pricing, book, return to quotes, manage appointments, and see add-ons.</p>
+        </div>
+      </div>
+      <div class="settings-card-body">
+        <div class="flex flex-wrap gap-1 border-b border-black/5">
+          @for (section of sections; track section.key) {
+          <button type="button" class="cursor-pointer border-b-2 px-3 py-2 text-xs font-semibold transition"
+            [class.border-gray-950]="activeSection === section.key"
+            [class.text-gray-950]="activeSection === section.key"
+            [class.border-transparent]="activeSection !== section.key"
+            [class.text-gray-500]="activeSection !== section.key"
+            (click)="activeSection = section.key">{{ section.label }}</button>
+          }
+        </div>
+      </div>
+    </section>
+
+    @if (activeSection === 'quote') {
+    <div class="settings-grid">
+      <section class="settings-card">
+        <div class="settings-card-header"><div><h2 class="settings-card-title">Lead capture & quote results</h2><p class="settings-card-description">Identify the customer before price reveal and control the information shown with the quote.</p></div></div>
+        <div class="settings-card-body space-y-4">
+          <div class="settings-toggle-list">
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Require contact before price</p><p class="settings-toggle-description">Create or update the customer and quote lead before revealing price.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="requireContactBeforePrice" (click)="requireContactBeforePrice = !requireContactBeforePrice"><span class="settings-switch-handle"></span></button></div>
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Enhanced quote results</p><p class="settings-toggle-description">Show deposit, timing, availability, and service detail alongside price.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="enhancedQuoteResults" (click)="enhancedQuoteResults = !enhancedQuoteResults"><span class="settings-switch-handle"></span></button></div>
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Quote-aware chat</p><p class="settings-toggle-description">Let public chat retain the active customer, device, and quote context.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="quoteAwareChatEnabled" (click)="quoteAwareChatEnabled = !quoteAwareChatEnabled"><span class="settings-switch-handle"></span></button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <div class="settings-card-header"><div><h2 class="settings-card-title">Communication consent</h2><p class="settings-card-description">Transactional disclosure is separate from optional promotional consent.</p></div></div>
+        <div class="settings-card-body space-y-3">
+          <div class="settings-toggle-list">
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">SMS marketing opt-in</p><p class="settings-toggle-description">Show an optional unchecked promotional SMS consent box.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="marketingSmsOptInEnabled" (click)="marketingSmsOptInEnabled = !marketingSmsOptInEnabled"><span class="settings-switch-handle"></span></button></div>
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Email marketing opt-in</p><p class="settings-toggle-description">Show an optional unchecked promotional email consent box.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="marketingEmailOptInEnabled" (click)="marketingEmailOptInEnabled = !marketingEmailOptInEnabled"><span class="settings-switch-handle"></span></button></div>
+          </div>
+          <div><label class="settings-label">Transactional disclosure override</label><textarea rows="3" [(ngModel)]="transactionalDisclosure" class="settings-control" placeholder="Leave blank to use the shop-aware default."></textarea></div>
+          @if (marketingSmsOptInEnabled) { <div><label class="settings-label">SMS marketing disclosure override</label><textarea rows="3" [(ngModel)]="marketingSmsDisclosure" class="settings-control" placeholder="Leave blank to use the default."></textarea></div> }
+          @if (marketingEmailOptInEnabled) { <div><label class="settings-label">Email marketing disclosure override</label><textarea rows="3" [(ngModel)]="marketingEmailDisclosure" class="settings-control" placeholder="Leave blank to use the default."></textarea></div> }
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <div class="settings-card-header"><div><h2 class="settings-card-title">Alternative paths</h2><p class="settings-card-description">Only show alternatives that the shop actually offers.</p></div></div>
+        <div class="settings-card-body space-y-4">
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Sell / trade-in alternative</p><p class="settings-toggle-description">Offer a sell-or-trade path for customers who decide not to repair.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="tradeInFeatureEnabled" (click)="tradeInFeatureEnabled = !tradeInFeatureEnabled"><span class="settings-switch-handle"></span></button></div>
+          @if (tradeInFeatureEnabled) { <div><label class="settings-label">Sell / trade-in URL</label><input type="url" [(ngModel)]="tradeInUrl" class="settings-control" placeholder="https://..."/><p class="settings-hint">The prompt is hidden unless this feature is enabled and this URL is valid.</p></div> }
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Business / fleet lead prompt</p><p class="settings-toggle-description">Ask whether the device is company-owned and capture business details.</p><p class="settings-hint">{{ businessLeadCapabilityEnabled ? 'Business/Fleet capability is enabled for this shop.' : 'This public prompt will remain hidden until CRM plus Business Accounts or Fleet is enabled.' }}</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="businessLeadPromptEnabled && businessLeadCapabilityEnabled" [disabled]="!businessLeadCapabilityEnabled" (click)="businessLeadPromptEnabled = !businessLeadPromptEnabled"><span class="settings-switch-handle"></span></button></div>
+          @if (!businessLeadCapabilityEnabled) { <a routerLink="/settings/shop/business-fleet" class="text-xs font-semibold text-brand">Configure CRM, Business & Fleet →</a> }
+        </div>
+      </section>
+    </div>
+    }
+
+    @if (activeSection === 'booking') {
+    <div class="settings-grid">
+      <section class="settings-card"><div class="settings-card-header"><div><h2 class="settings-card-title">Public booking access</h2><p class="settings-card-description">Master switch and availability presentation.</p></div></div><div class="settings-card-body"><div class="settings-toggle-list">
+        <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Public booking</p><p class="settings-toggle-description">Customers can quote and schedule through the public booking experience.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="bookingEnabled" (click)="bookingEnabled = !bookingEnabled"><span class="settings-switch-handle"></span></button></div>
+        <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Availability teaser</p><p class="settings-toggle-description">Signal that appointment times are available before checkout.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="availabilityTeaserEnabled" (click)="availabilityTeaserEnabled = !availabilityTeaserEnabled"><span class="settings-switch-handle"></span></button></div>
+        <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Show next availability with price</p><p class="settings-toggle-description">Pair quote value with the earliest real appointment slot.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="showNextAvailabilityWithPrice" (click)="showNextAvailabilityWithPrice = !showNextAvailabilityWithPrice"><span class="settings-switch-handle"></span></button></div>
+      </div><div class="settings-inline-note mt-4">Detailed hours, lead times, same-day rules, and booking pricing remain under <a routerLink="/settings/shop/scheduling" class="font-semibold text-brand">Scheduling</a>.</div></div></section>
+    </div>
+    }
+
+    @if (activeSection === 'portal') {
+    <div class="settings-grid"><section class="settings-card"><div class="settings-card-header"><div><h2 class="settings-card-title">Customer self-service</h2><p class="settings-card-description">Controls for repair tracking and appointment management.</p></div></div><div class="settings-card-body"><div class="settings-toggle-list">
+      <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Public repair tracking</p><p class="settings-toggle-description">Keep existing tracking links active.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="publicRepairTrackingEnabled" (click)="publicRepairTrackingEnabled = !publicRepairTrackingEnabled"><span class="settings-switch-handle"></span></button></div>
+      <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Appointment reschedule & cancel</p><p class="settings-toggle-description">Use the standard calendar + times layout on the public tracking page.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="selfServiceRescheduleEnabled" (click)="selfServiceRescheduleEnabled = !selfServiceRescheduleEnabled"><span class="settings-switch-handle"></span></button></div>
+      <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Passwordless customer access</p><p class="settings-toggle-description">Allow verified customers to retrieve recent quotes, appointments, and repairs without a password.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="passwordlessPortalEnabled" (click)="passwordlessPortalEnabled = !passwordlessPortalEnabled"><span class="settings-switch-handle"></span></button></div>
+    </div></div></section></div>
+    }
+
+    @if (activeSection === 'upsells') {
+    <section class="settings-card">
+      <div class="settings-card-header"><div><h2 class="settings-card-title">Public upsells</h2><p class="settings-card-description">Create optional add-ons and control exactly which devices, repairs, and service modes see them.</p></div><button type="button" class="settings-secondary-action cursor-pointer" (click)="addUpsell()">Add upsell</button></div>
+      <div class="settings-card-body space-y-4">
+        <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Enable public upsells</p><p class="settings-toggle-description">Matching active add-ons can be selected from the quote result and are added to the remaining order balance.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="smartUpsellsEnabled" (click)="smartUpsellsEnabled = !smartUpsellsEnabled"><span class="settings-switch-handle"></span></button></div>
+        @if (!upsells.length) { <div class="settings-inline-note">No upsells configured yet. Add one to replace hard-coded recommendations with shop-controlled offers.</div> }
+        @for (upsell of upsells; track upsell.id; let i = $index) {
+        <div class="rounded-xl border border-black/5 bg-app-surface-muted/40 p-4 space-y-3">
+          <div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2"><button type="button" class="settings-switch cursor-pointer" [class.is-on]="upsell.active" (click)="upsell.active = !upsell.active"><span class="settings-switch-handle"></span></button><span class="text-xs font-semibold text-app-text-muted">{{ upsell.active ? 'Active' : 'Inactive' }}</span></div><div class="flex gap-1"><button type="button" class="settings-secondary-action cursor-pointer" [disabled]="i === 0" (click)="moveUpsell(i, -1)">↑</button><button type="button" class="settings-secondary-action cursor-pointer" [disabled]="i === upsells.length - 1" (click)="moveUpsell(i, 1)">↓</button><button type="button" class="settings-secondary-action cursor-pointer" (click)="removeUpsell(upsell.id)">Remove</button></div></div>
+          <div class="settings-field-grid">
+            <div class="settings-field is-two-thirds"><label class="settings-label">Name</label><input [(ngModel)]="upsell.name" class="settings-control" placeholder="Tempered Glass"/></div>
+            <div class="settings-field is-third"><label class="settings-label">Price</label><div class="settings-input-group"><span class="settings-input-affix">$</span><input type="number" min="0" step="0.01" [(ngModel)]="upsell.priceDollars" placeholder="14.99"/></div></div>
+            <div class="settings-field"><label class="settings-label">Description</label><input [(ngModel)]="upsell.description" class="settings-control" placeholder="Installed after your screen repair"/></div>
+          </div>
+          <div class="settings-subsection"><p class="settings-label">Show when these conditions match</p><p class="settings-hint mb-3">Leave a matching field blank to allow any value. Separate multiple values with commas. Repair needs can use the public repair name or code.</p><div class="settings-field-grid">
+            <div class="settings-field is-half"><label class="settings-label">Categories</label><input [(ngModel)]="upsell.categories" class="settings-control" placeholder="Smartphones, Tablets"/></div>
+            <div class="settings-field is-half"><label class="settings-label">Brands</label><input [(ngModel)]="upsell.brands" class="settings-control" placeholder="Apple, Samsung"/></div>
+            <div class="settings-field is-half"><label class="settings-label">Models</label><input [(ngModel)]="upsell.models" class="settings-control" placeholder="iPhone 15, Galaxy S24"/></div>
+            <div class="settings-field is-half"><label class="settings-label">Repair needs</label><input [(ngModel)]="upsell.repairNeeds" class="settings-control" placeholder="Screen Repair, screen"/></div>
+          </div><div class="mt-3 flex flex-wrap gap-4 text-xs font-semibold text-app-text-muted"><label class="flex cursor-pointer items-center gap-2"><input type="checkbox" [(ngModel)]="upsell.inShop"/> In-shop</label><label class="flex cursor-pointer items-center gap-2"><input type="checkbox" [(ngModel)]="upsell.onSite"/> On-site</label></div></div>
+        </div>
+        }
+      </div>
+    </section>
+    }
+
+    @if (activeSection === 'intake') {
+    <div class="settings-grid"><section class="settings-card"><div class="settings-card-header"><div><h2 class="settings-card-title">Before the appointment</h2><p class="settings-card-description">Collect useful details and prepare customers before service.</p></div></div><div class="settings-card-body"><div class="settings-toggle-list">
+      <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Pre-repair intake</p><p class="settings-toggle-description">Collect device backup, activation-lock readiness, damage notes, and other repair details.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="preRepairIntakeEnabled" (click)="preRepairIntakeEnabled = !preRepairIntakeEnabled"><span class="settings-switch-handle"></span></button></div>
+      <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Appointment prep guidance</p><p class="settings-toggle-description">Show repair-specific preparation guidance after booking.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="appointmentPrepEnabled" (click)="appointmentPrepEnabled = !appointmentPrepEnabled"><span class="settings-switch-handle"></span></button></div>
+    </div></div></section></div>
+    }
+
+    @if (activeSection === 'recovery') {
+    <div class="settings-grid"><section class="settings-card"><div class="settings-card-header"><div><h2 class="settings-card-title">Abandoned quote recovery</h2><p class="settings-card-description">Bring identified customers back using only the promotional channels they opted into.</p></div></div><div class="settings-card-body space-y-4">
+      <div class="settings-toggle-list"><div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Recovery follow-up</p><p class="settings-toggle-description">Send the first eligible follow-up after the configured delay.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="abandonedRecoveryEnabled" (click)="abandonedRecoveryEnabled = !abandonedRecoveryEnabled"><span class="settings-switch-handle"></span></button></div><div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Persistent resume links</p><p class="settings-toggle-description">Return customers to the quote they already built instead of restarting.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="persistentResumeEnabled" (click)="persistentResumeEnabled = !persistentResumeEnabled"><span class="settings-switch-handle"></span></button></div></div>
+      @if (abandonedRecoveryEnabled) { <div class="settings-field-grid"><div class="settings-field is-half"><label class="settings-label">First follow-up delay</label><div class="settings-input-group"><input type="number" min="5" [(ngModel)]="abandonedRecoveryDelayMins"/><span class="settings-input-affix is-suffix">minutes</span></div></div><div class="settings-field is-half"><div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Second follow-up</p><p class="settings-toggle-description">Send one additional reminder if the quote is still abandoned.</p></div><button type="button" class="settings-switch cursor-pointer" [class.is-on]="abandonedRecoverySecondEnabled" (click)="abandonedRecoverySecondEnabled = !abandonedRecoverySecondEnabled"><span class="settings-switch-handle"></span></button></div>@if (abandonedRecoverySecondEnabled) { <div class="mt-3"><label class="settings-label">Second follow-up delay</label><div class="settings-input-group"><input type="number" min="1" [(ngModel)]="abandonedRecoverySecondDelayHours"/><span class="settings-input-affix is-suffix">hours</span></div></div> }</div></div> }
+    </div></section></div>
+    }
+  </div>
+  }
+</app-settings-layout>

@@ -1,0 +1,138 @@
+<app-settings-layout>
+  <button settings-actions type="button" class="settings-primary-action cursor-pointer" [disabled]="loading() || saving()" (click)="save()">
+    {{ saving() ? 'Saving…' : 'Save changes' }}
+  </button>
+
+  @if (error()) {
+    <div class="settings-alert is-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="settings-alert is-success">{{ success() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="settings-card"><div class="settings-card-body text-sm text-app-text-muted">Loading scheduling settings…</div></div>
+  } @else {
+    <div class="space-y-5">
+      <section class="settings-card">
+        <div class="settings-card-header">
+          <div>
+            <h2 class="settings-card-title">Appointment setup</h2>
+            <p class="settings-card-description">The detailed calendar and booking rules stay in their purpose-built editors.</p>
+          </div>
+        </div>
+        <div class="settings-card-body grid gap-3 md:grid-cols-2">
+          <a routerLink="/settings/shop/availability" class="rounded-xl border border-app-border bg-app-surface p-4 transition hover:border-app-border-strong hover:bg-app-surface-muted">
+            <p class="text-sm font-semibold text-app-text">Shop hours & availability</p>
+            <p class="mt-1 text-xs leading-5 text-app-text-muted">Weekly hours, closures, exceptions, and the calendar your public scheduler uses.</p>
+          </a>
+          <a routerLink="/settings/shop/shop-bookings" class="rounded-xl border border-app-border bg-app-surface p-4 transition hover:border-app-border-strong hover:bg-app-surface-muted">
+            <p class="text-sm font-semibold text-app-text">Booking rules</p>
+            <p class="mt-1 text-xs leading-5 text-app-text-muted">Duration, same-day rules, lead times, pricing fallback, catalog, and embed behavior.</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <div class="settings-card-header">
+          <div>
+            <h2 class="settings-card-title">On-site service</h2>
+            <p class="settings-card-description">Configure travel availability, trip fees, and the geographic area your team serves.</p>
+          </div>
+        </div>
+
+        <div class="settings-card-body">
+          <div class="settings-toggle-row">
+            <div class="settings-toggle-copy">
+              <p class="settings-toggle-title">Offer on-site repairs</p>
+              <p class="settings-toggle-description">
+                {{ onsiteEnabled ? 'Customers and staff can select on-site service where eligible.' : 'Repairs are limited to in-shop service.' }}
+              </p>
+            </div>
+            <button type="button" class="settings-switch cursor-pointer" [class.is-on]="onsiteEnabled" [disabled]="saving()"
+              (click)="onsiteEnabled = !onsiteEnabled; onOnsiteEnabledChange()" aria-label="Toggle on-site repairs">
+              <span class="settings-switch-handle"></span>
+            </button>
+          </div>
+
+          @if (onsiteEnabled) {
+            <div class="settings-subsection space-y-5">
+              <div class="settings-toggle-row">
+                <div class="settings-toggle-copy">
+                  <p class="settings-toggle-title">Automatically add a trip fee</p>
+                  <p class="settings-toggle-description">Apply a default travel charge when on-site service is selected.</p>
+                </div>
+                <button type="button" class="settings-switch cursor-pointer" [class.is-on]="onsiteTripFeeEnabled" [disabled]="saving()"
+                  (click)="onsiteTripFeeEnabled = !onsiteTripFeeEnabled; onOnsiteTripFeeEnabledChange()" aria-label="Toggle automatic trip fee">
+                  <span class="settings-switch-handle"></span>
+                </button>
+              </div>
+
+              @if (onsiteTripFeeEnabled) {
+                <div class="max-w-[220px]">
+                  <label class="settings-label">Default trip fee</label>
+                  <div class="settings-input-group">
+                    <span class="settings-input-affix">$</span>
+                    <input type="number" [(ngModel)]="onsiteDefaultTripFeeDollars" min="0" step="0.01" placeholder="0.00" />
+                  </div>
+                </div>
+              }
+
+              <div>
+                <label class="settings-label">Service area</label>
+                <div class="settings-segmented" role="group" aria-label="Service area mode">
+                  @for (mode of serviceAreaModes; track mode.value) {
+                    <button type="button" class="cursor-pointer" [class.is-active]="onsiteServiceAreaMode === mode.value"
+                      (click)="onsiteServiceAreaMode = mode.value; onServiceAreaModeChange()">
+                      {{ mode.label }}
+                    </button>
+                  }
+                </div>
+                <p class="settings-hint">Choose how Opscend determines whether an address is inside your service area.</p>
+              </div>
+
+              @if (onsiteServiceAreaMode === 'radius') {
+                <div class="max-w-[220px]">
+                  <label class="settings-label">Travel radius</label>
+                  <div class="settings-input-group">
+                    <input type="number" [(ngModel)]="onsiteServiceAreaMiles" min="0" step="1" placeholder="25" />
+                    <span class="settings-input-affix is-suffix">mi</span>
+                  </div>
+                </div>
+              }
+
+              @if (onsiteServiceAreaMode === 'zip_codes') {
+                <div>
+                  <label class="settings-label">Covered ZIP codes</label>
+                  <div class="settings-control flex min-h-10 flex-wrap items-center gap-1.5 py-1.5 focus-within:border-brand">
+                    @for (zip of serviceAreaZips; track zip.id) {
+                      <span class="inline-flex items-center gap-1 rounded-md bg-app-surface-muted px-2 py-1 text-[11px] font-semibold text-app-text-muted">
+                        {{ zip.postalCode }}
+                        <button type="button" class="cursor-pointer text-app-text-muted transition hover:text-app-text"
+                          (click)="removeServiceAreaZip(zip.id)" aria-label="Remove ZIP code">×</button>
+                      </span>
+                    }
+                    <input type="text" [(ngModel)]="serviceAreaZipInput" (keydown)="onServiceAreaZipKeydown($event)"
+                      class="min-w-[110px] flex-1 border-0 bg-transparent p-0 text-xs outline-none" placeholder="Add ZIP and press Enter" />
+                  </div>
+                </div>
+              }
+
+              @if (onsiteServiceAreaMode === 'custom') {
+                <div class="rounded-xl border border-dashed border-app-border bg-app-surface-muted p-4 text-xs leading-5 text-app-text-muted">
+                  Custom mode lets your team describe boundaries that do not fit a simple radius or ZIP list. Opscend will keep the note available for staff review.
+                </div>
+              }
+
+              <div>
+                <label class="settings-label">Internal coverage note</label>
+                <textarea [(ngModel)]="onsiteServiceAreaNotes" rows="3" class="settings-control"
+                  placeholder="Optional notes about boundaries, exceptions, or travel policies."></textarea>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  }
+</app-settings-layout>

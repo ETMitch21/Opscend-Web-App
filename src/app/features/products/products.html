@@ -73,6 +73,8 @@
                 <path d="m21 21-4.3-4.3" />
             </svg>
         </div>
+
+        <app-table-page-size storageKey="products" [totalItems]="filteredProducts().length"></app-table-page-size>
     </div>
 </div>
 
@@ -134,7 +136,7 @@
                 </thead>
 
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    @for (product of filteredProducts(); track trackByProductId($index, product)) {
+                    @for (product of tablePagination.slice('products', filteredProducts()); track trackByProductId($index, product)) {
                     <tr class="transition hover:bg-gray-50/70">
                         <!-- Product -->
                         <td class="px-6 py-4 align-top">
@@ -248,19 +250,7 @@
         </div>
 
         <!-- Footer / pagination -->
-        <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
-            <p class="text-sm text-gray-500">
-                Showing {{ filteredProducts().length }} product<span
-                    [class.hidden]="filteredProducts().length === 1">s</span>
-            </p>
-
-            @if (nextCursor()) {
-            <button (click)="loadMore()" [disabled]="loadingMore()"
-                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50">
-                {{ loadingMore() ? 'Loading...' : 'Load more' }}
-            </button>
-            }
-        </div>
+        <app-table-pagination storageKey="products" [totalItems]="filteredProducts().length" singularLabel="product" pluralLabel="products" [hasMore]="!!nextCursor()" [loadingMore]="loadingMore()" (loadMoreRequested)="loadMore()"></app-table-pagination>
         }
     </div>
 </div>

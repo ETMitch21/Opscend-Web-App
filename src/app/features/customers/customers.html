@@ -51,6 +51,8 @@
                 <path d="m21 21-4.3-4.3" />
             </svg>
         </div>
+
+        <app-table-page-size storageKey="customers" [totalItems]="filteredCustomers().length"></app-table-page-size>
     </div>
 </div>
 
@@ -84,7 +86,7 @@
                             </td>
                         </tr>
                     } @else {
-                        @for (customer of filteredCustomers(); track trackById($index, customer)) {
+                        @for (customer of tablePagination.slice('customers', filteredCustomers()); track trackById($index, customer)) {
                             <tr class="border-b border-app-border last:border-b-0">
                                 <td class="px-4 py-4">
                                     <div class="font-medium text-app-text">{{ customer.name }}</div>
@@ -144,14 +146,5 @@
         </div>
     </div>
 
-    @if (hasMore() && !loading()) {
-        <div class="mt-4 flex justify-center">
-            <button
-                type="button"
-                class="rounded-xl border border-app-border px-4 py-2 text-sm font-medium"
-                (click)="loadMore()">
-                Load More
-            </button>
-        </div>
-    }
+    <app-table-pagination storageKey="customers" [totalItems]="filteredCustomers().length" singularLabel="customer" pluralLabel="customers" [hasMore]="hasMore()" [loadingMore]="loading()" (loadMoreRequested)="loadMore()"></app-table-pagination>
 </div>

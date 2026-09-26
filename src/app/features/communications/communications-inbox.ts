@@ -55,7 +55,7 @@ import {
 import { ToastService } from '../../core/toast/toast-service';
 import { PhonePipe } from '../../core/pipes/phone-pipe';
 
-type ComposerChannel = 'email' | 'sms' | 'web_chat' | 'note';
+type ComposerChannel = 'email' | 'sms' | 'web_chat' | 'repair_message' | 'note';
 
 @Component({
   selector: 'app-communications-inbox',
@@ -126,6 +126,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly assignmentFilter = signal<'all' | 'mine' | 'unassigned'>('all');
   readonly snoozedFilter = signal<'exclude' | 'include' | 'only'>('exclude');
   readonly activeChannel = signal<ComposerChannel>('sms');
+  readonly repairMessageVisibility = signal<'customer_shop' | 'customer_contractor' | 'contractor_shop'>('customer_shop');
   readonly composeSubject = signal('');
   readonly composeBody = signal('');
   readonly pendingAttachments = signal<File[]>([]);
@@ -136,7 +137,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   readonly availableQuickReplies = computed(() => {
     const channel = this.activeChannel();
     if (channel === 'note') return [];
-    return this.quickReplies().filter((reply) => reply.isActive && (this.crmContextActive() || reply.category !== 'CRM') && reply.channels.includes(channel));
+    const quickReplyChannel = channel === 'repair_message' ? 'sms' : channel;
+    return this.quickReplies().filter((reply) => reply.isActive && (this.crmContextActive() || reply.category !== 'CRM') && reply.channels.includes(quickReplyChannel));
   });
   readonly addingInternalNote = signal(false);
   readonly nextCursor = signal<string | null>(null);
@@ -329,7 +331,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   private parseRequestedChannel(
     value: string | null,
   ): ComposerChannel | null {
-    return value === 'email' || value === 'sms' || value === 'web_chat' || value === 'note'
+    return value === 'email' || value === 'sms' || value === 'web_chat' || value === 'repair_message' || value === 'note'
       ? value
       : null;
   }
@@ -342,6 +344,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
 
     if (requestedChannel === 'note') {
       this.activeChannel.set('note');
+      return;
+    }
+
+    if (requestedChannel === 'repair_message' && conversation.repairId) {
+      this.activeChannel.set('repair_message');
       return;
     }
 
@@ -459,7 +466,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
         }
       }
 
-      if (this.activeChannel() !== 'note') {
+      if (this.activeChannel() !== 'note' && this.activeChannel() !== 'repair_message') {
         if (this.activeChannel() === 'web_chat' && !this.canSendWebChat(threadResponse.data)) {
           this.activeChannel.set(this.canSendSms(threadResponse.data) ? 'sms' : 'email');
         }
@@ -715,7 +722,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     await this.openEnsuredConversation(
       () => this.communicationApi.ensureRepairConversation(repairId),
       'Could not open the repair conversation.',
-      requestedChannel,
+      requestedChannel ?? 'repair_message',
     );
   }
 
@@ -886,6 +893,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       return;
     }
 
+    if (channel === 'repair_message' && !conversation.repairId) {
+      this.toast.error('Repair required', 'This conversation is not linked to a repair.');
+      return;
+    }
+
     if (channel === 'email' && !this.canSendEmail(conversation)) {
       this.toast.error('Customer email required', 'Add an email address before sending email.');
       return;
@@ -921,7 +933,12 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
           ? this.communicationApi.sendEmailMessage(conversation.id, request)
           : channel === 'web_chat'
             ? this.communicationApi.sendWebChatMessage(conversation.id, request)
-            : this.communicationApi.sendSmsMessage(conversation.id, request),
+            : channel === 'repair_message'
+              ? this.communicationApi.sendRepairMessage(conversation.id, {
+                  body,
+                  visibility: this.repairMessageVisibility(),
+                })
+              : this.communicationApi.sendSmsMessage(conversation.id, request),
       );
 
       const next: CommunicationConversation = {
@@ -943,11 +960,11 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
       this.composeBody.set('');
       this.pendingAttachments.set([]);
       if (channel === 'email') this.composeSubject.set('');
-      this.toast.success(channel === 'email' ? 'Email sent' : channel === 'web_chat' ? 'Web chat sent' : 'SMS sent');
+      this.toast.success(channel === 'email' ? 'Email sent' : channel === 'web_chat' ? 'Web chat sent' : channel === 'repair_message' ? 'Repair message sent' : 'SMS sent');
     } catch (error) {
       console.error(error);
-      this.toast.error(channel === 'email' ? 'Could not send email' : channel === 'web_chat' ? 'Could not send web chat' : 'Could not send SMS');
-      this.error.set(channel === 'email' ? 'Could not send email.' : channel === 'web_chat' ? 'Could not send web chat.' : 'Could not send SMS.');
+      this.toast.error(channel === 'email' ? 'Could not send email' : channel === 'web_chat' ? 'Could not send web chat' : channel === 'repair_message' ? 'Could not send repair message' : 'Could not send SMS');
+      this.error.set(channel === 'email' ? 'Could not send email.' : channel === 'web_chat' ? 'Could not send web chat.' : channel === 'repair_message' ? 'Could not send repair message.' : 'Could not send SMS.');
     } finally {
       this.sending.set(false);
     }
@@ -1449,6 +1466,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
   canSendActiveChannel(conversation: CommunicationConversation): boolean {
     if (conversation.status === 'archived') return false;
     if (this.activeChannel() === 'note') return true;
+    if (this.activeChannel() === 'repair_message') return Boolean(conversation.repairId);
 
     if (this.activeChannel() === 'web_chat') return this.canSendWebChat(conversation);
     return this.activeChannel() === 'sms'
@@ -1477,6 +1495,10 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     if (conversation.status === 'archived') return 'Reopen this conversation before sending a message.';
     if (this.activeChannel() === 'note') return null;
 
+    if (this.activeChannel() === 'repair_message' && !conversation.repairId) {
+      return 'This conversation is not linked to a repair.';
+    }
+
     if (this.activeChannel() === 'sms' && !this.canSendSms(conversation)) {
       return this.smsUnavailableText(conversation);
     }
@@ -1497,6 +1519,7 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     if (unavailable) return unavailable;
     if (this.activeChannel() === 'note') return 'Add an internal note...';
     if (this.activeChannel() === 'web_chat') return 'Reply in website chat...';
+    if (this.activeChannel() === 'repair_message') return 'Send a message in the repair thread...';
     return this.activeChannel() === 'email' ? 'Write an email...' : 'Write an SMS...';
   }
 
@@ -1526,6 +1549,8 @@ export class CommunicationsInbox implements OnInit, OnDestroy {
     if (channel === 'sms') return 'SMS';
     if (channel === 'email') return 'Email';
     if (channel === 'web_chat') return 'Web Chat';
+    if (channel === 'repair_message') return 'Repair Message';
+    if (channel === 'contractor_message') return 'Contractor Message';
     if (channel === 'note') return 'Note';
     if (channel === 'system') return 'System';
     return 'Message';

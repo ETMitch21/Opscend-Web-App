@@ -19,6 +19,10 @@ import { PhonePipe } from '../../../core/pipes/phone-pipe';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 
+import { TablePagination } from '../../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../../shared/table-pagination/table-pagination-state.service';
+
 type RepairViewFilter =
   | 'all'
   | 'upcoming'
@@ -41,12 +45,13 @@ type SortDirection = 'asc' | 'desc';
 @Component({
   selector: 'app-repairs-overview',
   standalone: true,
-  imports: [CommonModule, DatePipe, LucideAngularModule, PhonePipe, RouterLink],
+  imports: [CommonModule, DatePipe, LucideAngularModule, PhonePipe, RouterLink, TablePagination, TablePageSize],
   templateUrl: './repairs-overview.html',
   styleUrl: './repairs-overview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RepairsOverview {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly repairsService = inject(RepairsService);
   private readonly auth = inject(AuthService);
   readonly canCreateRepair = computed(() => this.auth.hasPermission('repairs:write'));

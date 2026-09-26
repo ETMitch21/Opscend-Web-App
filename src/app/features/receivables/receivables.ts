@@ -32,17 +32,22 @@ import type {
   ReceivablesSnapshot,
 } from '../../core/receivables/model';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 type BalanceFilter = 'all' | 'unpaid' | 'partial' | 'issues';
 
 @Component({
   selector: 'app-receivables',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
+  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule, TablePagination, TablePageSize],
   templateUrl: './receivables.html',
   styleUrl: './receivables.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Receivables implements OnInit {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly receivablesService = inject(ReceivablesService);
   private readonly ordersService = inject(OrdersService);
   private readonly toast = inject(ToastService);

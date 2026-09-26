@@ -191,6 +191,34 @@ export const routes: Routes = [
                         data: { permission: 'shops:read' }
                     },
                     {
+                        path: 'public-experience',
+                        loadComponent: () =>
+                            import('./features/settings/public-experience/public-experience').then((m) => m.PublicExperienceSettings),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'booking:read' }
+                    },
+                    {
+                        path: 'scheduling',
+                        loadComponent: () =>
+                            import('./features/settings/shop-scheduling/shop-scheduling').then((m) => m.ShopSchedulingSettings),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'availability:read' }
+                    },
+                    {
+                        path: 'communications',
+                        loadComponent: () =>
+                            import('./features/settings/shop-communications/shop-communications').then((m) => m.ShopCommunicationsSettings),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'communications:read' }
+                    },
+                    {
+                        path: 'payments',
+                        loadComponent: () =>
+                            import('./features/settings/shop-payments/shop-payments').then((m) => m.ShopPaymentsSettings),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'booking:read' }
+                    },
+                    {
                         path: 'locations',
                         loadComponent: () =>
                             import('./features/settings/shop-locations/shop-locations').then((m) => m.ShopLocations),

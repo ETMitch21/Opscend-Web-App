@@ -1,3 +1,17 @@
+export interface PublicUpsell {
+  id: string;
+  name: string;
+  description: string | null;
+  priceCents: number | null;
+  active: boolean;
+  displayOrder: number;
+  categories: string[];
+  brands: string[];
+  models: string[];
+  repairNeeds: string[];
+  serviceModes: Array<'in_shop' | 'on_site'>;
+}
+
 export interface PublicBookingSettings {
   enabled: boolean;
   embedEnabled: boolean;
@@ -13,6 +27,34 @@ export interface PublicBookingSettings {
   stripePaymentsEnabled: boolean;
   fullPrepaymentEnabled: boolean;
   fullPrepaymentDiscountPercent: number;
+  publicFunnel: {
+    requireContactBeforePrice: boolean;
+    marketingSmsOptInEnabled: boolean;
+    marketingEmailOptInEnabled: boolean;
+    transactionalDisclosure: string;
+    marketingSmsDisclosure: string;
+    marketingEmailDisclosure: string;
+    abandonedRecoveryEnabled: boolean;
+    abandonedRecoveryDelayMins: number;
+    abandonedRecoverySecondEnabled: boolean;
+    abandonedRecoverySecondDelayHours: number;
+    persistentResumeEnabled: boolean;
+    showNextAvailabilityWithPrice: boolean;
+    enhancedQuoteResults: boolean;
+    selfServiceRescheduleEnabled: boolean;
+    preRepairIntakeEnabled: boolean;
+    appointmentPrepEnabled: boolean;
+    availabilityTeaserEnabled: boolean;
+    quoteAwareChatEnabled: boolean;
+    smartUpsellsEnabled: boolean;
+    upsells: PublicUpsell[];
+    tradeInEnabled: boolean;
+    tradeInUrl: string | null;
+    businessLeadPromptEnabled: boolean;
+    businessAccountsEnabled: boolean;
+    fleetManagementEnabled: boolean;
+    passwordlessPortalEnabled: boolean;
+  };
   shop: {
     name: string;
     phone: string | null;
@@ -81,6 +123,9 @@ export interface PublicQuoteRequest {
   repairNeedId: string;
   pricingOptionId?: string;
   serviceMode: 'in_shop' | 'on_site';
+  customer?: { name: string; email: string; phone: string };
+  consent?: { marketingSms: boolean; marketingEmail: boolean; disclosureVersion: string };
+  business?: { isBusinessDevice: boolean; companyName?: string; estimatedDeviceCount?: number };
 }
 
 export interface PublicQuoteRepairNeedSummary {
@@ -192,6 +237,7 @@ export interface PublicScheduleRequest {
   };
 
   notes?: string;
+  upsellIds?: string[];
 }
 
 export interface PublicScheduleResponse {

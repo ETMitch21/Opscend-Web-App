@@ -53,11 +53,15 @@
                 [value]="searchTerm()" (input)="setSearchTerm($any($event.target).value)" />
         </div>
 
-        <button type="button"
-            class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand"
-            (click)="refresh()">
-            Refresh
-        </button>
+        <div class="flex items-center gap-3">
+            <app-table-page-size storageKey="contractors" [totalItems]="filteredContractors().length"></app-table-page-size>
+
+            <button type="button"
+                class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-brand hover:text-brand"
+                (click)="refresh()">
+                Refresh
+            </button>
+        </div>
     </div>
 </div>
 
@@ -126,7 +130,7 @@
                 </thead>
 
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    @for (contractor of filteredContractors(); track contractor.id) {
+                    @for (contractor of tablePagination.slice('contractors', filteredContractors()); track contractor.id) {
                     <tr class="cursor-pointer transition hover:bg-gray-50/70"
                         (click)="openContractorDrawer(contractor)">
                         <td class="px-6 py-4 align-top">
@@ -205,15 +209,7 @@
             </table>
         </div>
 
-        @if (contractorsStore.hasMore()) {
-        <div class="flex justify-center border-t border-gray-200 px-6 py-4">
-            <button type="button"
-                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
-                [disabled]="contractorsStore.loading()" (click)="loadMore()">
-                Load More
-            </button>
-        </div>
-        }
+        <app-table-pagination storageKey="contractors" [totalItems]="filteredContractors().length" singularLabel="contractor" pluralLabel="contractors" [hasMore]="contractorsStore.hasMore()" [loadingMore]="contractorsStore.loading()" (loadMoreRequested)="loadMore()"></app-table-pagination>
         }
     </div>
 </div>

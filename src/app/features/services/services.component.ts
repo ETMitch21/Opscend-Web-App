@@ -16,6 +16,10 @@ import {
   type ServiceStatus,
 } from '../../core/services/model';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 type ServiceViewFilter = 'all' | 'active' | 'inactive' | 'archived';
 type DrawerMode = 'create' | 'edit';
 
@@ -50,11 +54,12 @@ const EMPTY_FORM: ServiceFormState = {
 @Component({
   selector: 'app-services-overview',
   standalone: true,
-  imports: [CommonModule, TitleCasePipe],
+  imports: [CommonModule, TitleCasePipe, TablePagination, TablePageSize],
   templateUrl: './services.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Services {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly servicesService = inject(ServicesService);
 
   readonly activeView = signal<ServiceViewFilter>('all');

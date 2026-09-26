@@ -407,6 +407,15 @@ export interface PublicRepairTrackingResponse {
 
   timeline: PublicRepairTrackingTimelineItem[];
 
+  appointment: {
+    startAt: string;
+    endAt: string;
+    status: 'scheduled' | 'canceled' | 'completed' | 'no_show';
+  } | null;
+  customerActions: {
+    appointmentSelfServiceEnabled: boolean;
+  };
+
   createdAt: string;
   updatedAt: string;
 }

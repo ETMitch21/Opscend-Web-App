@@ -138,6 +138,7 @@
           <button type="button" class="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold transition" [class.bg-slate-950]="filter() === 'unpaid'" [class.text-white]="filter() === 'unpaid'" [class.bg-slate-100]="filter() !== 'unpaid'" [class.text-slate-600]="filter() !== 'unpaid'" (click)="setFilter('unpaid')">Unpaid</button>
           <button type="button" class="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold transition" [class.bg-slate-950]="filter() === 'partial'" [class.text-white]="filter() === 'partial'" [class.bg-slate-100]="filter() !== 'partial'" [class.text-slate-600]="filter() !== 'partial'" (click)="setFilter('partial')">Partially paid</button>
           <button type="button" class="cursor-pointer rounded-xl px-3 py-2 text-xs font-semibold transition" [class.bg-amber-600]="filter() === 'issues'" [class.text-white]="filter() === 'issues'" [class.bg-amber-50]="filter() !== 'issues'" [class.text-amber-700]="filter() !== 'issues'" (click)="setFilter('issues')">Data issues</button>
+          <app-table-page-size storageKey="receivables" [totalItems]="filteredRows().length"></app-table-page-size>
         </div>
       </div>
 
@@ -164,7 +165,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              @for (row of filteredRows(); track row.orderId) {
+              @for (row of tablePagination.slice('receivables', filteredRows()); track row.orderId) {
                 <tr class="transition hover:bg-slate-50/70">
                   <td class="px-5 py-4 align-top">
                     @if (row.customer) {
@@ -251,7 +252,7 @@
         </div>
 
         <div class="divide-y divide-slate-100 lg:hidden">
-          @for (row of filteredRows(); track row.orderId) {
+          @for (row of tablePagination.slice('receivables', filteredRows()); track row.orderId) {
             <article class="p-4 sm:p-5">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
@@ -297,6 +298,7 @@
             </article>
           }
         </div>
+        <app-table-pagination storageKey="receivables" [totalItems]="filteredRows().length" singularLabel="balance" pluralLabel="balances"></app-table-pagination>
       }
     </section>
   }

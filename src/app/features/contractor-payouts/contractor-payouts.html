@@ -184,9 +184,12 @@
         </button>
       </nav>
 
-      <p class="text-xs leading-5 text-gray-400">
-        Paid status is only set after a successful Stripe transfer.
-      </p>
+      <div class="flex items-center gap-4">
+        <p class="text-xs leading-5 text-gray-400">
+          Paid status is only set after a successful Stripe transfer.
+        </p>
+        <app-table-page-size storageKey="contractor-payouts" [totalItems]="filteredPayouts().length"></app-table-page-size>
+      </div>
     </div>
 
     @if (payoutsStore.loading()) {
@@ -243,7 +246,7 @@
         </thead>
 
         <tbody class="divide-y divide-gray-200 bg-white">
-          @for (payout of filteredPayouts(); track payout.id) {
+          @for (payout of tablePagination.slice('contractor-payouts', filteredPayouts()); track payout.id) {
           <tr class="transition hover:bg-gray-50/70">
             <td class="px-6 py-4 align-top">
               <p class="text-sm font-semibold text-gray-900">
@@ -417,6 +420,7 @@
         </tbody>
       </table>
     </div>
+        <app-table-pagination storageKey="contractor-payouts" [totalItems]="filteredPayouts().length" singularLabel="payout" pluralLabel="payouts" ></app-table-pagination>
     }
   </div>
 </div>

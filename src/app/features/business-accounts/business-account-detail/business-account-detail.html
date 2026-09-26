@@ -283,11 +283,17 @@
     </section>
 
     <section class="panel section-panel">
-      <div class="panel-header"><div><span class="panel-kicker">Fleet</span><h2>Managed devices</h2><p>Company-owned equipment, assignments, asset tags, lifecycle, and repair history.</p></div>@if(canWrite){<div class="header-actions"><input #fleetCsv type="file" accept=".csv,text/csv" hidden (change)="onFleetCsvSelected($event)"/><button class="secondary-btn" (click)="fleetCsv.click()">Import CSV</button>@if(selectedDeviceIds().length){<button class="secondary-btn" (click)="openBulkEditor()">Update {{ selectedDeviceIds().length }}</button>}<button class="secondary-btn" (click)="openDeviceEditor()"><lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>Add device</button></div>}</div>
+      <div class="panel-header">
+        <div><span class="panel-kicker">Fleet</span><h2>Managed devices</h2><p>Company-owned equipment, assignments, asset tags, lifecycle, and repair history.</p></div>
+        <div class="header-actions">
+          <app-table-page-size storageKey="business-account-devices" [totalItems]="current.devices.length"></app-table-page-size>
+          @if(canWrite){<input #fleetCsv type="file" accept=".csv,text/csv" hidden (change)="onFleetCsvSelected($event)"/><button class="secondary-btn" (click)="fleetCsv.click()">Import CSV</button>@if(selectedDeviceIds().length){<button class="secondary-btn" (click)="openBulkEditor()">Update {{ selectedDeviceIds().length }}</button>}<button class="secondary-btn" (click)="openDeviceEditor()"><lucide-icon [img]="plusIcon" [size]="16"></lucide-icon>Add device</button>}
+        </div>
+      </div>
       @if (!current.devices.length) { <div class="inline-empty"><span>No managed devices yet.</span>@if(canWrite){<button class="text-link" (click)="openDeviceEditor()">Add the first device</button>}</div> }
       @else {
         <div class="device-table-wrap"><table class="device-table"><thead><tr>@if(canWrite){<th class="select-col"></th>}<th>Device</th><th>Asset / identifiers</th><th>Assigned to</th><th>Department / location</th><th>Status</th><th></th></tr></thead><tbody>
-          @for (device of current.devices; track device.id) {
+          @for (device of tablePagination.slice('business-account-devices', current.devices); track device.id) {
             <tr>@if(canWrite){<td class="select-col"><input type="checkbox" [checked]="deviceSelected(device.id)" (change)="toggleDeviceSelection(device.id)" [attr.aria-label]="'Select ' + deviceLabel(device)"/></td>}<td><div class="device-name"><span class="device-glyph"><lucide-icon [img]="deviceIcon" [size]="16"></lucide-icon></span><div><strong>{{ deviceLabel(device) }}</strong><small>@if(device.brand || device.model){ {{ device.brand }} {{ device.model }} } @else { {{ device.displayName }} }</small></div></div></td>
               <td><strong class="mono">{{ device.assetTag || '—' }}</strong>@if(device.serial){<small>Serial {{ device.serial }}</small>}</td>
               <td><strong>{{ device.assignedToName || 'Unassigned' }}</strong>@if(device.assignedToEmail){<small>{{ device.assignedToEmail }}</small>}</td>
@@ -297,6 +303,7 @@
             </tr>
           }
         </tbody></table></div>
+        <app-table-pagination storageKey="business-account-devices" [totalItems]="current.devices.length" singularLabel="device" pluralLabel="devices"></app-table-pagination>
       }
     </section>
 

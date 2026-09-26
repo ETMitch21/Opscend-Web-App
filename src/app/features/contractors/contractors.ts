@@ -36,6 +36,10 @@ import {
 } from '../../core/contractors/contractor.model';
 import { ContractorPayoutStatus } from '../../core/contractor-payout/contractor-payout.model';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 interface ServiceOption {
     id: string;
     name: string;
@@ -51,12 +55,13 @@ type ContractorFilter = 'all' | 'active' | 'inactive';
 @Component({
     selector: 'app-contractors',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+    imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, TablePagination, TablePageSize],
     templateUrl: './contractors.html',
     styleUrl: './contractors.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Contractors {
+  readonly tablePagination = inject(TablePaginationStateService);
     private readonly fb = inject(FormBuilder);
     private readonly http = inject(HttpClient);
     private readonly appConfig = inject(AppConfigService);

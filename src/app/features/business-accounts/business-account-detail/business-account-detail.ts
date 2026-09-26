@@ -62,14 +62,19 @@ import {
   type ManagedDeviceCatalogModel,
 } from '../../../core/techspecs/techspecs.service';
 
+import { TablePagination } from '../../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../../shared/table-pagination/table-pagination-state.service';
+
 @Component({
   selector: 'app-business-account-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
+  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule, TablePagination, TablePageSize],
   templateUrl: './business-account-detail.html',
   styleUrl: './business-account-detail.scss',
 })
 export class BusinessAccountDetail implements OnInit {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly service = inject(BusinessAccountsService);

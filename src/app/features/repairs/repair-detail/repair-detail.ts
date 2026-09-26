@@ -55,8 +55,6 @@ import { CustomerDevicesStore } from '../../../core/customer-devices/customer-de
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
 import type {
   RepairAttachment,
-  RepairMessage,
-  RepairMessageVisibility,
   RepairStatus,
   RepairUnlockType,
 } from '../../../core/repairs/repair.model';
@@ -79,7 +77,6 @@ import type {
   RepairNotification,
   RepairNotificationEvent,
 } from '../../../core/repair-notifications/repair-notification.types';
-import { RepairsService } from '../../../core/repairs/repairs-service';
 import { ContractorPayoutsService } from '../../../core/contractor-payout/contractor-payouts.service';
 import { CommunicationService } from '../../../core/communications/service';
 import type { ContractorPayout } from '../../../core/contractor-payout/contractor-payout.model';
@@ -128,7 +125,6 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly customerDevicesStore = inject(CustomerDevicesStore);
   private readonly shopContext = inject(ShopContextService);
   private readonly repairNotificationService = inject(RepairNotificationService);
-  private readonly repairsService = inject(RepairsService);
   private readonly contractorPayoutsService = inject(ContractorPayoutsService);
   private readonly communicationApi = inject(CommunicationService);
   private readonly formsApi = inject(FormsService);
@@ -240,11 +236,6 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly repairNotificationsLoading = signal(false);
   readonly repairNotificationsError = signal<string | null>(null);
 
-  readonly repairMessages = signal<RepairMessage[]>([]);
-  readonly repairMessagesLoading = signal(false);
-  readonly repairMessagesError = signal<string | null>(null);
-  readonly repairMessageSaving = signal(false);
-  readonly repairMessageUnreadCount = signal(0);
 
   readonly contractorPayouts = signal<ContractorPayout[]>([]);
   readonly contractorPayoutsLoading = signal(false);
@@ -353,9 +344,6 @@ export class RepairDetail implements OnInit, OnDestroy {
   });
 
   readonly sourceQuote = computed(() => this.repair()?.sourceQuote ?? null);
-  readonly sourceConversation = computed(
-    () => this.repair()?.communicationConversation ?? null
-  );
   readonly sourceQuotePublicUrl = computed(() => {
     const token = this.sourceQuote()?.publicApprovalToken;
     if (!token) return null;
@@ -544,10 +532,6 @@ export class RepairDetail implements OnInit, OnDestroy {
     body: ['', [Validators.required, Validators.maxLength(2000)]],
   });
 
-  readonly messageForm = this.fb.nonNullable.group({
-    visibility: ['customer_shop' as RepairMessageVisibility, Validators.required],
-    message: ['', [Validators.required, Validators.maxLength(4000)]],
-  });
 
   private get apiBase(): string {
     return this.appConfig.config.apiBase;
@@ -620,7 +604,6 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
 
     await this.loadRepairNotifications(id);
-    await this.loadRepairMessages(id);
     await this.loadRepairPayouts(id);
     await this.loadRepairForms(id);
 
@@ -697,45 +680,6 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
   }
 
-  async loadRepairMessages(repairId = this.repairId()): Promise<void> {
-    if (!repairId) return;
-
-    this.repairMessagesLoading.set(true);
-    this.repairMessagesError.set(null);
-
-    try {
-      const response = await firstValueFrom(
-        this.repairsService.listRepairMessages(repairId)
-      );
-
-      this.repairMessages.set(response.messages ?? []);
-
-      await this.markRepairMessagesRead(repairId);
-      await this.loadRepairMessageUnreadCount(repairId);
-    } catch (error) {
-      console.error('Failed to load repair messages.', error);
-      this.repairMessagesError.set('Unable to load repair messages.');
-      this.repairMessages.set([]);
-    } finally {
-      this.repairMessagesLoading.set(false);
-    }
-  }
-
-  async loadRepairMessageUnreadCount(repairId = this.repairId()): Promise<void> {
-    if (!repairId) return;
-
-    try {
-      const response = await firstValueFrom(
-        this.repairsService.getRepairMessageUnreadCount(repairId)
-      );
-
-      this.repairMessageUnreadCount.set(response.unreadCount ?? 0);
-    } catch (error) {
-      console.error('Failed to load repair message unread count.', error);
-      this.repairMessageUnreadCount.set(0);
-    }
-  }
-
   async loadRepairPayouts(repairId = this.repairId()): Promise<void> {
     if (!repairId) return;
 
@@ -774,55 +718,6 @@ export class RepairDetail implements OnInit, OnDestroy {
       this.repairForms.set([]);
     } finally {
       this.repairFormsLoading.set(false);
-    }
-  }
-
-  async markRepairMessagesRead(repairId = this.repairId()): Promise<void> {
-    if (!repairId) return;
-
-    try {
-      await firstValueFrom(this.repairsService.markRepairMessagesRead(repairId));
-      this.repairMessageUnreadCount.set(0);
-    } catch (error) {
-      console.error('Failed to mark repair messages read.', error);
-    }
-  }
-
-  async sendRepairMessage(): Promise<void> {
-    const repairId = this.repairId();
-
-    if (!repairId || this.messageForm.invalid) {
-      this.messageForm.markAllAsTouched();
-      return;
-    }
-
-    const value = this.messageForm.getRawValue();
-    const message = value.message.trim();
-
-    if (!message) {
-      this.messageForm.controls.message.setValue('');
-      this.messageForm.markAllAsTouched();
-      return;
-    }
-
-    this.repairMessageSaving.set(true);
-
-    try {
-      await firstValueFrom(
-        this.repairsService.createRepairMessage(repairId, {
-          visibility: value.visibility,
-          message,
-        })
-      );
-
-      this.messageForm.controls.message.setValue('');
-      await this.loadRepairMessages(repairId);
-      this.toast.success('Message sent', 'The repair message was added.');
-    } catch (error) {
-      console.error('Failed to send repair message.', error);
-      this.toast.error('Message not sent', 'Unable to send this repair message.');
-    } finally {
-      this.repairMessageSaving.set(false);
     }
   }
 
@@ -891,7 +786,6 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     if (updated) {
       await this.loadRepairNotifications(id);
-      await this.loadRepairMessages(id);
       await this.loadRepairPayouts(id);
       await this.loadRepairForms(id);
       this.toast.success('Repair updated', 'Changes saved successfully.');
@@ -1273,8 +1167,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     const updated = await this.store.updateRepairStatus(id, status);
     if (updated) {
       await this.loadRepairNotifications(id);
-      await this.loadRepairMessages(id);
-      await this.loadRepairForms(id);
+        await this.loadRepairForms(id);
 
       this.toast.success(
         'Status updated',
@@ -1835,10 +1728,8 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     await this.store.loadRepair(id);
     await this.loadRepairNotifications(id);
-    await this.loadRepairMessages(id);
     await this.loadRepairPayouts(id);
     await this.loadRepairForms(id);
-    await this.loadRepairPayouts(id);
 
     this.toast.success(
       repair.appointment ? 'Appointment rescheduled' : 'Appointment scheduled',
@@ -1902,15 +1793,6 @@ export class RepairDetail implements OnInit, OnDestroy {
   }
 
   async openRepairConversation(): Promise<void> {
-    const existingConversation = this.sourceConversation();
-
-    if (existingConversation) {
-      await this.router.navigate(['/communications'], {
-        queryParams: { conversationId: existingConversation.id },
-      });
-      return;
-    }
-
     const repairId = this.repairId();
     if (!repairId) return;
 
@@ -1920,7 +1802,7 @@ export class RepairDetail implements OnInit, OnDestroy {
       );
 
       await this.router.navigate(['/communications'], {
-        queryParams: { conversationId: response.data.id },
+        queryParams: { conversationId: response.data.id, channel: 'repair_message' },
       });
     } catch (error) {
       console.error('Failed to open repair conversation.', error);
@@ -2142,90 +2024,6 @@ export class RepairDetail implements OnInit, OnDestroy {
     });
 
     return `${startText} – ${endText}`;
-  }
-
-  prettyMessageRole(role: string | null | undefined): string {
-    switch (role) {
-      case 'admin':
-        return 'Shop';
-      case 'contractor':
-        return 'Contractor';
-      case 'customer':
-        return 'Customer';
-      case 'system':
-        return 'System';
-      default:
-        return 'Message';
-    }
-  }
-
-  messageRoleClasses(role: string | null | undefined): string {
-    switch (role) {
-      case 'admin':
-        return 'bg-gray-900 text-white';
-      case 'contractor':
-        return 'bg-orange-100 text-orange-700';
-      case 'customer':
-        return 'bg-blue-100 text-blue-700';
-      case 'system':
-        return 'bg-gray-200 text-gray-700';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
-  }
-
-  prettyMessageVisibility(visibility: string | null | undefined): string {
-    switch (visibility) {
-      case 'customer_contractor':
-        return 'Customer ↔ Contractor';
-      case 'customer_shop':
-        return 'Customer ↔ Shop';
-      case 'contractor_shop':
-        return 'Contractor ↔ Shop';
-      case 'internal':
-        return 'Internal';
-      default:
-        return 'Message';
-    }
-  }
-
-  messageVisibilityClasses(visibility: string | null | undefined): string {
-    switch (visibility) {
-      case 'customer_contractor':
-        return 'border-purple-200 bg-purple-50 text-purple-700';
-      case 'customer_shop':
-        return 'border-blue-200 bg-blue-50 text-blue-700';
-      case 'contractor_shop':
-        return 'border-orange-200 bg-orange-50 text-orange-700';
-      case 'internal':
-        return 'border-gray-200 bg-gray-100 text-gray-700';
-      default:
-        return 'border-gray-200 bg-white text-gray-600';
-    }
-  }
-
-  messageReadReceipt(message: RepairMessage): string | null {
-    if (message.role !== 'admin') return null;
-
-    const receipts: string[] = [];
-
-    if (
-      (message.visibility === 'customer_shop' ||
-        message.visibility === 'customer_contractor') &&
-      message.readByCustomerAt
-    ) {
-      receipts.push('Customer read');
-    }
-
-    if (
-      (message.visibility === 'contractor_shop' ||
-        message.visibility === 'customer_contractor') &&
-      message.readByContractorAt
-    ) {
-      receipts.push('Contractor read');
-    }
-
-    return receipts.length ? receipts.join(' • ') : null;
   }
 
   getInitials(name: string | null | undefined): string {

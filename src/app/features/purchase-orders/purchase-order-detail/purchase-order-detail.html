@@ -161,13 +161,17 @@
                         </p>
                     </div>
 
-                    @if (canEditDraft()) {
-                    <button type="button"
-                        class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
-                        [disabled]="saving()" (click)="openAddItem()">
-                        Add Item
-                    </button>
-                    }
+                    <div class="flex items-center gap-3">
+                        <app-table-page-size storageKey="purchase-order-detail-items" [totalItems]="po.items?.length ?? 0"></app-table-page-size>
+
+                        @if (canEditDraft()) {
+                        <button type="button"
+                            class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50"
+                            [disabled]="saving()" (click)="openAddItem()">
+                            Add Item
+                        </button>
+                        }
+                    </div>
                 </div>
 
                 @if (!(po.items?.length)) {
@@ -218,7 +222,7 @@
                         </thead>
 
                         <tbody class="divide-y divide-gray-200 bg-white">
-                            @for (item of po.items; track trackByItemId($index, item)) {
+                            @for (item of tablePagination.slice('purchase-order-detail-items', po.items); track trackByItemId($index, item)) {
                             <tr class="transition hover:bg-gray-50/70">
                                 <td class="px-6 py-4 align-top">
                                     <div class="flex flex-col gap-1">
@@ -307,6 +311,7 @@
                         </tbody>
                     </table>
                 </div>
+                <app-table-pagination storageKey="purchase-order-detail-items" [totalItems]="po.items?.length ?? 0" singularLabel="item" pluralLabel="items"></app-table-pagination>
                 }
             </section>
 

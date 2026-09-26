@@ -55,6 +55,7 @@ import {
   PublicRepairQuote,
   PublicScheduleResponse,
   PublicQuoteRequestResponse,
+  PublicUpsell,
 } from '../../../core/public-booking/model';
 
 type BookingStep =
@@ -63,6 +64,7 @@ type BookingStep =
   | 'model'
   | 'repair'
   | 'location'
+  | 'contact'
   | 'quote'
   | 'quoteRequest'
   | 'schedule'
@@ -325,6 +327,7 @@ export class PublicBooking implements OnDestroy {
   readonly selectedPricingTierKey = signal<string | null>(null);
   readonly selectedRepairAttributes = signal<Record<string, string>>({});
   readonly serviceMode = signal<'on_site' | 'in_shop'>('on_site');
+  readonly selectedUpsellIds = signal<Set<string>>(new Set());
 
   readonly quote = signal<PublicRepairQuote | null>(null);
   readonly slots = signal<PublicAvailabilitySlot[]>([]);
@@ -348,6 +351,11 @@ export class PublicBooking implements OnDestroy {
       nonNullable: true,
       validators: [Validators.required],
     }),
+    marketingSms: new FormControl(false, { nonNullable: true }),
+    marketingEmail: new FormControl(false, { nonNullable: true }),
+    isBusinessDevice: new FormControl(false, { nonNullable: true }),
+    companyName: new FormControl('', { nonNullable: true }),
+    estimatedDeviceCount: new FormControl<number | null>(null),
     line1: new FormControl('', {
       nonNullable: true,
     }),
@@ -366,6 +374,9 @@ export class PublicBooking implements OnDestroy {
     notes: new FormControl('', {
       nonNullable: true,
     }),
+    deviceBackupConfirmed: new FormControl(false, { nonNullable: true }),
+    activationLockReady: new FormControl(false, { nonNullable: true }),
+    existingDamageNotes: new FormControl('', { nonNullable: true }),
   });
 
   readonly brandSearch = new FormControl('', {
@@ -512,6 +523,64 @@ export class PublicBooking implements OnDestroy {
     return `${this.dateLabel(slot.startAt)} at ${this.timeLabel(slot.startAt)}`;
   });
 
+  readonly earliestAvailableSlot = computed(() => {
+    const available = [...this.slots()].filter((slot) => !this.isPastSlot(slot.startAt));
+    available.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+    return available[0] ?? null;
+  });
+
+  earliestAvailabilityLabel(): string | null {
+    const slot = this.earliestAvailableSlot();
+    if (!slot) return null;
+    return `${this.dateLabel(slot.startAt)} at ${this.timeLabel(slot.startAt)}`;
+  }
+
+  readonly matchingUpsells = computed((): PublicUpsell[] => {
+    if (!this.settings()?.publicFunnel?.smartUpsellsEnabled) return [];
+    const category = this.normalizeSearch(this.selectedCategory());
+    const brand = this.normalizeSearch(this.selectedBrand());
+    const model = this.normalizeSearch(this.selectedModel()?.model);
+    const repairCode = this.normalizeSearch(this.selectedRepairNeed()?.code);
+    const repairLabel = this.normalizeSearch(this.selectedRepairNeed()?.label);
+    const serviceMode = this.serviceMode();
+
+    const matches = (values: string[] | null | undefined, candidate: string): boolean => {
+      if (!values?.length) return true;
+      return values.some((value) => this.normalizeSearch(value) === candidate);
+    };
+
+    return [...(this.settings()?.publicFunnel?.upsells ?? [])]
+      .filter((upsell) => {
+        if (!upsell.active) return false;
+        if (!matches(upsell.categories, category)) return false;
+        if (!matches(upsell.brands, brand)) return false;
+        if (!matches(upsell.models, model)) return false;
+        if (upsell.repairNeeds?.length) {
+          const repairMatches = upsell.repairNeeds.some((value) => {
+            const normalized = this.normalizeSearch(value);
+            return normalized === repairCode || normalized === repairLabel;
+          });
+          if (!repairMatches) return false;
+        }
+        if (upsell.serviceModes?.length && !upsell.serviceModes.includes(serviceMode)) return false;
+        return true;
+      })
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
+  });
+
+  readonly selectedUpsells = computed(() => {
+    const selected = this.selectedUpsellIds();
+    return this.matchingUpsells().filter((upsell) => selected.has(upsell.id));
+  });
+
+  readonly upsellTotalCents = computed(() =>
+    this.selectedUpsells().reduce((sum, upsell) => sum + Math.max(0, upsell.priceCents ?? 0), 0)
+  );
+
+  readonly quoteTotalWithUpsellsCents = computed(() =>
+    Math.max(0, (this.quote()?.estimatedTotalCents ?? 0) + this.upsellTotalCents())
+  );
+
   readonly canLoadMoreCategories = computed(
     () => this.categoryPage() + 1 < this.categoryTotalPages()
   );
@@ -616,15 +685,17 @@ export class PublicBooking implements OnDestroy {
         return 4;
       case 'location':
         return 5;
+      case 'contact':
+        return 6;
       case 'quote':
       case 'quoteRequest':
-        return 6;
-      case 'schedule':
         return 7;
+      case 'schedule':
+        return 8;
       case 'payment':
-        return 8;
+        return 9;
       case 'confirm':
-        return 8;
+        return 9;
       default:
         return 1;
     }
@@ -642,6 +713,8 @@ export class PublicBooking implements OnDestroy {
         return 'Repair';
       case 'location':
         return 'Location';
+      case 'contact':
+        return 'Contact';
       case 'quote':
         return 'Quote';
       case 'quoteRequest':
@@ -657,7 +730,7 @@ export class PublicBooking implements OnDestroy {
     }
   }
 
-  readonly progressPercent = computed(() => `${(this.stepNumber() / 8) * 100}%`);
+  readonly progressPercent = computed(() => `${(this.stepNumber() / 9) * 100}%`);
 
   brandSearchStatus(): string | null {
     const search = this.normalizeSearch(this.brandSearchTerm());
@@ -1013,6 +1086,7 @@ export class PublicBooking implements OnDestroy {
     this.selectedPricingTierKey.set(null);
     this.selectedRepairAttributes.set({});
     this.quote.set(null);
+    this.selectedUpsellIds.set(new Set());
     this.slots.set([]);
     this.selectedSlotKey.set(null);
     this.confirmation.set(null);
@@ -1095,6 +1169,7 @@ export class PublicBooking implements OnDestroy {
     this.selectedPricingTierKey.set(null);
     this.selectedRepairAttributes.set({});
     this.quote.set(null);
+    this.selectedUpsellIds.set(new Set());
     this.slots.set([]);
     this.selectedSlotKey.set(null);
     this.confirmation.set(null);
@@ -1198,6 +1273,7 @@ export class PublicBooking implements OnDestroy {
     this.selectedRepairAttributes.set({});
     this.repairNeeds.set([]);
     this.quote.set(null);
+    this.selectedUpsellIds.set(new Set());
     this.slots.set([]);
     this.selectedSlotKey.set(null);
     this.confirmation.set(null);
@@ -1510,7 +1586,44 @@ export class PublicBooking implements OnDestroy {
     }
 
     this.error.set(null);
+    if (this.settings()?.publicFunnel?.requireContactBeforePrice === false) {
+      await this.createQuote();
+      return;
+    }
+
+    this.activeStep.set('contact');
+  }
+
+  async continueFromContact(): Promise<void> {
+    const controls = [
+      this.scheduleForm.controls.name,
+      this.scheduleForm.controls.email,
+      this.scheduleForm.controls.phone,
+    ];
+    controls.forEach((control) => control.markAsTouched());
+    if (controls.some((control) => control.invalid)) {
+      this.error.set('contact_required');
+      return;
+    }
+
+    if (
+      this.scheduleForm.controls.isBusinessDevice.value &&
+      this.settings()?.publicFunnel?.businessLeadPromptEnabled &&
+      !this.scheduleForm.controls.companyName.value.trim()
+    ) {
+      this.error.set('business_name_required');
+      return;
+    }
+
+    this.error.set(null);
     await this.createQuote();
+  }
+
+  private hasPublicContactDetails(): boolean {
+    const name = this.scheduleForm.controls.name.value.trim();
+    const email = this.scheduleForm.controls.email.value.trim();
+    const phone = this.scheduleForm.controls.phone.value.trim();
+    return Boolean(name && email && phone && this.scheduleForm.controls.email.valid);
   }
 
   async createQuote(): Promise<void> {
@@ -1534,6 +1647,7 @@ export class PublicBooking implements OnDestroy {
     this.quoting.set(true);
     this.error.set(null);
     this.quote.set(null);
+    this.selectedUpsellIds.set(new Set());
     this.slots.set([]);
     this.selectedSlotKey.set(null);
     this.confirmation.set(null);
@@ -1548,6 +1662,29 @@ export class PublicBooking implements OnDestroy {
           repairNeedId: repairNeed.id,
           ...(pricingOption ? { pricingOptionId: pricingOption.id } : {}),
           serviceMode: this.serviceMode(),
+          ...(this.hasPublicContactDetails()
+            ? {
+                customer: {
+                  name: this.scheduleForm.controls.name.value.trim(),
+                  email: this.scheduleForm.controls.email.value.trim(),
+                  phone: this.scheduleForm.controls.phone.value.trim(),
+                },
+                consent: {
+                  marketingSms: this.scheduleForm.controls.marketingSms.value,
+                  marketingEmail: this.scheduleForm.controls.marketingEmail.value,
+                  disclosureVersion: 'public-funnel-v1',
+                },
+                business: {
+                  isBusinessDevice: this.scheduleForm.controls.isBusinessDevice.value,
+                  ...(this.scheduleForm.controls.companyName.value.trim()
+                    ? { companyName: this.scheduleForm.controls.companyName.value.trim() }
+                    : {}),
+                  ...(this.scheduleForm.controls.estimatedDeviceCount.value
+                    ? { estimatedDeviceCount: this.scheduleForm.controls.estimatedDeviceCount.value }
+                    : {}),
+                },
+              }
+            : {}),
         })
       );
 
@@ -1726,9 +1863,14 @@ export class PublicBooking implements OnDestroy {
       case 'location':
         this.activeStep.set('repair');
         return;
+      case 'contact':
+        this.activeStep.set('location');
+        return;
       case 'quote':
       case 'quoteRequest':
-        this.activeStep.set('location');
+        this.activeStep.set(
+          this.settings()?.publicFunnel?.requireContactBeforePrice === false ? 'location' : 'contact'
+        );
         return;
       case 'schedule':
         this.activeStep.set('quote');
@@ -1749,6 +1891,21 @@ export class PublicBooking implements OnDestroy {
 
     this.error.set(null);
     this.activeStep.set('schedule');
+  }
+
+  private buildPublicIntakeNotes(): string {
+    const base = this.scheduleForm.controls.notes.value.trim();
+    if (!this.settings()?.publicFunnel?.preRepairIntakeEnabled) return base;
+
+    const intake = [
+      `Backup completed: ${this.scheduleForm.controls.deviceBackupConfirmed.value ? 'Yes' : 'Not confirmed'}`,
+      `Activation/device lock ready: ${this.scheduleForm.controls.activationLockReady.value ? 'Yes' : 'Not confirmed'}`,
+      this.scheduleForm.controls.existingDamageNotes.value.trim()
+        ? `Existing damage/condition: ${this.scheduleForm.controls.existingDamageNotes.value.trim()}`
+        : null,
+    ].filter(Boolean);
+
+    return [base, `Pre-repair intake — ${intake.join('; ')}`].filter(Boolean).join('\n\n');
   }
 
   private buildSchedulePayload() {
@@ -1780,7 +1937,8 @@ export class PublicBooking implements OnDestroy {
               country: 'US',
             }
           : undefined,
-      notes: this.scheduleForm.controls.notes.value,
+      notes: this.buildPublicIntakeNotes(),
+      upsellIds: this.selectedUpsells().map((upsell) => upsell.id),
     };
   }
 
@@ -1788,6 +1946,7 @@ export class PublicBooking implements OnDestroy {
     const quote = this.quote();
     const settings = this.settings();
     if (!quote?.estimatedTotalCents) return null;
+    const totalWithUpsells = this.quoteTotalWithUpsellsCents();
     if (choice === 'deposit') return quote.depositAmountCents;
     if (choice === 'full') {
       const percent = Math.max(0, settings?.fullPrepaymentDiscountPercent ?? 0);
@@ -1796,14 +1955,13 @@ export class PublicBooking implements OnDestroy {
         quote.estimatedTotalCents - (quote.tripFeeCents ?? 0),
       );
       const discount = Math.round((eligibleCents * percent) / 100);
-      return Math.max(0, quote.estimatedTotalCents - discount);
+      return Math.max(0, totalWithUpsells - discount);
     }
     return null;
   }
 
   fullPrepaymentSavingsCents(): number {
-    const quote = this.quote();
-    const total = quote?.estimatedTotalCents ?? 0;
+    const total = this.quoteTotalWithUpsellsCents();
     const full = this.paymentChoiceAmountCents('full') ?? total;
     return Math.max(0, total - full);
   }
@@ -2215,6 +2373,19 @@ export class PublicBooking implements OnDestroy {
     return 'text-orange-600';
   }
 
+  isUpsellSelected(id: string): boolean {
+    return this.selectedUpsellIds().has(id);
+  }
+
+  toggleUpsell(id: string): void {
+    const available = this.matchingUpsells().some((upsell) => upsell.id === id);
+    if (!available) return;
+    const next = new Set(this.selectedUpsellIds());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selectedUpsellIds.set(next);
+  }
+
   quoteEyebrow(quote: PublicRepairQuote): string {
     if (quote.requiresManualReview || quote.confidence === 'manual_review') {
       return 'Manual Review';
@@ -2245,6 +2416,9 @@ export class PublicBooking implements OnDestroy {
     const quote = this.quote();
 
     if (this.canScheduleQuote(quote)) {
+      if (this.settings()?.publicFunnel?.appointmentPrepEnabled) {
+        return 'Before your appointment, back up your device and be ready to disable activation/device-lock features if the technician asks. The shop will contact you if anything changes.';
+      }
       return 'The shop will contact you if anything changes before your appointment.';
     }
 

@@ -23,6 +23,10 @@ import {
   BookingQuoteWorkflowStatus,
 } from "../../../../core/booking/model";
 
+import { TablePagination } from '../../../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../../../shared/table-pagination/table-pagination-state.service';
+
 type QuoteRequestViewFilter = "all" | "new" | "contacted" | "canceled";
 type QuoteRequestSortKey =
   | "request"
@@ -36,12 +40,13 @@ type SortDirection = "asc" | "desc";
 @Component({
   selector: "app-quote-requests-overview",
   standalone: true,
-  imports: [CommonModule, DatePipe, LucideAngularModule, PhonePipe],
+  imports: [CommonModule, DatePipe, LucideAngularModule, PhonePipe, TablePagination, TablePageSize],
   templateUrl: "./quote-requests-overview.html",
   styleUrl: "./quote-requests-overview.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuoteRequestsOverview {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly bookingApi = inject(BookingAdminService);
   private readonly router = inject(Router);
 

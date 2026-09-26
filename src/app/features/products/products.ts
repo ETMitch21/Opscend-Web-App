@@ -17,17 +17,22 @@ import {
 } from '../../core/products/products-model';
 import { ProductCreateDrawer } from '../../components/drawers/product-create-drawer/product-create-drawer';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 type ProductViewFilter = 'all' | 'active' | 'inactive' | 'archived';
 
 @Component({
   selector: 'app-products-overview',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, ProductCreateDrawer],
+  imports: [CommonModule, RouterLink, LucideAngularModule, ProductCreateDrawer, TablePagination, TablePageSize],
   templateUrl: './products.html',
   styleUrl: './products.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Products {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly productsStore = inject(ProductsStore);
 
   readonly chevronDownIcon = ChevronDownIcon;

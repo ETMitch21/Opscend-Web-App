@@ -18,15 +18,20 @@ import { InventoryStore } from '../../core/inventory/inventory.store';
 import { InventoryBalance } from '../../core/inventory/inventory.model';
 import { PurchaseOrderStore } from '../../core/purchase-orders/purchase-orders.store';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 type InventoryView = 'all' | 'low' | 'out' | 'available';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TitleCasePipe, LucideAngularModule],
+  imports: [CommonModule, FormsModule, RouterLink, TitleCasePipe, LucideAngularModule, TablePagination, TablePageSize],
   templateUrl: './inventory.html',
 })
 export class Inventory implements OnInit {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly inventoryStore = inject(InventoryStore);
   private readonly purchaseOrderStore = inject(PurchaseOrderStore);
   private readonly router = inject(Router);

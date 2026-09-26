@@ -196,6 +196,16 @@ export class CommunicationService {
     );
   }
 
+  sendRepairMessage(
+    id: string,
+    payload: { body: string; visibility?: 'customer_shop' | 'customer_contractor' | 'contractor_shop' },
+  ): Observable<CommunicationMessageResponse> {
+    return this.http.post<CommunicationMessageResponse>(
+      `${this.baseUrl}/conversations/${encodeURIComponent(id)}/messages/repair`,
+      payload,
+    );
+  }
+
   initAttachment(
     id: string,
     payload: { filename: string; mimeType: string; sizeBytes: number },

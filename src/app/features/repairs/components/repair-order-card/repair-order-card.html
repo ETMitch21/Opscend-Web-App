@@ -29,7 +29,7 @@
 
     @if (order(); as headerOrder) {
     @if (headerOrder.paymentStatus !== 'voided') {
-    <div class="flex flex-col items-end gap-3 lg:flex-row lg:items-center">
+    <div class="flex items-center gap-3">
       <div class="hidden rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-right sm:block">
         <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
           {{ balanceSummaryLabel() }}
@@ -39,50 +39,67 @@
         </p>
       </div>
 
-      <div class="flex flex-wrap justify-end gap-2">
-        @if (canFulfill()) {
+      <div class="relative" (click)="$event.stopPropagation()">
         <button type="button"
-          class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-medium text-white transition hover:bg-blue-700 disabled:opacity-70"
-          [disabled]="saving()"
-          (click)="markFulfilled()">
-          <lucide-icon [name]="icons.CheckCircle2" class="h-3.5 w-3.5"></lucide-icon>
-          Mark Fulfilled
-        </button>
-        }
-
-        <button type="button"
-          class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-          [disabled]="saving() || !canOpenPaymentModal()"
-          [title]="hasUnsavedItemChanges() ? 'Save order changes before collecting payment.' : ''"
-          (click)="openPaymentModal()">
-          <lucide-icon [name]="icons.CreditCard" class="h-3.5 w-3.5"></lucide-icon>
-          {{ primaryPaymentButtonLabel() }}
+          class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
+          [attr.aria-expanded]="orderMenuOpen()"
+          aria-haspopup="menu"
+          aria-label="Order actions"
+          title="Order actions"
+          (click)="toggleOrderMenu()">
+          <lucide-icon [name]="icons.Menu" class="h-5 w-5"></lucide-icon>
         </button>
 
-        <button type="button"
-          class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-500 px-3 text-xs font-medium text-white transition hover:bg-amber-600"
-          (click)="openRefundModal()">
-          <lucide-icon [name]="icons.RotateCcw" class="h-3.5 w-3.5"></lucide-icon>
-          Add Refund
-        </button>
+        @if (orderMenuOpen()) {
+        <div
+          class="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+          role="menu">
+          @if (canFulfill()) {
+          <button type="button"
+            class="cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="saving()"
+            (click)="closeOrderMenu(); markFulfilled()">
+            <lucide-icon [name]="icons.CheckCircle2" class="h-4 w-4 text-blue-600"></lucide-icon>
+            Mark Fulfilled
+          </button>
+          }
 
-        @if (canVoid() && !moneyLocked()) {
-        <button type="button"
-          class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3 text-xs font-medium text-white transition hover:bg-red-600"
-          (click)="voidOrder()">
-          <lucide-icon [name]="icons.XCircle" class="h-3.5 w-3.5"></lucide-icon>
-          Void
-        </button>
-        }
+          <button type="button"
+            class="cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="saving() || !canOpenPaymentModal()"
+            [title]="hasUnsavedItemChanges() ? 'Save order changes before collecting payment.' : ''"
+            (click)="closeOrderMenu(); openPaymentModal()">
+            <lucide-icon [name]="icons.CreditCard" class="h-4 w-4 text-emerald-600"></lucide-icon>
+            {{ primaryPaymentButtonLabel() }}
+          </button>
 
-        @if (canEditItems()) {
-        <button type="button"
-          class="cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-          [ngClass]="hasUnsavedItemChanges() ? 'bg-brand text-white hover:bg-brand-soft' : 'border border-gray-200 bg-white text-gray-500 hover:bg-gray-50'"
-          [disabled]="saving() || !canSaveItems()" (click)="saveItems()">
-          <lucide-icon [name]="icons.Save" class="h-3.5 w-3.5"></lucide-icon>
-          {{ saveButtonLabel() }}
-        </button>
+          <button type="button"
+            class="cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            (click)="closeOrderMenu(); openRefundModal()">
+            <lucide-icon [name]="icons.RotateCcw" class="h-4 w-4 text-amber-600"></lucide-icon>
+            Add Refund
+          </button>
+
+          @if (canEditItems()) {
+          <button type="button"
+            class="cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="saving() || !canSaveItems()"
+            (click)="closeOrderMenu(); saveItems()">
+            <lucide-icon [name]="icons.Save" class="h-4 w-4" [ngClass]="hasUnsavedItemChanges() ? 'text-brand' : 'text-gray-400'"></lucide-icon>
+            {{ saveButtonLabel() }}
+          </button>
+          }
+
+          @if (canVoid() && !moneyLocked()) {
+          <div class="my-1 border-t border-gray-100"></div>
+          <button type="button"
+            class="cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+            (click)="closeOrderMenu(); voidOrder()">
+            <lucide-icon [name]="icons.XCircle" class="h-4 w-4"></lucide-icon>
+            Void Order
+          </button>
+          }
+        </div>
         }
       </div>
     </div>

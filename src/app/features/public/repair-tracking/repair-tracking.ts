@@ -35,6 +35,24 @@ import { PhonePipe } from '../../../core/pipes/phone-pipe';
 
 type TrackingTab = 'details' | 'messages';
 
+type PublicAppointmentSlot = {
+  startAt: string;
+  endAt: string;
+  candidateType: 'internal' | 'contractor' | 'unassigned';
+  assignedUserId: string | null;
+  contractorId: string | null;
+};
+
+type PublicAppointmentCalendarDay = {
+  dateKey: string;
+  dayNumber: number;
+  inCurrentMonth: boolean;
+  isAvailable: boolean;
+  isSelected: boolean;
+  isToday: boolean;
+};
+
+
 type PublicRepairStatus =
   | 'intake'
   | 'scheduled'
@@ -301,6 +319,80 @@ export class RepairTracking implements AfterViewChecked {
   readonly messageUnreadCount = signal(0);
   readonly activeTab = signal<TrackingTab>('details');
   readonly showFullTimeline = signal(false);
+  readonly appointmentManaging = signal(false);
+  readonly appointmentActioning = signal(false);
+  readonly appointmentAvailabilityLoading = signal(false);
+  readonly appointmentError = signal<string | null>(null);
+  readonly appointmentSlots = signal<PublicAppointmentSlot[]>([]);
+  readonly appointmentSelectedDate = signal<string | null>(null);
+  readonly appointmentSelectedSlotKey = signal<string | null>(null);
+  readonly appointmentVisibleMonth = signal(this.startOfMonth(new Date()));
+
+  readonly appointmentSlotsByDate = computed(() => {
+    const grouped = new Map<string, PublicAppointmentSlot[]>();
+    for (const slot of this.appointmentSlots()) {
+      const key = this.toDateKey(slot.startAt);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)?.push(slot);
+    }
+    return Array.from(grouped.entries())
+      .map(([date, slots]) => ({
+        date,
+        slots: [...slots].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  });
+
+  readonly appointmentAvailableDateSet = computed(() =>
+    new Set(
+      this.appointmentSlotsByDate()
+        .filter((group) => group.slots.some((slot) => new Date(slot.startAt).getTime() >= Date.now()))
+        .map((group) => group.date),
+    )
+  );
+
+  readonly appointmentSelectedDateSlots = computed(() => {
+    const selected = this.appointmentSelectedDate();
+    if (!selected) return [];
+    return (this.appointmentSlotsByDate().find((group) => group.date === selected)?.slots ?? [])
+      .filter((slot) => new Date(slot.startAt).getTime() >= Date.now());
+  });
+
+  readonly appointmentSelectedSlot = computed(() => {
+    const key = this.appointmentSelectedSlotKey();
+    if (!key) return null;
+    return this.appointmentSelectedDateSlots().find((slot) => this.appointmentSlotKey(slot) === key) ?? null;
+  });
+
+  readonly appointmentVisibleMonthLabel = computed(() =>
+    new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(this.appointmentVisibleMonth())
+  );
+
+  readonly appointmentCalendarDays = computed((): PublicAppointmentCalendarDay[] => {
+    const month = this.appointmentVisibleMonth();
+    const first = this.startOfMonth(month);
+    const start = new Date(first);
+    start.setDate(first.getDate() - first.getDay());
+    const selected = this.appointmentSelectedDate();
+    const available = this.appointmentAvailableDateSet();
+    const todayKey = this.toDateKey(new Date());
+    const days: PublicAppointmentCalendarDay[] = [];
+
+    for (let index = 0; index < 42; index += 1) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      const dateKey = this.toDateKey(date);
+      days.push({
+        dateKey,
+        dayNumber: date.getDate(),
+        inCurrentMonth: date.getMonth() === month.getMonth(),
+        isAvailable: available.has(dateKey),
+        isSelected: selected === dateKey,
+        isToday: todayKey === dateKey,
+      });
+    }
+    return days;
+  });
 
   @ViewChild('messagesScroll')
   private messagesScroll?: ElementRef<HTMLDivElement>;
@@ -331,6 +423,18 @@ export class RepairTracking implements AfterViewChecked {
   readonly publicTrackerSteps = computed(() =>
     buildPublicTrackerSteps(this.tracking()?.status ?? null)
   );
+
+  readonly publicTrackerGridTemplate = computed(() =>
+    `repeat(${Math.max(this.publicTrackerSteps().length, 1)}, minmax(0, 1fr))`
+  );
+
+  readonly publicTrackerProgressPercent = computed(() => {
+    const steps = this.publicTrackerSteps();
+    if (!steps.length) return 0;
+    const currentIndex = Math.max(0, steps.findIndex((step) => step.state === 'current'));
+    if (steps[currentIndex]?.key === 'completed') return 100;
+    return Math.min(100, Math.max(0, ((currentIndex + 0.5) / steps.length) * 100));
+  });
 
   readonly timelineProgressLabel = computed(() => {
     const current = this.currentPublicStatus();
@@ -393,6 +497,140 @@ export class RepairTracking implements AfterViewChecked {
     }
   }
 
+  appointmentLabel(): string {
+    const appointment = this.tracking()?.appointment;
+    if (!appointment) return '';
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+    }).format(new Date(appointment.startAt));
+  }
+
+  appointmentTimeLabel(value: string): string {
+    return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(value));
+  }
+
+  appointmentSelectedDateLabel(): string {
+    const selected = this.appointmentSelectedDate();
+    if (!selected) return 'Select a date';
+    return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(`${selected}T00:00:00`));
+  }
+
+  async openAppointmentManager(): Promise<void> {
+    const token = this.trackingToken();
+    if (!token) return;
+    this.appointmentManaging.set(true);
+    this.appointmentError.set(null);
+    this.appointmentSelectedSlotKey.set(null);
+    this.appointmentAvailabilityLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.repairsService.getPublicAppointmentAvailability(token));
+      this.appointmentSlots.set(response.slots);
+      this.initializeAppointmentCalendar();
+    } catch {
+      this.appointmentSlots.set([]);
+      this.appointmentError.set('We could not load appointment times. Please contact the shop.');
+    } finally {
+      this.appointmentAvailabilityLoading.set(false);
+    }
+  }
+
+  closeAppointmentManager(): void {
+    this.appointmentManaging.set(false);
+    this.appointmentError.set(null);
+  }
+
+  async rescheduleAppointment(): Promise<void> {
+    const token = this.trackingToken();
+    const slot = this.appointmentSelectedSlot();
+    if (!token || !slot || this.appointmentActioning()) return;
+    this.appointmentActioning.set(true);
+    this.appointmentError.set(null);
+    try {
+      await firstValueFrom(this.repairsService.reschedulePublicAppointment(token, slot));
+      this.tracking.set(await firstValueFrom(this.repairsService.getPublicRepairTracking(token)));
+      this.appointmentManaging.set(false);
+      this.appointmentSelectedSlotKey.set(null);
+    } catch {
+      this.appointmentAvailabilityLoading.set(true);
+      try {
+        const response = await firstValueFrom(this.repairsService.getPublicAppointmentAvailability(token));
+        this.appointmentSlots.set(response.slots);
+        this.initializeAppointmentCalendar();
+      } catch {
+        this.appointmentSlots.set([]);
+      } finally {
+        this.appointmentAvailabilityLoading.set(false);
+      }
+      this.appointmentError.set('That time is no longer available. Choose another appointment time.');
+    } finally {
+      this.appointmentActioning.set(false);
+    }
+  }
+
+  async cancelAppointment(): Promise<void> {
+    const token = this.trackingToken();
+    if (!token || this.appointmentActioning()) return;
+    this.appointmentActioning.set(true);
+    this.appointmentError.set(null);
+    try {
+      await firstValueFrom(this.repairsService.cancelPublicAppointment(token));
+      this.tracking.set(await firstValueFrom(this.repairsService.getPublicRepairTracking(token)));
+      this.appointmentManaging.set(false);
+    } catch {
+      this.appointmentError.set('We could not cancel this appointment. Please contact the shop.');
+    } finally {
+      this.appointmentActioning.set(false);
+    }
+  }
+
+  selectAppointmentDate(dateKey: string): void {
+    if (!this.appointmentAvailableDateSet().has(dateKey)) return;
+    this.appointmentSelectedDate.set(dateKey);
+    this.appointmentSelectedSlotKey.set(null);
+  }
+
+  selectAppointmentSlot(slot: PublicAppointmentSlot): void {
+    this.appointmentSelectedSlotKey.set(this.appointmentSlotKey(slot));
+  }
+
+  appointmentSlotKey(slot: PublicAppointmentSlot): string {
+    return [slot.startAt, slot.endAt, slot.candidateType, slot.assignedUserId ?? '', slot.contractorId ?? ''].join('|');
+  }
+
+  previousAppointmentMonth(): void {
+    const next = new Date(this.appointmentVisibleMonth());
+    next.setMonth(next.getMonth() - 1);
+    this.appointmentVisibleMonth.set(this.startOfMonth(next));
+  }
+
+  nextAppointmentMonth(): void {
+    const next = new Date(this.appointmentVisibleMonth());
+    next.setMonth(next.getMonth() + 1);
+    this.appointmentVisibleMonth.set(this.startOfMonth(next));
+  }
+
+  private initializeAppointmentCalendar(): void {
+    const firstDate = this.appointmentSlotsByDate()
+      .find((group) => group.slots.some((slot) => new Date(slot.startAt).getTime() >= Date.now()))?.date ?? null;
+    this.appointmentSelectedDate.set(firstDate);
+    this.appointmentSelectedSlotKey.set(null);
+    this.appointmentVisibleMonth.set(
+      firstDate ? this.startOfMonth(new Date(`${firstDate}T00:00:00`)) : this.startOfMonth(new Date()),
+    );
+  }
+
+  private toDateKey(value: string | Date): string {
+    const date = value instanceof Date ? value : new Date(value);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private startOfMonth(value: Date): Date {
+    return new Date(value.getFullYear(), value.getMonth(), 1);
+  }
+
   toggleTimelineExpanded(): void {
     this.showFullTimeline.update((value) => !value);
   }
@@ -443,6 +681,34 @@ export class RepairTracking implements AfterViewChecked {
       default:
         return 'text-brand';
     }
+  }
+
+  trackerProgressFillClass(tone: PublicStatusTone): string {
+    switch (tone) {
+      case 'waiting':
+        return 'bg-amber-500';
+      case 'ready':
+      case 'completed':
+        return 'bg-emerald-500';
+      case 'canceled':
+        return 'bg-rose-500';
+      default:
+        return 'bg-brand';
+    }
+  }
+
+  trackerProgressDotClass(step: PublicTrackerStep): string {
+    if (step.state === 'completed') return 'bg-emerald-500 ring-emerald-100';
+    if (step.state === 'current') {
+      switch (step.tone) {
+        case 'waiting': return 'bg-amber-500 ring-amber-100';
+        case 'ready':
+        case 'completed': return 'bg-emerald-500 ring-emerald-100';
+        case 'canceled': return 'bg-rose-500 ring-rose-100';
+        default: return 'bg-brand ring-brand/15';
+      }
+    }
+    return 'bg-white ring-gray-200';
   }
 
   trackerStepCardClass(step: PublicTrackerStep): string {

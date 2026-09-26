@@ -123,6 +123,26 @@ export class RepairsService {
     );
   }
 
+  getPublicAppointmentAvailability(token: string): Observable<{ slots: Array<{ startAt: string; endAt: string; candidateType: 'internal' | 'contractor' | 'unassigned'; assignedUserId: string | null; contractorId: string | null }> }> {
+    return this.http.get<{ slots: Array<{ startAt: string; endAt: string; candidateType: 'internal' | 'contractor' | 'unassigned'; assignedUserId: string | null; contractorId: string | null }> }>(
+      `${this.apiBase}/public/repairs/track/${encodeURIComponent(token)}/appointment/availability`
+    );
+  }
+
+  reschedulePublicAppointment(token: string, slot: { startAt: string; endAt: string; candidateType: 'internal' | 'contractor' | 'unassigned'; assignedUserId: string | null; contractorId: string | null }): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(
+      `${this.apiBase}/public/repairs/track/${encodeURIComponent(token)}/appointment/reschedule`,
+      slot
+    );
+  }
+
+  cancelPublicAppointment(token: string): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(
+      `${this.apiBase}/public/repairs/track/${encodeURIComponent(token)}/appointment/cancel`,
+      {}
+    );
+  }
+
   assignRepair(id: string, assignedTo: string | null): Observable<Repair> {
     return this.updateRepair(id, { assignedTo });
   }

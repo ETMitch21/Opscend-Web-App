@@ -18,6 +18,10 @@ import {
   PurchaseOrderStatus,
 } from '../../core/purchase-orders/purchase-orders.model';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 type PurchaseOrderView =
   | 'open'
   | 'draft'
@@ -31,6 +35,7 @@ type PurchaseOrderView =
   selector: 'app-purchase-orders',
   standalone: true,
   imports: [
+    TablePagination, TablePageSize,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -41,6 +46,7 @@ type PurchaseOrderView =
   templateUrl: './purchase-orders.html',
 })
 export class PurchaseOrders implements OnInit {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly purchaseOrderStore = inject(PurchaseOrderStore);
   private readonly router = inject(Router);
 

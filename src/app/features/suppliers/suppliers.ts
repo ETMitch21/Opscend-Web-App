@@ -22,15 +22,20 @@ import {
   SupplierStatus,
 } from '../../core/suppliers/suppliers.model';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 type SupplierView = 'active' | 'inactive' | 'archived' | 'all';
 
 @Component({
   selector: 'app-suppliers',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, LucideAngularModule],
+  imports: [CommonModule, FormsModule, DatePipe, LucideAngularModule, TablePagination, TablePageSize],
   templateUrl: './suppliers.html',
 })
 export class Suppliers implements OnInit {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly supplierStore = inject(SupplierStore);
 
   readonly moreHorizontalIcon = MoreHorizontalIcon;

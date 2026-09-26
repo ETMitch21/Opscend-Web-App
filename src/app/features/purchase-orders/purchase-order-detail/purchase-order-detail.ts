@@ -14,13 +14,18 @@ import { ProductsStore } from '../../../core/products/products-store';
 import { Product } from '../../../core/products/products-model';
 import { SupplierStore } from '../../../core/suppliers/suppliers.store';
 
+import { TablePagination } from '../../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../../shared/table-pagination/table-pagination-state.service';
+
 @Component({
   selector: 'app-purchase-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePipe, LucideAngularModule],
+  imports: [CommonModule, FormsModule, RouterLink, DatePipe, LucideAngularModule, TablePagination, TablePageSize],
   templateUrl: './purchase-order-detail.html',
 })
 export class PurchaseOrderDetail implements OnInit, OnDestroy {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly route = inject(ActivatedRoute);
   private readonly purchaseOrderStore = inject(PurchaseOrderStore);
   private readonly productsStore = inject(ProductsStore);

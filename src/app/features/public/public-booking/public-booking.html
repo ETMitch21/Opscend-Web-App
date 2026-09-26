@@ -683,6 +683,85 @@
     </section>
     }
 
+    @if (activeStep() === 'contact') {
+    <form
+      class="overflow-hidden rounded-[2rem] bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl"
+      [formGroup]="scheduleForm" (ngSubmit)="continueFromContact()">
+      <div class="p-6 sm:p-7">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Before we show your price</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your quote?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">We’ll save your quote so you can return to it later and so the team can help if you have questions.</p>
+      </div>
+
+      <div class="border-t border-gray-100 bg-[#f5f5f7]/80 p-4 sm:p-5">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block sm:col-span-2">
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Name</span>
+            <input formControlName="name" autocomplete="name"
+              class="mt-2 w-full rounded-[1.1rem] border-0 bg-white px-4 py-3 text-sm font-medium text-gray-950 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Email</span>
+            <input type="email" formControlName="email" autocomplete="email"
+              class="mt-2 w-full rounded-[1.1rem] border-0 bg-white px-4 py-3 text-sm font-medium text-gray-950 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]" />
+          </label>
+          <label class="block">
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Mobile number</span>
+            <input formControlName="phone" autocomplete="tel"
+              class="mt-2 w-full rounded-[1.1rem] border-0 bg-white px-4 py-3 text-sm font-medium text-gray-950 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]" />
+          </label>
+        </div>
+
+        @if (settings()?.publicFunnel?.businessLeadPromptEnabled) {
+        <div class="mt-5 rounded-[1.4rem] bg-white p-4 shadow-sm ring-1 ring-black/5">
+          <label class="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" formControlName="isBusinessDevice" class="mt-1 h-4 w-4 rounded" />
+            <span>
+              <span class="block text-sm font-semibold text-gray-950">This is a company-owned device</span>
+              <span class="mt-1 block text-xs leading-5 text-gray-500">We can connect this request with business/fleet options when they’re enabled for this shop.</span>
+            </span>
+          </label>
+          @if (scheduleForm.controls.isBusinessDevice.value) {
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <input formControlName="companyName" placeholder="Company name"
+              class="rounded-[1rem] border-0 bg-gray-50 px-4 py-3 text-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]" />
+            <input type="number" min="1" formControlName="estimatedDeviceCount" placeholder="Approx. device count"
+              class="rounded-[1rem] border-0 bg-gray-50 px-4 py-3 text-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]" />
+          </div>
+          }
+        </div>
+        }
+
+        <div class="mt-5 rounded-[1.4rem] bg-white/75 p-4 text-xs leading-5 text-gray-500 ring-1 ring-black/5">
+          {{ settings()?.publicFunnel?.transactionalDisclosure }}
+        </div>
+
+        @if (settings()?.publicFunnel?.marketingSmsOptInEnabled || settings()?.publicFunnel?.marketingEmailOptInEnabled) {
+        <div class="mt-4 space-y-3">
+          @if (settings()?.publicFunnel?.marketingSmsOptInEnabled) {
+          <label class="flex cursor-pointer items-start gap-3 rounded-[1.2rem] bg-white px-4 py-3 ring-1 ring-black/5">
+            <input type="checkbox" formControlName="marketingSms" class="mt-1 h-4 w-4 rounded" />
+            <span class="text-xs leading-5 text-gray-600">{{ settings()?.publicFunnel?.marketingSmsDisclosure }}</span>
+          </label>
+          }
+          @if (settings()?.publicFunnel?.marketingEmailOptInEnabled) {
+          <label class="flex cursor-pointer items-start gap-3 rounded-[1.2rem] bg-white px-4 py-3 ring-1 ring-black/5">
+            <input type="checkbox" formControlName="marketingEmail" class="mt-1 h-4 w-4 rounded" />
+            <span class="text-xs leading-5 text-gray-600">{{ settings()?.publicFunnel?.marketingEmailDisclosure }}</span>
+          </label>
+          }
+        </div>
+        }
+
+        <button type="submit"
+          class="mt-5 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="quoting()">
+          {{ quoting() ? 'Building your quote...' : 'See my price' }}
+        </button>
+      </div>
+    </form>
+    }
+
     @if (activeStep() === 'quoteRequest' && quote(); as quoteValue) {
     <section
       class="overflow-hidden rounded-[2rem] bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl">
@@ -831,6 +910,79 @@
               Estimated service time: {{ quoteValue.durationMins }} mins
             </span>
           </div>
+
+          @if (settings()?.publicFunnel?.enhancedQuoteResults) {
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            @if (quoteValue.depositRequired) {
+            <div class="rounded-[1.25rem] bg-gray-50 p-4 ring-1 ring-black/5">
+              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Due to reserve</p>
+              <p class="mt-1 text-lg font-semibold text-gray-950">{{ money(quoteValue.depositAmountCents) }}</p>
+              <p class="mt-1 text-xs leading-5 text-gray-500">Remaining balance is due after service unless you choose full prepayment.</p>
+            </div>
+            }
+            @if (settings()?.publicFunnel?.showNextAvailabilityWithPrice && earliestAvailabilityLabel(); as earliest) {
+            <div class="rounded-[1.25rem] bg-gray-50 p-4 ring-1 ring-black/5">
+              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Next available</p>
+              <p class="mt-1 text-sm font-semibold text-gray-950">{{ earliest }}</p>
+              <p class="mt-1 text-xs leading-5 text-gray-500">Availability updates in real time until you reserve a slot.</p>
+            </div>
+            }
+          </div>
+          }
+
+          @if (settings()?.publicFunnel?.smartUpsellsEnabled && matchingUpsells().length) {
+          <div class="mt-4 rounded-[1.4rem] bg-white p-4 ring-1 ring-black/5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Recommended add-ons</p>
+                <p class="mt-1 text-xs leading-5 text-gray-500">Optional items are added to your remaining repair balance.</p>
+              </div>
+              @if (upsellTotalCents() > 0) {
+              <span class="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">+{{ money(upsellTotalCents()) }}</span>
+              }
+            </div>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+              @for (upsell of matchingUpsells(); track upsell.id) {
+              <button type="button"
+                class="cursor-pointer rounded-[1.15rem] p-4 text-left ring-1 transition"
+                [ngClass]="isUpsellSelected(upsell.id) ? 'bg-gray-950 text-white ring-gray-950 shadow-sm' : 'bg-gray-50 text-gray-950 ring-black/5 hover:bg-gray-100'"
+                (click)="toggleUpsell(upsell.id)">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold">{{ upsell.name }}</p>
+                    @if (upsell.description) {
+                    <p class="mt-1 text-xs leading-5" [ngClass]="isUpsellSelected(upsell.id) ? 'text-white/70' : 'text-gray-500'">{{ upsell.description }}</p>
+                    }
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <p class="text-sm font-semibold">{{ money(upsell.priceCents ?? 0) }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em]" [ngClass]="isUpsellSelected(upsell.id) ? 'text-white/60' : 'text-gray-400'">
+                      {{ isUpsellSelected(upsell.id) ? 'Added' : 'Add' }}
+                    </p>
+                  </div>
+                </div>
+              </button>
+              }
+            </div>
+            @if (selectedUpsells().length) {
+            <div class="mt-3 flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm ring-1 ring-black/5">
+              <span class="font-medium text-gray-600">Repair + selected add-ons</span>
+              <span class="font-semibold text-gray-950">{{ money(quoteTotalWithUpsellsCents()) }}</span>
+            </div>
+            }
+          </div>
+          }
+
+          @if (settings()?.publicFunnel?.tradeInEnabled && settings()?.publicFunnel?.tradeInUrl) {
+          <div class="mt-4 rounded-[1.4rem] bg-gray-50 p-4 ring-1 ring-black/5">
+            <p class="text-sm font-semibold text-gray-950">Not sure the repair is worth it?</p>
+            <p class="mt-1 text-sm leading-6 text-gray-500">See what your device could be worth instead. This will not affect your current repair quote.</p>
+            <a class="mt-3 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-950 shadow-sm ring-1 ring-black/5 transition hover:bg-gray-50"
+              [href]="settings()?.publicFunnel?.tradeInUrl" target="_blank" rel="noopener">
+              Check sell / trade-in options
+            </a>
+          </div>
+          }
         </div>
       </section>
 
@@ -1028,6 +1180,28 @@
         </div>
         }
 
+        @if (settings()?.publicFunnel?.preRepairIntakeEnabled) {
+        <div class="mt-5 rounded-[1.5rem] bg-white p-4 shadow-sm ring-1 ring-black/5">
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Pre-repair intake</p>
+          <p class="mt-1 text-sm font-semibold text-gray-950">Help us get ready before you arrive</p>
+          <div class="mt-3 space-y-3">
+            <label class="flex cursor-pointer items-start gap-3 text-sm text-gray-700">
+              <input type="checkbox" formControlName="deviceBackupConfirmed" class="mt-1 h-4 w-4 rounded border-gray-300" />
+              <span><span class="font-semibold text-gray-950">My device is backed up</span><span class="block text-xs leading-5 text-gray-500">Recommended before any repair involving device access.</span></span>
+            </label>
+            <label class="flex cursor-pointer items-start gap-3 text-sm text-gray-700">
+              <input type="checkbox" formControlName="activationLockReady" class="mt-1 h-4 w-4 rounded border-gray-300" />
+              <span><span class="font-semibold text-gray-950">I can disable activation/device lock if needed</span><span class="block text-xs leading-5 text-gray-500">The technician will only ask when it is required for service or testing.</span></span>
+            </label>
+            <label class="block">
+              <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Existing damage / condition</span>
+              <textarea rows="2" formControlName="existingDamageNotes" placeholder="Cracks, dents, liquid exposure, or anything else we should document."
+                class="mt-2 w-full resize-none rounded-[1.1rem] border-0 bg-gray-50 px-4 py-3 text-sm leading-6 text-gray-950 ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]"></textarea>
+            </label>
+          </div>
+        </div>
+        }
+
         <label class="mt-5 block">
           <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Notes</span>
           <textarea rows="3" formControlName="notes" placeholder="Anything else we should know?"
@@ -1182,6 +1356,13 @@
           </div>
         </div>
       </div>
+
+      @if (settings()?.publicFunnel?.passwordlessPortalEnabled && shopSlug()) {
+      <a class="mt-4 inline-flex items-center rounded-full bg-gray-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+        [href]="'/portal/' + shopSlug()">
+        View my customer portal
+      </a>
+      }
     </section>
     }
     }

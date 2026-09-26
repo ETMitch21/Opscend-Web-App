@@ -8,13 +8,18 @@ import { PhonePipe } from '../../core/pipes/phone-pipe';
 import { ToastService } from '../../core/toast/toast-service';
 import { AuthService } from '../../core/auth/auth.service';
 
+import { TablePagination } from '../../shared/table-pagination/table-pagination';
+import { TablePageSize } from '../../shared/table-pagination/table-page-size';
+import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
+
 @Component({
   selector: 'app-customer-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, PhonePipe],
+  imports: [CommonModule, FormsModule, PhonePipe, TablePagination, TablePageSize],
   templateUrl: './customers.html',
 })
 export class CustomerComponent implements OnInit {
+  readonly tablePagination = inject(TablePaginationStateService);
   private readonly store = inject(CustomersStore);
   private readonly router = inject(Router);
   private toast = inject(ToastService);

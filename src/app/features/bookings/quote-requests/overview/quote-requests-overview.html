@@ -107,6 +107,8 @@
           class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
         ></lucide-icon>
       </div>
+
+      <app-table-page-size storageKey="quote-requests" [totalItems]="filteredRequests().length"></app-table-page-size>
     </div>
   </div>
 </div>
@@ -189,7 +191,7 @@
         </thead>
 
         <tbody class="divide-y divide-gray-200 bg-white">
-          @for (request of filteredRequests(); track trackByRequestId($index, request)) {
+          @for (request of tablePagination.slice('quote-requests', filteredRequests()); track trackByRequestId($index, request)) {
           <tr class="cursor-pointer transition hover:bg-gray-50/70" (click)="openRequest(request)">
             <td class="px-4 py-4 align-top">
               <div class="flex justify-center overflow-visible">
@@ -315,22 +317,7 @@
       </table>
     </div>
 
-    <div class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
-      <p class="text-sm text-gray-500">
-        Showing {{ filteredRequests().length }} quote request<span [class.hidden]="filteredRequests().length === 1">s</span>
-      </p>
-
-      @if (nextCursor()) {
-      <button
-        type="button"
-        (click)="loadMore()"
-        [disabled]="loadingMore()"
-        class="cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {{ loadingMore() ? 'Loading...' : 'Load more' }}
-      </button>
-      }
-    </div>
+        <app-table-pagination storageKey="quote-requests" [totalItems]="filteredRequests().length" singularLabel="quote request" pluralLabel="quote requests" [hasMore]="!!nextCursor()" [loadingMore]="loadingMore()" (loadMoreRequested)="loadMore()"></app-table-pagination>
     }
   </div>
 </div>

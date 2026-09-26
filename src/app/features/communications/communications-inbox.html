@@ -574,7 +574,7 @@
                       }
                       <div class="mt-2 flex items-center gap-2 text-[11px] opacity-70">
                         <span>{{ item.occurredAt | date:'MMM d, h:mm a' }}</span>
-                        @if (item.channel === 'web_chat' && timelineIsOutbound(item) && item.readAt) {
+                        @if ((item.channel === 'web_chat' || item.channel === 'repair_message' || item.channel === 'contractor_message') && timelineIsOutbound(item) && item.readAt) {
                           <span>· Seen</span>
                         }
                       </div>
@@ -641,6 +641,17 @@
                 Web Chat
               </button>
             }
+            @if (conversation.repairId) {
+              <button
+                type="button"
+                class="inline-flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition"
+                [ngClass]="activeChannel() === 'repair_message' ? 'bg-gray-900 text-white' : 'bg-app-surface-muted text-app-text-muted hover:text-app-text'"
+                (click)="setChannel('repair_message')"
+              >
+                <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+                Repair Thread
+              </button>
+            }
             <button
               type="button"
               class="inline-flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
@@ -672,6 +683,19 @@
               Internal note
             </button>
 
+            @if (activeChannel() === 'repair_message') {
+              <select
+                class="h-8 cursor-pointer rounded-full border border-app-border bg-app-surface px-3 text-xs font-semibold text-app-text-muted outline-none focus:border-brand"
+                [ngModel]="repairMessageVisibility()"
+                (ngModelChange)="repairMessageVisibility.set($any($event))"
+                title="Who should see this repair-thread message"
+              >
+                <option value="customer_shop">Customer ↔ Shop</option>
+                <option value="customer_contractor">Customer ↔ Repair Partner</option>
+                <option value="contractor_shop">Repair Partner ↔ Shop</option>
+              </select>
+              <span class="text-xs font-medium text-app-text-muted">Stays attached to this repair and appears on the customer tracker when customer-visible.</span>
+            }
             @if (activeChannel() === 'sms' && !canSendSms(conversation)) {
               <span class="text-xs font-medium text-amber-700">{{ smsUnavailableText(conversation) }}</span>
             }

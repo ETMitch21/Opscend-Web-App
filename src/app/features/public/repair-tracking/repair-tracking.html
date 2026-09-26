@@ -77,6 +77,78 @@
         @if (activeTab() === 'details') {
         <div class="space-y-5">
             <section
+                class="rounded-[2rem] bg-white/85 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-black/5 backdrop-blur sm:p-7">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Repair progress</p>
+                        <h3 class="mt-1 text-xl font-semibold tracking-[-0.025em] text-gray-950">{{ currentPublicStatus().label }}</h3>
+                    </div>
+                    <p class="shrink-0 text-xs font-medium text-gray-400">Updated {{ trackingValue.updatedAt | date:'mediumDate' }}</p>
+                </div>
+
+                <div class="mt-7 overflow-x-auto pb-1">
+                    <div class="min-w-[560px]">
+                        <div class="grid items-end gap-0" [style.grid-template-columns]="publicTrackerGridTemplate()">
+                            @for (step of publicTrackerSteps(); track step.key) {
+                            <div class="px-1 text-center">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.08em] transition sm:text-[11px]"
+                                    [ngClass]="step.state === 'current' ? 'text-gray-950' : step.state === 'completed' ? 'text-gray-500' : 'text-gray-300'">
+                                    {{ step.label }}
+                                </p>
+                            </div>
+                            }
+                        </div>
+
+                        <div class="relative mt-3 h-5">
+                            <div class="absolute left-0 right-0 top-2 h-1 rounded-full bg-gray-100"></div>
+                            <div class="absolute left-0 top-2 h-1 rounded-full transition-all duration-500"
+                                [ngClass]="trackerProgressFillClass(currentPublicStatus().tone)"
+                                [style.width.%]="publicTrackerProgressPercent()"></div>
+
+                            <div class="relative grid gap-0" [style.grid-template-columns]="publicTrackerGridTemplate()">
+                                @for (step of publicTrackerSteps(); track step.key) {
+                                <div class="flex justify-center">
+                                    <div class="flex h-5 w-5 items-center justify-center rounded-full ring-4 transition"
+                                        [ngClass]="trackerProgressDotClass(step)">
+                                        @if (step.state === 'completed') {
+                                        <lucide-icon [name]="icons.Check" class="h-3 w-3 text-white"></lucide-icon>
+                                        } @else if (step.state === 'current') {
+                                        <div class="h-2 w-2 rounded-full bg-white"></div>
+                                        } @else {
+                                        <div class="h-1.5 w-1.5 rounded-full bg-gray-300"></div>
+                                        }
+                                    </div>
+                                </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 rounded-[1.4rem] px-4 py-3.5 ring-1"
+                    [ngClass]="publicStatusCardClass(currentPublicStatus().tone)">
+                    <div class="flex items-start gap-3">
+                        <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/90 shadow-sm"
+                            [ngClass]="publicStatusIconClass(currentPublicStatus().tone)">
+                            @if (currentPublicStatus().tone === 'canceled') {
+                            <lucide-icon [name]="icons.XCircle" class="h-4 w-4"></lucide-icon>
+                            } @else if (currentPublicStatus().tone === 'completed' || currentPublicStatus().tone === 'ready') {
+                            <lucide-icon [name]="icons.PackageCheck" class="h-4 w-4"></lucide-icon>
+                            } @else if (currentPublicStatus().tone === 'waiting') {
+                            <lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon>
+                            } @else {
+                            <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
+                            }
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-gray-950">{{ currentPublicStatus().label }}</p>
+                            <p class="mt-1 text-sm leading-6 text-gray-600">{{ currentPublicStatus().description }}</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section
                 class="overflow-hidden rounded-[2rem] bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur">
                 <div class="p-6 sm:p-7">
                     <div class="flex items-start gap-4">
@@ -102,108 +174,127 @@
                 </div>
             </section>
 
-            <section class="rounded-[2rem] p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-black/5 sm:p-6"
-                [ngClass]="publicStatusCardClass(currentPublicStatus().tone)">
-                <div class="flex items-start gap-4">
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/90 shadow-sm"
-                        [ngClass]="publicStatusIconClass(currentPublicStatus().tone)">
-                        @if (currentPublicStatus().tone === 'canceled') {
-                        <lucide-icon [name]="icons.XCircle" class="h-5 w-5"></lucide-icon>
-                        } @else if (currentPublicStatus().tone === 'completed' || currentPublicStatus().tone ===
-                        'ready') {
-                        <lucide-icon [name]="icons.PackageCheck" class="h-5 w-5"></lucide-icon>
-                        } @else if (currentPublicStatus().tone === 'waiting') {
-                        <lucide-icon [name]="icons.Clock3" class="h-5 w-5"></lucide-icon>
-                        } @else {
-                        <lucide-icon [name]="icons.Wrench" class="h-5 w-5"></lucide-icon>
-                        }
-                    </div>
-
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500/80">
-                            {{ currentPublicStatus().eyebrow }}
-                        </p>
-                        <h3 class="mt-1 text-xl font-semibold tracking-[-0.025em] text-gray-950">
-                            {{ currentPublicStatus().label }}
-                        </h3>
-                        <p class="mt-2 text-sm leading-6 text-gray-600">
-                            {{ currentPublicStatus().description }}
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <section
-                class="rounded-[2rem] bg-white/85 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-black/5 backdrop-blur sm:p-6">
-                <div class="mb-5 flex items-start justify-between gap-4">
+            @if (trackingValue.appointment) {
+            <section class="rounded-[2rem] bg-white/85 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-black/5 backdrop-blur sm:p-6">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h3 class="text-lg font-semibold tracking-[-0.025em] text-gray-950">Repair Progress</h3>
-                        <p class="mt-1 text-sm leading-6 text-gray-500">
-                            {{ timelineProgressLabel() }}
-                        </p>
-                        <p class="mt-0.5 text-xs text-gray-400">
-                            Updated {{ trackingValue.updatedAt | date:'mediumDate' }}
-                        </p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">Appointment</p>
+                        <p class="mt-1 text-lg font-semibold text-gray-950">{{ appointmentLabel() }}</p>
+                        <p class="mt-1 text-sm text-gray-500">Status: {{ trackingValue.appointment.status }}</p>
+                    </div>
+                    @if (trackingValue.customerActions.appointmentSelfServiceEnabled) {
+                    <button type="button" class="cursor-pointer rounded-full bg-gray-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                        (click)="openAppointmentManager()">
+                        Change appointment
+                    </button>
+                    }
+                </div>
+
+                @if (appointmentManaging()) {
+                <div class="mt-5 border-t border-gray-100 pt-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-950">Choose a new time</p>
+                            <p class="mt-1 text-xs leading-5 text-gray-500">Only currently available appointment times are shown.</p>
+                        </div>
+                        <button type="button" class="cursor-pointer text-sm font-semibold text-gray-500 hover:text-gray-950" (click)="closeAppointmentManager()">Close</button>
                     </div>
 
-                    <button type="button"
-                        class="cursor-pointer shrink-0 rounded-full bg-gray-100 px-3.5 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-200/70 hover:text-gray-950"
-                        (click)="toggleTimelineExpanded()">
-                        {{ showFullTimeline() ? 'Show current' : 'Show all' }}
-                    </button>
-                </div>
+                    @if (appointmentError()) {
+                    <div class="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100">{{ appointmentError() }}</div>
+                    }
 
-                @if (!showFullTimeline()) {
-                <div class="rounded-[1.5rem] bg-gray-50/90 p-4 ring-1 ring-black/5">
-                    <p class="text-sm font-semibold text-gray-950">{{ currentPublicStatus().label }}</p>
-                    <p class="mt-1 text-sm leading-6 text-gray-500">{{ currentPublicStatus().description }}</p>
-                </div>
-                } @else {
-                <div class="overflow-x-auto pb-1">
-                    <div class="flex min-w-full gap-3">
-                        @for (step of publicTrackerSteps(); track step.key) {
-                        <div class="min-w-[180px] flex-1 rounded-[1.5rem] p-4 transition ring-1 ring-black/5"
-                            [ngClass]="trackerStepCardClass(step)">
-                            <div class="flex items-start gap-3">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                                    [ngClass]="trackerStepIconClass(step)">
-                                    @if (step.state === 'completed') {
-                                    <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
-                                    } @else {
-                                    <div class="h-2 w-2 rounded-full bg-current"></div>
-                                    }
+                    @if (appointmentAvailabilityLoading()) {
+                    <div class="mt-4 rounded-[1.5rem] bg-gray-50/90 p-4 text-sm text-gray-500 ring-1 ring-black/5">Loading available appointment times...</div>
+                    } @else if (appointmentSlots().length) {
+                    <div class="mt-4 grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+                        <div class="rounded-[1.5rem] bg-gray-50/90 p-4 ring-1 ring-black/5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-950">Available dates</h4>
+                                    <p class="mt-1 text-xs leading-5 text-gray-500">Choose a day to view appointment times.</p>
                                 </div>
-
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold" [ngClass]="trackerStepTextClass(step)">
-                                        {{ step.label }}
-                                    </p>
-
-                                    <p class="mt-1 text-xs leading-5" [ngClass]="trackerStepTextClass(step)">
-                                        {{ step.description }}
-                                    </p>
-
-                                    @if (step.state === 'current') {
-                                    <p class="mt-2 text-xs font-semibold text-brand">
-                                        Current
-                                    </p>
-                                    } @else if (step.state === 'completed') {
-                                    <p class="mt-2 text-xs font-medium text-emerald-700">
-                                        Complete
-                                    </p>
-                                    } @else {
-                                    <p class="mt-2 text-xs font-medium text-gray-400">
-                                        Upcoming
-                                    </p>
-                                    }
+                                <div class="flex items-center gap-1">
+                                    <button type="button" class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-white text-gray-500 shadow-sm ring-1 ring-black/5 transition hover:text-gray-950"
+                                        (click)="previousAppointmentMonth()" aria-label="Previous month">‹</button>
+                                    <button type="button" class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-white text-gray-500 shadow-sm ring-1 ring-black/5 transition hover:text-gray-950"
+                                        (click)="nextAppointmentMonth()" aria-label="Next month">›</button>
                                 </div>
                             </div>
+
+                            <div class="mt-4 text-center text-sm font-semibold text-gray-950">{{ appointmentVisibleMonthLabel() }}</div>
+                            <div class="mt-4 grid grid-cols-7 gap-2 text-center text-xs font-semibold text-gray-400">
+                                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                            </div>
+                            <div class="mt-2 grid grid-cols-7 gap-2">
+                                @for (day of appointmentCalendarDays(); track day.dateKey) {
+                                <button type="button"
+                                    class="flex h-11 cursor-pointer items-center justify-center rounded-xl text-sm transition disabled:cursor-not-allowed"
+                                    [disabled]="!day.isAvailable"
+                                    [class.opacity-40]="!day.isAvailable"
+                                    [class.text-gray-300]="!day.inCurrentMonth && !day.isAvailable"
+                                    [class.text-gray-400]="!day.inCurrentMonth && day.isAvailable"
+                                    [class.text-gray-950]="day.inCurrentMonth && day.isAvailable && !day.isSelected"
+                                    [class.bg-white]="day.isAvailable && !day.isSelected"
+                                    [class.bg-gray-950]="day.isSelected"
+                                    [class.text-white]="day.isSelected"
+                                    [class.ring-1]="day.isAvailable"
+                                    [class.ring-black/5]="day.isAvailable && !day.isSelected"
+                                    [class.font-semibold]="day.isSelected || day.isToday"
+                                    [class.shadow-sm]="day.isSelected"
+                                    [class.outline]="day.isToday && !day.isSelected"
+                                    [class.outline-2]="day.isToday && !day.isSelected"
+                                    [class.outline-gray-300]="day.isToday && !day.isSelected"
+                                    (click)="selectAppointmentDate(day.dateKey)">
+                                    {{ day.dayNumber }}
+                                </button>
+                                }
+                            </div>
                         </div>
-                        }
+
+                        <div class="flex h-[420px] max-h-[70vh] flex-col rounded-[1.5rem] bg-white p-4 ring-1 ring-black/5">
+                            <h4 class="text-sm font-semibold text-gray-950">{{ appointmentSelectedDateLabel() }}</h4>
+                            <p class="mt-1 text-xs leading-5 text-gray-500">Pick an available time.</p>
+                            <div class="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+                                @if (!appointmentSelectedDate()) {
+                                <div class="rounded-[1.25rem] border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500">Select a date on the calendar to view available times.</div>
+                                } @else if (!appointmentSelectedDateSlots().length) {
+                                <div class="rounded-[1.25rem] border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500">No available times for this date.</div>
+                                } @else {
+                                <div class="flex flex-col gap-3">
+                                    @for (slot of appointmentSelectedDateSlots(); track slot.startAt + slot.candidateType + (slot.assignedUserId ?? '') + (slot.contractorId ?? '')) {
+                                    <button type="button" class="w-full cursor-pointer rounded-xl px-4 py-3 text-left text-sm ring-1 transition disabled:opacity-50"
+                                        [disabled]="appointmentActioning()"
+                                        [ngClass]="appointmentSelectedSlotKey() === appointmentSlotKey(slot) ? 'bg-gray-950 text-white ring-gray-950 shadow-sm' : 'bg-white text-gray-950 ring-black/5 hover:bg-gray-50'"
+                                        (click)="selectAppointmentSlot(slot)">
+                                        <span class="block font-semibold">{{ appointmentTimeLabel(slot.startAt) }}</span>
+                                        <span class="mt-1 block text-xs" [ngClass]="appointmentSelectedSlotKey() === appointmentSlotKey(slot) ? 'text-white/70' : 'text-gray-500'">Ends {{ appointmentTimeLabel(slot.endAt) }}</span>
+                                    </button>
+                                    }
+                                </div>
+                                }
+                            </div>
+                            <button type="button"
+                                class="mt-4 w-full cursor-pointer rounded-full bg-gray-950 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                [disabled]="!appointmentSelectedSlot() || appointmentActioning()"
+                                (click)="rescheduleAppointment()">
+                                {{ appointmentActioning() ? 'Updating appointment...' : 'Confirm new appointment' }}
+                            </button>
+                        </div>
                     </div>
+                    } @else if (!appointmentError()) {
+                    <p class="mt-4 text-sm text-gray-500">No replacement times are currently available.</p>
+                    }
+
+                    <button type="button" class="mt-4 cursor-pointer text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
+                        [disabled]="appointmentActioning() || appointmentAvailabilityLoading()" (click)="cancelAppointment()">
+                        Cancel this appointment
+                    </button>
                 </div>
                 }
             </section>
+            }
+
 
             <section class="rounded-[2rem] bg-white/65 p-5 shadow-sm ring-1 ring-black/5 backdrop-blur">
                 <div class="flex items-start gap-3">
