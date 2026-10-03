@@ -298,7 +298,10 @@ export function visibleSettingsGroups(
     if (!permission) return true;
     if (granted.has('*') || granted.has(permission)) return true;
     const resource = permission.split(':')[0];
-    return Boolean(resource && granted.has(`${resource}:*`));
+    if (resource && granted.has(`${resource}:*`)) return true;
+    if (permission === 'repairPricing:read' && granted.has('booking:read')) return true;
+    if (permission === 'repairPricing:write' && granted.has('booking:write')) return true;
+    return false;
   };
 
   return SETTINGS_GROUPS

@@ -143,7 +143,15 @@ export class AuthService {
     if (permissions.includes(permission)) return true;
 
     const [resource] = permission.split(':');
-    return Boolean(resource && permissions.includes(`${resource}:*`));
+    if (resource && permissions.includes(`${resource}:*`)) return true;
+
+    // Backwards compatibility for accounts whose saved role permissions predate
+    // the dedicated repairPricing:* scopes. Repair pricing previously lived under
+    // the broader booking/settings permission family.
+    if (permission === 'repairPricing:read' && permissions.includes('booking:read')) return true;
+    if (permission === 'repairPricing:write' && permissions.includes('booking:write')) return true;
+
+    return false;
   }
 
   hasEveryPermission(permissions: readonly string[]): boolean {
