@@ -432,20 +432,61 @@
               <p class="mt-1 text-sm text-gray-500">Choose the parts quality or service level you prefer.</p>
             </div>
 
+            @if (useRepairPricingCards()) {
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              @for (tier of pricingTiers(selectedNeed); track tier.key) {
+              <button type="button"
+                class="relative flex min-h-[15.5rem] cursor-pointer flex-col rounded-[1.65rem] p-5 text-left ring-1 transition hover:-translate-y-0.5 hover:shadow-[0_16px_38px_rgba(15,23,42,0.09)]"
+                [ngClass]="selectedPricingTierKey() === tier.key ? 'bg-[var(--booking-brand-tint-strong)] ring-2 ring-[var(--booking-brand)] shadow-[0_14px_34px_rgba(15,23,42,0.08)]' : pricingTierIsFeatured(tier) ? 'bg-white ring-[var(--booking-brand)]/40' : 'bg-gray-50/90 ring-black/5 hover:bg-white'"
+                (click)="choosePricingTier(tier)">
+                <span class="flex min-h-6 items-center justify-between gap-2">
+                  @if (pricingTierBadge(tier); as badge) {
+                  <span class="inline-flex rounded-full bg-[var(--booking-brand)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--booking-brand-contrast)]">{{ badge }}</span>
+                  } @else {
+                  <span></span>
+                  }
+                  @if (selectedPricingTierKey() === tier.key) {
+                  <span class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--booking-brand)] text-[var(--booking-brand-contrast)]"><lucide-icon [name]="icons.Check" class="h-3.5 w-3.5"></lucide-icon></span>
+                  }
+                </span>
+
+                <span class="mt-4 block text-base font-bold text-gray-950">{{ tier.name }}</span>
+                @if (canRevealRepairSelectionPrices()) {
+                <span class="mt-2 block text-3xl font-bold tracking-[-0.04em] text-gray-950">{{ pricingTierPriceLabel(tier) }}</span>
+                }
+                <span class="mt-3 block whitespace-pre-line text-xs leading-5 text-gray-500">{{ pricingTierDescription(tier) }}</span>
+
+                @if (pricingTierFeatures(tier).length) {
+                <span class="mt-4 block space-y-2">
+                  @for (feature of pricingTierFeatures(tier); track feature) {
+                  <span class="flex items-start gap-2 text-xs font-medium leading-5 text-gray-700">
+                    <span class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--booking-brand-tint-strong)] text-[var(--booking-brand)]"><lucide-icon [name]="icons.Check" class="h-2.5 w-2.5"></lucide-icon></span>
+                    <span>{{ feature }}</span>
+                  </span>
+                  }
+                </span>
+                }
+
+                <span class="mt-auto pt-4">
+                  @if (tier.options[0]?.requiresManualReview) {
+                  <span class="inline-flex rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Final confirmation required</span>
+                  } @else {
+                  <span class="text-xs font-semibold" [ngClass]="selectedPricingTierKey() === tier.key ? 'text-[var(--booking-brand)]' : 'text-gray-500'">{{ selectedPricingTierKey() === tier.key ? 'Selected' : 'Select this option' }}</span>
+                  }
+                </span>
+              </button>
+              }
+            </div>
+            } @else {
             <div class="space-y-3">
               @for (tier of pricingTiers(selectedNeed); track tier.key) {
               <button type="button"
                 class="flex w-full cursor-pointer items-start gap-4 rounded-[1.5rem] p-4 text-left ring-1 transition"
                 [ngClass]="selectedPricingTierKey() === tier.key ? 'bg-[var(--booking-brand-tint-strong)] ring-[var(--booking-brand)]' : 'bg-gray-50/90 ring-black/5 hover:bg-white'"
                 (click)="choosePricingTier(tier)">
-                <span
-                  class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
                   [ngClass]="selectedPricingTierKey() === tier.key ? 'bg-[var(--booking-brand)] text-[var(--booking-brand-contrast)]' : 'bg-white text-gray-500 ring-1 ring-black/5'">
-                  @if (selectedPricingTierKey() === tier.key) {
-                  <lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>
-                  } @else {
-                  <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
-                  }
+                  <lucide-icon [name]="selectedPricingTierKey() === tier.key ? icons.Check : icons.Wrench" class="h-4 w-4"></lucide-icon>
                 </span>
                 <span class="min-w-0 flex-1">
                   <span class="flex flex-wrap items-center justify-between gap-2">
@@ -454,7 +495,7 @@
                     <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-gray-900 ring-1 ring-black/5">{{ pricingTierPriceLabel(tier) }}</span>
                     }
                   </span>
-                  <span class="mt-1 block text-xs leading-5 text-gray-500">{{ pricingTierDescription(tier) }}</span>
+                  <span class="mt-1 block whitespace-pre-line text-xs leading-5 text-gray-500">{{ pricingTierDescription(tier) }}</span>
                   @if (tier.options[0]?.requiresManualReview) {
                   <span class="mt-2 inline-flex rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Final confirmation required</span>
                   }
@@ -462,6 +503,7 @@
               </button>
               }
             </div>
+            }
           </div>
           }
 

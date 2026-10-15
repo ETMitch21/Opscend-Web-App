@@ -59,6 +59,8 @@ interface BookingPaymentSettings {
     persistentResumeEnabled: boolean;
     showNextAvailabilityWithPrice: boolean;
     enhancedQuoteResults: boolean;
+    repairPricingCardsEnabled: boolean;
+    showRepairStepPricing: boolean;
     selfServiceRescheduleEnabled: boolean;
     preRepairIntakeEnabled: boolean;
     appointmentPrepEnabled: boolean;
@@ -124,6 +126,8 @@ export class PublicExperienceSettings implements OnInit {
   persistentResumeEnabled = true;
   showNextAvailabilityWithPrice = true;
   enhancedQuoteResults = true;
+  repairPricingCardsEnabled = false;
+  showRepairStepPricing = false;
   selfServiceRescheduleEnabled = true;
   preRepairIntakeEnabled = true;
   appointmentPrepEnabled = true;
@@ -177,6 +181,8 @@ export class PublicExperienceSettings implements OnInit {
       this.persistentResumeEnabled = funnel.persistentResumeEnabled ?? true;
       this.showNextAvailabilityWithPrice = funnel.showNextAvailabilityWithPrice ?? true;
       this.enhancedQuoteResults = funnel.enhancedQuoteResults ?? true;
+      this.repairPricingCardsEnabled = funnel.repairPricingCardsEnabled ?? false;
+      this.showRepairStepPricing = funnel.showRepairStepPricing ?? false;
       this.selfServiceRescheduleEnabled = funnel.selfServiceRescheduleEnabled ?? true;
       this.preRepairIntakeEnabled = funnel.preRepairIntakeEnabled ?? true;
       this.appointmentPrepEnabled = funnel.appointmentPrepEnabled ?? true;
@@ -298,6 +304,8 @@ export class PublicExperienceSettings implements OnInit {
           persistentResumeEnabled: this.persistentResumeEnabled,
           showNextAvailabilityWithPrice: this.showNextAvailabilityWithPrice,
           enhancedQuoteResults: this.enhancedQuoteResults,
+          repairPricingCardsEnabled: this.repairPricingCardsEnabled,
+          showRepairStepPricing: this.showRepairStepPricing,
           selfServiceRescheduleEnabled: this.selfServiceRescheduleEnabled,
           preRepairIntakeEnabled: this.preRepairIntakeEnabled,
           appointmentPrepEnabled: this.appointmentPrepEnabled,

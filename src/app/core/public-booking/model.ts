@@ -41,6 +41,8 @@ export interface PublicBookingSettings {
     persistentResumeEnabled: boolean;
     showNextAvailabilityWithPrice: boolean;
     enhancedQuoteResults: boolean;
+    repairPricingCardsEnabled: boolean;
+    showRepairStepPricing: boolean;
     selfServiceRescheduleEnabled: boolean;
     preRepairIntakeEnabled: boolean;
     appointmentPrepEnabled: boolean;
@@ -92,7 +94,11 @@ export interface PublicRepairPricingOption {
   tierName: string;
   attributeValues: Record<string, string> | null;
   description: string | null;
+  publicBadgeText: string | null;
+  publicFeatured: boolean;
+  publicFeatureList: string[];
   fixedPriceCents: number | null;
+  displayPriceCents: number | null;
   useDynamicPricing: boolean;
   durationMins: number | null;
   allowInstantConfirmation: boolean;

@@ -163,6 +163,9 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     repairNeedId: ['', Validators.required],
     variantName: ['Standard', [Validators.required, Validators.maxLength(120)]],
     description: ['', Validators.maxLength(1000)],
+    publicBadgeText: ['', Validators.maxLength(40)],
+    publicFeatured: [false],
+    publicFeatureListText: ['', Validators.maxLength(1000)],
     priceMode: ['fixed' as PriceMode, Validators.required],
     fixedPriceDollars: [null as number | null, Validators.min(0)],
     laborDollars: [null as number | null, Validators.min(0)],
@@ -803,6 +806,7 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     control:
       | 'isActive'
       | 'isPublic'
+      | 'publicFeatured'
       | 'allowInstantConfirmation'
       | 'requiresManualReview'
       | 'depositIncludeProcessingFees'
@@ -866,6 +870,9 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       repairNeedId: this.selectedRepairType()!.id,
       variantName: String(raw.variantName ?? '').trim(),
       description: this.nullable(raw.description),
+      publicBadgeText: this.nullable(raw.publicBadgeText),
+      publicFeatured: Boolean(raw.publicFeatured),
+      publicFeatureList: this.parsePublicFeatureList(raw.publicFeatureListText),
       isActive: Boolean(raw.isActive),
       isPublic: Boolean(raw.isPublic),
       serviceId: this.nullable(raw.serviceId),
@@ -973,6 +980,9 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
       repairNeedId: this.selectedRepairType()!.id,
       variantName: String(raw.variantName ?? '').trim(),
       description: this.nullable(raw.description),
+      publicBadgeText: this.nullable(raw.publicBadgeText),
+      publicFeatured: Boolean(raw.publicFeatured),
+      publicFeatureList: this.parsePublicFeatureList(raw.publicFeatureListText),
       isActive: Boolean(raw.isActive),
       isPublic: Boolean(raw.isPublic),
       serviceId: this.nullable(raw.serviceId),
@@ -1445,6 +1455,9 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
         ? `${this.normalizedTierNameForOption(option)} Copy`
         : this.normalizedTierNameForOption(option),
       description: option.description ?? '',
+      publicBadgeText: option.publicBadgeText ?? '',
+      publicFeatured: option.publicFeatured ?? false,
+      publicFeatureListText: (option.publicFeatureList ?? []).join('\n'),
       priceMode: option.useDynamicPricing ? 'dynamic' : 'fixed',
       fixedPriceDollars:
         option.fixedPriceCents == null ? null : option.fixedPriceCents / 100,
@@ -1690,6 +1703,14 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     if (value === null || value === undefined || value === '') return null;
     const number = Number(value);
     return Number.isFinite(number) ? Math.round(number * 100) : null;
+  }
+
+  private parsePublicFeatureList(value: unknown): string[] {
+    return String(value ?? '')
+      .split(/\r?\n/)
+      .map((item) => item.replace(/^[-•✓\s]+/, '').trim())
+      .filter(Boolean)
+      .slice(0, 8);
   }
 
   private nullable(value: string | null | undefined): string | null {

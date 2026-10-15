@@ -331,7 +331,11 @@ export class PublicBooking implements OnDestroy {
 
   readonly quote = signal<PublicRepairQuote | null>(null);
   readonly canRevealRepairSelectionPrices = computed(() =>
+    this.settings()?.publicFunnel?.showRepairStepPricing === true ||
     this.settings()?.publicFunnel?.requireContactBeforePrice === false
+  );
+  readonly useRepairPricingCards = computed(() =>
+    this.settings()?.publicFunnel?.repairPricingCardsEnabled === true
   );
   readonly slots = signal<PublicAvailabilitySlot[]>([]);
   readonly selectedSlotKey = signal<string | null>(null);
@@ -1405,6 +1409,18 @@ export class PublicBooking implements OnDestroy {
   pricingTierDescription(tier: PublicPricingTier): string {
     return tier.options.find((option) => option.description?.trim())?.description?.trim()
       || 'Shop-configured repair option.';
+  }
+
+  pricingTierBadge(tier: PublicPricingTier): string | null {
+    return tier.options.find((option) => option.publicBadgeText?.trim())?.publicBadgeText?.trim() ?? null;
+  }
+
+  pricingTierIsFeatured(tier: PublicPricingTier): boolean {
+    return tier.options.some((option) => option.publicFeatured);
+  }
+
+  pricingTierFeatures(tier: PublicPricingTier): string[] {
+    return [...new Set(tier.options.flatMap((option) => option.publicFeatureList ?? []).map((feature) => feature.trim()).filter(Boolean))].slice(0, 8);
   }
 
   pricingTierPriceLabel(tier: PublicPricingTier): string {
@@ -2485,15 +2501,11 @@ export class PublicBooking implements OnDestroy {
   }
 
   pricingOptionPriceLabel(option: PublicRepairPricingOption): string {
-    if (option.useDynamicPricing) {
-      return option.fixedPriceCents == null
-        ? 'Price calculated next'
-        : `From ${this.money(option.fixedPriceCents)}`;
+    const displayPrice = option.displayPriceCents ?? option.fixedPriceCents;
+    if (displayPrice == null) {
+      return option.useDynamicPricing ? 'Price calculated next' : 'Request a quote';
     }
-
-    return option.fixedPriceCents == null
-      ? 'Request a quote'
-      : this.money(option.fixedPriceCents);
+    return this.money(displayPrice);
   }
 
   money(cents: number | null | undefined): string {

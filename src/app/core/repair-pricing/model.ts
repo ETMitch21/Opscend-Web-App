@@ -103,6 +103,9 @@ export interface PricingOption {
   variantName: string;
   name: string;
   description: string | null;
+  publicBadgeText: string | null;
+  publicFeatured: boolean;
+  publicFeatureList: string[];
   isActive: boolean;
   isPublic: boolean;
   sortOrder: number;
@@ -142,6 +145,9 @@ export interface PricingOptionInput {
   repairNeedId: string;
   variantName: string;
   description?: string | null;
+  publicBadgeText?: string | null;
+  publicFeatured?: boolean;
+  publicFeatureList?: string[];
   isActive?: boolean;
   isPublic?: boolean;
   sortOrder?: number;

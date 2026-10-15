@@ -113,7 +113,27 @@
 
                   <div class="settings-field">
                     <label class="settings-label" for="pricing-description">Customer description</label>
-                    <textarea id="pricing-description" class="settings-control" formControlName="description" rows="4" placeholder="Explain why a customer should choose this option."></textarea>
+                    <textarea id="pricing-description" class="settings-control" formControlName="description" rows="4" placeholder="Explain why a customer should choose this option. Line breaks are preserved on public pricing cards."></textarea>
+                    <p class="settings-hint">Keep this to a short sales-focused paragraph. Use the feature list below for scannable benefits.</p>
+                  </div>
+
+                  <div class="settings-field is-half">
+                    <label class="settings-label" for="pricing-public-badge">Pricing card badge</label>
+                    <input id="pricing-public-badge" type="text" class="settings-control" formControlName="publicBadgeText" placeholder="Best Value" />
+                    <p class="settings-hint">Optional. Examples: Best Value, Most Popular, OEM.</p>
+                  </div>
+
+                  <div class="settings-field is-half">
+                    <div class="settings-toggle-row h-full">
+                      <div class="settings-toggle-copy"><p class="settings-toggle-title">Featured option</p><p class="settings-toggle-description">Give this tier extra emphasis when pricing cards are enabled.</p></div>
+                      <button type="button" role="switch" class="settings-switch cursor-pointer" [class.is-on]="formValue().publicFeatured" [attr.aria-checked]="formValue().publicFeatured" (click)="setToggle('publicFeatured')"><span class="settings-switch-handle"></span></button>
+                    </div>
+                  </div>
+
+                  <div class="settings-field">
+                    <label class="settings-label" for="pricing-public-features">Feature list</label>
+                    <textarea id="pricing-public-features" class="settings-control" formControlName="publicFeatureListText" rows="5" placeholder="Improved color and clarity&#10;Responsive touch performance&#10;Warranty included"></textarea>
+                    <p class="settings-hint">One feature per line, up to 8. Opscend displays these as checkmarked benefits on pricing cards.</p>
                   </div>
                 </div>
               </div>
