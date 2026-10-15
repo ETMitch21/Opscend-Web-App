@@ -326,7 +326,7 @@ export class PublicBooking implements OnDestroy {
   readonly selectedPricingOption = signal<PublicRepairPricingOption | null>(null);
   readonly selectedPricingTierKey = signal<string | null>(null);
   readonly selectedRepairAttributes = signal<Record<string, string>>({});
-  readonly serviceMode = signal<'on_site' | 'in_shop'>('on_site');
+  readonly serviceMode = signal<'on_site' | 'in_shop'>('in_shop');
   readonly selectedUpsellIds = signal<Set<string>>(new Set());
 
   readonly quote = signal<PublicRepairQuote | null>(null);
@@ -2337,7 +2337,7 @@ export class PublicBooking implements OnDestroy {
     if (!this.selectedRepairNeed()) return null;
 
     if (this.serviceMode() === 'in_shop') {
-      return 'Meetup / in-shop';
+      return 'Come To Us';
     }
 
     const city = this.scheduleForm.controls.city.value;
@@ -2345,11 +2345,11 @@ export class PublicBooking implements OnDestroy {
 
     if (city && state) return `On-site in ${city}, ${state}`;
 
-    return 'On-site';
+    return 'We Come To You';
   }
 
   serviceModeTitle(): string {
-    return this.serviceMode() === 'on_site' ? 'On-site repair' : 'Meetup / in-shop';
+    return this.serviceMode() === 'on_site' ? 'We Come To You' : 'Come To Us';
   }
 
   addressSummary(): string {

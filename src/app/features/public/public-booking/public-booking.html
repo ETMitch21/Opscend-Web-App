@@ -588,8 +588,7 @@
       <div class="mb-5">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Location</p>
         <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should this happen?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Choose on-site service or a supported meetup / in-shop
-          appointment.</p>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Choose whether you’d like to come to us or have us come to you.</p>
       </div>
 
       <div class="grid gap-2 sm:grid-cols-2">
@@ -605,10 +604,10 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold">On-site repair</p>
+            <p class="text-sm font-semibold">We Come To You</p>
             <p class="mt-0.5 text-xs leading-5"
               [ngClass]="serviceMode() === 'on_site' ? 'text-gray-300' : 'text-gray-500'">
-              We come to you.
+              On-site repair at your location.
             </p>
           </div>
 
@@ -629,10 +628,10 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold">Meetup / in-shop</p>
+            <p class="text-sm font-semibold">Come To Us</p>
             <p class="mt-0.5 text-xs leading-5"
               [ngClass]="serviceMode() === 'in_shop' ? 'text-gray-300' : 'text-gray-500'">
-              Visit a repair location.
+              Meet us at our repair location.
             </p>
           </div>
 
@@ -722,7 +721,7 @@
       <button type="button"
         class="mt-5 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         [disabled]="quoting()" (click)="continueFromLocation()">
-        {{ quoting() ? 'Building quote...' : 'Get quote' }}
+        {{ quoting() ? (canRevealRepairSelectionPrices() ? 'Saving...' : 'Building quote...') : (canRevealRepairSelectionPrices() ? 'Continue' : 'Get quote') }}
       </button>
     </section>
     }
@@ -732,9 +731,15 @@
       class="overflow-hidden rounded-[2rem] bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl"
       [formGroup]="scheduleForm" (ngSubmit)="continueFromContact()">
       <div class="p-6 sm:p-7">
+        @if (canRevealRepairSelectionPrices()) {
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Almost done</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your repair details?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Add your contact information so we can save your selection and move you straight into scheduling, deposit, or the next step for your repair.</p>
+        } @else {
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Before we show your price</p>
         <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your quote?</h2>
         <p class="mt-2 text-sm leading-6 text-gray-500">We’ll save your quote so you can return to it later and so the team can help if you have questions.</p>
+        }
       </div>
 
       <div class="border-t border-gray-100 bg-[#f5f5f7]/80 p-4 sm:p-5">
@@ -800,7 +805,7 @@
         <button type="submit"
           class="mt-5 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           [disabled]="quoting()">
-          {{ quoting() ? 'Building your quote...' : 'See my price' }}
+          {{ quoting() ? (canRevealRepairSelectionPrices() ? 'Finalizing...' : 'Building your quote...') : (canRevealRepairSelectionPrices() ? 'Finish & continue' : 'See my price') }}
         </button>
       </div>
     </form>
