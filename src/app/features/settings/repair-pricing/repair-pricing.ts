@@ -374,19 +374,25 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     this.bindSearchStreams();
 
     try {
-      const [typesResponse, categoriesResponse, overviewResponse, rulesResponse, supplierResponse] = await Promise.all([
+      const [typesResponse, categoriesResponse, rulesResponse, supplierResponse] = await Promise.all([
         firstValueFrom(this.pricingApi.listRepairTypes()),
         firstValueFrom(this.catalogApi.listManagedCategories(false)),
-        firstValueFrom(this.pricingApi.getOverview()).catch(() => null),
         firstValueFrom(this.pricingApi.listRules()).catch(() => ({ data: [] as PricingRule[] })),
         firstValueFrom(this.pricingApi.listSupplierHealth()).catch(() => ({ data: [] as SupplierPricingHealthRow[] })),
       ]);
+
       this.repairTypes.set(this.sortRepairTypes(typesResponse.data ?? []));
       this.categories.set(categoriesResponse.data ?? []);
-      this.overview.set(overviewResponse);
       this.pricingRules.set(rulesResponse.data ?? []);
       this.supplierHealth.set(supplierResponse.data ?? []);
-      if (!this.ruleRepairNeedId() && this.repairTypes().length) this.ruleRepairNeedId.set(this.repairTypes()[0]!.id);
+      if (!this.ruleRepairNeedId() && this.repairTypes().length) {
+        this.ruleRepairNeedId.set(this.repairTypes()[0]!.id);
+      }
+
+      // Resolve the initial route completely before the first paint. Previously the
+      // overview request raced route-state hydration, which could leave the dashboard
+      // looking half-loaded until another view was visited.
+      await this.applyRouteState(this.route.snapshot.queryParamMap);
 
       this.subscriptions.add(
         this.route.queryParamMap.subscribe((params) => {
@@ -474,6 +480,19 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     if (value === 'overview') void this.loadOverview();
     if (value === 'rules') void this.loadRules();
     if (value === 'suppliers') void this.loadSupplierHealth();
+  }
+
+  openAttentionQueue(): void {
+    this.selectedOptionIds.set(new Set());
+    void this.updateQuery({ view: 'setup', setup: 'attention', advance: null });
+  }
+
+  async refreshOverview(): Promise<void> {
+    await Promise.all([
+      this.loadOverview(),
+      this.loadRules(),
+      this.loadSupplierHealth(),
+    ]);
   }
 
   async loadOverview(): Promise<void> {

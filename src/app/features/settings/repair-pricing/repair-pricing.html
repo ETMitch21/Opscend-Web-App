@@ -1,14 +1,26 @@
-<app-settings-layout pageDescription="Set up pricing by device, spot missing links, and manage every repair option in one place.">
+<app-settings-layout pageDescription="Set your pricing strategy once, then only deal with changes and exceptions.">
   <div settings-actions class="flex flex-wrap items-center justify-end gap-2">
     <a routerLink="/settings/shop/repair-pricing/types" class="settings-secondary-action cursor-pointer">
       <lucide-icon [name]="icons.Wrench" class="h-4 w-4"></lucide-icon>
       Repair types
       <span class="rounded-full bg-app-surface-muted px-1.5 py-0.5 text-[9px]">{{ repairTypes().length }}</span>
     </a>
-    <button type="button" class="settings-primary-action cursor-pointer" (click)="newOption()">
-      <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
-      New pricing option
-    </button>
+    @if (viewMode() === 'overview') {
+      <button type="button" class="settings-primary-action cursor-pointer" (click)="setViewMode('rules')">
+        <lucide-icon [name]="icons.Layers" class="h-4 w-4"></lucide-icon>
+        Manage pricing rules
+      </button>
+    } @else if (viewMode() === 'rules') {
+      <button type="button" class="settings-primary-action cursor-pointer" (click)="openNewRule()">
+        <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+        New pricing rule
+      </button>
+    } @else {
+      <button type="button" class="settings-primary-action cursor-pointer" (click)="newOption()">
+        <lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>
+        New pricing option
+      </button>
+    }
   </div>
 
   <div class="space-y-4">
@@ -24,23 +36,21 @@
         </button>
         <button type="button" class="cursor-pointer" [class.is-active]="viewMode() === 'rules'" (click)="setViewMode('rules')">
           <lucide-icon [name]="icons.Layers" class="h-3.5 w-3.5"></lucide-icon>
-          Pricing rules
+          Rules
         </button>
         <button type="button" class="cursor-pointer" [class.is-active]="viewMode() === 'suppliers'" (click)="setViewMode('suppliers')">
           <lucide-icon [name]="icons.PackageSearch" class="h-3.5 w-3.5"></lucide-icon>
-          Supplier pricing
-        </button>
-        <button type="button" class="cursor-pointer" [class.is-active]="viewMode() === 'setup'" (click)="setViewMode('setup')">
-          <lucide-icon [name]="icons.Smartphone" class="h-3.5 w-3.5"></lucide-icon>
-          Exceptions
+          Supplier watch
         </button>
         <button type="button" class="cursor-pointer" [class.is-active]="viewMode() === 'list'" (click)="setViewMode('list')">
           <lucide-icon [name]="icons.Sliders" class="h-3.5 w-3.5"></lucide-icon>
           All options
         </button>
       </div>
-      @if (viewMode() === 'setup' && selectedBrand()) {
-        <p class="text-xs text-app-text-muted">{{ selectedCategory()?.name }} · {{ selectedBrand()?.name }}</p>
+      @if (viewMode() === 'setup') {
+        <button type="button" class="settings-secondary-action cursor-pointer" (click)="setViewMode('overview')">
+          ← Back to overview
+        </button>
       }
     </div>
 
@@ -56,100 +66,120 @@
         @if (overviewLoading() || !overview()) {
           <section class="settings-card flex min-h-64 items-center justify-center gap-2 text-sm text-app-text-muted">
             <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon>
-            Checking pricing health…
+            Loading pricing overview…
           </section>
         } @else {
           <section class="settings-card overflow-hidden">
-            <div class="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div class="flex flex-col gap-4 border-b border-app-border px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div class="flex flex-wrap items-center gap-3">
-                  <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-                    <lucide-icon [name]="icons.Gauge" class="h-6 w-6"></lucide-icon>
-                  </div>
-                  <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-app-text-muted">Pricing health</p>
-                    <div class="mt-0.5 flex items-baseline gap-2">
-                      <span class="text-3xl font-semibold tracking-tight text-app-text">{{ overview()!.health.percent }}%</span>
-                      <span class="text-sm text-app-text-muted">ready</span>
-                    </div>
-                  </div>
-                </div>
-                <p class="mt-4 max-w-2xl text-sm leading-6 text-app-text-muted">Opscend assumes your pricing rules are consistent and only surfaces the exceptions that actually need attention.</p>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-app-text-muted">Pricing control center</p>
+                <h2 class="mt-1 text-xl font-semibold text-app-text">
+                  @if (overview()!.health.attention > 0) {
+                    {{ overview()!.health.attention }} item{{ overview()!.health.attention === 1 ? '' : 's' }} need your attention
+                  } @else {
+                    Pricing is in good shape
+                  }
+                </h2>
+                <p class="mt-1 max-w-2xl text-sm leading-6 text-app-text-muted">Set broad rules once. Opscend handles inheritance, watches supplier costs, and brings you back only when something actually needs a decision.</p>
               </div>
-              <button type="button" class="settings-secondary-action cursor-pointer" (click)="loadOverview()">
-                <lucide-icon [name]="icons.Refresh" class="h-4 w-4"></lucide-icon> Refresh health
+              <button type="button" class="settings-secondary-action cursor-pointer" [disabled]="overviewLoading()" (click)="refreshOverview()">
+                <lucide-icon [name]="icons.Refresh" class="h-4 w-4" [class.animate-spin]="overviewLoading()"></lucide-icon>
+                Refresh
               </button>
             </div>
-            <div class="grid border-t border-app-border sm:grid-cols-2 xl:grid-cols-4">
-              <button type="button" class="cursor-pointer border-b border-app-border p-4 text-left transition hover:bg-app-surface-muted/40 sm:border-r xl:border-b-0" (click)="setViewMode('setup')">
-                <p class="text-2xl font-semibold text-app-text">{{ overview()!.health.attention }}</p>
-                <p class="mt-1 text-xs font-semibold text-amber-700">Need attention</p>
-                <p class="mt-1 text-[11px] text-app-text-muted">{{ overview()!.health.missingProduct }} missing parts · {{ overview()!.health.missingPrice }} missing prices</p>
+
+            <div class="grid gap-px bg-app-border lg:grid-cols-3">
+              <button type="button" class="group cursor-pointer bg-app-surface p-5 text-left transition hover:bg-app-surface-muted/45" (click)="openAttentionQueue()">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                    <lucide-icon [name]="icons.Alert" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 text-app-text-muted transition group-hover:translate-x-0.5"></lucide-icon>
+                </div>
+                <p class="mt-4 text-2xl font-semibold text-app-text">{{ overview()!.health.attention }}</p>
+                <p class="mt-1 text-sm font-semibold text-app-text">Needs attention</p>
+                <p class="mt-1 text-xs leading-5 text-app-text-muted">
+                  {{ overview()!.health.missingProduct }} missing part{{ overview()!.health.missingProduct === 1 ? '' : 's' }} ·
+                  {{ overview()!.health.missingPrice }} missing price{{ overview()!.health.missingPrice === 1 ? '' : 's' }}
+                </p>
               </button>
-              <button type="button" class="cursor-pointer border-b border-app-border p-4 text-left transition hover:bg-app-surface-muted/40 xl:border-b-0 xl:border-r" (click)="setViewMode('rules')">
-                <p class="text-2xl font-semibold text-app-text">{{ overview()!.rules.length }}</p>
-                <p class="mt-1 text-xs font-semibold text-app-text">Pricing rules</p>
-                <p class="mt-1 text-[11px] text-app-text-muted">Inherited across categories, brands, and models</p>
+
+              <button type="button" class="group cursor-pointer bg-app-surface p-5 text-left transition hover:bg-app-surface-muted/45" (click)="setViewMode('rules')">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
+                    <lucide-icon [name]="icons.Layers" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 text-app-text-muted transition group-hover:translate-x-0.5"></lucide-icon>
+                </div>
+                <p class="mt-4 text-2xl font-semibold text-app-text">{{ overview()!.rules.length }}</p>
+                <p class="mt-1 text-sm font-semibold text-app-text">Pricing rules</p>
+                <p class="mt-1 text-xs leading-5 text-app-text-muted">Manage the rules that flow across categories, brands, models, and future devices.</p>
               </button>
-              <button type="button" class="cursor-pointer border-b border-app-border p-4 text-left transition hover:bg-app-surface-muted/40 sm:border-r sm:border-b-0" (click)="setViewMode('suppliers')">
-                <p class="text-2xl font-semibold text-app-text">{{ overview()!.supplier.jitLinks }}</p>
-                <p class="mt-1 text-xs font-semibold text-app-text">Just-in-time parts</p>
-                <p class="mt-1 text-[11px] text-app-text-muted">{{ overview()!.supplier.stale }} supplier prices need a fresh check</p>
-              </button>
-              <button type="button" class="cursor-pointer p-4 text-left transition hover:bg-app-surface-muted/40" (click)="setViewMode('list')">
-                <p class="text-2xl font-semibold text-app-text">{{ overview()!.health.ready }}</p>
-                <p class="mt-1 text-xs font-semibold text-emerald-700">Ready</p>
-                <p class="mt-1 text-[11px] text-app-text-muted">Configured combinations that can quote now</p>
+
+              <button type="button" class="group cursor-pointer bg-app-surface p-5 text-left transition hover:bg-app-surface-muted/45" (click)="setViewMode('suppliers')">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                    <lucide-icon [name]="icons.PackageSearch" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 text-app-text-muted transition group-hover:translate-x-0.5"></lucide-icon>
+                </div>
+                <p class="mt-4 text-2xl font-semibold text-app-text">{{ overview()!.supplier.jitLinks }}</p>
+                <p class="mt-1 text-sm font-semibold text-app-text">JIT supplier parts</p>
+                <p class="mt-1 text-xs leading-5 text-app-text-muted">{{ overview()!.supplier.stale }} need a fresh cost check · {{ overview()!.supplier.errors }} failed checks</p>
               </button>
             </div>
           </section>
 
-          @if (overview()!.supplier.changed > 0 || overview()!.supplier.errors > 0 || overview()!.supplier.stale > 0) {
-            <section class="settings-card p-5">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <lucide-icon [name]="icons.PackageSearch" class="h-4 w-4 text-brand"></lucide-icon>
-                    <h2 class="text-sm font-semibold text-app-text">Supplier pricing watch</h2>
-                  </div>
-                  <p class="mt-1 text-sm text-app-text-muted">JIT parts are checked more aggressively so dynamic prices do not quietly drift away from supplier cost.</p>
+          <section class="settings-card p-5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <h2 class="text-sm font-semibold text-app-text">Pricing coverage</h2>
+                  <span class="text-xs text-app-text-muted">{{ overview()!.health.percent }}% ready</span>
                 </div>
-                <button type="button" class="settings-secondary-action cursor-pointer" (click)="setViewMode('suppliers')">Review supplier pricing</button>
+                <div class="mt-3 h-2 overflow-hidden rounded-full bg-app-surface-muted">
+                  <div class="h-full rounded-full bg-brand transition-all" [style.width.%]="overview()!.health.percent"></div>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-app-text-muted">
+                  <span><strong class="text-app-text">{{ overview()!.health.ready }}</strong> ready</span>
+                  <span><strong class="text-app-text">{{ overview()!.health.notOffered }}</strong> intentionally not offered</span>
+                  <span><strong class="text-app-text">{{ overview()!.health.notConfigured }}</strong> not configured</span>
+                </div>
               </div>
-              <div class="mt-4 flex flex-wrap gap-2 text-xs">
-                @if (overview()!.supplier.stale) { <span class="rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">{{ overview()!.supplier.stale }} stale</span> }
-                @if (overview()!.supplier.changed) { <span class="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">{{ overview()!.supplier.changed }} changed</span> }
-                @if (overview()!.supplier.errors) { <span class="rounded-full bg-red-50 px-2.5 py-1 font-semibold text-red-700">{{ overview()!.supplier.errors }} failed checks</span> }
-              </div>
-            </section>
-          }
-
-          <section class="settings-card overflow-hidden">
-            <div class="flex items-center justify-between border-b border-app-border px-5 py-4">
-              <div>
-                <h2 class="text-sm font-semibold text-app-text">What needs attention</h2>
-                <p class="mt-0.5 text-xs text-app-text-muted">Work the exception queue instead of configuring every model by hand.</p>
-              </div>
-              @if (overview()!.health.attention) {
-                <button type="button" class="settings-primary-action cursor-pointer" (click)="setViewMode('setup')">Review exceptions</button>
-              }
+              <button type="button" class="settings-secondary-action cursor-pointer" (click)="setViewMode('list')">Browse all options</button>
             </div>
-            @if (!overview()!.issues.length) {
-              <div class="px-5 py-10 text-center text-sm text-app-text-muted">Nothing urgent. Your active pricing is in good shape.</div>
-            } @else {
+          </section>
+
+          @if (overview()!.issues.length) {
+            <section class="settings-card overflow-hidden">
+              <div class="flex flex-col gap-3 border-b border-app-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 class="text-sm font-semibold text-app-text">Start here</h2>
+                  <p class="mt-0.5 text-xs text-app-text-muted">The first few items Opscend recommends fixing.</p>
+                </div>
+                <button type="button" class="settings-primary-action cursor-pointer" (click)="openAttentionQueue()">Work the queue</button>
+              </div>
               <div class="divide-y divide-app-border">
-                @for (issue of overview()!.issues.slice(0, 8); track issue.modelId + ':' + issue.repairNeedId) {
-                  <div class="flex items-center justify-between gap-4 px-5 py-3.5">
+                @for (issue of overview()!.issues.slice(0, 5); track issue.modelId + ':' + issue.repairNeedId) {
+                  <button type="button" class="flex w-full cursor-pointer items-center justify-between gap-4 px-5 py-3.5 text-left transition hover:bg-app-surface-muted/40" (click)="openAttentionQueue()">
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold text-app-text">{{ issue.modelName }} · {{ issue.repairName }}</p>
                       <p class="mt-0.5 truncate text-xs text-app-text-muted">{{ issue.message }}</p>
                     </div>
-                    <span class="shrink-0 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700">Needs attention</span>
-                  </div>
+                    <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4 shrink-0 text-app-text-muted"></lucide-icon>
+                  </button>
                 }
               </div>
-            }
-          </section>
+            </section>
+          } @else {
+            <section class="settings-card px-5 py-8 text-center">
+              <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                <lucide-icon [name]="icons.Check" class="h-5 w-5"></lucide-icon>
+              </div>
+              <h2 class="mt-3 text-sm font-semibold text-app-text">Nothing needs attention</h2>
+              <p class="mt-1 text-sm text-app-text-muted">Your active pricing can keep running without manual cleanup.</p>
+            </section>
+          }
         }
       </div>
     }
