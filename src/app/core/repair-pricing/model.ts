@@ -128,6 +128,8 @@ export interface PricingOption {
   serviceId: string | null;
   productId: string | null;
   productSupplierId: string | null;
+  pricingRuleId: string | null;
+  inherited: boolean;
   requiresProduct: boolean;
   attributeSignature: string;
   attributeValues: Record<string, string> | null;
@@ -229,6 +231,9 @@ export type PricingOptionBulkAction =
   | 'set_service'
   | 'set_product'
   | 'set_product_supplier'
+  | 'set_labor'
+  | 'increase_labor'
+  | 'set_duration'
   | 'clear_links';
 
 export interface PricingOptionBulkActionInput {
@@ -256,4 +261,144 @@ export interface BulkAssignResponse {
 
 export interface BulkActionResponse {
   updatedCount: number;
+}
+
+export type PricingRuleScope = 'global' | 'category' | 'brand' | 'model';
+
+export interface PricingRule {
+  id: string;
+  shopId: string;
+  repairNeedId: string;
+  scope: PricingRuleScope;
+  categoryId: string | null;
+  brandId: string | null;
+  deviceCatalogModelId: string | null;
+  variantName: string;
+  description: string | null;
+  publicBadgeText: string | null;
+  publicFeatured: boolean;
+  publicFeatureList: string[];
+  isActive: boolean;
+  isPublic: boolean;
+  appliesToFutureModels: boolean;
+  sortOrder: number;
+  serviceId: string | null;
+  productId: string | null;
+  productSupplierId: string | null;
+  pricingRuleId: string | null;
+  inherited: boolean;
+  requiresProduct: boolean;
+  fixedPriceCents: number | null;
+  useDynamicPricing: boolean;
+  laborCents: number | null;
+  durationMins: number | null;
+  depositMode: PricingOptionDepositMode;
+  depositAmountCents: number | null;
+  depositShippingCents: number | null;
+  depositIncludeProcessingFees: boolean | null;
+  depositIncludeInstantPayoutFee: boolean | null;
+  allowInstantConfirmation: boolean;
+  requiresManualReview: boolean;
+  repairNeed?: { label: string; code: string };
+  category?: { id: string; name: string } | null;
+  brand?: { id: string; name: string } | null;
+  deviceCatalogModel?: { id: string; name: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PricingRuleInput {
+  repairNeedId: string;
+  scope: PricingRuleScope;
+  categoryId?: string | null;
+  brandId?: string | null;
+  deviceCatalogModelId?: string | null;
+  variantName: string;
+  description?: string | null;
+  publicBadgeText?: string | null;
+  publicFeatured?: boolean;
+  publicFeatureList?: string[];
+  isActive?: boolean;
+  isPublic?: boolean;
+  appliesToFutureModels?: boolean;
+  sortOrder?: number;
+  serviceId?: string | null;
+  productId?: string | null;
+  productSupplierId?: string | null;
+  requiresProduct?: boolean;
+  fixedPriceCents?: number | null;
+  useDynamicPricing?: boolean;
+  laborCents?: number | null;
+  durationMins?: number | null;
+  depositMode?: PricingOptionDepositMode;
+  depositAmountCents?: number | null;
+  depositShippingCents?: number | null;
+  depositIncludeProcessingFees?: boolean | null;
+  depositIncludeInstantPayoutFee?: boolean | null;
+  allowInstantConfirmation?: boolean;
+  requiresManualReview?: boolean;
+}
+
+export interface PricingOverview {
+  health: {
+    total: number;
+    ready: number;
+    attention: number;
+    notOffered: number;
+    notConfigured: number;
+    percent: number;
+    missingProduct: number;
+    missingService: number;
+    missingPrice: number;
+  };
+  supplier: {
+    linked: number;
+    jitLinks: number;
+    stale: number;
+    changed: number;
+    errors: number;
+  };
+  issues: Array<{
+    kind: string;
+    modelId: string;
+    modelName: string;
+    repairNeedId: string;
+    repairName: string;
+    message: string;
+  }>;
+  rules: Array<{
+    id: string;
+    scope: PricingRuleScope;
+    variantName: string;
+    repairNeedId: string;
+    repairName: string;
+    laborCents: number | null;
+    fixedPriceCents: number | null;
+    useDynamicPricing: boolean;
+    appliesToFutureModels: boolean;
+    scopeName: string;
+    updatedAt: string;
+  }>;
+}
+
+export interface SupplierPricingHealthRow {
+  id: string;
+  productId: string;
+  productName: string;
+  productSku: string | null;
+  supplierId: string;
+  supplierName: string;
+  provider: string;
+  supplierSku: string;
+  lastKnownCostCents: number | null;
+  previousKnownCostCents: number | null;
+  costDeltaCents: number | null;
+  lastKnownInStock: boolean | null;
+  availableStock: number;
+  justInTime: boolean;
+  priceMonitoringEnabled: boolean;
+  lastPriceCheckAt: string | null;
+  lastPriceChangedAt: string | null;
+  lastPriceCheckError: string | null;
+  pricingOptionCount: number;
 }

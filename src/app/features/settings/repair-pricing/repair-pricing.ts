@@ -23,6 +23,10 @@ import {
   PlusIcon,
   SearchIcon,
   SlidersHorizontalIcon,
+  RefreshCwIcon,
+  Layers3Icon,
+  PackageSearchIcon,
+  GaugeIcon,
   SmartphoneIcon,
   WrenchIcon,
   XIcon,
@@ -53,6 +57,10 @@ import {
   PricingOption,
   PricingOptionBulkAction,
   PricingNotOffered,
+  PricingOverview,
+  PricingRule,
+  PricingRuleScope,
+  SupplierPricingHealthRow,
   RepairType,
 } from '../../../core/repair-pricing/model';
 import { RepairPricingService } from '../../../core/repair-pricing/service';
@@ -61,7 +69,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 type VisibilityFilter = 'all' | 'public' | 'internal';
-type PricingViewMode = 'setup' | 'list';
+type PricingViewMode = 'overview' | 'rules' | 'suppliers' | 'setup' | 'list';
 type SetupFilter =
   | 'attention'
   | 'all'
@@ -138,6 +146,10 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     Sliders: SlidersHorizontalIcon,
     Smartphone: SmartphoneIcon,
     Wrench: WrenchIcon,
+    Refresh: RefreshCwIcon,
+    Layers: Layers3Icon,
+    PackageSearch: PackageSearchIcon,
+    Gauge: GaugeIcon,
     X: XIcon,
   };
 
@@ -159,7 +171,23 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   readonly brandModels = signal<ManagedDeviceCatalogModel[]>([]);
 
   readonly pricingSearch = signal('');
-  readonly viewMode = signal<PricingViewMode>('setup');
+  readonly viewMode = signal<PricingViewMode>('overview');
+  readonly overview = signal<PricingOverview | null>(null);
+  readonly pricingRules = signal<PricingRule[]>([]);
+  readonly supplierHealth = signal<SupplierPricingHealthRow[]>([]);
+  readonly overviewLoading = signal(false);
+  readonly rulesLoading = signal(false);
+  readonly supplierHealthLoading = signal(false);
+  readonly supplierRefreshingId = signal<string | null>(null);
+  readonly newRuleOpen = signal(false);
+  readonly ruleSaving = signal(false);
+  readonly ruleScope = signal<PricingRuleScope>('brand');
+  readonly ruleRepairNeedId = signal<string>('');
+  readonly ruleVariantName = signal('Standard');
+  readonly ruleLaborDollars = signal('100');
+  readonly ruleFixedPriceDollars = signal('');
+  readonly ruleDynamicPricing = signal(true);
+  readonly ruleFutureModels = signal(true);
   readonly setupFilter = signal<SetupFilter>('attention');
   readonly selectedCategoryId = signal<string | null>(null);
   readonly selectedBrandId = signal<string | null>(null);
@@ -346,12 +374,19 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     this.bindSearchStreams();
 
     try {
-      const [typesResponse, categoriesResponse] = await Promise.all([
+      const [typesResponse, categoriesResponse, overviewResponse, rulesResponse, supplierResponse] = await Promise.all([
         firstValueFrom(this.pricingApi.listRepairTypes()),
         firstValueFrom(this.catalogApi.listManagedCategories(false)),
+        firstValueFrom(this.pricingApi.getOverview()).catch(() => null),
+        firstValueFrom(this.pricingApi.listRules()).catch(() => ({ data: [] as PricingRule[] })),
+        firstValueFrom(this.pricingApi.listSupplierHealth()).catch(() => ({ data: [] as SupplierPricingHealthRow[] })),
       ]);
       this.repairTypes.set(this.sortRepairTypes(typesResponse.data ?? []));
       this.categories.set(categoriesResponse.data ?? []);
+      this.overview.set(overviewResponse);
+      this.pricingRules.set(rulesResponse.data ?? []);
+      this.supplierHealth.set(supplierResponse.data ?? []);
+      if (!this.ruleRepairNeedId() && this.repairTypes().length) this.ruleRepairNeedId.set(this.repairTypes()[0]!.id);
 
       this.subscriptions.add(
         this.route.queryParamMap.subscribe((params) => {
@@ -436,6 +471,141 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     if (this.viewMode() === value) return;
     this.selectedOptionIds.set(new Set());
     void this.updateQuery({ view: value });
+    if (value === 'overview') void this.loadOverview();
+    if (value === 'rules') void this.loadRules();
+    if (value === 'suppliers') void this.loadSupplierHealth();
+  }
+
+  async loadOverview(): Promise<void> {
+    if (this.overviewLoading()) return;
+    this.overviewLoading.set(true);
+    try {
+      this.overview.set(await firstValueFrom(this.pricingApi.getOverview({
+        categoryId: this.selectedCategoryId() ?? undefined,
+        brandId: this.selectedBrandId() ?? undefined,
+      })));
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not load pricing health');
+    } finally {
+      this.overviewLoading.set(false);
+    }
+  }
+
+  async loadRules(): Promise<void> {
+    if (this.rulesLoading()) return;
+    this.rulesLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.pricingApi.listRules());
+      this.pricingRules.set(response.data ?? []);
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not load pricing rules');
+    } finally {
+      this.rulesLoading.set(false);
+    }
+  }
+
+  async loadSupplierHealth(): Promise<void> {
+    if (this.supplierHealthLoading()) return;
+    this.supplierHealthLoading.set(true);
+    try {
+      const response = await firstValueFrom(this.pricingApi.listSupplierHealth());
+      this.supplierHealth.set(response.data ?? []);
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not load supplier pricing health');
+    } finally {
+      this.supplierHealthLoading.set(false);
+    }
+  }
+
+  openNewRule(): void {
+    this.newRuleOpen.set(true);
+    if (!this.ruleRepairNeedId() && this.repairTypes().length) this.ruleRepairNeedId.set(this.repairTypes()[0]!.id);
+  }
+
+  closeNewRule(): void { this.newRuleOpen.set(false); }
+
+  updateRuleScope(value: string): void { this.ruleScope.set(value as PricingRuleScope); }
+  updateRuleRepairNeed(value: string): void { this.ruleRepairNeedId.set(value); }
+  updateRuleVariant(value: string): void { this.ruleVariantName.set(value); }
+  updateRuleLabor(value: string): void { this.ruleLaborDollars.set(value); }
+  updateRuleFixedPrice(value: string): void { this.ruleFixedPriceDollars.set(value); }
+  updateRuleDynamic(value: boolean): void { this.ruleDynamicPricing.set(value); }
+  updateRuleFuture(value: boolean): void { this.ruleFutureModels.set(value); }
+
+  async saveRule(): Promise<void> {
+    if (this.ruleSaving() || !this.ruleRepairNeedId()) return;
+    const scope = this.ruleScope();
+    if (scope === 'category' && !this.selectedCategoryId()) { this.toast.error('Choose a category first'); return; }
+    if (scope === 'brand' && !this.selectedBrandId()) { this.toast.error('Choose a brand in Setup first'); return; }
+    const labor = Number(this.ruleLaborDollars());
+    const fixed = Number(this.ruleFixedPriceDollars());
+    this.ruleSaving.set(true);
+    try {
+      const response = await firstValueFrom(this.pricingApi.createRule({
+        repairNeedId: this.ruleRepairNeedId(),
+        scope,
+        categoryId: scope === 'category' || scope === 'brand' ? this.selectedCategoryId() : null,
+        brandId: scope === 'brand' ? this.selectedBrandId() : null,
+        variantName: this.ruleVariantName().trim() || 'Standard',
+        laborCents: Number.isFinite(labor) ? Math.round(labor * 100) : null,
+        fixedPriceCents: !this.ruleDynamicPricing() && Number.isFinite(fixed) ? Math.round(fixed * 100) : null,
+        useDynamicPricing: this.ruleDynamicPricing(),
+        appliesToFutureModels: this.ruleFutureModels(),
+        requiresProduct: true,
+      }));
+      this.toast.success(`Pricing rule saved · ${response.materialized.createdCount + response.materialized.updatedCount} options applied`);
+      this.newRuleOpen.set(false);
+      await Promise.all([this.loadRules(), this.loadOverview(), this.refreshSetupOptions()]);
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not save pricing rule');
+    } finally { this.ruleSaving.set(false); }
+  }
+
+  async applyRule(rule: PricingRule): Promise<void> {
+    try {
+      const result = await firstValueFrom(this.pricingApi.applyRule(rule.id));
+      this.toast.success(`Rule applied to ${result.createdCount + result.updatedCount} pricing options`);
+      await Promise.all([this.loadOverview(), this.refreshSetupOptions()]);
+    } catch (error) { console.error(error); this.toast.error('Could not apply pricing rule'); }
+  }
+
+  async refreshSupplier(row: SupplierPricingHealthRow): Promise<void> {
+    if (this.supplierRefreshingId()) return;
+    this.supplierRefreshingId.set(row.id);
+    try {
+      const result = await firstValueFrom(this.pricingApi.refreshSupplierHealth(row.id));
+      this.toast.success(result.changed ? 'Supplier cost changed — pricing refreshed' : 'Supplier pricing is current');
+      await Promise.all([this.loadSupplierHealth(), this.loadOverview(), this.loadOptions(this.pricingSearch())]);
+    } catch (error) { console.error(error); this.toast.error('Supplier price check failed'); }
+    finally { this.supplierRefreshingId.set(null); }
+  }
+
+  async toggleSupplierMonitoring(row: SupplierPricingHealthRow): Promise<void> {
+    try {
+      await firstValueFrom(this.pricingApi.setSupplierMonitoring(row.id, !row.priceMonitoringEnabled));
+      await this.loadSupplierHealth();
+    } catch (error) { console.error(error); this.toast.error('Could not update monitoring'); }
+  }
+
+  supplierCheckLabel(row: SupplierPricingHealthRow): string {
+    if (row.lastPriceCheckError) return 'Check failed';
+    if (!row.lastPriceCheckAt) return 'Never checked';
+    return new Date(row.lastPriceCheckAt).toLocaleString();
+  }
+
+  supplierDeltaLabel(row: SupplierPricingHealthRow): string {
+    if (row.costDeltaCents == null || row.costDeltaCents === 0) return 'No change';
+    const sign = row.costDeltaCents > 0 ? '+' : '−';
+    return `${sign}${this.money(Math.abs(row.costDeltaCents))}`;
+  }
+
+  ruleScopeLabel(rule: PricingRule): string {
+    if (rule.scope === 'global') return 'All devices';
+    return rule.deviceCatalogModel?.name || rule.brand?.name || rule.category?.name || rule.scope;
   }
 
   setSetupFilter(value: SetupFilter): void {
@@ -703,13 +873,13 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     this.selectedOptionIds.set(new Set());
   }
 
-  async runBulkAction(action: PricingOptionBulkAction): Promise<void> {
+  async runBulkAction(action: PricingOptionBulkAction, amount?: number): Promise<void> {
     const ids = [...this.selectedOptionIds()];
     if (!ids.length || this.bulkSaving()) return;
 
     this.bulkSaving.set(true);
     try {
-      await firstValueFrom(this.pricingApi.bulkAction({ ids, action }));
+      await firstValueFrom(this.pricingApi.bulkAction({ ids, action, amount }));
       this.toast.success('Pricing options updated');
       this.selectedOptionIds.set(new Set());
       await this.loadOptions(this.pricingSearch());
@@ -720,6 +890,30 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     } finally {
       this.bulkSaving.set(false);
     }
+  }
+
+  bulkSetLabor(): void {
+    const raw = window.prompt('Set labor for selected pricing options (dollars):', '100');
+    if (raw == null) return;
+    const dollars = Number(raw);
+    if (!Number.isFinite(dollars) || dollars < 0) { this.toast.error('Enter a valid labor amount'); return; }
+    void this.runBulkAction('set_labor', Math.round(dollars * 100));
+  }
+
+  bulkAddLabor(): void {
+    const raw = window.prompt('Add this much labor to each selected option (dollars):', '25');
+    if (raw == null) return;
+    const dollars = Number(raw);
+    if (!Number.isFinite(dollars) || dollars < 0) { this.toast.error('Enter a valid amount'); return; }
+    void this.runBulkAction('increase_labor', Math.round(dollars * 100));
+  }
+
+  bulkSetDuration(): void {
+    const raw = window.prompt('Set booking duration for selected options (minutes):', '60');
+    if (raw == null) return;
+    const minutes = Number(raw);
+    if (!Number.isFinite(minutes) || minutes < 5) { this.toast.error('Enter a valid duration'); return; }
+    void this.runBulkAction('set_duration', Math.round(minutes));
   }
 
   deactivateOption(option: PricingOption): void {
@@ -986,6 +1180,9 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
 
     this.selectedOptionIds.set(new Set());
     if (view === 'list') this.pricingSearch$.next(q);
+    if (view === 'overview') await this.loadOverview();
+    if (view === 'rules') await this.loadRules();
+    if (view === 'suppliers') await this.loadSupplierHealth();
   }
 
   private async loadSetupSelection(
@@ -1298,7 +1495,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   }
 
   private parseViewMode(value: string | null): PricingViewMode {
-    return value === 'list' ? 'list' : 'setup';
+    return value === 'overview' || value === 'rules' || value === 'suppliers' || value === 'setup' || value === 'list' ? value : 'overview';
   }
 
   private parseSetupFilter(value: string | null): SetupFilter {

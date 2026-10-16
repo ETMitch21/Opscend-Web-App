@@ -20,6 +20,10 @@ import {
   RepairType,
   RepairTypeInput,
   ReorderResponse,
+  PricingOverview,
+  PricingRule,
+  PricingRuleInput,
+  SupplierPricingHealthRow,
 } from './model';
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +33,46 @@ export class RepairPricingService {
 
   private get baseUrl(): string {
     return `${this.appConfig.config.apiBase}/repair-pricing`;
+  }
+
+
+  getOverview(query: { categoryId?: string; brandId?: string } = {}): Observable<PricingOverview> {
+    let params = new HttpParams();
+    if (query.categoryId) params = params.set('categoryId', query.categoryId);
+    if (query.brandId) params = params.set('brandId', query.brandId);
+    return this.http.get<PricingOverview>(`${this.baseUrl}/overview`, { params });
+  }
+
+  listRules(): Observable<ListResponse<PricingRule>> {
+    return this.http.get<ListResponse<PricingRule>>(`${this.baseUrl}/rules`);
+  }
+
+  createRule(payload: PricingRuleInput): Observable<{ data: PricingRule; materialized: BulkAssignResponse }> {
+    return this.http.post<{ data: PricingRule; materialized: BulkAssignResponse }>(`${this.baseUrl}/rules`, payload);
+  }
+
+  updateRule(id: string, payload: Partial<PricingRuleInput>): Observable<{ data: PricingRule; materialized: BulkAssignResponse }> {
+    return this.http.patch<{ data: PricingRule; materialized: BulkAssignResponse }>(`${this.baseUrl}/rules/${encodeURIComponent(id)}`, payload);
+  }
+
+  applyRule(id: string): Observable<BulkAssignResponse> {
+    return this.http.post<BulkAssignResponse>(`${this.baseUrl}/rules/${encodeURIComponent(id)}/apply`, {});
+  }
+
+  deactivateRule(id: string): Observable<{ data: PricingRule }> {
+    return this.http.delete<{ data: PricingRule }>(`${this.baseUrl}/rules/${encodeURIComponent(id)}`);
+  }
+
+  listSupplierHealth(): Observable<ListResponse<SupplierPricingHealthRow>> {
+    return this.http.get<ListResponse<SupplierPricingHealthRow>>(`${this.baseUrl}/supplier-health`);
+  }
+
+  refreshSupplierHealth(id: string): Observable<{ checked: boolean; changed: boolean; costCents?: number | null; inStock?: boolean | null }> {
+    return this.http.post<{ checked: boolean; changed: boolean; costCents?: number | null; inStock?: boolean | null }>(`${this.baseUrl}/supplier-health/${encodeURIComponent(id)}/refresh`, {});
+  }
+
+  setSupplierMonitoring(id: string, priceMonitoringEnabled: boolean): Observable<{ data: SupplierPricingHealthRow }> {
+    return this.http.patch<{ data: SupplierPricingHealthRow }>(`${this.baseUrl}/supplier-health/${encodeURIComponent(id)}`, { priceMonitoringEnabled });
   }
 
   listRepairTypes(): Observable<ListResponse<RepairType>> {
