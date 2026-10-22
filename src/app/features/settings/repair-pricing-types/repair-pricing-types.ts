@@ -361,7 +361,7 @@ export class RepairPricingTypes implements OnInit {
     try {
       const [response, quickQuoteSettings] = await Promise.all([
         firstValueFrom(this.pricingApi.listRepairTypes()),
-        firstValueFrom(this.quickQuoteApi.getSettings()),
+        firstValueFrom(this.quickQuoteApi.getSettings()).catch(() => null),
       ]);
       this.repairTypes.set(
         [...(response.data ?? [])].sort(

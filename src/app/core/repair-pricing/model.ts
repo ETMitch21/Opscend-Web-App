@@ -122,6 +122,7 @@ export interface PricingOption {
     | 'missing_custom_amount'
     | null;
   laborCents: number | null;
+  manualPartCostCents: number | null;
   durationMins: number | null;
   allowInstantConfirmation: boolean;
   requiresManualReview: boolean;

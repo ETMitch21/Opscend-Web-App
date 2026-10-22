@@ -1740,7 +1740,8 @@ export class PublicBooking implements OnDestroy {
         this.bookingService.getAvailability(slug, {
           quoteId: quote.quoteId,
           days: 14,
-          slotMinutes: quote.durationMins,
+          // Appointment duration and start-time spacing are independent.
+          // Let the API apply its configured/default slot interval.
         })
       );
 

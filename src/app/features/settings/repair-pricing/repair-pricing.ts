@@ -1,13 +1,25 @@
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ProductsService } from '../../../core/products/products-service';
+import { MobileSentrixService } from '../../../core/mobilesentrix/mobilesentrix-service';
+import { MobileSentrixSearchResult } from '../../../core/mobilesentrix/mobilesentrix-model';
+import { mapMobileSentrixItems } from '../../../core/mobilesentrix/mobilesentrix-search-mapper';
+import { ServicesService } from '../../../core/services/service';
+import { Product } from '../../../core/products/products-model';
+import { Service } from '../../../core/services/model';
+import { RevoGrid, Editor, type Editors } from '@revolist/angular-datagrid';
+import { PricingSelectEditorComponent } from './pricing-select-editor';
+import { PricingGridLookups } from './pricing-grid-lookups';
 import {
   Component,
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   AlertCircleIcon,
   ArchiveIcon,
@@ -44,7 +56,6 @@ import {
 } from 'rxjs';
 
 import {
-  TypeaheadComponent,
   TypeaheadItem,
 } from '../../../core/ui/typeahead/typeahead';
 import {
@@ -55,6 +66,7 @@ import {
 } from '../../../core/techspecs/techspecs.service';
 import {
   PricingOption,
+  PricingOptionInput,
   PricingOptionBulkAction,
   PricingNotOffered,
   PricingOverview,
@@ -66,10 +78,11 @@ import {
 import { RepairPricingService } from '../../../core/repair-pricing/service';
 import { ToastService } from '../../../core/toast/toast-service';
 import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
+import { RepairTypesDrawer } from './repair-types-drawer/repair-types-drawer';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 type VisibilityFilter = 'all' | 'public' | 'internal';
-type PricingViewMode = 'overview' | 'rules' | 'suppliers' | 'setup' | 'list';
+type PricingViewMode = 'sheet' | 'overview' | 'rules' | 'suppliers' | 'setup' | 'list';
 type SetupFilter =
   | 'attention'
   | 'all'
@@ -111,15 +124,26 @@ interface SetupModelCard {
   percent: number;
 }
 
+interface GridPriceFields {
+  manualPartCostCents?: number | null;
+  laborCents?: number | null;
+  fixedPriceCents?: number | null;
+  useDynamicPricing?: boolean;
+  isPublic?: boolean;
+  isActive?: boolean;
+}
+interface GridPricePatch extends GridPriceFields { id: string; expectedUpdatedAt: string; }
+
 @Component({
   selector: 'app-repair-pricing',
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
+    FormsModule,
     LucideAngularModule,
     SettingsLayoutComponent,
-    TypeaheadComponent,
+    RepairTypesDrawer,
+    RevoGrid,
   ],
   templateUrl: './repair-pricing.html',
 })
@@ -129,6 +153,11 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   private readonly pricingApi = inject(RepairPricingService);
   private readonly catalogApi = inject(TechSpecsService);
   private readonly toast = inject(ToastService);
+  private readonly productsApi = inject(ProductsService);
+  private readonly mobileSentrixApi = inject(MobileSentrixService);
+  private readonly servicesApi = inject(ServicesService);
+  private readonly gridLookups = inject(PricingGridLookups);
+  private readonly gridChoicesSync = effect(() => { this.gridLookups.setChoices(this.gridChoices()); });
 
   readonly icons = {
     Alert: AlertCircleIcon,
@@ -153,6 +182,681 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     X: XIcon,
   };
 
+  // RevoGrid handles editing/selection. Writes are queued, sent automatically,
+  // and displayed optimistically until the API confirms them.
+  readonly gridBusy = signal(false);
+  readonly gridSaveError = signal<string | null>(null);
+  readonly gridOrigin = signal<{ row: number; col: number } | null>(null);
+  private readonly gridQueued = new Map<string, GridPricePatch>();
+  readonly gridDrafts = signal<Record<string, GridPriceFields>>({});
+  private gridFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  private gridFlushing = false;
+  // Dropdowns are real grid cell editors, not a second form above the worksheet.
+  readonly gridEditors: Editors = { pricingSelect: Editor(PricingSelectEditorComponent) };
+  readonly blankCount = signal(10);
+  readonly blankDrafts = signal<Record<string, Record<string, string>>>({});
+  readonly blankCreating = signal<Set<string>>(new Set());
+  readonly gridCatalogModels = signal<ManagedDeviceCatalogModel[]>([]);
+  readonly gridColumns = [
+    { prop: 'device', name: 'Device', size: 220, editor: 'pricingSelect' },
+    { prop: 'repair', name: 'Repair', size: 185, editor: 'pricingSelect' },
+    { prop: 'variant', name: 'Option', size: 135, editor: 'pricingSelect' },
+    { prop: 'part', name: 'Part cost ($)', size: 135 },
+    { prop: 'labor', name: 'Labor ($)', size: 110 },
+    { prop: 'price', name: 'Selling price ($)', size: 145 },
+    { prop: 'mode', name: 'Pricing mode', size: 140, editor: 'pricingSelect' },
+    { prop: 'visibility', name: 'Visibility', size: 125, editor: 'pricingSelect' },
+    { prop: 'status', name: 'Status', size: 110, editor: 'pricingSelect' },
+    { prop: 'actions', name: 'Actions', size: 116, pin: 'colPinEnd' as const, readonly: true, filter: false, sortable: false,
+      cellTemplate: (h: any, p: any) => {
+        const icon = (paths: string[]) => h('svg', {
+          xmlns: 'http://www.w3.org/2000/svg', width: '16', height: '16',
+          viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+          'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+          'aria-hidden': 'true',
+        }, paths.map(d => h('path', { d })));
+        const button = (label: string, paths: string[], action: () => void, danger = false) =>
+          h('button', {
+            type: 'button', title: label, 'aria-label': label,
+            onClick: (e: Event) => { e.stopPropagation(); action(); },
+            style: {
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: '28px', height: '28px', borderRadius: '6px',
+              border: '1px solid transparent', background: 'transparent',
+              color: danger ? '#dc2626' : 'var(--app-text, #64748b)', cursor: 'pointer',
+            },
+          }, [icon(paths)]);
+        return h('div', {
+          style: { display: 'flex', gap: '3px', alignItems: 'center',
+            justifyContent: 'center', height: '100%' },
+        }, [
+          button('Edit details', ['M12 20h9', 'M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z'], () => this.openGridDrawer(p.model.id)),
+          button('Reset row', ['M3 12a9 9 0 1 0 3-6.7', 'M3 3v6h6'], () => { void this.resetGridRow(p.model.id); }),
+          button('Delete row', ['M3 6h18', 'M8 6V4h8v2', 'M19 6l-1 14H6L5 6', 'M10 11v5', 'M14 11v5'], () => { void this.deleteGridRow(p.model.id); }, true),
+        ]);
+      },
+    },
+  ];
+  readonly gridChoices = computed(() => ({
+    device: this.gridCatalogModels().map(m => `${m.brandName} ${m.name}`),
+    repair: this.repairTypes().filter(t => t.isActive).map(t => t.label),
+    variant: [...new Set(['Standard', 'Economy', 'Premium', 'OEM', ...this.options().map(o => o.variantName)])],
+    mode: ['Automatic', 'Manual'],
+    visibility: ['Public', 'Private'],
+    status: ['Active', 'Inactive'],
+  }));
+  readonly gridRows = computed(() => {
+    const choices = this.gridChoices();
+    const existing = this.sheetOptions().map(option => {
+      const changed = this.gridDrafts()[option.id] || {};
+      const labor = changed.laborCents !== undefined ? changed.laborCents : option.laborCents;
+      const fixed = changed.fixedPriceCents !== undefined ? changed.fixedPriceCents : option.fixedPriceCents;
+      const dynamic = changed.useDynamicPricing !== undefined ? changed.useDynamicPricing : option.useDynamicPricing;
+      return {
+        id: option.id,
+        device: this.modelLabel(option), repair: option.repairType.label, variant: option.variantName,
+        part: changed.manualPartCostCents !== undefined
+          ? (changed.manualPartCostCents == null ? '' : (changed.manualPartCostCents / 100).toFixed(2))
+          : option.manualPartCostCents != null ? (option.manualPartCostCents / 100).toFixed(2)
+          : option.productSupplier?.lastKnownCostCents != null
+          ? (option.productSupplier.lastKnownCostCents / 100).toFixed(2)
+          : option.product?.costCents != null ? (option.product.costCents / 100).toFixed(2) : '', 
+        labor: labor == null ? '' : (labor / 100).toFixed(2),
+        price: dynamic ? '' : fixed == null ? '' : (fixed / 100).toFixed(2),
+        mode: dynamic ? 'Automatic' : 'Manual',
+        visibility: (changed.isPublic ?? option.isPublic) ? 'Public' : 'Private',
+        status: (changed.isActive ?? option.isActive) ? 'Active' : 'Inactive', actions: '',
+        _choices: choices,
+      };
+    });
+    const empty = Array.from({ length: this.blankCount() }, (_, i) => {
+      const id = `blank:${i}`;
+      const draft = this.blankDrafts()[id] ?? {};
+      return {
+        id, device: draft['device'] || '', repair: draft['repair'] || '',
+        variant: draft['variant'] || 'Standard', part: draft['part'] || '', labor: draft['labor'] || '',
+        price: draft['price'] || '', mode: draft['mode'] || 'Manual',
+        visibility: 'Private', status: 'Inactive', actions: '', _choices: choices,
+      };
+    });
+    return [...existing, ...empty];
+  });
+
+  private async loadGridCatalog(): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.catalogApi.searchManagedModels({ includeInactive: false, limit: 1000 }));
+      this.gridCatalogModels.set(response.data || []);
+      this.gridLookups.addModels(response.data || []);
+    } catch (error) {
+      console.error('Unable to load worksheet device choices', error);
+      this.gridCatalogModels.set(this.modelSuggestions());
+    }
+  }
+
+  private gridModelFromLabel(value: string): ManagedDeviceCatalogModel | undefined {
+    return this.gridLookups.findModel(value) ?? this.gridCatalogModels().find(m => `${m.brandName} ${m.name}` === value);
+  }
+
+  private async saveBlankRow(id: string): Promise<void> {
+    const draft = this.blankDrafts()[id];
+    const model = this.gridModelFromLabel(draft?.['device'] || '');
+    const repair = this.repairTypes().find(t => t.label === draft?.['repair'] && t.isActive);
+    if (!model || !repair || this.blankCreating().has(id)) return;
+    if (repair.quoteAttributeKeys.length) {
+      this.toast.error('This repair needs additional quote attributes. Use New repair for its setup.');
+      return;
+    }
+    this.blankCreating.update(v => new Set([...v, id]));
+    try {
+      // Avoid creating a duplicate variant for the same model and repair.
+      const variantName = draft['variant']?.trim() || 'Standard';
+      const duplicate = this.options().find(o => o.deviceCatalogModelId === model.id && o.repairNeedId === repair.id && o.variantName.toLowerCase() === variantName.toLowerCase());
+      if (duplicate) {
+        this.toast.error('That device, repair and option already exists. Edit its existing row.');
+        return;
+      }
+      const labor = draft['labor']?.trim() ? this.gridMoney(draft['labor']) : repair.defaultLaborCents;
+      const price = draft['price']?.trim() ? this.gridMoney(draft['price']) : null;
+      if (labor === undefined || price === undefined) { this.toast.error('Enter a valid amount.'); return; }
+      const created = await firstValueFrom(this.pricingApi.createOption({
+        deviceCatalogModelId: model.id, repairNeedId: repair.id, variantName,
+        laborCents: labor, fixedPriceCents: price, useDynamicPricing: false,
+        durationMins: repair.defaultDurationMins, requiresProduct: false,
+        isActive: false, isPublic: false,
+      }));
+      // Cost is saved as a per-option override after creation, never on the shared supplier product.
+      let finalOption = created;
+      if (draft['part']?.trim()) {
+        const cents = this.gridMoney(draft['part']);
+        if (cents === undefined) { this.toast.error('Invalid part cost; draft created without that cost.'); }
+        else {
+          const saved = await firstValueFrom(this.pricingApi.batchUpdatePrices([{ id: created.id, expectedUpdatedAt: created.updatedAt, manualPartCostCents: cents }]));
+          finalOption = saved.data[0] || created;
+        }
+      }
+      this.options.update(rows => rows.some(o => o.id === finalOption.id) ? rows : [...rows, finalOption]);
+      this.blankDrafts.update(rows => { const next = { ...rows }; delete next[id]; return next; });
+      this.toast.success('Private draft created');
+    } catch (error) {
+      console.error('Could not create pricing worksheet row', error);
+      this.toast.error('Could not create repair. Check for duplicates or retry.');
+    } finally {
+      this.blankCreating.update(v => { const next = new Set(v); next.delete(id); return next; });
+    }
+  }
+
+  private async updateExistingChoice(option: PricingOption, prop: string, value: string): Promise<void> {
+    const payload: Partial<PricingOptionInput> = {};
+    if (prop === 'repair') {
+      const repair = this.repairTypes().find(t => t.label === value && t.isActive);
+      if (!repair) { this.toast.error('Select a valid repair type'); return; }
+      if (repair.quoteAttributeKeys.length) { this.toast.error('This repair requires quote attributes. Use Details to change it.'); return; }
+      payload.repairNeedId = repair.id;
+    } else if (prop === 'variant') {
+      if (!value.trim()) return;
+      payload.variantName = value.trim();
+    } else return;
+    const repairId = payload.repairNeedId || option.repairNeedId;
+    const variantName = payload.variantName || option.variantName;
+    if (this.options().some(o => o.id !== option.id && o.deviceCatalogModelId === option.deviceCatalogModelId && o.repairNeedId === repairId && o.variantName.toLowerCase() === variantName.toLowerCase())) {
+      this.toast.error('This pricing option already exists for the device.'); return;
+    }
+    try {
+      const result = await firstValueFrom(this.pricingApi.updateOption(option.id, payload));
+      this.options.update(rows => rows.map(o => o.id === option.id ? result : o));
+    } catch (error) {
+      console.error('Could not update worksheet repair/option', error);
+      this.toast.error('Could not save repair or option');
+    }
+  }
+
+  private gridMoney(value: unknown): number | null | undefined {
+    if (value == null || String(value).trim() === '') return null;
+    const clean = String(value).trim().replace(/^\$/, '').replace(/,/g, '');
+    if (!/^(?:\d+)(?:\.\d{1,2})?$/.test(clean)) return undefined;
+    const cents = Math.round(Number(clean) * 100);
+    return Number.isSafeInteger(cents) && cents <= 100000000 ? cents : undefined;
+  }
+
+  onGridFocus(event: CustomEvent): void {
+    const detail = event.detail as { model?: { id?: string }; prop?: string; cell?: { x?: number; y?: number }; rowIndex?: number; colIndex?: number } | undefined;
+    const row = detail?.model?.id
+      ? this.gridRows().findIndex(option => option.id === detail.model?.id)
+      : (detail?.cell?.y ?? detail?.rowIndex);
+    const col = detail?.prop
+      ? this.gridColumns.findIndex(column => column.prop === detail.prop)
+      : (detail?.cell?.x ?? detail?.colIndex);
+    if (typeof row === 'number' && row >= 0 && typeof col === 'number' && col >= 0)
+      this.gridOrigin.set({ row, col });
+  }
+
+  private gridParse(prop: string, value: unknown): GridPriceFields | null {
+    if (prop === 'labor' || prop === 'price' || prop === 'part') {
+      const cents = this.gridMoney(value);
+      if (cents === undefined) return null;
+      return prop === 'labor' ? { laborCents: cents } : prop === 'part' ? { manualPartCostCents: cents } : { fixedPriceCents: cents, useDynamicPricing: false };
+    }
+    const normalized = String(value ?? '').trim().toLowerCase();
+    if (prop === 'mode') {
+      if (normalized === 'automatic' || normalized === 'auto') return { useDynamicPricing: true };
+      if (normalized === 'manual') return { useDynamicPricing: false };
+    }
+    if (prop === 'visibility') {
+      if (normalized === 'public') return { isPublic: true };
+      if (normalized === 'private' || normalized === 'internal') return { isPublic: false };
+    }
+    if (prop === 'status') {
+      if (normalized === 'active') return { isActive: true };
+      if (normalized === 'inactive') return { isActive: false };
+    }
+    return null;
+  }
+
+  private queueGridPatch(option: PricingOption, fields: GridPriceFields): void {
+    const old = this.gridQueued.get(option.id);
+    this.gridQueued.set(option.id, { ...old, id: option.id, expectedUpdatedAt: option.updatedAt, ...fields });
+    this.gridDrafts.update(all => ({ ...all, [option.id]: { ...all[option.id], ...fields } }));
+    this.gridSaveError.set(null);
+    if (this.gridFlushTimer) clearTimeout(this.gridFlushTimer);
+    this.gridFlushTimer = setTimeout(() => { this.gridFlushTimer = null; void this.flushGridChanges(); }, 180);
+  }
+
+  onGridEdit(event: CustomEvent): void {
+    event.preventDefault(); // Controlled optimistic update; server stays authoritative.
+    const detail = event.detail as { model?: { id?: string }; prop?: string; val?: unknown };
+    const id = detail.model?.id;
+    if (!id || !detail.prop) return;
+    if (id.startsWith('blank:')) {
+      if ((detail.prop === 'repair' || detail.prop === 'variant') && String(detail.val ?? '').startsWith('__create__:')) { void this.resolveNewGridChoice(id, detail.prop, String(detail.val).slice(11)); return; }
+      const choices = this.gridChoices() as Record<string, string[]>;
+      const value = String(detail.val ?? '').trim();
+      if (['device', 'repair', 'variant', 'mode', 'visibility', 'status'].includes(detail.prop) && !(detail.prop === 'device' ? !!this.gridModelFromLabel(value) : (choices[detail.prop] || []).includes(value))) {
+        this.toast.error('Select a known value from the dropdown.'); return;
+      }
+      if (['device', 'repair', 'variant', 'part', 'labor', 'price'].includes(detail.prop)) {
+        this.blankDrafts.update(rows => ({ ...rows, [id]: { ...rows[id], [detail.prop!]: value } }));
+        // Create after choosing device + repair, allowing subsequent cells to
+        // be included when a row is pasted or edited quickly.
+        if (this.blankDrafts()[id]?.['device'] && this.blankDrafts()[id]?.['repair']) {
+          void this.saveBlankRow(id);
+        }
+      }
+      return;
+    }
+    const option = this.sheetOptions().find(row => row.id === id);
+    if (!option) return;
+    if (detail.prop === 'device') {
+      this.toast.error('Changing the device on an existing price is not supported. Create a new row instead.'); return;
+    }
+    if ((detail.prop === 'repair' || detail.prop === 'variant') && String(detail.val ?? '').startsWith('__create__:')) { void this.resolveNewGridChoice(id, detail.prop, String(detail.val).slice(11)); return; }
+    if (detail.prop === 'repair' || detail.prop === 'variant') {
+      void this.updateExistingChoice(option, detail.prop, String(detail.val ?? ''));
+      return;
+    }
+    const fields = this.gridParse(detail.prop, detail.val);
+    if (!fields) { this.toast.error('Invalid cell value. Use a valid amount or Automatic/Manual, Public/Private, Active/Inactive.'); return; }
+    if (fields.useDynamicPricing === true && !option.requiresProduct) {
+      this.toast.error('Automatic pricing requires a linked part.'); return;
+    }
+    this.queueGridPatch(option, fields);
+  }
+
+  onGridPaste(event: CustomEvent): void {
+    event.preventDefault();
+    const details = event.detail as { parsed?: string[][]; raw?: string };
+    const matrix = details?.parsed?.length ? details.parsed
+      : String(details?.raw || '').replace(/\r/g, '').split('\n').filter(Boolean).map(line => line.split('\t'));
+    const origin = this.gridOrigin();
+    if (!origin || !matrix.length) { this.toast.error('Select a destination cell before pasting.'); return; }
+    const pending = new Map<string, { option: PricingOption; fields: GridPriceFields }>();
+    for (let y = 0; y < matrix.length; y++) {
+      const gridRow = this.gridRows()[origin.row + y];
+      if (!gridRow) { this.toast.error('Paste exceeds the displayed rows.'); return; }
+      if (gridRow.id.startsWith('blank:')) {
+        const draft = { ...(this.blankDrafts()[gridRow.id] || {}) };
+        for (let x = 0; x < matrix[y].length; x++) {
+          const prop = this.gridColumns[origin.col + x]?.prop;
+          if (prop && ['device', 'repair', 'variant', 'part', 'labor', 'price'].includes(prop)) draft[prop] = matrix[y][x];
+        }
+        this.blankDrafts.update(rows => ({ ...rows, [gridRow.id]: draft }));
+        if (draft['device'] && draft['repair']) void this.saveBlankRow(gridRow.id);
+        continue;
+      }
+      const option = this.sheetOptions().find(o => o.id === gridRow.id);
+      if (!option) continue;
+      for (let x = 0; x < matrix[y].length; x++) {
+        const prop = this.gridColumns[origin.col + x]?.prop;
+        if (!['part', 'labor', 'price', 'mode', 'visibility', 'status'].includes(prop)) continue;
+        const fields = this.gridParse(prop, matrix[y][x]);
+        if (!fields || (fields.useDynamicPricing === true && !option.requiresProduct)) {
+          this.toast.error(`Invalid value in pasted row ${y + 1}, column ${x + 1}. Nothing was saved.`);
+          return;
+        }
+        const previous = pending.get(option.id);
+        pending.set(option.id, { option, fields: { ...previous?.fields, ...fields } });
+      }
+    }
+    if (!pending.size && !matrix.some((_, i) => this.gridRows()[origin.row + i]?.id.startsWith('blank:'))) { this.toast.error('No editable price cells found.'); return; }
+    pending.forEach(({ option, fields }) => this.queueGridPatch(option, fields));
+  }
+
+  // An in-page details sheet; never navigate away from the worksheet.
+  readonly repairTypesDrawerOpen = signal(false);
+  async closeRepairTypesDrawer(): Promise<void> {
+    this.repairTypesDrawerOpen.set(false);
+    try {
+      const response = await firstValueFrom(this.pricingApi.listRepairTypes());
+      this.repairTypes.set(this.sortRepairTypes(response.data ?? []));
+      await this.loadOptions(this.pricingSearch());
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Could not refresh repair types');
+    }
+  }
+  readonly gridDrawerId = signal<string | null>(null);
+  readonly gridDrawerBusy = signal(false);
+  readonly gridDrawerProductSearch = signal('');
+  readonly gridDrawerServiceSearch = signal('');
+  readonly gridDrawerProducts = signal<Product[]>([]);
+  readonly gridDrawerSearchBusy = signal(false);
+  readonly gridDrawerSearchError = signal(false);
+  readonly gridDrawerLinkedProduct = signal<Product | null>(null);
+  private gridDrawerProductSearchSerial = 0;
+  readonly gridDrawerServices = signal<Service[]>([]);
+  readonly gridDrawerOption = computed(() => this.options().find(o => o.id === this.gridDrawerId()) ?? null);
+  readonly gridDrawerForm = signal<Partial<PricingOptionInput>>({});
+  readonly gridDrawerError = signal<string | null>(null);
+  readonly gridDrawerTabs = [
+    { id: 'repair', label: 'Repair & pricing' },
+    { id: 'parts', label: 'Parts & suppliers' },
+    { id: 'checkout', label: 'Checkout & customer' },
+  ] as const;
+  readonly gridDrawerPanel = signal<'repair' | 'parts' | 'checkout'>('repair');
+  readonly gridDrawerSupplierQuery = signal('');
+  readonly gridDrawerSupplierResults = signal<MobileSentrixSearchResult[]>([]);
+  readonly gridDrawerSupplierBusy = signal(false);
+  readonly gridDrawerSupplierError = signal<string | null>(null);
+  readonly gridDrawerSupplierSource = signal<string | null>(null);
+  readonly gridDrawerImporting = signal<string | null>(null);
+  readonly gridDrawerAttributeKeys = computed(() =>
+    this.repairTypes().find(type => type.id === this.gridDrawerOption()?.repairNeedId)?.quoteAttributeKeys ?? []
+  );
+  gridAttributeLabel(key: string): string {
+    const names: Record<string, string> = {
+      color: 'Color', storage: 'Storage capacity', carrier: 'Carrier',
+      connectivity: 'Connectivity', region: 'Region',
+      model_variant: 'Model variant', keyboard_layout: 'Keyboard layout',
+    };
+    return names[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+  updateGridDrawerAttribute(key: string, value: string): void {
+    this.gridDrawerForm.update(form => ({ ...form, attributeValues: {
+      ...(form.attributeValues ?? {}), [key]: value,
+    } }));
+  }
+  async searchGridDrawerSupplier(): Promise<void> {
+    const query = this.gridDrawerSupplierQuery().trim();
+    if (query.length < 2 || this.gridDrawerSupplierBusy()) return;
+    const optionId = this.gridDrawerId();
+    this.gridDrawerSupplierBusy.set(true);
+    this.gridDrawerSupplierError.set(null);
+    try {
+      const response = await firstValueFrom(this.mobileSentrixApi.search({ q: query, maxResults: 20 }));
+      if (this.gridDrawerId() !== optionId) return;
+      this.gridDrawerSupplierResults.set(mapMobileSentrixItems(response.items ?? []));
+      this.gridDrawerSupplierSource.set(response.source ?? null);
+      if (response.unavailable || response.requiresReconnect) {
+        this.gridDrawerSupplierError.set(response.warning || 'Supplier search is unavailable. Check the supplier connection.');
+      } else if (response.warning) {
+        this.gridDrawerSupplierError.set(response.warning);
+      }
+    } catch (error) {
+      console.error('Supplier lookup failed', error);
+      this.gridDrawerSupplierError.set('Could not search MobileSentrix. Try again.');
+      this.gridDrawerSupplierResults.set([]);
+    } finally { this.gridDrawerSupplierBusy.set(false); }
+  }
+  async importGridDrawerSupplier(result: MobileSentrixSearchResult): Promise<void> {
+    if (!result.sku || this.gridDrawerImporting()) return;
+    const optionId = this.gridDrawerId();
+    this.gridDrawerImporting.set(result.id);
+    try {
+      let product: Product;
+      try {
+        product = await firstValueFrom(this.productsApi.create({
+          name: result.title, sku: null,
+          priceCents: result.costCents ?? 0, costCents: result.costCents,
+          tags: ['supplier-import', 'pricing-setup'],
+          supplierLink: {
+            provider: 'mobilesentrix', supplierName: 'MobileSentrix',
+            supplierSku: result.sku, supplierProductId: result.id,
+            supplierProductName: result.title, supplierUrl: result.link,
+            lastKnownCostCents: result.costCents, lastKnownInStock: result.inStock,
+            isPreferred: true,
+          },
+        }));
+      } catch (error: any) {
+        // The supplier SKU is already linked to an inventory product. Reuse that
+        // record instead of creating a duplicate, but never select an unrelated hit.
+        if (error?.status !== 409 && error?.error?.error !== 'duplicate_supplier_sku') throw error;
+        const found = await firstValueFrom(this.productsApi.search(result.sku, 50));
+        const match = found.find(p => p.supplierLinks?.some(link => link.supplierSku === result.sku));
+        if (!match) throw error;
+        product = await firstValueFrom(this.productsApi.getById(match.id));
+      }
+      if (this.gridDrawerId() !== optionId) return;
+      this.gridDrawerProducts.update(products => [product, ...products.filter(p => p.id !== product.id)]);
+      this.selectGridDrawerProduct(product.id);
+      this.gridDrawerSupplierResults.set([]);
+      this.toast.success('Supplier part selected. Save details to link it to this repair.');
+    } catch (error) {
+      console.error('Supplier import failed', error);
+      this.gridDrawerSupplierError.set('Could not import this supplier part. Nothing was linked to the repair.');
+    } finally { this.gridDrawerImporting.set(null); }
+  }
+
+  readonly gridDrawerSelectedProduct = computed(() => this.gridDrawerProducts().find(p => p.id === this.gridDrawerForm().productId) ?? (this.gridDrawerLinkedProduct()?.id === this.gridDrawerForm().productId ? this.gridDrawerLinkedProduct() : null));
+  readonly gridDrawerSupplierLinks = computed(() => this.gridDrawerSelectedProduct()?.supplierLinks ?? []);
+  selectGridDrawerProduct(id: string): void {
+    const product = this.gridDrawerProducts().find(p => p.id === id) ?? (this.gridDrawerLinkedProduct()?.id === id ? this.gridDrawerLinkedProduct() : null);
+    if (product) this.gridDrawerLinkedProduct.set(product);
+    if (id) this.gridDrawerProductSearch.set('');
+    this.gridDrawerForm.update(form => ({ ...form, productId: id || null,
+      productSupplierId: product?.supplierLinks?.find(link => link.id === form.productSupplierId)?.id
+        ?? product?.supplierLinks?.find(link => link.isPreferred)?.id
+        ?? (product?.supplierLinks?.length === 1 ? product.supplierLinks[0]!.id : null),
+    }));
+  }
+
+  readonly gridDrawerPartCostCents = computed(() => {
+    const option = this.gridDrawerOption();
+    if (!option) return null;
+    if (option.manualPartCostCents !== null) return option.manualPartCostCents;
+    const product = this.gridDrawerSelectedProduct();
+    const supplierId = this.gridDrawerForm().productSupplierId;
+    const supplier = product?.supplierLinks?.find(link => link.id === supplierId);
+    return supplier?.lastKnownCostCents ?? (product?.cost == null ? null : Math.round(product.cost * 100)) ?? option.productSupplier?.lastKnownCostCents ?? option.product?.costCents ?? null;
+  });
+  gridDollars(cents: number | null | undefined): number { return (cents ?? 0) / 100; }
+  gridCents(dollars: unknown): number { return Math.round(Number(dollars || 0) * 100); }
+
+  openGridDrawer(id: string): void {
+    if (id.startsWith('blank:')) { this.toast.error('Choose a device and repair first.'); return; }
+    const option = this.options().find(row => row.id === id);
+    if (!option) return;
+    this.gridDrawerId.set(id);
+    this.gridDrawerPanel.set('repair');
+    this.gridDrawerSupplierQuery.set('');
+    this.gridDrawerSupplierResults.set([]);
+    this.gridDrawerSupplierError.set(null);
+    this.gridDrawerError.set(null);
+    this.gridDrawerLinkedProduct.set(null);
+    this.gridDrawerProductSearch.set('');
+    if (option.productId) void this.loadGridDrawerLinkedProduct(option.productId);
+    this.gridDrawerForm.set({
+      description: option.description, serviceId: option.serviceId, productId: option.productId,
+      fixedPriceCents: option.fixedPriceCents, laborCents: option.laborCents, useDynamicPricing: option.useDynamicPricing,
+      productSupplierId: option.productSupplierId, requiresProduct: option.requiresProduct,
+      depositMode: option.depositMode, depositAmountCents: option.depositAmountCents,
+      depositShippingCents: option.depositShippingCents,
+      depositIncludeProcessingFees: option.depositIncludeProcessingFees,
+      depositIncludeInstantPayoutFee: option.depositIncludeInstantPayoutFee,
+      durationMins: option.durationMins, requiresManualReview: option.requiresManualReview,
+      allowInstantConfirmation: option.allowInstantConfirmation,
+      publicBadgeText: option.publicBadgeText, publicFeatured: option.publicFeatured,
+      attributeValues: { ...(option.attributeValues ?? {}) },
+    });
+    void this.searchGridDrawerServices('');
+  }
+  closeGridDrawer(): void { this.gridDrawerId.set(null); this.gridDrawerPanel.set('repair'); this.gridDrawerError.set(null); }
+  updateGridDrawerField<K extends keyof PricingOptionInput>(key: K, value: PricingOptionInput[K]): void {
+    this.gridDrawerForm.update(v => ({ ...v, [key]: value }));
+  }
+  private async loadGridDrawerLinkedProduct(id: string): Promise<void> {
+    try {
+      const product = await firstValueFrom(this.productsApi.getById(id));
+      if (this.gridDrawerId() && this.gridDrawerForm().productId === id) this.gridDrawerLinkedProduct.set(product);
+    } catch { /* An unavailable product remains linked; saving does not clear its ID. */ }
+  }
+  async searchGridDrawerProducts(query: string): Promise<void> {
+    this.gridDrawerProductSearch.set(query);
+    const serial = ++this.gridDrawerProductSearchSerial;
+    if (!query.trim()) {
+      this.gridDrawerProducts.set([]);
+      this.gridDrawerSearchBusy.set(false);
+      this.gridDrawerSearchError.set(false);
+      return;
+    }
+    this.gridDrawerSearchBusy.set(true);
+    this.gridDrawerSearchError.set(false);
+    try {
+      const products = await firstValueFrom(this.productsApi.search(query.trim(), 40));
+      if (serial === this.gridDrawerProductSearchSerial) this.gridDrawerProducts.set(products);
+    } catch {
+      if (serial === this.gridDrawerProductSearchSerial) {
+        this.gridDrawerProducts.set([]);
+        this.gridDrawerSearchError.set(true);
+      }
+    } finally {
+      if (serial === this.gridDrawerProductSearchSerial) this.gridDrawerSearchBusy.set(false);
+    }
+  }
+  async searchGridDrawerServices(query: string): Promise<void> {
+    this.gridDrawerServiceSearch.set(query);
+    try { this.gridDrawerServices.set(await firstValueFrom(this.servicesApi.search(query, 40))); }
+    catch { this.gridDrawerServices.set([]); }
+  }
+  async saveGridDrawer(): Promise<void> {
+    const missingAttributes = this.gridDrawerAttributeKeys().filter(key => !this.gridDrawerForm().attributeValues?.[key]?.trim());
+    if (missingAttributes.length) { this.gridDrawerError.set('Complete the required repair attributes: ' + missingAttributes.map(key => this.gridAttributeLabel(key)).join(', ')); return; }
+    const option = this.gridDrawerOption();
+    if (!option || this.gridDrawerBusy()) return;
+    if (this.gridQueued.has(option.id) || this.gridBusy()) { this.gridDrawerError.set('Wait for worksheet autosave to finish first.'); return; }
+    this.gridDrawerBusy.set(true); this.gridDrawerError.set(null);
+    try {
+      const saved = await firstValueFrom(this.pricingApi.updateOption(option.id, this.gridDrawerForm()));
+      this.options.update(rows => rows.map(row => row.id === saved.id ? saved : row));
+      this.toast.success('Details saved');
+      this.closeGridDrawer();
+    } catch (error) { console.error(error); this.gridDrawerError.set('Could not save details. Check required fields and retry.'); }
+    finally { this.gridDrawerBusy.set(false); }
+  }
+
+  private normalizedValue(v: string): string { return v.trim().replace(/\s+/g, ' ').toLocaleLowerCase(); }
+  private async resolveNewGridChoice(id: string, prop: string, requested: string): Promise<void> {
+    const name = requested.trim().replace(/\s+/g, ' ');
+    if (!name || (prop !== 'repair' && prop !== 'variant')) return;
+    const matchingRepair = this.repairTypes().find(r => this.normalizedValue(r.label) === this.normalizedValue(name));
+    const matchingOption = this.gridChoices().variant.find(v => this.normalizedValue(v) === this.normalizedValue(name));
+    if (prop === 'repair' && matchingRepair) { this.applyResolvedChoice(id, prop, matchingRepair.label); return; }
+    if (prop === 'variant' && matchingOption) { this.applyResolvedChoice(id, prop, matchingOption); return; }
+    const label = prop === 'repair' ? 'repair type' : 'option name';
+    this.toast.confirm(`Create new ${label}?`, () => {
+      void (async () => {
+        try {
+          let value = name;
+          if (prop === 'repair') {
+            // API enforces unique code; use a stable human-readable slug and reject collisions server-side.
+            const existing = this.repairTypes().find(r => this.normalizedValue(r.label) === this.normalizedValue(name));
+            if (existing) value = existing.label;
+            else {
+              const code = 'custom-' + name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 55);
+              const created = await firstValueFrom(this.pricingApi.createRepairType({ label: name, code, isActive: true }));
+              this.repairTypes.update(rows => [...rows, created]);
+              value = created.label;
+            }
+          } else {
+            // Option names are stored on pricing rows, not in a separate option catalog.
+            this.gridLookups.addOptionName(name);
+          }
+          this.applyResolvedChoice(id, prop, value);
+          this.toast.success(`${prop === 'repair' ? 'Repair type' : 'Option name'} ready`);
+        } catch (error) {
+          console.error(error); this.toast.error('Could not create the value. It may already exist. Refresh and retry.');
+        }
+      })();
+    }, `“${name}” will be available in the pricing worksheet.`, `Create ${label}`);
+  }
+  private applyResolvedChoice(id: string, prop: string, value: string): void {
+    if (id.startsWith('blank:')) {
+      this.blankDrafts.update(rows => ({ ...rows, [id]: { ...rows[id], [prop]: value } }));
+      const draft = this.blankDrafts()[id];
+      if (draft?.['device'] && draft?.['repair']) void this.saveBlankRow(id);
+    } else {
+      const option = this.options().find(row => row.id === id);
+      if (option) void this.updateExistingChoice(option, prop, value);
+    }
+  }
+
+  readonly gridRowActionBusy = signal(false);
+  readonly gridSelectedRowId = computed(() => {
+    const index = this.gridOrigin()?.row;
+    return index == null ? null : this.gridRows()[index]?.id ?? null;
+  });
+
+  clearSelectedBlankRow(): void {
+    const id = this.gridSelectedRowId();
+    if (!id?.startsWith('blank:')) return;
+    this.blankDrafts.update(rows => { const next = { ...rows }; delete next[id]; return next; });
+  }
+
+  async resetSelectedGridRow(): Promise<void> { return this.resetGridRow(this.gridSelectedRowId()); }
+  async resetGridRow(id: string | null): Promise<void> {
+    if (!id) return;
+    if (id.startsWith('blank:')) { this.blankDrafts.update(rows => { const next={...rows}; delete next[id]; return next; }); return; }
+    this.toast.confirm('Reset this pricing row?', () => void this.performGridReset(id), 'Clears labor, price and manual part cost; makes the row inactive and private.', 'Reset row'); return;
+  }
+  private async performGridReset(id: string): Promise<void> {
+    if (this.gridQueued.has(id) || this.gridBusy()) { this.toast.error('Wait for pending changes to save before resetting.'); return; }
+    this.gridRowActionBusy.set(true);
+    try {
+      const updated = await firstValueFrom(this.pricingApi.resetWorksheetOption(id));
+      this.options.update(rows => rows.map(row => row.id === id ? updated : row));
+      this.gridDrafts.update(rows => { const next = { ...rows }; delete next[id]; return next; });
+      this.toast.success('Pricing row reset');
+    } catch (error) { console.error(error); this.toast.error('Could not reset this row'); }
+    finally { this.gridRowActionBusy.set(false); }
+  }
+
+  async deleteSelectedGridRow(): Promise<void> { return this.deleteGridRow(this.gridSelectedRowId()); }
+  async deleteGridRow(id: string | null): Promise<void> {
+    if (!id) return;
+    if (id.startsWith('blank:')) { this.blankDrafts.update(rows => { const next={...rows}; delete next[id]; return next; }); return; }
+    this.toast.confirm('Permanently delete pricing row?', () => void this.performGridDelete(id), 'Cannot be undone. Pricing options used by quotes or repairs cannot be deleted.', 'Delete row'); return;
+  }
+  private async performGridDelete(id: string): Promise<void> {
+    if (this.gridQueued.has(id) || this.gridBusy()) { this.toast.error('Wait for pending changes to save before deleting.'); return; }
+    this.gridRowActionBusy.set(true);
+    try {
+      await firstValueFrom(this.pricingApi.deleteWorksheetOption(id));
+      this.options.update(rows => rows.filter(row => row.id !== id));
+      this.gridDrafts.update(rows => { const next = { ...rows }; delete next[id]; return next; });
+      this.gridOrigin.set(null);
+      this.toast.success('Pricing row deleted');
+    } catch (error) { console.error(error); this.toast.error('Could not delete. If this option was used in a quote or repair, set it Inactive instead.'); }
+    finally { this.gridRowActionBusy.set(false); }
+  }
+
+  private async flushGridChanges(): Promise<void> {
+    if (this.gridFlushing || !this.gridQueued.size) return;
+    this.gridFlushing = true;
+    this.gridBusy.set(true);
+    try {
+      while (this.gridQueued.size) {
+        const changes = [...this.gridQueued.values()].slice(0, 100);
+        changes.forEach(change => this.gridQueued.delete(change.id));
+        try {
+          const result = await firstValueFrom(this.pricingApi.batchUpdatePrices(changes));
+          const byId = new Map(result.data.map(row => [row.id, row]));
+          this.options.update(options => options.map(row => byId.get(row.id) || row));
+          // A user may edit a row again while its previous save is in flight.
+          // Carry forward the new row version so the next save does not conflict.
+          changes.forEach(change => {
+            const next = this.gridQueued.get(change.id);
+            const saved = byId.get(change.id);
+            if (next && saved) this.gridQueued.set(change.id, { ...next, expectedUpdatedAt: saved.updatedAt });
+          });
+          this.gridDrafts.update(all => {
+            const next = { ...all };
+            changes.forEach(change => { if (!this.gridQueued.has(change.id)) delete next[change.id]; });
+            return next;
+          });
+        } catch (error) {
+          console.error('Pricing worksheet autosave failed', error);
+          // Don't silently discard the edit. Keep the pending value visible and retryable.
+          changes.forEach(change => { if (!this.gridQueued.has(change.id)) this.gridQueued.set(change.id, change); });
+          this.gridSaveError.set('Changes could not be saved. Check your connection or reload if another user edited these prices.');
+          break;
+        }
+      }
+    } finally {
+      this.gridFlushing = false;
+      this.gridBusy.set(false);
+    }
+  }
+
+  retryGridSave(): void { void this.flushGridChanges(); }
+
   readonly initialLoading = signal(true);
   readonly listLoading = signal(false);
   readonly modelLoading = signal(false);
@@ -171,7 +875,12 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   readonly brandModels = signal<ManagedDeviceCatalogModel[]>([]);
 
   readonly pricingSearch = signal('');
-  readonly viewMode = signal<PricingViewMode>('overview');
+  readonly viewMode = signal<PricingViewMode>('sheet');
+  readonly sheetSaving = signal<Set<string>>(new Set());
+  readonly sheetErrors = signal<Record<string, string>>({});
+  readonly sheetFilter = signal<'all' | 'unpriced' | 'active'>('all');
+  readonly sheetDrafts = signal<Record<string, string>>({});
+  readonly sheetCreating = signal<Set<string>>(new Set());
   readonly overview = signal<PricingOverview | null>(null);
   readonly pricingRules = signal<PricingRule[]>([]);
   readonly supplierHealth = signal<SupplierPricingHealthRow[]>([]);
@@ -401,6 +1110,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
       );
 
       this.modelSearch$.next('');
+      void this.loadGridCatalog();
     } catch (error) {
       console.error(error);
       this.error.set('Repair pricing could not be loaded.');
@@ -471,6 +1181,12 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
       status: null,
       visibility: null,
     });
+  }
+
+  onPricingToolSelected(value: string): void {
+    if (value === 'overview' || value === 'rules' || value === 'suppliers' || value === 'list' || value === 'setup') {
+      this.setViewMode(value);
+    }
   }
 
   setViewMode(value: PricingViewMode): void {
@@ -893,8 +1609,10 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   }
 
   async runBulkAction(action: PricingOptionBulkAction, amount?: number): Promise<void> {
-    const ids = [...this.selectedOptionIds()];
-    if (!ids.length || this.bulkSaving()) return;
+    const ids = this.viewMode() === 'sheet'
+      ? this.sheetSelectedOptions().map((row) => row.id)
+      : [...this.selectedOptionIds()];
+    if (!ids.length || this.bulkSaving() || this.sheetBatchRunning()) return;
 
     this.bulkSaving.set(true);
     try {
@@ -942,6 +1660,550 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
       'It will be removed from public booking but kept for reporting.',
       'Deactivate',
     );
+  }
+
+  readonly sheetOptions = computed(() => {
+    const search = this.pricingSearch().trim().toLowerCase();
+    return this.filteredOptions().filter((row) => {
+      if (this.sheetFilter() === 'unpriced' && (row.useDynamicPricing || row.fixedPriceCents != null)) return false;
+      if (this.sheetFilter() === 'active' && !row.isActive) return false;
+      if (!search) return true;
+      return [this.modelLabel(row), row.repairType.label, row.variantName, row.product?.sku || '']
+        .some((value) => value.toLowerCase().includes(search));
+    });
+  });
+
+
+  // Worksheet selection uses zero-based row/column indices. A:H are the
+  // presentation columns; only E (labor) and F (selling price) are writable.
+  readonly sheetColumnLetters = ['A','B','C','D','E','F','G','H'];
+  readonly sheetSelection = signal<{row:number; col:number; endRow:number; endCol:number} | null>(null);
+  readonly sheetPendingPaste = signal<string[][] | null>(null);
+  readonly sheetPasteWarning = signal('');
+  readonly sheetCellName = computed(() => {
+    const cell = this.sheetSelection();
+    return cell ? `${this.sheetColumnLetters[cell.col]}${cell.row+1}` : '—';
+  });
+  readonly sheetCellDescription = computed(() => {
+    const selection = this.sheetSelection();
+    if (!selection) return 'Click a worksheet cell to select it';
+    const row = this.sheetOptions()[selection.row];
+    if (!row) return 'New repair · enter a selling price to create draft';
+    return `${this.modelLabel(row)} · ${row.repairType.label} · ${this.sheetColumnLetters[selection.col]}`;
+  });
+  readonly sheetPasteAffected = computed(() => {
+    const paste = this.sheetPendingPaste(), active = this.sheetSelection();
+    if (!paste || !active) return 0;
+    return paste.reduce((sum, cells, y) => sum + cells.filter((_, x) => {
+      const col = active.col+x, row = active.row+y;
+      return (col === 4 && row < this.sheetOptions().length || col === 5) && row < this.sheetOptions().length + this.sheetMissingRows().length;
+    }).length, 0);
+  });
+  isWorksheetSelected(row:number,col:number):boolean {
+    const s=this.sheetSelection();
+    return !!s && row>=Math.min(s.row,s.endRow) && row<=Math.max(s.row,s.endRow) && col>=Math.min(s.col,s.endCol) && col<=Math.max(s.col,s.endCol);
+  }
+  selectWorksheetCell(row:number,col:number,event:MouseEvent):void {
+    const old=this.sheetSelection();
+    if (event.shiftKey && old) this.sheetSelection.set({...old,endRow:row,endCol:col});
+    else this.sheetSelection.set({row,col,endRow:row,endCol:col});
+  }
+  selectWorksheetFocus(row:number,col:number):void {
+    const old=this.sheetSelection();
+    if (!old || !this.isWorksheetSelected(row,col)) this.sheetSelection.set({row,col,endRow:row,endCol:col});
+  }
+  private worksheetValue(row:number,col:number):string {
+    const option=this.sheetOptions()[row];
+    if (option) {
+      switch(col) {
+        case 0:return this.modelLabel(option);
+        case 1:return option.repairType.label;
+        case 2:return option.variantName;
+        case 3:return option.productSupplier?.lastKnownCostCents != null ? (option.productSupplier.lastKnownCostCents/100).toFixed(2) : option.product?.costCents != null ? (option.product.costCents/100).toFixed(2):'';
+        case 4:return this.sheetAmount(option,'laborCents');
+        case 5:return this.sheetAmount(option,'fixedPriceCents');
+        case 6:return option.useDynamicPricing?'Automatic':option.isActive?'Active':'Inactive';
+        default:return '';
+      }
+    }
+    const missing=this.sheetMissingRows()[row-this.sheetOptions().length];
+    if (!missing) return '';
+    return col===0?`${missing.model.brandName} ${missing.model.name}`:col===1?missing.type.label:col===2?'Standard':col===4?(missing.type.defaultLaborCents==null?'':(missing.type.defaultLaborCents/100).toFixed(2)):col===5?(this.sheetDrafts()[missing.key]??''):'';
+  }
+  private worksheetTSV():string {
+    const s=this.sheetSelection(); if (!s) return '';
+    const lines:string[]=[];
+    for(let r=Math.min(s.row,s.endRow);r<=Math.max(s.row,s.endRow);r++) {
+      const cells:string[]=[];
+      for(let c=Math.min(s.col,s.endCol);c<=Math.max(s.col,s.endCol);c++) cells.push(this.worksheetValue(r,c));
+      lines.push(cells.join('\t'));
+    }
+    return lines.join('\r\n');
+  }
+  onWorksheetCopy(event:ClipboardEvent):void {
+    if (!this.sheetSelection()) return;
+    // Normal text selection inside an editor should still use native Copy.
+    const target=event.target as HTMLElement;
+    if (target instanceof HTMLInputElement && target.selectionStart !== target.selectionEnd) return;
+    event.preventDefault(); event.clipboardData?.setData('text/plain',this.worksheetTSV());
+  }
+  async copySheetSelection():Promise<void> {
+    const content=this.worksheetTSV(); if(!content)return;
+    try { await navigator.clipboard.writeText(content);this.toast.success('Copied worksheet cells'); }
+    catch { this.toast.error('Select cells and press Ctrl+C or ⌘C.'); }
+  }
+  onWorksheetPaste(event:ClipboardEvent):void {
+    const text=event.clipboardData?.getData('text/plain');
+    if(!text || !this.sheetSelection()) return;
+    event.preventDefault();
+    const rows=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n$/,'').split('\n').map(line=>line.split('\t'));
+    this.stageWorksheetPaste(rows);
+  }
+  private stageWorksheetPaste(rows:string[][]):void {
+    const origin=this.sheetSelection(); if(!origin || !rows.length) return;
+    const total=this.sheetOptions().length+this.sheetMissingRows().length;
+    const invalid=rows.some((cells,y)=>cells.some((v,x)=>{
+      const col=origin.col+x, row=origin.row+y;
+      if(row>=total || col>=8)return true;
+      if(col!==4 && col!==5)return false;
+      if(col===4 && row>=this.sheetOptions().length)return false;
+      return !!v.trim() && this.parsePriceCents(v) === undefined;
+    }));
+    this.sheetPasteWarning.set(invalid?'Paste exceeds the visible grid or contains invalid amounts. Values must be nonnegative with at most two decimal places.':'');
+    // One-cell paste follows Excel's immediate workflow. Larger ranges get
+    // an explicit preview because each row currently uses its own API call.
+    this.sheetPendingPaste.set(rows);
+    if(rows.length===1 && rows[0].length===1 && !invalid && this.sheetPasteAffected()===1) {
+      void this.commitWorksheetPaste();
+    }
+  }
+  async commitWorksheetPaste():Promise<void> {
+    const rows=this.sheetPendingPaste(), origin=this.sheetSelection();
+    if(!rows || !origin || this.sheetPasteWarning() || this.sheetBatchRunning() || this.bulkSaving())return;
+    const count=this.sheetPasteAffected();if(!count)return;
+    const originalOptions=this.sheetOptions();
+    const originalMissing=this.sheetMissingRows();
+    this.sheetBatchRunning.set(true);
+    let saved=0,failed=0;
+    try {
+      for(let y=0;y<rows.length;y++) {
+        const rowIndex=origin.row+y;
+        const option=originalOptions[rowIndex];
+        const missing=originalMissing[rowIndex-originalOptions.length];
+        const patch:Partial<PricingOptionInput>={};
+        let newPrice:string|undefined;
+        for(let x=0;x<rows[y].length;x++) {
+          const col=origin.col+x, raw=rows[y][x].trim();
+          if(col===4 && option)patch.laborCents=raw===''?null:this.parsePriceCents(raw)!;
+          if(col===5) {
+            if(option){patch.fixedPriceCents=raw===''?null:this.parsePriceCents(raw)!;patch.useDynamicPricing=false;}
+            else if(missing)newPrice=raw;
+          }
+        }
+        if(option && Object.keys(patch).length) {
+          this.sheetBatchProgress.set(`Saving ${y+1} of ${rows.length} rows…`);
+          try {
+            const updated=await firstValueFrom(this.pricingApi.updateOption(option.id,patch));
+            this.options.update(items=>items.map(item=>item.id===option.id?{...item,...updated}:item));saved++;
+            this.sheetErrors.update(e=>{const n={...e};delete n[option.id];return n;});
+          }catch(error){failed++;this.sheetErrors.update(e=>({...e,[option.id]:'Paste save failed'}));console.error('Worksheet paste failed',error);}
+        } else if(missing && newPrice) {
+          this.sheetDrafts.update(d=>({...d,[missing.key]:newPrice}));
+          await this.createSheetPrice(missing.model,missing.type);
+          if(this.sheetErrors()[missing.key])failed++;else saved++;
+        }
+      }
+      this.sheetBatchProgress.set(`${saved} rows saved${failed?`, ${failed} failed`:''}`);
+      this.sheetPendingPaste.set(null);
+      if(failed)this.toast.error(`${failed} worksheet rows could not be saved`);
+      else this.toast.success(`${saved} worksheet rows saved`);
+    }finally{this.sheetBatchRunning.set(false);}
+  }
+  onWorksheetKeydown(event:KeyboardEvent):void {
+    if(!this.sheetSelection() || this.sheetPendingPaste())return;
+    const target=event.target as HTMLElement;
+    if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='c')return;
+    const deltas:Record<string,[number,number]>={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1],Tab:[0,event.shiftKey?-1:1],Enter:[event.shiftKey?-1:1,0]};
+    const delta=deltas[event.key];if(!delta || event.metaKey || event.ctrlKey || event.altKey)return;
+    // While typing, left/right navigate within text; Tab, Enter, up/down move cells.
+    if(target instanceof HTMLInputElement && (event.key==='ArrowLeft'||event.key==='ArrowRight'))return;
+    const current=this.sheetSelection()!;
+    const rows=this.sheetOptions().length+this.sheetMissingRows().length;
+    const row=Math.min(Math.max((event.shiftKey&&event.key.startsWith('Arrow')?current.endRow:current.row)+delta[0],0),Math.max(rows-1,0));
+    const col=Math.min(Math.max((event.shiftKey&&event.key.startsWith('Arrow')?current.endCol:current.col)+delta[1],0),7);
+    if(target instanceof HTMLInputElement && (event.key==='Enter'||event.key==='Tab'))target.blur();
+    event.preventDefault();
+    if(event.shiftKey&&event.key.startsWith('Arrow'))this.sheetSelection.set({...current,endRow:row,endCol:col});
+    else this.sheetSelection.set({row,col,endRow:row,endCol:col});
+    const next=document.querySelector<HTMLInputElement>(`[data-sheet-row="${row}"][data-sheet-col="${col}"]`);
+    if(next)next.focus();
+  }
+
+  // Phase 4: model-to-model pricing. Source must be a configured fixed-price
+  // option; only exact matching variants may be updated, and never by default.
+  readonly modelCopySource = signal<PricingOption | null>(null);
+  readonly modelCopyModels = signal<ManagedDeviceCatalogModel[]>([]);
+  readonly modelCopyExisting = signal<PricingOption[]>([]);
+  readonly modelCopyNotOffered = signal<Set<string>>(new Set());
+  readonly modelCopyTargets = signal<Set<string>>(new Set());
+  readonly modelCopyLoading = signal(false);
+  readonly modelCopyRunning = signal(false);
+  readonly modelCopyOverwrite = signal(false);
+  readonly modelCopyProgress = signal('');
+  readonly modelCopyPrice = signal('');
+  readonly modelCopyLabor = signal('');
+  readonly modelCopyPreview = computed(() => {
+    const source = this.modelCopySource();
+    if (!source) return [];
+    return this.modelCopyModels()
+      .filter((model) => this.modelCopyTargets().has(model.id))
+      .map((model) => {
+        const matches = this.modelCopyExisting().filter((row) =>
+          row.deviceCatalogModelId === model.id &&
+          row.repairNeedId === source.repairNeedId &&
+          row.variantName.trim().toLowerCase() === source.variantName.trim().toLowerCase() &&
+          row.attributeSignature === source.attributeSignature
+        );
+        const otherVariant = this.modelCopyExisting().some((row) =>
+          row.deviceCatalogModelId === model.id && row.repairNeedId === source.repairNeedId &&
+          row.variantName.trim().toLowerCase() === source.variantName.trim().toLowerCase() &&
+          row.attributeSignature !== source.attributeSignature
+        );
+        const blocked = this.modelCopyNotOffered().has(model.id);
+        const existing = matches.length === 1 ? matches[0] : null;
+        const status = blocked ? 'Not offered — skipped'
+          : matches.length > 1 ? 'Ambiguous — skipped'
+          : otherVariant && !existing ? 'Different attributes — skipped'
+          : existing ? (this.modelCopyOverwrite() ? 'Update existing price' : 'Already configured — skipped')
+          : 'Create private draft';
+        return { model, existing, status, actionable: !blocked && matches.length <= 1 && !(otherVariant && !existing) && (!existing || this.modelCopyOverwrite()) };
+      });
+  });
+  readonly modelCopyValid = computed(() =>
+    this.modelCopyPreview().some((row) => row.actionable) &&
+    this.parsePriceCents(this.modelCopyPrice()) != null &&
+    this.parsePriceCents(this.modelCopyLabor(), true) !== undefined
+  );
+
+  private parsePriceCents(raw: string, nullable = false): number | null | undefined {
+    if (nullable && raw.trim() === '') return null;
+    if (!/^(?:\d+)(?:\.\d{1,2})?$/.test(raw.trim()) || Number(raw) > 1000000) return undefined;
+    return Math.round(Number(raw) * 100);
+  }
+
+  async openModelCopy(option: PricingOption): Promise<void> {
+    if (this.modelCopyRunning() || this.modelCopyLoading()) return;
+    if (!option.model || option.fixedPriceCents == null || option.useDynamicPricing) {
+      this.toast.error('Choose a manually priced repair to copy.'); return;
+    }
+    if (option.repairType && this.repairTypes().find((t) => t.id === option.repairNeedId)?.quoteAttributeKeys.length) {
+      this.toast.error('Repairs with quote attributes require the full editor.'); return;
+    }
+    this.modelCopySource.set(option);
+    this.modelCopyTargets.set(new Set());
+    this.modelCopyOverwrite.set(false);
+    this.modelCopyProgress.set('');
+    this.modelCopyPrice.set(this.sheetAmount(option, 'fixedPriceCents'));
+    this.modelCopyLabor.set(this.sheetAmount(option, 'laborCents'));
+    this.modelCopyModels.set([]);
+    this.modelCopyExisting.set([]);
+    this.modelCopyLoading.set(true);
+    try {
+      const [models, options, exclusions] = await Promise.all([
+        firstValueFrom(this.catalogApi.listManagedModels(option.model.brandId, false)),
+        firstValueFrom(this.pricingApi.listOptions({ brandId: option.model.brandId, includeInactive: true, includePrivate: true })),
+        firstValueFrom(this.pricingApi.listNotOffered({ brandId: option.model.brandId })),
+      ]);
+      this.modelCopyModels.set((models.data ?? []).filter((m) => m.id !== option.deviceCatalogModelId && m.isActive));
+      this.modelCopyExisting.set(options.data ?? []);
+      this.modelCopyNotOffered.set(new Set((exclusions.data ?? []).filter((r) => r.repairNeedId === option.repairNeedId).map((r) => r.deviceCatalogModelId)));
+    } catch (error) {
+      console.error('Could not load model pricing comparison', error);
+      this.modelCopySource.set(null);
+      this.toast.error('Could not load target models');
+    } finally { this.modelCopyLoading.set(false); }
+  }
+
+  toggleModelCopyTarget(id: string): void {
+    if (this.modelCopyRunning()) return;
+    this.modelCopyTargets.update((set) => {
+      const next = new Set(set);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  selectAllModelCopyTargets(): void {
+    if (this.modelCopyRunning()) return;
+    const models = this.modelCopyModels();
+    this.modelCopyTargets.set(this.modelCopyTargets().size === models.length
+      ? new Set() : new Set(models.map((model) => model.id)));
+  }
+
+  closeModelCopy(): void {
+    if (this.modelCopyRunning()) return;
+    this.modelCopySource.set(null);
+    this.modelCopyTargets.set(new Set());
+  }
+
+  async applyModelCopy(): Promise<void> {
+    const source = this.modelCopySource();
+    if (!source || !this.modelCopyValid() || this.modelCopyRunning() || this.bulkSaving() || this.sheetBatchRunning() || this.sheetSaving().size) return;
+    const items = this.modelCopyPreview().filter((row) => row.actionable);
+    const fixed = this.parsePriceCents(this.modelCopyPrice());
+    const labor = this.parsePriceCents(this.modelCopyLabor(), true);
+    if (fixed === undefined || fixed === null || labor === undefined) return;
+    const updates = items.filter((row) => row.existing).length;
+    if (!window.confirm(`Apply ${this.money(fixed)} to ${items.length} device models? ${updates} existing prices will be changed; ${items.length - updates} new entries will be PRIVATE, INACTIVE drafts. This operation cannot be undone automatically.`)) return;
+    this.modelCopyRunning.set(true);
+    let saved = 0, failed = 0;
+    try {
+      for (let i = 0; i < items.length; i++) {
+        const { model, existing } = items[i];
+        this.modelCopyProgress.set(`Saving ${i + 1} of ${items.length}…`);
+        try {
+          if (existing) {
+            const updated = await firstValueFrom(this.pricingApi.updateOption(existing.id, {
+              fixedPriceCents: fixed, laborCents: labor, useDynamicPricing: false,
+            }));
+            this.modelCopyExisting.update((rows) => rows.map((r) => r.id === existing.id ? updated : r));
+          } else {
+            const created = await firstValueFrom(this.pricingApi.createOption({
+              deviceCatalogModelId: model.id,
+              repairNeedId: source.repairNeedId,
+              variantName: source.variantName,
+              fixedPriceCents: fixed,
+              laborCents: labor,
+              useDynamicPricing: false,
+              durationMins: source.durationMins,
+              requiresProduct: false,
+              isActive: false,
+              isPublic: false,
+            }));
+            this.modelCopyExisting.update((rows) => [...rows, created]);
+          }
+          saved++;
+        } catch (error) {
+          console.error('Model price copy failed', model.id, error);
+          failed++;
+        }
+      }
+      this.modelCopyProgress.set(`${saved} saved; ${failed} failed`);
+      if (failed) this.toast.error(`${failed} model prices failed`, 'Successful changes were saved. Review targets before retrying.');
+      else { this.toast.success(`${saved} model prices saved`); this.modelCopySource.set(null); this.modelCopyTargets.set(new Set()); }
+      await this.loadOptions(this.pricingSearch());
+    } finally { this.modelCopyRunning.set(false); }
+  }
+
+  // Phase 3: selected spreadsheet rows and a reviewable TSV paste operation.
+  readonly sheetPasteOpen = signal(false);
+  readonly sheetPasteText = signal('');
+  readonly sheetBatchRunning = signal(false);
+  readonly sheetBatchProgress = signal('');
+  readonly sheetSelectedOptions = computed(() =>
+    this.sheetOptions().filter((row) => this.selectedOptionIds().has(row.id))
+  );
+  readonly sheetAllSelected = computed(() => {
+    const rows = this.sheetOptions();
+    return rows.length > 0 && rows.every((row) => this.selectedOptionIds().has(row.id));
+  });
+  readonly sheetPasteRows = computed(() => {
+    const raw = this.sheetPasteText().trim();
+    if (!raw) return [] as { laborCents?: number; fixedPriceCents: number | null; error?: string }[];
+    return raw.split(/\r?\n/).map((line) => {
+      const cells = line.split('\t').map((cell) => cell.trim());
+      const error = cells.length < 1 || cells.length > 2 ? 'Use one or two columns' : undefined;
+      const amount = (value: string) =>
+        /^(?:\d+)(?:\.\d{1,2})?$/.test(value) && Number(value) <= 1000000
+          ? Math.round(Number(value) * 100) : null;
+      const price = amount(cells[cells.length - 1] ?? '');
+      const labor = cells.length === 2 ? amount(cells[0]) : undefined;
+      return {
+        ...(cells.length === 2 ? { laborCents: labor ?? undefined } : {}),
+        fixedPriceCents: price,
+        error: error ?? (price == null ? 'Invalid selling price' : (cells.length === 2 && labor == null ? 'Invalid labor' : undefined)),
+      };
+    });
+  });
+  readonly sheetPasteValid = computed(() =>
+    this.sheetPasteRows().length > 0 &&
+    this.sheetPasteRows().length === this.sheetSelectedOptions().length &&
+    this.sheetPasteRows().every((row) => !row.error)
+  );
+  toggleSheetAll(): void {
+    const next = new Set(this.selectedOptionIds());
+    if (this.sheetAllSelected()) this.sheetOptions().forEach((row) => next.delete(row.id));
+    else this.sheetOptions().forEach((row) => next.add(row.id));
+    this.selectedOptionIds.set(next);
+  }
+  exportSheetCsv(): void {
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const records = [['Device', 'Repair', 'Option', 'Labor', 'Fixed selling price', 'Mode', 'Status'],
+      ...this.sheetOptions().map((row) => [
+        this.modelLabel(row), row.repairType.label, row.variantName,
+        this.sheetAmount(row, 'laborCents'), this.sheetAmount(row, 'fixedPriceCents'),
+        row.useDynamicPricing ? 'Automatic' : 'Manual',
+        row.isActive ? 'Active' : 'Inactive',
+      ])];
+    const csv = records.map((r) => r.map(escapeCsv).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'opscend-repair-prices.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+  async applySheetPaste(): Promise<void> {
+    if (!this.sheetPasteValid() || this.sheetBatchRunning() || this.bulkSaving()) return;
+    const selected = this.sheetSelectedOptions();
+    const values = this.sheetPasteRows();
+    if (selected.some((row) => this.sheetSaving().has(row.id))) {
+      this.toast.error('Wait for individual price saves to finish.');
+      return;
+    }
+    if (!window.confirm(`Apply ${values.length} pasted selling prices to the selected repairs? This changes saved prices immediately; it will not activate or publish drafts.`)) return;
+    this.sheetBatchRunning.set(true);
+    let completed = 0;
+    let failed = 0;
+    try {
+      for (let i = 0; i < selected.length; i++) {
+        const option = selected[i];
+        const pasted = values[i];
+        this.sheetBatchProgress.set(`Saving ${i + 1} of ${selected.length}…`);
+        try {
+          const payload: Partial<PricingOptionInput> = {
+            fixedPriceCents: pasted.fixedPriceCents,
+            useDynamicPricing: false,
+            ...(pasted.laborCents !== undefined ? { laborCents: pasted.laborCents } : {}),
+          };
+          const updated = await firstValueFrom(this.pricingApi.updateOption(option.id, payload));
+          this.options.update((rows) => rows.map((row) => row.id === option.id ? { ...row, ...updated } : row));
+          this.sheetErrors.update((errors) => { const next = { ...errors }; delete next[option.id]; return next; });
+          completed++;
+        } catch (error) {
+          console.error('Bulk spreadsheet save failed', option.id, error);
+          this.sheetErrors.update((errors) => ({ ...errors, [option.id]: 'Bulk save failed — retry individually.' }));
+          failed++;
+        }
+      }
+      this.sheetBatchProgress.set(`${completed} saved${failed ? `, ${failed} failed` : ''}`);
+      if (!failed) {
+        this.sheetPasteOpen.set(false);
+        this.sheetPasteText.set('');
+        this.clearSelection();
+        this.toast.success(`${completed} repair prices saved`);
+      } else {
+        this.toast.error(`${failed} price updates failed`, 'Successful rows were saved. Review highlighted rows and retry.');
+      }
+    } finally {
+      this.sheetBatchRunning.set(false);
+    }
+  }
+
+  // Show genuinely missing repairs only for a selected device. No fabricated
+  // pricing rows are loaded globally across the entire catalog.
+  readonly sheetMissingRows = computed(() => {
+    const model = this.selectedModel();
+    if (!model || this.sheetFilter() === 'active' || this.pricingSearch().trim()) return [];
+    const existing = new Set(this.options()
+      .filter((option) => option.deviceCatalogModelId === model.id)
+      .map((option) => option.repairNeedId));
+    const search = this.pricingSearch().trim().toLowerCase();
+    return this.repairTypes()
+      .filter((type) => type.isActive && !existing.has(type.id))
+      .filter((type) => !search || [type.label, type.code, model.name, model.brandName]
+        .some((value) => value.toLowerCase().includes(search)))
+      .map((type) => ({ model, type, key: `${model.id}:${type.id}` }));
+  });
+
+  setSheetDraft(key: string, value: string): void {
+    this.sheetDrafts.update((drafts) => ({ ...drafts, [key]: value }));
+  }
+
+  async createSheetPrice(model: ManagedDeviceCatalogModel, type: RepairType): Promise<void> {
+    const key = `${model.id}:${type.id}`;
+    if (this.sheetCreating().has(key)) return;
+    if (!(this.sheetDrafts()[key] ?? '').trim()) return;
+    const raw = (this.sheetDrafts()[key] ?? '').trim();
+    if (!/^(?:\d+)(?:\.\d{1,2})?$/.test(raw) || Number(raw) > 1000000) {
+      this.sheetErrors.update((errors) => ({ ...errors, [key]: 'Enter a valid price to create this repair.' }));
+      return;
+    }
+    // Options with required quote attributes must use the full editor: it
+    // collects the values needed for the API's uniqueness and quote contract.
+    if (type.quoteAttributeKeys.length) {
+      this.newOptionFor(model, type);
+      return;
+    }
+    this.sheetCreating.update((set) => new Set([...set, key]));
+    this.sheetErrors.update((errors) => { const next = { ...errors }; delete next[key]; return next; });
+    try {
+      const created = await firstValueFrom(this.pricingApi.createOption({
+        deviceCatalogModelId: model.id,
+        repairNeedId: type.id,
+        variantName: 'Standard',
+        fixedPriceCents: Math.round(Number(raw) * 100),
+        laborCents: type.defaultLaborCents,
+        durationMins: type.defaultDurationMins,
+        requiresProduct: false,
+        isActive: false,
+        isPublic: false,
+        useDynamicPricing: false,
+      }));
+      this.options.update((rows) => rows.some((row) => row.id === created.id) ? rows : [...rows, created]);
+      this.sheetDrafts.update((drafts) => { const next = { ...drafts }; delete next[key]; return next; });
+      this.toast.success('Price saved as a private draft. Open Details to finish setup and activate.');
+    } catch (error) {
+      console.error('Could not create spreadsheet pricing draft', error);
+      this.sheetErrors.update((errors) => ({ ...errors, [key]: 'Could not create repair. Check for an existing option and retry.' }));
+      this.toast.error('Could not add repair price');
+    } finally {
+      this.sheetCreating.update((set) => { const next = new Set(set); next.delete(key); return next; });
+    }
+  }
+
+  sheetAmount(option: PricingOption, field: 'laborCents' | 'fixedPriceCents'): string {
+    const cents = option[field];
+    return cents == null ? '' : (cents / 100).toFixed(2);
+  }
+
+  async saveSheetAmount(option: PricingOption, field: 'laborCents' | 'fixedPriceCents', raw: string): Promise<void> {
+    const value = raw.trim();
+    if (value && (!/^(?:\d+)(?:\.\d{1,2})?$/.test(value) || !Number.isFinite(Number(value)) || Number(value) > 1000000)) {
+      this.sheetErrors.update((errors) => ({ ...errors, [option.id]: 'Enter a valid dollar amount.' }));
+      return;
+    }
+    const cents = value === '' ? null : Math.round(Number(value) * 100);
+    if (option[field] === cents && !(field === 'fixedPriceCents' && option.useDynamicPricing)) return;
+    if (this.sheetSaving().has(option.id) || this.sheetBatchRunning() || this.bulkSaving()) return;
+    this.sheetSaving.update((set) => new Set([...set, option.id]));
+    this.sheetErrors.update((errors) => { const next = { ...errors }; delete next[option.id]; return next; });
+    try {
+      const payload: Partial<PricingOptionInput> = { [field]: cents };
+      if (field === 'fixedPriceCents') payload.useDynamicPricing = false;
+      const updated = await firstValueFrom(this.pricingApi.updateOption(option.id, payload));
+      this.options.update((rows) => rows.map((row) => row.id === option.id ? { ...row, ...updated } : row));
+    } catch (error) {
+      console.error('Could not save worksheet cell', error);
+      this.sheetErrors.update((errors) => ({ ...errors, [option.id]: 'Save failed. Try again.' }));
+      this.toast.error('Could not save price');
+    } finally {
+      this.sheetSaving.update((set) => { const next = new Set(set); next.delete(option.id); return next; });
+    }
+  }
+
+  async setSheetAutomatic(option: PricingOption): Promise<void> {
+    if (this.sheetSaving().has(option.id) || option.useDynamicPricing) return;
+    this.sheetSaving.update((set) => new Set([...set, option.id]));
+    try {
+      const updated = await firstValueFrom(this.pricingApi.updateOption(option.id, { useDynamicPricing: true }));
+      this.options.update((rows) => rows.map((row) => row.id === option.id ? { ...row, ...updated } : row));
+      this.sheetErrors.update((errors) => { const next = { ...errors }; delete next[option.id]; return next; });
+    } catch (error) {
+      console.error(error);
+      this.sheetErrors.update((errors) => ({ ...errors, [option.id]: 'Automatic pricing could not be enabled.' }));
+    } finally {
+      this.sheetSaving.update((set) => { const next = new Set(set); next.delete(option.id); return next; });
+    }
   }
 
   optionPriceLabel(option: PricingOption): string {
@@ -1198,7 +2460,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     }
 
     this.selectedOptionIds.set(new Set());
-    if (view === 'list') this.pricingSearch$.next(q);
+    if (view === 'list' || view === 'sheet') this.pricingSearch$.next(q);
     if (view === 'overview') await this.loadOverview();
     if (view === 'rules') await this.loadRules();
     if (view === 'suppliers') await this.loadSupplierHealth();
@@ -1514,7 +2776,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   }
 
   private parseViewMode(value: string | null): PricingViewMode {
-    return value === 'overview' || value === 'rules' || value === 'suppliers' || value === 'setup' || value === 'list' ? value : 'overview';
+    return 'sheet';
   }
 
   private parseSetupFilter(value: string | null): SetupFilter {

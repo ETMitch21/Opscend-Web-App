@@ -63,13 +63,20 @@ export class ToastService {
     description?: string,
     confirmLabel = 'Confirm',
   ) {
-    toast.error(message, {
+    const id = toast.error(message, {
       description,
       duration: 10000,
       action: {
         label: confirmLabel,
-        onClick: () => onConfirm(),
-      }
+        onClick: () => {
+          toast.dismiss(id);
+          onConfirm();
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => toast.dismiss(id),
+      },
     });
   }
 

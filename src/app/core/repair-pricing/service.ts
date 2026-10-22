@@ -108,6 +108,10 @@ export class RepairPricingService {
     );
   }
 
+  batchUpdatePrices(changes: Array<{ id: string; expectedUpdatedAt: string; laborCents?: number | null; manualPartCostCents?: number | null; fixedPriceCents?: number | null; useDynamicPricing?: boolean; isPublic?: boolean; isActive?: boolean }>): Observable<{ updatedCount: number; data: PricingOption[] }> {
+    return this.http.post<{ updatedCount: number; data: PricingOption[] }>(`${this.baseUrl}/options/batch-prices`, { changes });
+  }
+
   listOptions(
     query: PricingOptionListParams = {},
   ): Observable<ListResponse<PricingOption>> {
@@ -192,6 +196,14 @@ export class RepairPricingService {
       `${this.baseUrl}/options/${encodeURIComponent(id)}`,
       payload,
     );
+  }
+
+  resetWorksheetOption(id: string): Observable<PricingOption> {
+    return this.http.post<PricingOption>(`${this.baseUrl}/options/${encodeURIComponent(id)}/reset-worksheet`, {});
+  }
+
+  deleteWorksheetOption(id: string): Observable<{ deleted: boolean }> {
+    return this.http.delete<{ deleted: boolean }>(`${this.baseUrl}/options/${encodeURIComponent(id)}/permanent`);
   }
 
   deactivateOption(id: string): Observable<PricingOption> {
