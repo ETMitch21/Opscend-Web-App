@@ -1407,8 +1407,7 @@ export class PublicBooking implements OnDestroy {
   }
 
   pricingTierDescription(tier: PublicPricingTier): string {
-    return tier.options.find((option) => option.description?.trim())?.description?.trim()
-      || 'Shop-configured repair option.';
+    return tier.options.find((option) => option.description?.trim())?.description?.trim() ?? '';
   }
 
   pricingTierBadge(tier: PublicPricingTier): string | null {

@@ -453,7 +453,9 @@
                 @if (canRevealRepairSelectionPrices()) {
                 <span class="mt-2 block text-3xl font-bold tracking-[-0.04em] text-gray-950">{{ pricingTierPriceLabel(tier) }}</span>
                 }
-                <span class="mt-3 block whitespace-pre-line text-xs leading-5 text-gray-500">{{ pricingTierDescription(tier) }}</span>
+                @if (pricingTierDescription(tier); as description) {
+                <span class="mt-3 block whitespace-pre-line text-xs leading-5 text-gray-500">{{ description }}</span>
+                }
 
                 @if (pricingTierFeatures(tier).length) {
                 <span class="mt-4 block space-y-2">
@@ -494,7 +496,9 @@
                     <span class="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-gray-900 ring-1 ring-black/5">{{ pricingTierPriceLabel(tier) }}</span>
                     }
                   </span>
-                  <span class="mt-1 block whitespace-pre-line text-xs leading-5 text-gray-500">{{ pricingTierDescription(tier) }}</span>
+                  @if (pricingTierDescription(tier); as description) {
+                  <span class="mt-1 block whitespace-pre-line text-xs leading-5 text-gray-500">{{ description }}</span>
+                  }
                   @if (tier.options[0]?.requiresManualReview) {
                   <span class="mt-2 inline-flex rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">Final confirmation required</span>
                   }
@@ -730,14 +734,18 @@
       class="overflow-hidden rounded-[2rem] bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl"
       [formGroup]="scheduleForm" (ngSubmit)="continueFromContact()">
       <div class="p-6 sm:p-7">
-        @if (canRevealRepairSelectionPrices()) {
+        @if (canRevealRepairSelectionPrices() && !selectedPricingOption()?.requiresManualReview) {
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Almost there!</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your quote?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Enter your details so we can save your selections and help you with the next step.</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Let's get your repair scheduled</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Add your contact details so we can save your repair selection and help you choose an appointment time.</p>
+        } @else if (selectedPricingOption()?.requiresManualReview) {
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Almost there!</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">How can we reach you?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">We need to review a few repair details before confirming your price. Share your contact information so we can follow up.</p>
         } @else {
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">One more step</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your quote?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Add your details to see your price, or request a personalized quote if we need to review your repair.</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Let's get your repair details</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Enter your contact information to continue. We'll show your price if it's available right away, or let you know if we need to review the repair.</p>
         }
       </div>
 
@@ -804,7 +812,7 @@
         <button type="submit"
           class="mt-5 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           [disabled]="quoting()">
-          {{ quoting() ? 'Getting your quote ready...' : 'Continue to my quote' }}
+          {{ quoting() ? 'Getting everything ready...' : (canRevealRepairSelectionPrices() && !selectedPricingOption()?.requiresManualReview ? 'Continue to scheduling' : selectedPricingOption()?.requiresManualReview ? 'Request repair review' : 'Continue') }}
         </button>
       </div>
     </form>
