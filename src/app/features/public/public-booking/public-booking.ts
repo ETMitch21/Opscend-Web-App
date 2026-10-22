@@ -2007,7 +2007,7 @@ export class PublicBooking implements OnDestroy {
     if (this.paymentPreparing()) return 'Preparing payment...';
     if (this.paymentChoice() === 'deposit') return 'Continue to secure deposit';
     if (this.paymentChoice() === 'full') return 'Continue to secure payment';
-    return 'Schedule repair';
+    return 'Book my appointment';
   }
 
   async scheduleRepair(): Promise<void> {
@@ -2422,14 +2422,14 @@ export class PublicBooking implements OnDestroy {
     const quote = this.quote();
 
     if (this.canScheduleQuote(quote)) {
-      return 'Your repair is scheduled.';
+      return 'Your appointment is booked!';
     }
 
     if (quote?.depositRequired) {
-      return 'Your repair request was received.';
+      return 'We’ve received your repair request!';
     }
 
-    return 'Your quote request was received.';
+    return 'Your quote request is on its way!';
   }
 
   confirmationNextSteps(): string {
@@ -2437,16 +2437,16 @@ export class PublicBooking implements OnDestroy {
 
     if (this.canScheduleQuote(quote)) {
       if (this.settings()?.publicFunnel?.appointmentPrepEnabled) {
-        return 'Before your appointment, back up your device and be ready to disable activation/device-lock features if the technician asks. The shop will contact you if anything changes.';
+        return 'Before your appointment, we recommend backing up your device. We’ll reach out if anything changes.';
       }
-      return 'The shop will contact you if anything changes before your appointment.';
+      return 'You’re all set! We’ll reach out if anything changes before your appointment.';
     }
 
     if (quote?.depositRequired) {
-      return `The shop will email your confirmed quote and secure ${this.money(quote.depositAmountCents)} deposit link. After payment, they can finalize your appointment.`;
+      return `We’ll email you your repair details and a secure link to pay your ${this.money(quote.depositAmountCents)} deposit. Once it’s paid, you can finish booking your appointment.`;
     }
 
-    return 'The shop will review pricing and part availability, then contact you with a quote very soon. For immediate service, call the shop directly.';
+    return 'Our team will check the repair details and parts availability, then contact you with your personalized price. No payment is needed right now.';
   }
 
   categoryIcon(category: string): any {

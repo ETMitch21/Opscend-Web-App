@@ -147,7 +147,7 @@
             </div>
 
             <h1 class="mt-2 text-xl font-semibold tracking-[-0.045em] text-gray-950 sm:text-2xl">
-              Repair quote
+              Get your repair quote
             </h1>
             <p class="mt-0.5 truncate text-xs font-medium text-gray-500">{{ shopName() }}</p>
           </div>
@@ -210,8 +210,8 @@
 
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Device</p>
-          <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">What are we repairing?</h2>
-          <p class="mt-2 text-sm leading-6 text-gray-500">Start with a supported device category.</p>
+          <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">What kind of device do you have?</h2>
+          <p class="mt-2 text-sm leading-6 text-gray-500">Choose your device to get started.</p>
         </div>
       </div>
 
@@ -257,8 +257,8 @@
       class="rounded-[2rem] bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl sm:p-6">
       <div class="mb-5">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Brand</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Who made it?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Popular brands show first. Search if you do not see yours.</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">What brand is your device?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Choose a brand below, or search for yours.</p>
       </div>
 
       @if (brandsLoading() && !brands().length) {
@@ -308,7 +308,7 @@
       <button type="button"
         class="mt-4 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         [disabled]="brandsLoading()" (click)="showMoreBrands()">
-        {{ brandsLoading() ? 'Loading...' : 'Show more brands' }}
+        {{ brandsLoading() ? 'Loading...' : 'See all brands' }}
       </button>
       }
       }
@@ -321,9 +321,8 @@
       class="rounded-[2rem] bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl sm:p-6">
       <div class="mb-5">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Model</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Which {{ selectedBrand() }}?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Select the closest model name. Variants are simplified for
-          easier booking.</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Which {{ selectedBrand() }} model do you have?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Choose your model. Not sure? Pick the closest match.</p>
       </div>
 
       @if (modelsLoading() && !models().length) {
@@ -385,8 +384,8 @@
       class="rounded-[2rem] bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl sm:p-6">
       <div class="mb-5">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Repair</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Choose your repair</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Select the repair that best matches what is happening with your device.</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">What needs fixing?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Choose the issue that sounds most like yours.</p>
       </div>
 
       @if (!repairNeeds().length) {
@@ -587,8 +586,8 @@
       class="rounded-[2rem] bg-white/85 p-5 shadow-[0_24px_80px_rgba(15,23,42,0.09)] ring-1 ring-black/5 backdrop-blur-xl sm:p-6">
       <div class="mb-5">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Location</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should this happen?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Choose whether you’d like to come to us or have us come to you.</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where would you like your repair?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">We can come to you, or you can visit our repair location.</p>
       </div>
 
       <div class="grid gap-2 sm:grid-cols-2">
@@ -607,7 +606,7 @@
             <p class="text-sm font-semibold">We Come To You</p>
             <p class="mt-0.5 text-xs leading-5"
               [ngClass]="serviceMode() === 'on_site' ? 'text-gray-300' : 'text-gray-500'">
-              On-site repair at your location.
+              We repair your device at your location.
             </p>
           </div>
 
@@ -631,7 +630,7 @@
             <p class="text-sm font-semibold">Come To Us</p>
             <p class="mt-0.5 text-xs leading-5"
               [ngClass]="serviceMode() === 'in_shop' ? 'text-gray-300' : 'text-gray-500'">
-              Meet us at our repair location.
+              Bring your device to our repair location.
             </p>
           </div>
 
@@ -732,25 +731,25 @@
       [formGroup]="scheduleForm" (ngSubmit)="continueFromContact()">
       <div class="p-6 sm:p-7">
         @if (canRevealRepairSelectionPrices()) {
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Almost done</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your repair details?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Add your contact information so we can save your selection and move you straight into scheduling, deposit, or the next step for your repair.</p>
-        } @else {
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Before we show your price</p>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Almost there!</p>
         <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your quote?</h2>
-        <p class="mt-2 text-sm leading-6 text-gray-500">We’ll save your quote so you can return to it later and so the team can help if you have questions.</p>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Enter your details so we can save your selections and help you with the next step.</p>
+        } @else {
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">One more step</p>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Where should we send your quote?</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Add your details to see your price, or request a personalized quote if we need to review your repair.</p>
         }
       </div>
 
       <div class="border-t border-gray-100 bg-[#f5f5f7]/80 p-4 sm:p-5">
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Name</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Full name</span>
             <input formControlName="name" autocomplete="name"
               class="mt-2 w-full rounded-[1.1rem] border-0 bg-white px-4 py-3 text-sm font-medium text-gray-950 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]" />
           </label>
           <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Email</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Email address</span>
             <input type="email" formControlName="email" autocomplete="email"
               class="mt-2 w-full rounded-[1.1rem] border-0 bg-white px-4 py-3 text-sm font-medium text-gray-950 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]" />
           </label>
@@ -767,7 +766,7 @@
             <input type="checkbox" formControlName="isBusinessDevice" class="mt-1 h-4 w-4 rounded" />
             <span>
               <span class="block text-sm font-semibold text-gray-950">This is a company-owned device</span>
-              <span class="mt-1 block text-xs leading-5 text-gray-500">We can connect this request with business/fleet options when they’re enabled for this shop.</span>
+              <span class="mt-1 block text-xs leading-5 text-gray-500">We can help with repairs for your business, too.</span>
             </span>
           </label>
           @if (scheduleForm.controls.isBusinessDevice.value) {
@@ -805,7 +804,7 @@
         <button type="submit"
           class="mt-5 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           [disabled]="quoting()">
-          {{ quoting() ? (canRevealRepairSelectionPrices() ? 'Finalizing...' : 'Building your quote...') : (canRevealRepairSelectionPrices() ? 'Finish & continue' : 'See my price') }}
+          {{ quoting() ? 'Getting your quote ready...' : 'Continue to my quote' }}
         </button>
       </div>
     </form>
@@ -822,16 +821,16 @@
 
           <div class="min-w-0 flex-1">
             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-              {{ quoteValue.depositRequired ? 'Reservation' : 'Custom quote' }}
+              {{ quoteValue.depositRequired ? 'Your repair details' : 'Personalized quote' }}
             </p>
             <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">
-              {{ quoteValue.depositRequired ? 'Where should we send your reservation details?' : 'Where should we send your quote?' }}
+              {{ quoteValue.depositRequired ? 'Where should we send your payment link?' : 'Let’s get you a personalized quote' }}
             </h2>
             <p class="mt-2 text-sm leading-6 text-gray-500">
               @if (quoteValue.depositRequired) {
-              Your repair price is confirmed. Share your contact details and the shop will send a secure deposit link for {{ money(quoteValue.depositAmountCents) }}.
+              We have a price for your repair. Confirm your details and we’ll send a secure link for your {{ money(quoteValue.depositAmountCents) }} deposit.
               } @else {
-              Share your contact details and a repair specialist will review your device, confirm the best repair option, and send your personalized price.
+              Our team will check the repair details and parts availability, then contact you with your price. No payment is needed now.
               }
             </p>
           </div>
@@ -847,7 +846,7 @@
           </p>
           @if (quoteValue.depositRequired) {
           <p class="mt-2 text-sm font-semibold text-violet-700">
-            Deposit to reserve: {{ money(quoteValue.depositAmountCents) }}
+            Deposit to book: {{ money(quoteValue.depositAmountCents) }}
           </p>
           }
           @if (serviceMode() === 'on_site' && addressSummary()) {
@@ -864,9 +863,9 @@
               <lucide-icon [name]="icons.Phone" class="h-4 w-4"></lucide-icon>
             </div>
             <div>
-              <p class="text-sm font-semibold text-gray-950">Need immediate service?</p>
+              <p class="text-sm font-semibold text-gray-950">Need help sooner?</p>
               <p class="mt-1 text-sm leading-6 text-gray-500">
-                Call the shop directly for faster help.
+                Give us a call and we’ll be happy to help.
                 <a class="font-semibold text-gray-950 underline underline-offset-4" [href]="'tel:' + settings()?.shop?.phone">
                   {{ settings()?.shop?.phone }}
                 </a>
@@ -880,7 +879,7 @@
       <form class="border-t border-gray-100 bg-[#f5f5f7]/80 p-4 sm:p-5" [formGroup]="scheduleForm" (ngSubmit)="submitQuoteRequest()">
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Name</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Full name</span>
             <div
               class="mt-2 flex items-center gap-3 rounded-[1.1rem] bg-white px-4 py-3 shadow-sm ring-1 ring-black/5 focus-within:ring-2 focus-within:ring-[var(--booking-brand)]">
               <lucide-icon [name]="icons.User" class="h-4 w-4 text-gray-400"></lucide-icon>
@@ -890,7 +889,7 @@
           </label>
 
           <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Email</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Email address</span>
             <div
               class="mt-2 flex items-center gap-3 rounded-[1.1rem] bg-white px-4 py-3 shadow-sm ring-1 ring-black/5 focus-within:ring-2 focus-within:ring-[var(--booking-brand)]">
               <lucide-icon [name]="icons.Mail" class="h-4 w-4 text-gray-400"></lucide-icon>
@@ -911,7 +910,7 @@
         </div>
 
         <label class="mt-5 block">
-          <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Notes</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Additional notes (optional)</span>
           <textarea rows="3" formControlName="notes" placeholder="Tell us anything helpful about the issue."
             class="mt-2 w-full resize-none rounded-[1.35rem] border-0 bg-white px-4 py-3 text-sm leading-6 text-gray-950 shadow-sm ring-1 ring-black/5 outline-none transition placeholder:text-gray-400 focus:ring-2 focus:ring-[var(--booking-brand)]"></textarea>
         </label>
@@ -919,7 +918,7 @@
         <button type="submit"
           class="mt-6 w-full cursor-pointer rounded-full bg-[var(--booking-brand)] px-4 py-3 text-sm font-semibold text-[var(--booking-brand-contrast)] shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           [disabled]="quoteRequestSubmitting()">
-          {{ quoteRequestSubmitting() ? 'Sending...' : quoteValue.depositRequired ? 'Continue' : 'Request my quote' }}
+          {{ quoteRequestSubmitting() ? 'Sending...' : quoteValue.depositRequired ? 'Send my payment link' : 'Request my quote' }}
         </button>
       </form>
     </section>
@@ -932,7 +931,7 @@
         <div class="p-6 sm:p-7">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Your quote</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Your repair estimate</p>
               <h2 class="mt-1 text-4xl font-semibold tracking-[-0.06em] text-gray-950">
                 {{ money(quoteValue.estimatedTotalCents) }}
               </h2>
@@ -956,7 +955,7 @@
           <div class="mt-5 flex flex-wrap items-center gap-2 text-sm text-gray-500">
             <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 font-medium text-gray-700 ring-1 ring-black/5">
               <lucide-icon [name]="icons.Clock3" class="h-4 w-4 text-gray-400"></lucide-icon>
-              Estimated service time: {{ quoteValue.durationMins }} mins
+              Estimated repair time: {{ quoteValue.durationMins }} minutes
             </span>
           </div>
 
@@ -964,16 +963,16 @@
           <div class="mt-4 grid gap-3 sm:grid-cols-2">
             @if (quoteValue.depositRequired) {
             <div class="rounded-[1.25rem] bg-gray-50 p-4 ring-1 ring-black/5">
-              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Due to reserve</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Deposit to book</p>
               <p class="mt-1 text-lg font-semibold text-gray-950">{{ money(quoteValue.depositAmountCents) }}</p>
-              <p class="mt-1 text-xs leading-5 text-gray-500">Remaining balance is due after service unless you choose full prepayment.</p>
+              <p class="mt-1 text-xs leading-5 text-gray-500">Pay this amount to reserve your appointment. The remaining balance is due after your repair unless you pay in full now.</p>
             </div>
             }
             @if (settings()?.publicFunnel?.showNextAvailabilityWithPrice && earliestAvailabilityLabel(); as earliest) {
             <div class="rounded-[1.25rem] bg-gray-50 p-4 ring-1 ring-black/5">
-              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Next available</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Earliest appointment</p>
               <p class="mt-1 text-sm font-semibold text-gray-950">{{ earliest }}</p>
-              <p class="mt-1 text-xs leading-5 text-gray-500">Availability updates in real time until you reserve a slot.</p>
+              <p class="mt-1 text-xs leading-5 text-gray-500">Times may change until your appointment is booked.</p>
             </div>
             }
           </div>
@@ -983,8 +982,8 @@
           <div class="mt-4 rounded-[1.4rem] bg-white p-4 ring-1 ring-black/5">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Recommended add-ons</p>
-                <p class="mt-1 text-xs leading-5 text-gray-500">Optional items are added to your remaining repair balance.</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Optional extras</p>
+                <p class="mt-1 text-xs leading-5 text-gray-500">Add any extras you’d like with your repair.</p>
               </div>
               @if (upsellTotalCents() > 0) {
               <span class="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700">+{{ money(upsellTotalCents()) }}</span>
@@ -1024,7 +1023,7 @@
 
           @if (settings()?.publicFunnel?.tradeInEnabled && settings()?.publicFunnel?.tradeInUrl) {
           <div class="mt-4 rounded-[1.4rem] bg-gray-50 p-4 ring-1 ring-black/5">
-            <p class="text-sm font-semibold text-gray-950">Not sure the repair is worth it?</p>
+            <p class="text-sm font-semibold text-gray-950">Thinking about other options?</p>
             <p class="mt-1 text-sm leading-6 text-gray-500">See what your device could be worth instead. This will not affect your current repair quote.</p>
             <a class="mt-3 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-950 shadow-sm ring-1 ring-black/5 transition hover:bg-gray-50"
               [href]="settings()?.publicFunnel?.tradeInUrl" target="_blank" rel="noopener">
@@ -1042,8 +1041,8 @@
             <lucide-icon [name]="icons.CalendarDays" class="h-5 w-5"></lucide-icon>
           </div>
           <div>
-            <h3 class="text-lg font-semibold tracking-[-0.025em] text-gray-950">Select appointment time</h3>
-            <p class="mt-1 text-sm leading-6 text-gray-500">Your quote has confirmed pricing. Choose a time tied to a real tech or contractor.</p>
+            <h3 class="text-lg font-semibold tracking-[-0.025em] text-gray-950">When works best for you?</h3>
+            <p class="mt-1 text-sm leading-6 text-gray-500">Pick a day and time that works for you.</p>
           </div>
         </div>
 
@@ -1053,16 +1052,16 @@
         </div>
         } @else if (!slots().length) {
         <div class="rounded-[1.5rem] bg-gray-50/90 p-4 ring-1 ring-black/5">
-          <p class="text-sm font-semibold text-gray-950">No times available yet.</p>
-          <p class="mt-1 text-sm leading-6 text-gray-500">This repair may need manual scheduling.</p>
+          <p class="text-sm font-semibold text-gray-950">No appointment times available right now.</p>
+          <p class="mt-1 text-sm leading-6 text-gray-500">Please check another date or contact us for help finding a time.</p>
         </div>
         } @else {
         <div class="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
           <div class="rounded-[1.5rem] bg-gray-50/90 p-4 ring-1 ring-black/5">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h4 class="text-sm font-semibold text-gray-950">Available dates</h4>
-                <p class="mt-1 text-xs leading-5 text-gray-500">Choose a day to view appointment times.</p>
+                <h4 class="text-sm font-semibold text-gray-950">Choose a date</h4>
+                <p class="mt-1 text-xs leading-5 text-gray-500">Select a day to see available times.</p>
               </div>
 
               <div class="flex items-center gap-1">
@@ -1172,12 +1171,12 @@
       [formGroup]="scheduleForm" (ngSubmit)="scheduleRepair()">
       <div class="p-6 sm:p-7">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Contact</p>
-        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">Your details</h2>
+        <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">A few final details</h2>
         <p class="mt-2 text-sm leading-6 text-gray-500">
           @if (appointmentSummary()) {
           {{ serviceModeTitle() }} · {{ appointmentSummary() }}
           } @else {
-          Add your contact details to finish scheduling.
+          Confirm your details to finish booking.
           }
         </p>
       </div>
@@ -1185,7 +1184,7 @@
       <div class="border-t border-gray-100 bg-[#f5f5f7]/80 p-4 sm:p-5">
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Name</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Full name</span>
             <div
               class="mt-2 flex items-center gap-3 rounded-[1.1rem] bg-white px-4 py-3 shadow-sm ring-1 ring-black/5 focus-within:ring-2 focus-within:ring-[var(--booking-brand)]">
               <lucide-icon [name]="icons.User" class="h-4 w-4 text-gray-400"></lucide-icon>
@@ -1195,7 +1194,7 @@
           </label>
 
           <label class="block">
-            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Email</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Email address</span>
             <div
               class="mt-2 flex items-center gap-3 rounded-[1.1rem] bg-white px-4 py-3 shadow-sm ring-1 ring-black/5 focus-within:ring-2 focus-within:ring-[var(--booking-brand)]">
               <lucide-icon [name]="icons.Mail" class="h-4 w-4 text-gray-400"></lucide-icon>
@@ -1231,20 +1230,20 @@
 
         @if (settings()?.publicFunnel?.preRepairIntakeEnabled) {
         <div class="mt-5 rounded-[1.5rem] bg-white p-4 shadow-sm ring-1 ring-black/5">
-          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Pre-repair intake</p>
-          <p class="mt-1 text-sm font-semibold text-gray-950">Help us get ready before you arrive</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Before your appointment</p>
+          <p class="mt-1 text-sm font-semibold text-gray-950">A few things to help us prepare</p>
           <div class="mt-3 space-y-3">
             <label class="flex cursor-pointer items-start gap-3 text-sm text-gray-700">
               <input type="checkbox" formControlName="deviceBackupConfirmed" class="mt-1 h-4 w-4 rounded border-gray-300" />
-              <span><span class="font-semibold text-gray-950">My device is backed up</span><span class="block text-xs leading-5 text-gray-500">Recommended before any repair involving device access.</span></span>
+              <span><span class="font-semibold text-gray-950">I’ve backed up my device</span><span class="block text-xs leading-5 text-gray-500">We recommend backing up your device before any repair.</span></span>
             </label>
             <label class="flex cursor-pointer items-start gap-3 text-sm text-gray-700">
               <input type="checkbox" formControlName="activationLockReady" class="mt-1 h-4 w-4 rounded border-gray-300" />
-              <span><span class="font-semibold text-gray-950">I can disable activation/device lock if needed</span><span class="block text-xs leading-5 text-gray-500">The technician will only ask when it is required for service or testing.</span></span>
+              <span><span class="font-semibold text-gray-950">I can turn off my device’s security lock if needed</span><span class="block text-xs leading-5 text-gray-500">We’ll only ask if it’s needed to complete or test your repair.</span></span>
             </label>
             <label class="block">
-              <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Existing damage / condition</span>
-              <textarea rows="2" formControlName="existingDamageNotes" placeholder="Cracks, dents, liquid exposure, or anything else we should document."
+              <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Anything else about your device?</span>
+              <textarea rows="2" formControlName="existingDamageNotes" placeholder="Cracks, dents, liquid damage, or anything we should know..."
                 class="mt-2 w-full resize-none rounded-[1.1rem] border-0 bg-gray-50 px-4 py-3 text-sm leading-6 text-gray-950 ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-[var(--booking-brand)]"></textarea>
             </label>
           </div>
@@ -1252,7 +1251,7 @@
         }
 
         <label class="mt-5 block">
-          <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Notes</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Additional notes (optional)</span>
           <textarea rows="3" formControlName="notes" placeholder="Anything else we should know?"
             class="mt-2 w-full resize-none rounded-[1.35rem] border-0 bg-white px-4 py-3 text-sm leading-6 text-gray-950 shadow-sm ring-1 ring-black/5 outline-none transition placeholder:text-gray-400 focus:ring-2 focus:ring-[var(--booking-brand)]"></textarea>
         </label>
@@ -1260,15 +1259,15 @@
         @if (quoteValue.depositRequired || shouldOfferFullPrepayment()) {
         <div class="mt-5 rounded-[1.5rem] bg-white p-4 shadow-sm ring-1 ring-black/5">
           <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Payment</p>
-          <p class="mt-1 text-sm font-semibold text-gray-950">Choose how you would like to confirm</p>
+          <p class="mt-1 text-sm font-semibold text-gray-950">How would you like to pay?</p>
           <div class="mt-3 grid gap-2">
             @if (!quoteValue.depositRequired) {
             <button type="button"
               class="cursor-pointer rounded-[1.1rem] border px-4 py-3 text-left transition"
               [ngClass]="paymentChoice() === 'pay_later' ? 'border-[var(--booking-brand)] bg-[var(--booking-brand-tint)]' : 'border-gray-200 hover:bg-gray-50'"
               (click)="selectPaymentChoice('pay_later')">
-              <span class="block text-sm font-semibold text-gray-950">Pay at appointment</span>
-              <span class="mt-1 block text-xs text-gray-500">No payment is collected today.</span>
+              <span class="block text-sm font-semibold text-gray-950">Pay at your appointment</span>
+              <span class="mt-1 block text-xs text-gray-500">Nothing to pay today.</span>
             </button>
             }
 
@@ -1278,10 +1277,10 @@
               [ngClass]="paymentChoice() === 'deposit' ? 'border-[var(--booking-brand)] bg-[var(--booking-brand-tint)]' : 'border-gray-200 hover:bg-gray-50'"
               (click)="selectPaymentChoice('deposit')">
               <span class="flex items-center justify-between gap-3">
-                <span class="text-sm font-semibold text-gray-950">Pay deposit</span>
+                <span class="text-sm font-semibold text-gray-950">Pay a deposit</span>
                 <span class="text-sm font-bold text-gray-950">{{ money(paymentChoiceAmountCents('deposit')) }}</span>
               </span>
-              <span class="mt-1 block text-xs text-gray-500">The remaining balance is due after the repair.</span>
+              <span class="mt-1 block text-xs text-gray-500">Reserve your appointment now and pay the rest after your repair.</span>
             </button>
             }
 
@@ -1294,14 +1293,14 @@
                 <span class="text-sm font-semibold text-gray-950">
                   {{ (settings()?.fullPrepaymentDiscountPercent ?? 0) > 0
                     ? 'Pay in full & save ' + settings()?.fullPrepaymentDiscountPercent + '%'
-                    : 'Pay in full now' }}
+                    : 'Pay in full today' }}
                 </span>
                 <span class="text-sm font-bold text-emerald-700">{{ money(paymentChoiceAmountCents('full')) }}</span>
               </span>
               <span class="mt-1 block text-xs text-emerald-700">
                 {{ fullPrepaymentSavingsCents() > 0
                   ? 'Save ' + money(fullPrepaymentSavingsCents()) + ' by paying today.'
-                  : 'Complete the full payment securely today.' }}
+                  : 'Pay the full amount securely today.' }}
               </span>
             </button>
             }
@@ -1330,7 +1329,7 @@
       <div class="p-6 sm:p-7">
         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Secure payment</p>
         <h2 class="mt-1 text-2xl font-semibold tracking-[-0.04em] text-gray-950">
-          {{ paymentValue.paymentMode === 'full' ? 'Pay in full' : 'Pay your deposit' }}
+          {{ paymentValue.paymentMode === 'full' ? 'Pay in full' : 'Pay your deposit securely' }}
         </h2>
         <div class="mt-4 flex items-end justify-between gap-4 rounded-[1.4rem] bg-gray-50 p-4 ring-1 ring-black/5">
           <div>
@@ -1362,7 +1361,7 @@
           {{ paymentSubmitting() ? 'Confirming payment...' : 'Pay securely & confirm appointment' }}
         </button>
         <p class="mt-3 text-center text-xs leading-5 text-gray-500">
-          Payment details are handled securely by Stripe. Your appointment is created only after Stripe confirms payment.
+          Your payment is processed securely. Your appointment will be confirmed once your payment is successful.
         </p>
       </div>
     </section>
@@ -1409,7 +1408,7 @@
       @if (settings()?.publicFunnel?.passwordlessPortalEnabled && shopSlug()) {
       <a class="mt-4 inline-flex items-center rounded-full bg-gray-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
         [href]="'/portal/' + shopSlug()">
-        View my customer portal
+        View my repair details
       </a>
       }
     </section>
