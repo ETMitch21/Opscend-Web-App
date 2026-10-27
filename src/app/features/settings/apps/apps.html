@@ -1,0 +1,297 @@
+<app-settings-layout>
+  @if (loading()) {
+    <section class="settings-card">
+      <div class="flex min-h-56 items-center justify-center gap-2 p-8 text-sm text-app-text-muted">
+        <lucide-icon [name]="icons.Loader" class="h-5 w-5 animate-spin"></lucide-icon>
+        Loading apps…
+      </div>
+    </section>
+  } @else if (error()) {
+    <section class="settings-card"><div class="settings-card-body text-sm text-rose-700">{{ error() }}</div></section>
+  } @else {
+    <div class="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <section class="settings-card self-start overflow-hidden xl:sticky xl:top-4">
+        <div class="settings-card-header">
+          <div class="min-w-0">
+            <h2 class="settings-card-title">Apps</h2>
+            <p class="settings-card-description">Extend Opscend without changing Opscend Core.</p>
+          </div>
+          <span class="shrink-0 rounded-full bg-app-surface-muted px-2.5 py-1 text-[10px] font-semibold text-app-text-muted">
+            {{ installedCount() }} active
+          </span>
+        </div>
+
+        @if (apps().length > 5) {
+          <div class="border-b border-app-border px-3 py-3">
+            <input class="settings-control" type="search" [ngModel]="directoryQuery()" (ngModelChange)="directoryQuery.set($event)" placeholder="Search apps" />
+          </div>
+        }
+
+        <div class="max-h-[calc(100vh-15rem)] overflow-y-auto">
+          @if (installedApps().length) {
+            <div class="border-b border-app-border">
+              <div class="flex items-center justify-between px-4 pb-2 pt-3">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">Your apps</span>
+                @if (readyCount()) { <span class="text-[10px] font-medium text-app-text-muted">{{ readyCount() }} ready</span> }
+              </div>
+              @for (app of installedApps(); track app.key) {
+                <button type="button"
+                  class="relative flex w-full cursor-pointer items-start gap-3 border-t border-app-border/70 px-4 py-3.5 text-left transition first:border-t-0 hover:bg-app-surface-muted/45"
+                  [class.bg-brand/5]="selectedKey() === app.key" (click)="select(app)">
+                  @if (selectedKey() === app.key) { <span class="absolute inset-y-2 left-0 w-0.5 rounded-r bg-brand"></span> }
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-surface-muted text-app-text">
+                    <lucide-icon [name]="icons.Apps" class="h-5 w-5"></lucide-icon>
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex flex-wrap items-center gap-1.5">
+                      <span class="truncate text-xs font-semibold text-app-text">{{ app.name }}</span>
+                      @if (app.isOfficial) { <span class="rounded-full bg-orange-50 px-2 py-0.5 text-[9px] font-semibold text-orange-600">Official</span> }
+                    </span>
+                    <span class="mt-1 block line-clamp-2 text-[10.5px] leading-4 text-app-text-muted">{{ app.description }}</span>
+                    <span class="mt-2 inline-flex rounded-full px-2 py-0.5 text-[9px] font-semibold"
+                      [class.bg-emerald-100]="app.installation?.setupState === 'ready'"
+                      [class.text-emerald-800]="app.installation?.setupState === 'ready'"
+                      [class.bg-amber-100]="app.installation?.setupState === 'needs_setup'"
+                      [class.text-amber-800]="app.installation?.setupState === 'needs_setup'"
+                      [class.bg-app-surface-muted]="app.installation?.setupState === 'disabled'"
+                      [class.text-app-text-muted]="app.installation?.setupState === 'disabled'">
+                      {{ appStatusLabel(app) }}
+                    </span>
+                  </span>
+                </button>
+              }
+            </div>
+          }
+
+          @if (availableApps().length) {
+            <div>
+              <div class="px-4 pb-2 pt-3"><span class="text-[10px] font-semibold uppercase tracking-[0.08em] text-app-text-muted">Available</span></div>
+              @for (app of availableApps(); track app.key) {
+                <button type="button"
+                  class="relative flex w-full cursor-pointer items-start gap-3 border-t border-app-border/70 px-4 py-3.5 text-left transition first:border-t-0 hover:bg-app-surface-muted/45"
+                  [class.bg-brand/5]="selectedKey() === app.key" (click)="select(app)">
+                  @if (selectedKey() === app.key) { <span class="absolute inset-y-2 left-0 w-0.5 rounded-r bg-brand"></span> }
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-surface-muted text-app-text">
+                    <lucide-icon [name]="icons.Apps" class="h-5 w-5"></lucide-icon>
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex flex-wrap items-center gap-1.5">
+                      <span class="truncate text-xs font-semibold text-app-text">{{ app.name }}</span>
+                      @if (app.isOfficial) { <span class="rounded-full bg-orange-50 px-2 py-0.5 text-[9px] font-semibold text-orange-600">Official</span> }
+                    </span>
+                    <span class="mt-1 block line-clamp-2 text-[10.5px] leading-4 text-app-text-muted">{{ app.description }}</span>
+                  </span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (selectedApp(); as app) {
+        <div class="space-y-4">
+          <section class="settings-card">
+            <div class="settings-card-body flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div class="flex min-w-0 items-start gap-4">
+                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-app-surface-muted text-app-text">
+                  <lucide-icon [name]="icons.Apps" class="h-6 w-6"></lucide-icon>
+                </span>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-app-text">{{ app.name }}</h2>
+                    @if (app.isOfficial) { <span class="rounded-full bg-orange-50 px-2.5 py-1 text-[9.5px] font-semibold text-orange-600">Official by Opscend</span> }
+                    @if (app.installation) {
+                      <span class="rounded-full bg-app-surface-muted px-2.5 py-1 text-[9.5px] font-semibold text-app-text-muted">{{ appStatusLabel(app) }}</span>
+                    }
+                  </div>
+                  <p class="mt-1 max-w-3xl text-xs leading-5 text-app-text-muted">{{ app.description }}</p>
+                  <div class="mt-3 flex flex-wrap gap-1.5">
+                    @for (capability of app.manifest.capabilities; track capability) {
+                      <span class="rounded-md bg-app-surface-muted px-2 py-1 text-[9.5px] font-semibold text-app-text-muted">{{ capability.replaceAll('_', ' ') }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
+              <div class="shrink-0">
+                @if (!app.installed) {
+                  <button type="button" class="settings-primary-action cursor-pointer" [disabled]="!canManage() || working()" (click)="install(app)">
+                    @if (working()) { <lucide-icon [name]="icons.Loader" class="h-4 w-4 animate-spin"></lucide-icon> }
+                    {{ app.installation?.status === 'disabled' ? 'Enable app' : 'Install app' }}
+                  </button>
+                }
+              </div>
+            </div>
+          </section>
+
+          @if (app.installed && app.installation) {
+            @for (section of settingsSections(app); track section.id) {
+              <section class="settings-card overflow-hidden">
+                <div class="settings-card-header">
+                  <div>
+                    <h3 class="settings-card-title">{{ section.title }}</h3>
+                    @if (section.description) { <p class="settings-card-description">{{ section.description }}</p> }
+                  </div>
+                </div>
+                <div class="settings-card-body space-y-4">
+                  @for (field of section.fields; track field.path ?? field.secretKey ?? field.label) {
+                    @if (fieldVisible(field, appSettings(app))) {
+                      @if (field.type === 'collection') {
+                        <div class="overflow-hidden rounded-xl border border-app-border">
+                          @for (item of collectionItems(appSettings(app), field); track $index) {
+                            <div class="grid gap-3 border-t border-app-border px-4 py-4 first:border-t-0 lg:grid-cols-[minmax(180px,1fr)_minmax(0,2.2fr)] lg:items-center">
+                              <div>
+                                <p class="text-xs font-semibold text-app-text">{{ collectionLabel(item, field, $index) }}</p>
+                                @if (field.itemKeyPath) { <p class="mt-0.5 text-[9.5px] font-mono text-app-text-muted">{{ valueAt(item, field.itemKeyPath) }}</p> }
+                              </div>
+                              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                @for (column of field.columns ?? []; track column.path ?? column.label) {
+                                  @if (fieldVisible(column, item)) {
+                                    @switch (column.type) {
+                                      @case ('toggle') {
+                                        <label class="flex cursor-pointer items-center gap-3 self-end pb-2">
+                                          <button type="button" class="settings-switch cursor-pointer" [class.is-on]="!!valueAt(item, column.path ?? '')" (click)="setValue(item, column.path ?? '', !valueAt(item, column.path ?? ''))"><span class="settings-switch-handle"></span></button>
+                                          <span class="text-xs font-semibold text-app-text">{{ column.label }}</span>
+                                        </label>
+                                      }
+                                      @case ('number') {
+                                        <label>
+                                          <span class="settings-label">{{ column.label }}</span>
+                                          <div class="settings-input-group mt-1">
+                                            @if (column.prefix) { <span class="settings-input-affix is-prefix">{{ column.prefix }}</span> }
+                                            <input type="number" [min]="column.min ?? null" [max]="column.max ?? null" [step]="column.step ?? 1" [ngModel]="valueAt(item, column.path ?? '')" (ngModelChange)="setValue(item, column.path ?? '', $event)" />
+                                            @if (column.suffix) { <span class="settings-input-affix is-suffix">{{ column.suffix }}</span> }
+                                          </div>
+                                        </label>
+                                      }
+                                      @case ('select') {
+                                        <label>
+                                          <span class="settings-label">{{ column.label }}</span>
+                                          <select class="settings-control mt-1" [ngModel]="valueAt(item, column.path ?? '')" (ngModelChange)="setValue(item, column.path ?? '', $event)">
+                                            @for (option of column.options ?? []; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
+                                          </select>
+                                        </label>
+                                      }
+                                      @default {
+                                        <label>
+                                          <span class="settings-label">{{ column.label }}</span>
+                                          <input class="settings-control mt-1" type="text" [ngModel]="valueAt(item, column.path ?? '')" (ngModelChange)="setValue(item, column.path ?? '', $event)" [placeholder]="column.placeholder ?? ''" />
+                                        </label>
+                                      }
+                                    }
+                                  }
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      } @else {
+                        <div class="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start">
+                          <div>
+                            <label class="settings-label">{{ field.label }}</label>
+                            @if (field.help) { <p class="mt-1 text-[10px] leading-4 text-app-text-muted">{{ field.help }}</p> }
+                          </div>
+                          <div>
+                            @switch (field.type) {
+                              @case ('segmented') {
+                                <div class="settings-segmented">
+                                  @for (option of field.options ?? []; track option.value) {
+                                    <button type="button" class="cursor-pointer" [class.is-active]="valueAt(appSettings(app), field.path ?? '') === option.value" (click)="setValue(appSettings(app), field.path ?? '', option.value)">{{ option.label }}</button>
+                                  }
+                                </div>
+                              }
+                              @case ('toggle') {
+                                <label class="flex cursor-pointer items-center gap-3 py-1">
+                                  <button type="button" class="settings-switch cursor-pointer" [class.is-on]="!!valueAt(appSettings(app), field.path ?? '')" (click)="setValue(appSettings(app), field.path ?? '', !valueAt(appSettings(app), field.path ?? ''))"><span class="settings-switch-handle"></span></button>
+                                  <span class="text-xs text-app-text-muted">{{ valueAt(appSettings(app), field.path ?? '') ? 'Enabled' : 'Disabled' }}</span>
+                                </label>
+                              }
+                              @case ('secret') {
+                                <input class="settings-control" type="password" [ngModel]="secretValue(field.secretKey ?? '')" (ngModelChange)="setSecretValue(field.secretKey ?? '', $event)"
+                                  [placeholder]="secretSaved(app, field.secretKey ?? '') ? 'Secret saved — leave blank to keep it' : (field.placeholder ?? 'Enter secret')" autocomplete="new-password" />
+                                <div class="mt-2 flex items-center gap-1.5 text-[10px] text-app-text-muted">
+                                  <lucide-icon [name]="icons.Lock" class="h-3.5 w-3.5 text-brand"></lucide-icon>
+                                  {{ secretSaved(app, field.secretKey ?? '') ? 'Encrypted secret is saved.' : 'No secret saved yet.' }}
+                                </div>
+                              }
+                              @case ('select') {
+                                <select class="settings-control" [ngModel]="valueAt(appSettings(app), field.path ?? '')" (ngModelChange)="setValue(appSettings(app), field.path ?? '', $event)">
+                                  @for (option of field.options ?? []; track option.value) { <option [value]="option.value">{{ option.label }}</option> }
+                                </select>
+                              }
+                              @case ('number') {
+                                <div class="settings-input-group">
+                                  @if (field.prefix) { <span class="settings-input-affix is-prefix">{{ field.prefix }}</span> }
+                                  <input type="number" [min]="field.min ?? null" [max]="field.max ?? null" [step]="field.step ?? 1" [ngModel]="valueAt(appSettings(app), field.path ?? '')" (ngModelChange)="setValue(appSettings(app), field.path ?? '', $event)" />
+                                  @if (field.suffix) { <span class="settings-input-affix is-suffix">{{ field.suffix }}</span> }
+                                </div>
+                              }
+                              @default {
+                                <input class="settings-control" type="text" [ngModel]="valueAt(appSettings(app), field.path ?? '')" (ngModelChange)="setValue(appSettings(app), field.path ?? '', $event)" [placeholder]="field.placeholder ?? ''" />
+                              }
+                            }
+                          </div>
+                        </div>
+                      }
+                    }
+                  }
+                </div>
+              </section>
+            }
+
+            @if (settingsSections(app).length) {
+              <div class="flex justify-end">
+                <button type="button" class="settings-primary-action cursor-pointer" [disabled]="!canManage() || working()" (click)="saveApp(app)">
+                  <lucide-icon [name]="working() ? icons.Loader : icons.Save" class="h-4 w-4" [class.animate-spin]="working()"></lucide-icon>
+                  Save settings
+                </button>
+              </div>
+            }
+          }
+
+          <section class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <h3 class="settings-card-title">Access & permissions</h3>
+                <p class="settings-card-description">What this app can access inside this shop.</p>
+              </div>
+              <span class="rounded-full bg-app-surface-muted px-2.5 py-1 text-[10px] font-semibold text-app-text-muted">{{ app.installed ? 'Granted' : 'Requested' }}</span>
+            </div>
+            <div class="settings-card-body">
+              <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                @for (permission of app.manifest.permissions; track permission) {
+                  <div class="flex items-start gap-2 rounded-xl border border-app-border bg-app-surface-muted/35 p-3">
+                    <lucide-icon [name]="icons.Shield" class="mt-0.5 h-4 w-4 shrink-0 text-brand"></lucide-icon>
+                    <div class="min-w-0">
+                      <p class="text-xs font-semibold text-app-text">{{ permissionLabel(permission) }}</p>
+                      <p class="mt-0.5 break-all text-[9.5px] font-mono text-app-text-muted">{{ permission }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[10px] text-app-text-muted">
+                <span>Developer: <strong class="text-app-text">{{ app.developer }}</strong></span>
+                <span>Category: <strong class="text-app-text">{{ app.category }}</strong></span>
+                <span>Version: <strong class="text-app-text">{{ app.version }}</strong></span>
+                @if (app.installation?.runtimeStatus) { <span>Runtime: <strong class="text-app-text">{{ app.installation?.runtimeStatus }}</strong></span> }
+              </div>
+            </div>
+          </section>
+
+          @if (app.installed) {
+            <section class="settings-card">
+              <div class="settings-card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-xs font-semibold text-app-text">Disable app</p>
+                  <p class="mt-1 text-[10.5px] leading-5 text-app-text-muted">Stops new app activity immediately while retaining configuration and history.</p>
+                </div>
+                <button type="button" class="settings-secondary-action cursor-pointer text-rose-700" [disabled]="!canManage() || working()" (click)="disable(app)">
+                  <lucide-icon [name]="icons.Power" class="h-4 w-4"></lucide-icon> Disable
+                </button>
+              </div>
+            </section>
+          }
+        </div>
+      }
+    </div>
+  }
+</app-settings-layout>

@@ -42,6 +42,8 @@ import {
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
 import { PublicBookingService } from '../../../core/public-booking/service';
+import { AppsService } from '../../../core/apps/service';
+import { PublicAppExtension } from '../../../core/apps/model';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
 import { getDeviceColorSwatch } from '../../../core/ui/device-color-swatch';
 import {
@@ -145,6 +147,7 @@ const PUBLIC_POPULAR_BRANDS_BY_CATEGORY: Record<string, string[]> = {
 export class PublicBooking implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly bookingService = inject(PublicBookingService);
+  private readonly appsService = inject(AppsService);
   private readonly appConfig = inject(AppConfigService);
 
   readonly paymentElementHost = viewChild<ElementRef<HTMLDivElement>>('paymentElementHost');
@@ -193,7 +196,8 @@ export class PublicBooking implements OnDestroy {
       this.scheduling() ||
       this.quoteRequestSubmitting() ||
       this.paymentPreparing() ||
-      this.paymentSubmitting()
+      this.paymentSubmitting() ||
+      !!this.appActionBusy()
     );
   });
 
@@ -330,6 +334,11 @@ export class PublicBooking implements OnDestroy {
   readonly selectedUpsellIds = signal<Set<string>>(new Set());
 
   readonly quote = signal<PublicRepairQuote | null>(null);
+  readonly quoteExtensions = signal<PublicAppExtension[]>([]);
+  readonly appActionBusy = signal<string | null>(null);
+  readonly appActionError = signal<string | null>(null);
+  readonly pendingAppAction = signal<{ appKey: string; origin: string } | null>(null);
+  private readonly appMessageHandler = (event: MessageEvent) => { void this.handleAppMessage(event); };
   readonly canRevealRepairSelectionPrices = computed(() =>
     this.settings()?.publicFunnel?.showRepairStepPricing === true ||
     this.settings()?.publicFunnel?.requireContactBeforePrice === false
@@ -769,6 +778,7 @@ export class PublicBooking implements OnDestroy {
     }
 
     this.shopSlug.set(slug);
+    window.addEventListener('message', this.appMessageHandler);
     this.syncAddressValidators();
     this.bindSearchControls();
 
@@ -901,6 +911,7 @@ export class PublicBooking implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    window.removeEventListener('message', this.appMessageHandler);
     this.destroyPaymentElement();
   }
 
@@ -1093,6 +1104,10 @@ export class PublicBooking implements OnDestroy {
     this.selectedPricingTierKey.set(null);
     this.selectedRepairAttributes.set({});
     this.quote.set(null);
+    this.quoteExtensions.set([]);
+    this.appActionError.set(null);
+    this.pendingAppAction.set(null);
+    this.appActionBusy.set(null);
     this.selectedUpsellIds.set(new Set());
     this.slots.set([]);
     this.selectedSlotKey.set(null);
@@ -1665,6 +1680,10 @@ export class PublicBooking implements OnDestroy {
     this.quoting.set(true);
     this.error.set(null);
     this.quote.set(null);
+    this.quoteExtensions.set([]);
+    this.appActionError.set(null);
+    this.pendingAppAction.set(null);
+    this.appActionBusy.set(null);
     this.selectedUpsellIds.set(new Set());
     this.slots.set([]);
     this.selectedSlotKey.set(null);
@@ -1707,6 +1726,7 @@ export class PublicBooking implements OnDestroy {
       );
 
       this.quote.set(quote);
+      await this.loadQuoteExtensions();
       this.paymentChoice.set(quote.depositRequired ? 'deposit' : 'pay_later');
       this.paymentIntent.set(null);
       this.paymentError.set(null);
@@ -1865,6 +1885,124 @@ export class PublicBooking implements OnDestroy {
     return this.formatCalendarDateLabel(selectedDate);
   }
 
+
+  async loadQuoteExtensions(): Promise<void> {
+    const slug = this.shopSlug();
+    const quote = this.quote();
+    if (!slug || !quote) {
+      this.quoteExtensions.set([]);
+      return;
+    }
+    try {
+      const response = await firstValueFrom(this.appsService.publicExtensions(slug, 'public_booking.quote', quote.quoteId));
+      this.quoteExtensions.set(response.data ?? []);
+    } catch (error) {
+      console.warn('Optional quote extensions could not be loaded.', error);
+      this.quoteExtensions.set([]);
+    }
+  }
+
+  appActionBusyKey(extension: PublicAppExtension, optionValue?: string): string {
+    return `${extension.appKey}:${extension.action?.key ?? 'action'}:${optionValue ?? ''}`;
+  }
+
+  isAppActionBusy(extension: PublicAppExtension, optionValue?: string): boolean {
+    return this.appActionBusy() === this.appActionBusyKey(extension, optionValue);
+  }
+
+  async startAppAction(extension: PublicAppExtension, optionValue?: string): Promise<void> {
+    const slug = this.shopSlug();
+    const quote = this.quote();
+    const actionKey = extension.action?.key;
+    if (!slug || !quote || !actionKey || this.appActionBusy()) return;
+
+    this.appActionError.set(null);
+    this.appActionBusy.set(this.appActionBusyKey(extension, optionValue));
+    const wantsPopup = (extension.action?.presentation ?? 'popup') === 'popup';
+    const popup = wantsPopup
+      ? window.open('', `opscend-app-${extension.appKey}`, 'popup=yes,width=560,height=760,resizable=yes,scrollbars=yes')
+      : null;
+
+    try {
+      const started = await firstValueFrom(this.appsService.startPublicAction(slug, extension.appKey, actionKey, {
+        quoteId: quote.quoteId,
+        input: optionValue == null ? {} : { option: optionValue },
+      }));
+
+      if (started.presentation === 'popup') {
+        if (!popup || !started.url) {
+          popup?.close();
+          this.appActionError.set('Your browser blocked the app window. Allow pop-ups for this site and try again.');
+          this.appActionBusy.set(null);
+          return;
+        }
+        const origin = new URL(started.url).origin;
+        this.pendingAppAction.set({ appKey: extension.appKey, origin });
+        popup.location.href = started.url;
+        popup.focus();
+        const popupWatch = window.setInterval(() => {
+          const pending = this.pendingAppAction();
+          if (!pending || pending.appKey !== extension.appKey) {
+            window.clearInterval(popupWatch);
+            return;
+          }
+          if (popup.closed) {
+            window.clearInterval(popupWatch);
+            this.pendingAppAction.set(null);
+            this.appActionBusy.set(null);
+          }
+        }, 500);
+        return;
+      }
+
+      popup?.close();
+      await this.refreshQuoteAfterAppAction(extension.appKey);
+    } catch (error) {
+      popup?.close();
+      console.error('App action could not be started.', error);
+      this.appActionError.set('This app action could not be started. Please try again.');
+      this.appActionBusy.set(null);
+      this.pendingAppAction.set(null);
+    }
+  }
+
+  private async handleAppMessage(event: MessageEvent): Promise<void> {
+    const expected = this.pendingAppAction();
+    if (!expected || event.origin !== expected.origin) return;
+    const data = event.data;
+    if (!data || data.type !== 'opscend:app-action-complete' || data.appKey !== expected.appKey) return;
+
+    this.pendingAppAction.set(null);
+    if (data.status !== 'success') {
+      this.appActionError.set(data.message || 'The app could not complete this action.');
+      this.appActionBusy.set(null);
+      return;
+    }
+
+    await this.refreshQuoteAfterAppAction(expected.appKey);
+  }
+
+  private async refreshQuoteAfterAppAction(appKey: string): Promise<void> {
+    const slug = this.shopSlug();
+    const quote = this.quote();
+    if (!slug || !quote) {
+      this.appActionBusy.set(null);
+      return;
+    }
+    try {
+      const state = await firstValueFrom(this.appsService.publicQuoteState(slug, quote.quoteId));
+      this.quote.update((current) => current && current.quoteId === state.quoteId
+        ? { ...current, estimatedTotalCents: state.estimatedTotalCents, depositAmountCents: state.depositAmountCents }
+        : current);
+      this.appActionError.set(null);
+      await this.loadQuoteExtensions();
+    } catch (error) {
+      console.error('Updated quote could not be loaded after app action.', error);
+      this.appActionError.set('The app finished, but the updated quote could not be loaded.');
+    } finally {
+      this.appActionBusy.set(null);
+    }
+  }
 
   goBack(): void {
     this.error.set(null);

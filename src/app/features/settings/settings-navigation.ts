@@ -241,6 +241,14 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     description: 'External connections, exports, and shop diagnostics.',
     items: [
       {
+        label: 'Apps',
+        description: 'Install optional capabilities and configure app permissions, credentials, and workflows.',
+        route: '/settings/apps',
+        icon: BlocksIcon,
+        permission: 'apps:read',
+        keywords: ['apps', 'plugins', 'extensions', 'marketplace', 'developer'],
+      },
+      {
         label: 'Integrations',
         description: 'Supplier, payment, and external service connections used by your shop.',
         route: '/settings/integrations',

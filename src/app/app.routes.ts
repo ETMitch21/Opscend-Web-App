@@ -383,6 +383,14 @@ export const routes: Routes = [
                 ]
             },
             {
+                path: 'apps',
+                loadComponent: () => import("./features/settings/apps/apps").then(
+                    (m) => m.OpscendAppsSettings
+                ),
+                canActivate: [PermissionGuard],
+                data: { permission: 'apps:read' }
+            },
+            {
                 path: 'integrations',
                 loadComponent: () => import("./features/settings/shop-integrations/shop-integrations").then(
                     (m) => m.ShopIntegrations

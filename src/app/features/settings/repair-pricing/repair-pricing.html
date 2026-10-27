@@ -6,6 +6,10 @@
       <span class="flex-1"></span>
       <button type="button" class="cursor-pointer rounded border border-app-border px-3 py-1.5 text-xs hover:bg-app-surface-muted" (click)="repairTypesDrawerOpen.set(true)">Repair types</button>
       <button type="button" class="cursor-pointer rounded border border-app-border px-3 py-1.5 text-xs hover:bg-app-surface-muted" (click)="exportSheetCsv()">Export CSV</button>
+      <label class="cursor-pointer rounded border border-app-border px-3 py-1.5 text-xs hover:bg-app-surface-muted">
+        Import CSV
+        <input class="sr-only" type="file" accept=".csv,text/csv" (change)="handleCsvImport($event)" />
+      </label>
     </div>
     @if (error()) { <p class="p-3 text-sm text-red-600">{{ error() }}</p> }
     <div class="flex items-center justify-between border-b border-app-border px-3 py-1.5 text-xs">
@@ -239,4 +243,38 @@
 
 @if (repairTypesDrawerOpen()) {
   <app-repair-types-drawer (dismissed)="closeRepairTypesDrawer()" />
+}
+
+@if (csvImportOpen()) {
+  <div class="fixed inset-0 z-[1200] bg-black/50" (click)="closeCsvImport()"></div>
+  <aside class="fixed inset-y-0 right-0 z-[1201] flex w-full max-w-[min(850px,96vw)] flex-col border-l border-app-border bg-app-surface shadow-2xl" role="dialog" aria-modal="true" aria-label="Import repair pricing CSV">
+    <header class="flex items-center justify-between border-b border-app-border px-5 py-4">
+      <div><h2 class="text-lg font-semibold">Import pricing CSV</h2><p class="text-xs text-app-text-muted">{{ csvImportFileName() }} · Only changed rows are saved.</p></div>
+      <button class="cursor-pointer rounded border border-app-border px-3 py-2" type="button" [disabled]="csvImportBusy()" (click)="closeCsvImport()">Close</button>
+    </header>
+    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <p class="text-sm text-app-text-muted">Export your pricing, edit it in Google Sheets, and import the CSV. Copy an existing row and change its <strong>Option</strong> to create a new option. New options are always created as private, inactive drafts. Keep the ID columns unchanged.</p>
+      @if (csvImportError()) { <div role="alert" class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{{ csvImportError() }}</div> }
+      <div class="flex flex-wrap gap-3 text-sm">
+        <span>{{ csvImportItems().filter(x => x.action === 'create').length }} new</span>
+        <span>{{ csvImportItems().filter(x => x.action === 'update').length }} updates</span>
+        <span>{{ csvImportItems().filter(x => x.action === 'skip').length }} unchanged</span>
+        <span class="text-red-600">{{ csvImportItems().filter(x => x.action === 'error').length }} errors</span>
+      </div>
+      <div class="overflow-x-auto rounded-lg border border-app-border">
+        <table class="w-full text-left text-xs"><thead class="bg-app-surface-muted"><tr><th class="px-3 py-2">CSV line</th><th class="px-3 py-2">Pricing option</th><th class="px-3 py-2">Action</th><th class="px-3 py-2">Details</th></tr></thead>
+          <tbody>@for (item of csvImportItems(); track item.line) {
+            <tr class="border-t border-app-border"><td class="px-3 py-2">{{ item.line }}</td><td class="px-3 py-2">{{ item.label }}</td><td class="px-3 py-2" [class.text-red-600]="item.action === 'error'">{{ item.action }}</td><td class="px-3 py-2">{{ item.message }}</td></tr>
+          }</tbody>
+        </table>
+      </div>
+      @if (csvImportProgress()) { <p class="text-sm" role="status">{{ csvImportProgress() }}</p> }
+    </div>
+    <footer class="flex justify-end gap-2 border-t border-app-border px-5 py-3">
+      <button type="button" class="cursor-pointer rounded border border-app-border px-4 py-2 text-sm" [disabled]="csvImportBusy()" (click)="closeCsvImport()">{{ csvImportFinished() ? 'Done' : 'Cancel' }}</button>
+      @if (!csvImportFinished()) {
+        <button type="button" class="cursor-pointer rounded bg-orange-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50" [disabled]="csvImportBusy() || !!csvImportError() || csvImportItems().some(x => x.action === 'error') || !csvImportItems().some(x => x.action === 'create' || x.action === 'update')" (click)="applyCsvImport()">{{ csvImportBusy() ? 'Importing…' : 'Apply changes' }}</button>
+      }
+    </footer>
+  </aside>
 }

@@ -147,6 +147,56 @@ interface GridPricePatch extends GridPriceFields { id: string; expectedUpdatedAt
   ],
   templateUrl: './repair-pricing.html',
 })
+type CsvImportAction = 'skip' | 'create' | 'update' | 'error';
+interface CsvPriceImportItem {
+  line: number;
+  label: string;
+  action: CsvImportAction;
+  message: string;
+  payload: Partial<PricingOptionInput> | null;
+  sourceId: string;
+}
+
+function pricingCsvCents(input: string): number | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  if (!/^(?:\d+)(?:\.\d{1,2})?$/.test(raw) || Number(raw) > 1_000_000) throw new Error(`Invalid dollar amount: ${raw}`);
+  return Math.round(Number(raw) * 100);
+}
+
+// RFC-4180-style quoted CSV including embedded commas, line breaks, and escaped quotes.
+function parsePricingCsv(content: string): Array<Record<string, string>> {
+  const input = content.replace(/^\uFEFF/, '');
+  const records: string[][] = [];
+  let record: string[] = [], cell = '', quoted = false;
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (c === '"') {
+      if (quoted && input[i + 1] === '"') { cell += '"'; i++; }
+      else if (quoted || !cell) quoted = !quoted;
+      else throw new Error('Invalid quotation in CSV.');
+    } else if (c === ',' && !quoted) { record.push(cell); cell = ''; }
+    else if ((c === '\n' || c === '\r') && !quoted) {
+      record.push(cell); cell = '';
+      if (record.some(value => value.trim())) records.push(record);
+      record = [];
+      if (c === '\r' && input[i + 1] === '\n') i++;
+    } else cell += c;
+  }
+  if (quoted) throw new Error('Unclosed quote in CSV.');
+  record.push(cell);
+  if (record.some(value => value.trim())) records.push(record);
+  if (!records.length) throw new Error('The CSV is empty.');
+  const headers = records.shift()!.map(s => s.trim());
+  const required = ['Pricing ID','Device ID','Repair ID','Device','Repair','Option','Labor','Fixed selling price','Mode','Visibility','Status','Updated At'];
+  if (required.some(name => !headers.includes(name))) throw new Error('This CSV is missing required columns. Export a fresh CSV from Opscend first.');
+  if (new Set(headers).size !== headers.length) throw new Error('Duplicate CSV column names.');
+  return records.map((values, i) => {
+    if (values.length !== headers.length) throw new Error(`Line ${i + 2}: expected ${headers.length} columns, found ${values.length}.`);
+    return Object.fromEntries(headers.map((name, idx) => [name, values[idx]]));
+  });
+}
+
 export class RepairPricingSettings implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -2036,22 +2086,196 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     else this.sheetOptions().forEach((row) => next.add(row.id));
     this.selectedOptionIds.set(next);
   }
+  // CSV round-trip: stable IDs prevent name/sort changes from editing the wrong repair.
+  // A copied row with a different Option is interpreted as a NEW private draft.
+  readonly csvImportOpen = signal(false);
+  readonly csvImportBusy = signal(false);
+  readonly csvImportProgress = signal('');
+  readonly csvImportItems = signal<CsvPriceImportItem[]>([]);
+  readonly csvImportFileName = signal('');
+  readonly csvImportError = signal('');
+  readonly csvImportFinished = signal(false);
+
   exportSheetCsv(): void {
     const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
-    const records = [['Device', 'Repair', 'Option', 'Labor', 'Fixed selling price', 'Mode', 'Status'],
-      ...this.sheetOptions().map((row) => [
-        this.modelLabel(row), row.repairType.label, row.variantName,
-        this.sheetAmount(row, 'laborCents'), this.sheetAmount(row, 'fixedPriceCents'),
-        row.useDynamicPricing ? 'Automatic' : 'Manual',
-        row.isActive ? 'Active' : 'Inactive',
-      ])];
-    const csv = records.map((r) => r.map(escapeCsv).join(',')).join('\r\n');
-    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'opscend-repair-prices.csv'; a.click();
+    const fields = ['Pricing ID', 'Device ID', 'Repair ID', 'Device', 'Repair', 'Option', 'Labor', 'Fixed selling price', 'Mode', 'Visibility', 'Status', 'Updated At'];
+    const records = [fields, ...this.options().map(row => [
+      row.id, row.deviceCatalogModelId ?? '', row.repairNeedId,
+      this.modelLabel(row), row.repairType.label, row.variantName,
+      this.sheetAmount(row, 'laborCents'), this.sheetAmount(row, 'fixedPriceCents'),
+      row.useDynamicPricing ? 'Automatic' : 'Manual', row.isPublic ? 'Public' : 'Private',
+      row.isActive ? 'Active' : 'Inactive', row.updatedAt,
+    ])];
+    const csv = records.map(record => record.map(value => escapeCsv(String(value ?? ''))).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'opscend-repair-pricing.csv';
+    link.click();
     URL.revokeObjectURL(url);
   }
+
+  closeCsvImport(): void {
+    if (this.csvImportBusy()) return;
+    this.csvImportOpen.set(false);
+  }
+
+  async handleCsvImport(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.csvImportOpen.set(true);
+    this.csvImportFileName.set(file.name);
+    this.csvImportError.set('');
+    this.csvImportFinished.set(false);
+    this.csvImportItems.set([]);
+    try {
+      if (file.size > 5_000_000) throw new Error('CSV must be smaller than 5 MB.');
+      // Read current server state before comparing; do not trust stale worksheet data.
+      const response = await firstValueFrom(this.pricingApi.listOptions({ includeInactive: true, includePrivate: true }));
+      const existing = response.data ?? [];
+      const parsed = parsePricingCsv(await file.text());
+      if (!parsed.length) throw new Error('No data rows found in the CSV.');
+      if (parsed.length > 5000) throw new Error('Import up to 5,000 rows at a time.');
+      this.csvImportItems.set(this.previewPricingCsv(parsed, existing));
+    } catch (error) {
+      this.csvImportError.set(error instanceof Error ? error.message : 'Unable to read CSV.');
+    }
+  }
+
+  private previewPricingCsv(rows: Array<Record<string, string>>, existing: PricingOption[]): CsvPriceImportItem[] {
+    const byId = new Map(existing.map(o => [o.id, o]));
+    const seen = new Set<string>();
+    const planned = new Set(existing.map(o => `${o.deviceCatalogModelId ?? ''}|${o.repairNeedId}|${o.variantName.trim().toLowerCase()}`));
+    return rows.map((row, index) => {
+      const label = [row['Device'], row['Repair'], row['Option']].filter(Boolean).join(' · ');
+      const output: CsvPriceImportItem = { line: index + 2, label, action: 'skip', message: 'Unchanged', payload: null, sourceId: '' };
+      try {
+        const id = (row['Pricing ID'] || '').trim();
+        const source = id ? byId.get(id) : undefined;
+        if (id && !source) throw new Error('Unknown Pricing ID. Export a new CSV before importing.');
+        const modelId = (row['Device ID'] || '').trim() || source?.deviceCatalogModelId || '';
+        const repairId = (row['Repair ID'] || '').trim() || source?.repairNeedId || '';
+        const variant = (row['Option'] || '').trim();
+        if (!modelId || !repairId || !variant) throw new Error('Device ID, Repair ID and Option are required.');
+        if (source && row['Updated At'] !== source.updatedAt) throw new Error('This pricing row changed since export. Re-export before importing.');
+        if (source && (source.deviceCatalogModelId !== modelId || source.repairNeedId !== repairId)) throw new Error('Device/Repair IDs do not match the source row.');
+        if (source && (row['Device'] !== this.modelLabel(source) || row['Repair'] !== source.repairType.label)) throw new Error('Device or Repair label differs from the source.');
+        if (variant.length > 120) throw new Error('Option name is too long.');
+        const labor = pricingCsvCents(row['Labor']);
+        const fixed = pricingCsvCents(row['Fixed selling price']);
+        const mode = row['Mode'].trim().toLowerCase();
+        const visibility = row['Visibility'].trim().toLowerCase();
+        const status = row['Status'].trim().toLowerCase();
+        if (!['automatic', 'manual'].includes(mode)) throw new Error('Mode must be Automatic or Manual.');
+        if (!['public', 'private'].includes(visibility)) throw new Error('Visibility must be Public or Private.');
+        if (!['active', 'inactive'].includes(status)) throw new Error('Status must be Active or Inactive.');
+        const dynamic = mode === 'automatic';
+        const isPublic = visibility === 'public';
+        const isActive = status === 'active';
+        const key = `${modelId}|${repairId}|${variant.toLowerCase()}`;
+        const sameVariant = source && source.variantName.trim().toLowerCase() === variant.toLowerCase();
+        if (sameVariant && source) {
+          if (seen.has(source.id)) throw new Error('Duplicate existing row in CSV.');
+          seen.add(source.id);
+          const patch: Partial<PricingOptionInput> = {};
+          if (source.laborCents !== labor) patch.laborCents = labor;
+          if (source.fixedPriceCents !== fixed) patch.fixedPriceCents = fixed;
+          if (source.useDynamicPricing !== dynamic) patch.useDynamicPricing = dynamic;
+          if (source.isPublic !== isPublic) patch.isPublic = isPublic;
+          if (source.isActive !== isActive) patch.isActive = isActive;
+          if (!Object.keys(patch).length) return output;
+          output.action = 'update'; output.sourceId = source.id;
+          output.payload = patch;
+          output.message = Object.keys(patch).join(', ');
+        } else {
+          const template = source ?? existing.find(o => o.deviceCatalogModelId === modelId && o.repairNeedId === repairId);
+          if (!template) throw new Error('New option needs an existing repair row to copy.');
+          if (planned.has(key)) throw new Error('This device, repair and option already exists (or appears twice).');
+          planned.add(key);
+          output.action = 'create';
+          output.message = 'New inactive, private draft';
+          output.sourceId = template.id;
+          output.payload = {
+            deviceCatalogModelId: modelId, repairNeedId: repairId, variantName: variant,
+            laborCents: labor, fixedPriceCents: fixed, useDynamicPricing: dynamic,
+            isActive: false, isPublic: false,
+            serviceId: template.serviceId, productId: template.productId,
+            productSupplierId: template.productSupplierId,
+            requiresProduct: template.requiresProduct, attributeValues: template.attributeValues,
+            durationMins: template.durationMins, description: template.description,
+            depositMode: template.depositMode, depositAmountCents: template.depositAmountCents,
+            depositShippingCents: template.depositShippingCents,
+            depositIncludeProcessingFees: template.depositIncludeProcessingFees,
+            depositIncludeInstantPayoutFee: template.depositIncludeInstantPayoutFee,
+            requiresManualReview: template.requiresManualReview,
+            allowInstantConfirmation: template.allowInstantConfirmation,
+          } satisfies PricingOptionInput;
+        }
+      } catch (error) {
+        output.action = 'error';
+        output.message = error instanceof Error ? error.message : 'Invalid row';
+      }
+      return output;
+    });
+  }
+
+  async applyCsvImport(): Promise<void> {
+    if (this.csvImportBusy() || this.gridBusy()) return;
+    const items = this.csvImportItems();
+    const ready = items.filter(item => item.action === 'create' || item.action === 'update');
+    if (!ready.length || items.some(item => item.action === 'error')) return;
+    this.csvImportBusy.set(true);
+    this.csvImportError.set('');
+    let done = 0;
+    let failed = 0;
+    try {
+      // Existing rows use optimistic-concurrency checking through the existing batch API.
+      const updates = ready.filter(item => item.action === 'update');
+      for (let i = 0; i < updates.length; i += 100) {
+        const group = updates.slice(i, i + 100);
+        this.csvImportProgress.set(`Updating existing prices: ${done} of ${ready.length}`);
+        try {
+          const serverRows = (await firstValueFrom(this.pricingApi.listOptions({ includeInactive: true, includePrivate: true }))).data ?? [];
+          const serverMap = new Map(serverRows.map(row => [row.id, row]));
+          const batch = group.map(item => {
+            const current = serverMap.get(item.sourceId);
+            if (!current) throw new Error(`Line ${item.line}: pricing option no longer exists.`);
+            return { id: current.id, expectedUpdatedAt: current.updatedAt, ...(item.payload as Partial<PricingOptionInput>) };
+          });
+          await firstValueFrom(this.pricingApi.batchUpdatePrices(batch));
+          done += group.length;
+        } catch (error) {
+          failed += group.length;
+          this.csvImportError.set(`An update batch failed. Refresh and re-export before retrying. ${error instanceof Error ? error.message : ''}`);
+          break;
+        }
+      }
+      if (!failed) {
+        for (const item of ready.filter(entry => entry.action === 'create')) {
+          this.csvImportProgress.set(`Saving new options: ${done} of ${ready.length}`);
+          try {
+            await firstValueFrom(this.pricingApi.createOption(item.payload as PricingOptionInput));
+            done++;
+          } catch (error) {
+            failed++;
+            item.action = 'error';
+            item.message = `Creation failed: ${error instanceof Error ? error.message : 'Check server validation'}`;
+          }
+        }
+      }
+      this.csvImportItems.set([...items]);
+      await this.loadOptions('');
+      this.csvImportFinished.set(true);
+      this.csvImportProgress.set(`${done} saved, ${failed} failed, ${items.filter(x => x.action === 'skip').length} unchanged`);
+      if (failed) this.toast.error(`${failed} CSV rows failed. Review the results before retrying.`);
+      else this.toast.success(`${done} pricing changes imported`);
+    } finally {
+      this.csvImportBusy.set(false);
+    }
+  }
+
   async applySheetPaste(): Promise<void> {
     if (!this.sheetPasteValid() || this.sheetBatchRunning() || this.bulkSaving()) return;
     const selected = this.sheetSelectedOptions();

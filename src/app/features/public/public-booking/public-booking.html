@@ -986,6 +986,64 @@
           </div>
           }
 
+          @if (quoteExtensions().length) {
+          <div class="mt-4 space-y-3">
+            @for (extension of quoteExtensions(); track extension.appKey + ':' + extension.id) {
+              <div class="rounded-[1.4rem] bg-gray-50 p-4 ring-1 ring-black/5">
+                <div class="flex items-start gap-3">
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-gray-700 shadow-sm ring-1 ring-black/5">
+                    <lucide-icon [name]="icons.ShieldCheck" class="h-5 w-5"></lucide-icon>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p class="text-sm font-semibold text-gray-950">{{ extension.title }}</p>
+                        @if (extension.description) { <p class="mt-1 text-xs leading-5 text-gray-500">{{ extension.description }}</p> }
+                      </div>
+                      <span class="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-gray-600 ring-1 ring-black/5">{{ extension.badge || extension.appName }}</span>
+                    </div>
+
+                    @if (extension.completed) {
+                      <div class="mt-3 flex flex-col gap-2 rounded-xl bg-emerald-50 p-3 ring-1 ring-emerald-100 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+                          <lucide-icon [name]="icons.CheckCircle2" class="h-4 w-4"></lucide-icon>
+                          {{ extension.completed.label }}
+                        </div>
+                        @if (extension.completed.amountCents != null) { <span class="text-sm font-semibold text-emerald-800">You saved {{ money(extension.completed.amountCents) }}</span> }
+                      </div>
+                    } @else if (extension.action) {
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        @if (extension.options?.length) {
+                          @for (option of extension.options ?? []; track option.value) {
+                            <button type="button"
+                              class="cursor-pointer rounded-full bg-white px-3.5 py-2 text-xs font-semibold text-gray-800 shadow-sm ring-1 ring-black/5 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              [disabled]="!!appActionBusy()"
+                              (click)="startAppAction(extension, option.value)">
+                              {{ isAppActionBusy(extension, option.value) ? 'Working…' : option.label }}
+                            </button>
+                          }
+                        } @else {
+                          <button type="button"
+                            class="cursor-pointer rounded-full bg-white px-3.5 py-2 text-xs font-semibold text-gray-800 shadow-sm ring-1 ring-black/5 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            [disabled]="!!appActionBusy()"
+                            (click)="startAppAction(extension)">
+                            {{ isAppActionBusy(extension) ? 'Working…' : (extension.action.buttonLabel || 'Continue') }}
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    @if (extension.footnote) { <p class="mt-2 text-[10.5px] leading-5 text-gray-400">{{ extension.footnote }}</p> }
+                  </div>
+                </div>
+              </div>
+            }
+            @if (appActionError()) {
+              <p class="rounded-xl bg-rose-50 px-3 py-2 text-xs leading-5 text-rose-700 ring-1 ring-rose-100">{{ appActionError() }}</p>
+            }
+          </div>
+          }
+
           @if (settings()?.publicFunnel?.smartUpsellsEnabled && matchingUpsells().length) {
           <div class="mt-4 rounded-[1.4rem] bg-white p-4 ring-1 ring-black/5">
             <div class="flex items-start justify-between gap-3">
