@@ -178,9 +178,20 @@ function parsePricingCsv(content: string): Array<Record<string, string>> {
   const required = ['Pricing ID','Device ID','Repair ID','Device','Repair','Option','Labor','Fixed selling price','Mode','Visibility','Status','Updated At'];
   if (required.some(name => !headers.includes(name))) throw new Error('This CSV is missing required columns. Export a fresh CSV from Opscend first.');
   if (new Set(headers).size !== headers.length) throw new Error('Duplicate CSV column names.');
-  return records.map((values, i) => {
+  return records.flatMap((values, i) => {
+    // Google Sheets/Excel sometimes add a repeated header or an empty template row.
+    // Treat neither as a pricing record. Do not suppress genuinely incomplete repairs.
+    const trimmed = values.map(value => value.trim());
+    if (trimmed.every(value => !value)) return [];
+    if (trimmed.length === headers.length && trimmed.every((value, idx) => value === headers[idx])) return [];
     if (values.length !== headers.length) throw new Error(`Line ${i + 2}: expected ${headers.length} columns, found ${values.length}.`);
-    return Object.fromEntries(headers.map((name, idx) => [name, values[idx]]));
+    const row = Object.fromEntries(headers.map((name, idx) => [name, values[idx]]));
+    const hasIdentity = [row['Pricing ID'], row['Device ID'], row['Repair ID'], row['Device']].some(value => value?.trim());
+    const hasPricing = [row['Labor'], row['Fixed selling price']].some(value => value?.trim());
+    // A blank worksheet/template row may retain defaults such as Screen Repair / Standard.
+    // Only ignore it if no device, record ID or monetary value was supplied.
+    if (!hasIdentity && !hasPricing) return [];
+    return [row];
   });
 }
 
