@@ -134,19 +134,6 @@ interface GridPriceFields {
 }
 interface GridPricePatch extends GridPriceFields { id: string; expectedUpdatedAt: string; }
 
-@Component({
-  selector: 'app-repair-pricing',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    LucideAngularModule,
-    SettingsLayoutComponent,
-    RepairTypesDrawer,
-    RevoGrid,
-  ],
-  templateUrl: './repair-pricing.html',
-})
 type CsvImportAction = 'skip' | 'create' | 'update' | 'error';
 interface CsvPriceImportItem {
   line: number;
@@ -197,6 +184,19 @@ function parsePricingCsv(content: string): Array<Record<string, string>> {
   });
 }
 
+@Component({
+  selector: 'app-repair-pricing',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    LucideAngularModule,
+    SettingsLayoutComponent,
+    RepairTypesDrawer,
+    RevoGrid,
+  ],
+  templateUrl: './repair-pricing.html',
+})
 export class RepairPricingSettings implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -2092,6 +2092,15 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   readonly csvImportBusy = signal(false);
   readonly csvImportProgress = signal('');
   readonly csvImportItems = signal<CsvPriceImportItem[]>([]);
+  readonly csvImportCounts = computed(() => {
+    const counts = { create: 0, update: 0, skip: 0, error: 0 };
+    for (const item of this.csvImportItems()) counts[item.action]++;
+    return counts;
+  });
+  readonly csvImportCanApply = computed(() => {
+    const counts = this.csvImportCounts();
+    return !this.csvImportBusy() && !this.csvImportError() && counts.error === 0 && (counts.create + counts.update) > 0;
+  });
   readonly csvImportFileName = signal('');
   readonly csvImportError = signal('');
   readonly csvImportFinished = signal(false);
