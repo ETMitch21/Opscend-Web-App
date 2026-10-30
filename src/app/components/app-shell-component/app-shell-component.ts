@@ -260,6 +260,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
     { label: 'CRM', route: '/crm', icon: this.crmIcon, permission: 'crm:read' },
     { label: 'Business', route: '/business-accounts', icon: this.businessAccountsIcon, permission: 'businessAccounts:read' },
     { label: 'Balances', route: '/balances', icon: this.walletCardsIcon, permission: 'orders:read' },
+    { label: 'Payment Links', route: '/payment-links', icon: this.walletCardsIcon, permission: 'orders:read' },
     { label: 'Services', route: '/services', icon: this.toolboxIcon, permission: 'services:read' },
     {
       label: 'Products',

@@ -110,6 +110,12 @@ export const routes: Routes = [
         data: { permission: 'businessAccounts:read' }
     },
     {
+        path: 'payment-links',
+        loadComponent: () => import('./features/payment-links/payment-links').then(m => m.PaymentLinks),
+        canActivate: [PermissionGuard],
+        data: { permission: 'orders:read' }
+    },
+    {
         path: "balances",
         loadComponent: () =>
             import('./features/receivables/receivables').then((m) => m.Receivables),
@@ -210,6 +216,11 @@ export const routes: Routes = [
                             import('./features/settings/shop-communications/shop-communications').then((m) => m.ShopCommunicationsSettings),
                         canActivate: [PermissionGuard],
                         data: { permission: 'communications:read' }
+                    },
+                    {
+                        path: 'payment-links',
+                        redirectTo: '/payment-links',
+                        pathMatch: 'full'
                     },
                     {
                         path: 'payments',

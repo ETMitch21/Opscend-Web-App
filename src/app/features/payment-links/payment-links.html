@@ -1,0 +1,34 @@
+<div class="p-6 max-w-6xl mx-auto space-y-5">
+  <div class="flex items-center justify-between gap-4">
+    <div><h1 class="text-2xl font-semibold">Payment Links</h1><p class="text-sm text-app-text-muted">One-time checkout links through your connected Stripe account.</p></div>
+    <button type="button" class="settings-primary-action cursor-pointer" (click)="showCreate = true">Create payment link</button>
+  </div>
+  @if (error()) { <div class="settings-alert is-error">{{error()}}</div> }
+  @if (showCreate) {
+    <section class="settings-card p-5 space-y-4">
+      <div class="flex items-center justify-between"><h2 class="font-semibold">New payment link</h2><button type="button" class="cursor-pointer" (click)="showCreate = false">Close</button></div>
+      @for (item of items; track $index; let index = $index) {
+        <div class="grid grid-cols-12 gap-3 items-end">
+          <label class="col-span-6 text-sm">Item name<input class="settings-control w-full" placeholder="Product or service" [(ngModel)]="item.name" maxlength="180" /></label>
+          <label class="col-span-3 text-sm">Price ($)<input class="settings-control w-full" type="number" min="0.5" step="0.01" [(ngModel)]="item.price" /></label>
+          <label class="col-span-2 text-sm">Quantity<input class="settings-control w-full" type="number" min="1" step="1" [(ngModel)]="item.quantity" /></label>
+          <button type="button" class="col-span-1 cursor-pointer" [disabled]="items.length === 1" (click)="removeItem(index)">Remove</button>
+        </div>
+      }
+      <button type="button" class="settings-secondary-action cursor-pointer" (click)="addItem()">Add item</button>
+      <div class="flex items-center justify-between"><strong>Total: {{total | currency:'USD'}}</strong><button type="button" class="settings-primary-action cursor-pointer" [disabled]="saving()" (click)="create()">{{saving() ? 'Creating…' : 'Create & copy link'}}</button></div>
+      <p class="text-xs text-app-text-muted">Stripe displays eligible payment options, including buy now, pay later when available. Each link is limited to one completed checkout.</p>
+    </section>
+  }
+  <section class="settings-card overflow-x-auto">
+    @if (loading()) { <p class="p-5">Loading payment links…</p> }
+    @else if (!links().length) { <p class="p-5 text-app-text-muted">No payment links yet. Create your first link above.</p> }
+    @else {
+      <table class="w-full text-sm"><thead><tr class="text-left border-b"><th class="p-3">Created</th><th class="p-3">Items</th><th class="p-3">Status</th><th class="p-3 text-right">Actions</th></tr></thead>
+      <tbody>@for (link of links(); track link.id) {
+        <tr class="border-b"><td class="p-3">{{link.created * 1000 | date:'mediumDate'}}</td><td class="p-3">{{link.items.length ? link.items[0].name : link.id}}</td><td class="p-3">{{link.paidCount > 0 ? 'Used' : link.active ? 'Active' : 'Inactive'}}</td>
+          <td class="p-3 text-right space-x-3"><button class="cursor-pointer underline" type="button" (click)="copy(link.url)">Copy</button><a [href]="link.url" target="_blank" rel="noopener noreferrer" class="underline">Open</a>@if(link.active){<button class="cursor-pointer underline" type="button" (click)="deactivate(link)">Deactivate</button>}</td></tr>
+      }</tbody></table>
+    }
+  </section>
+</div>
