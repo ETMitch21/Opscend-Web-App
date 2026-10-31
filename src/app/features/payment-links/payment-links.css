@@ -11,3 +11,16 @@
 .pl-filter-selected, .pl-filter-selected:hover { background: #020617; color: #fff; }
 .pl-action { display: inline-flex; align-items: center; justify-content: center; gap: .375rem; padding: .45rem .65rem; border: 1px solid #e2e8f0; border-radius: .7rem; background: #fff; color: #475569; font-size: .75rem; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer; }
 .pl-action:hover { background: #f8fafc; }
+
+/* Normalize page-size chevron alignment without changing shared table controls. */
+:host ::ng-deep app-table-page-size select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 1.85rem;
+  padding-left: .75rem;
+  min-height: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  background-position: right .55rem center;
+}

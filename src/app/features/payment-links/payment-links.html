@@ -7,7 +7,7 @@
     </div>
     <div class="flex flex-wrap items-center gap-2">
       <button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" [disabled]="loading()" (click)="load()"><lucide-icon [name]="loading() ? icons.Loader2 : icons.RefreshCw" class="h-4 w-4" [class.animate-spin]="loading()"></lucide-icon> Refresh</button>
-      <button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600" (click)="showCreate = !showCreate"><lucide-icon [name]="showCreate ? icons.X : icons.Plus" class="h-4 w-4"></lucide-icon>{{showCreate ? 'Close' : 'Create payment link'}}</button>
+      <button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600" (click)="showCreate = true"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>Create payment link</button>
     </div>
   </div>
   @if(error()) { <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{error()}}</div> }
@@ -18,24 +18,37 @@
     <article class="pl-stat"><div class="flex items-center justify-between"><div><p class="pl-stat-label">Active link value</p><p class="pl-stat-value">{{money(activeValueCents())}}</p></div><div class="pl-stat-icon bg-amber-50 text-amber-700"><lucide-icon [name]="icons.Ban" class="h-5 w-5"></lucide-icon></div></div><p class="mt-3 text-xs text-slate-500">Total checkout amount for active links.</p></article>
   </section>
   @if(showCreate) {
-    <section class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div class="flex items-start justify-between gap-3"><div><h2 class="text-base font-semibold text-slate-950">New payment link</h2><p class="mt-1 text-sm text-slate-500">Add products or services with a custom price. Each link can be paid once.</p></div><button type="button" class="cursor-pointer text-slate-400 hover:text-slate-700" aria-label="Close" (click)="showCreate=false"><lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon></button></div>
-      <div class="mt-5 space-y-3">@for(item of items; track $index; let index=$index) {
-        <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_105px_auto] sm:items-end">
-          <label class="pl-field">Item name<input class="pl-input" placeholder="Product or service" [(ngModel)]="item.name" maxlength="180" /></label>
-          <label class="pl-field">Price ($)<input class="pl-input" type="number" min="0.5" step="0.01" [(ngModel)]="item.price" /></label>
-          <label class="pl-field">Quantity<input class="pl-input" type="number" min="1" step="1" [(ngModel)]="item.quantity" /></label>
-          <button type="button" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 px-3 text-slate-500 hover:bg-slate-50 disabled:opacity-40" aria-label="Remove item" [disabled]="items.length===1" (click)="removeItem(index)"><lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon></button>
+    <div class="fixed inset-0 z-[100]" role="dialog" aria-modal="true" aria-labelledby="pl-drawer-title" (keydown.escape)="showCreate=false">
+      <button type="button" class="absolute inset-0 w-full cursor-pointer bg-slate-950/40 backdrop-blur-[2px]" aria-label="Close new payment link drawer" (click)="showCreate=false"></button>
+      <aside class="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl">
+        <header class="flex items-start justify-between gap-3 border-b border-slate-200 px-6 py-5">
+          <div><h2 id="pl-drawer-title" class="text-xl font-semibold text-slate-950">New payment link</h2><p class="mt-1 text-sm text-slate-500">Create a one-time checkout link using Stripe.</p></div>
+          <button type="button" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Close drawer" (click)="showCreate=false"><lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon></button>
+        </header>
+        <div class="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+          @if(error()) { <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{error()}}</div> }
+          <div class="space-y-4">
+            @for(item of items; track $index; let index=$index) {
+              <div class="rounded-xl border border-slate-200 p-4">
+                <div class="mb-3 flex items-center justify-between"><h3 class="text-sm font-semibold text-slate-900">Item {{index + 1}}</h3><button type="button" class="cursor-pointer text-slate-400 hover:text-rose-600 disabled:opacity-30" aria-label="Remove item" [disabled]="items.length===1" (click)="removeItem(index)"><lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon></button></div>
+                <label class="pl-field">Item name<input class="pl-input" placeholder="Product or service" [(ngModel)]="item.name" maxlength="180" /></label>
+                <div class="mt-3 grid grid-cols-2 gap-3"><label class="pl-field">Price ($)<input class="pl-input" type="number" min="0.5" step="0.01" [(ngModel)]="item.price" /></label><label class="pl-field">Quantity<input class="pl-input" type="number" min="1" step="1" [(ngModel)]="item.quantity" /></label></div>
+              </div>
+            }
+          </div>
+          <button type="button" class="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-700" (click)="addItem()"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>Add another item</button>
+          <p class="text-xs leading-relaxed text-slate-500">Stripe displays eligible payment methods, including Klarna and Afterpay where available.</p>
         </div>
-      }</div>
-      <button type="button" class="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-700" (click)="addItem()"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>Add another item</button>
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5"><div><p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total</p><p class="text-2xl font-semibold text-slate-950">{{total | currency:'USD'}}</p></div><button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50" [disabled]="saving()" (click)="create()">{{saving() ? 'Creating…' : 'Create & copy link'}}</button></div>
-      <p class="mt-3 text-xs text-slate-500">Stripe displays eligible payment methods, including Klarna and Afterpay where available.</p>
-    </section>
+        <footer class="border-t border-slate-200 bg-white px-6 py-5">
+          <div class="mb-4 flex items-center justify-between"><span class="text-sm font-semibold text-slate-500">Total</span><span class="text-2xl font-semibold text-slate-950">{{total | currency:'USD'}}</span></div>
+          <div class="flex gap-3"><button type="button" class="h-10 flex-1 cursor-pointer rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50" (click)="showCreate=false">Cancel</button><button type="button" class="h-10 flex-1 cursor-pointer rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50" [disabled]="saving()" (click)="create()">{{saving() ? 'Creating…' : 'Create & copy link'}}</button></div>
+        </footer>
+      </aside>
+    </div>
   }
   <section class="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
     <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-      <div class="relative w-full lg:max-w-md"><lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-4 top-3 h-4 w-4 text-slate-400"></lucide-icon><input type="search" class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3 text-sm outline-none placeholder:text-slate-400 focus:border-slate-400" placeholder="Search payment links or items" [ngModel]="search()" (ngModelChange)="search.set($event)" /></div>
+      <div class="relative w-full lg:max-w-md"><lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></lucide-icon><input type="search" class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3 text-sm outline-none placeholder:text-slate-400 focus:border-slate-400" placeholder="Search payment links or items" [ngModel]="search()" (ngModelChange)="search.set($event)" /></div>
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" class="pl-filter" [class.pl-filter-selected]="filter()==='all'" (click)="filter.set('all')">All</button>
         <button type="button" class="pl-filter" [class.pl-filter-selected]="filter()==='active'" (click)="filter.set('active')">Active</button>
