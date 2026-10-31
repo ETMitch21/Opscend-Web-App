@@ -24,3 +24,11 @@
   background-size: 14px 14px;
   background-position: right .55rem center;
 }
+
+/* Use a real flex input group: the icon occupies its own column and never overlaps text. */
+.pl-search { display: flex; align-items: center; height: 42px; gap: 10px; padding: 0 14px; border: 1px solid #dbe3ef; border-radius: 12px; background: white; transition: border-color .15s; }
+.pl-search:focus-within { border-color: #f58549; box-shadow: 0 0 0 3px rgba(245,133,73,.10); }
+.pl-search-icon { flex: 0 0 18px; display: flex; align-items: center; justify-content: center; color: #94a3b8; line-height: 0; }
+.pl-search-icon lucide-icon { display: flex; align-items: center; justify-content: center; }
+.pl-search input { display: block; flex: 1 1 0; min-width: 0; height: 100%; padding: 0; margin: 0; border: 0; outline: 0; box-shadow: none; background: transparent; font-size: 14px; color: #334155; }
+.pl-search input::placeholder { color: #94a3b8; }
