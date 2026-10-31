@@ -1,34 +1,55 @@
-<div class="pl-page p-6 max-w-6xl mx-auto space-y-5">
-  <div class="flex items-center justify-between gap-4">
-    <div><h1 class="text-2xl font-semibold">Payment Links</h1><p class="text-sm text-app-text-muted">One-time checkout links through your connected Stripe account.</p></div>
-    <button type="button" class="pl-button pl-button-primary cursor-pointer" (click)="showCreate = true">Create payment link</button>
+<div class="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div class="flex items-center gap-2 text-sm font-semibold text-slate-500"><lucide-icon [name]="icons.CreditCard" class="h-4 w-4"></lucide-icon> Payments</div>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Payment Links</h1>
+      <p class="mt-1 text-sm text-slate-500">Create and share one-time checkout links through your connected Stripe account.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" [disabled]="loading()" (click)="load()"><lucide-icon [name]="loading() ? icons.Loader2 : icons.RefreshCw" class="h-4 w-4" [class.animate-spin]="loading()"></lucide-icon> Refresh</button>
+      <button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600" (click)="showCreate = !showCreate"><lucide-icon [name]="showCreate ? icons.X : icons.Plus" class="h-4 w-4"></lucide-icon>{{showCreate ? 'Close' : 'Create payment link'}}</button>
+    </div>
   </div>
-  @if (error()) { <div class="pl-error">{{error()}}</div> }
-  @if (showCreate) {
-    <section class="pl-card pl-create p-5 space-y-4">
-      <div class="flex items-center justify-between"><h2 class="font-semibold">New payment link</h2><button type="button" class="pl-text-button cursor-pointer" (click)="showCreate = false">Close</button></div>
-      @for (item of items; track $index; let index = $index) {
-        <div class="grid grid-cols-12 gap-3 items-end">
-          <label class="col-span-6 text-sm">Item name<input class="pl-control w-full" placeholder="Product or service" [(ngModel)]="item.name" maxlength="180" /></label>
-          <label class="col-span-3 text-sm">Price ($)<input class="pl-control w-full" type="number" min="0.5" step="0.01" [(ngModel)]="item.price" /></label>
-          <label class="col-span-2 text-sm">Quantity<input class="pl-control w-full" type="number" min="1" step="1" [(ngModel)]="item.quantity" /></label>
-          <button type="button" class="col-span-1 pl-text-button cursor-pointer" [disabled]="items.length === 1" (click)="removeItem(index)">Remove</button>
+  @if(error()) { <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{error()}}</div> }
+  <section class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <article class="pl-stat"><div class="flex items-center justify-between"><div><p class="pl-stat-label">Total links</p><p class="pl-stat-value">{{visibleCount()}}</p></div><div class="pl-stat-icon bg-slate-100 text-slate-600"><lucide-icon [name]="icons.Link2" class="h-5 w-5"></lucide-icon></div></div><p class="mt-3 text-xs text-slate-500">Active and used payment links.</p></article>
+    <article class="pl-stat"><div class="flex items-center justify-between"><div><p class="pl-stat-label">Active</p><p class="pl-stat-value">{{activeCount()}}</p></div><div class="pl-stat-icon bg-blue-50 text-blue-700"><lucide-icon [name]="icons.CreditCard" class="h-5 w-5"></lucide-icon></div></div><p class="mt-3 text-xs text-slate-500">Ready to share with customers.</p></article>
+    <article class="pl-stat"><div class="flex items-center justify-between"><div><p class="pl-stat-label">Used</p><p class="pl-stat-value">{{usedCount()}}</p></div><div class="pl-stat-icon bg-emerald-50 text-emerald-700"><lucide-icon [name]="icons.CircleCheck" class="h-5 w-5"></lucide-icon></div></div><p class="mt-3 text-xs text-slate-500">Links with a completed checkout.</p></article>
+    <article class="pl-stat"><div class="flex items-center justify-between"><div><p class="pl-stat-label">Active link value</p><p class="pl-stat-value">{{money(activeValueCents())}}</p></div><div class="pl-stat-icon bg-amber-50 text-amber-700"><lucide-icon [name]="icons.Ban" class="h-5 w-5"></lucide-icon></div></div><p class="mt-3 text-xs text-slate-500">Total checkout amount for active links.</p></article>
+  </section>
+  @if(showCreate) {
+    <section class="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div class="flex items-start justify-between gap-3"><div><h2 class="text-base font-semibold text-slate-950">New payment link</h2><p class="mt-1 text-sm text-slate-500">Add products or services with a custom price. Each link can be paid once.</p></div><button type="button" class="cursor-pointer text-slate-400 hover:text-slate-700" aria-label="Close" (click)="showCreate=false"><lucide-icon [name]="icons.X" class="h-5 w-5"></lucide-icon></button></div>
+      <div class="mt-5 space-y-3">@for(item of items; track $index; let index=$index) {
+        <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_105px_auto] sm:items-end">
+          <label class="pl-field">Item name<input class="pl-input" placeholder="Product or service" [(ngModel)]="item.name" maxlength="180" /></label>
+          <label class="pl-field">Price ($)<input class="pl-input" type="number" min="0.5" step="0.01" [(ngModel)]="item.price" /></label>
+          <label class="pl-field">Quantity<input class="pl-input" type="number" min="1" step="1" [(ngModel)]="item.quantity" /></label>
+          <button type="button" class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 px-3 text-slate-500 hover:bg-slate-50 disabled:opacity-40" aria-label="Remove item" [disabled]="items.length===1" (click)="removeItem(index)"><lucide-icon [name]="icons.Trash2" class="h-4 w-4"></lucide-icon></button>
         </div>
-      }
-      <button type="button" class="pl-button pl-button-secondary cursor-pointer" (click)="addItem()">Add item</button>
-      <div class="flex items-center justify-between"><strong>Total: {{total | currency:'USD'}}</strong><button type="button" class="pl-button pl-button-primary cursor-pointer" [disabled]="saving()" (click)="create()">{{saving() ? 'Creating…' : 'Create & copy link'}}</button></div>
-      <p class="text-xs text-app-text-muted">Stripe displays eligible payment options, including buy now, pay later when available. Each link is limited to one completed checkout.</p>
+      }</div>
+      <button type="button" class="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-orange-600 hover:text-orange-700" (click)="addItem()"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>Add another item</button>
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5"><div><p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total</p><p class="text-2xl font-semibold text-slate-950">{{total | currency:'USD'}}</p></div><button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50" [disabled]="saving()" (click)="create()">{{saving() ? 'Creating…' : 'Create & copy link'}}</button></div>
+      <p class="mt-3 text-xs text-slate-500">Stripe displays eligible payment methods, including Klarna and Afterpay where available.</p>
     </section>
   }
-  <section class="pl-card overflow-x-auto">
-    @if (loading()) { <p class="p-5">Loading payment links…</p> }
-    @else if (!links().length) { <p class="p-5 text-app-text-muted">No payment links yet. Create your first link above.</p> }
+  <section class="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+      <div class="relative w-full lg:max-w-md"><lucide-icon [name]="icons.Search" class="pointer-events-none absolute left-4 top-3 h-4 w-4 text-slate-400"></lucide-icon><input type="search" class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-3 text-sm outline-none placeholder:text-slate-400 focus:border-slate-400" placeholder="Search payment links or items" [ngModel]="search()" (ngModelChange)="search.set($event)" /></div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" class="pl-filter" [class.pl-filter-selected]="filter()==='all'" (click)="filter.set('all')">All</button>
+        <button type="button" class="pl-filter" [class.pl-filter-selected]="filter()==='active'" (click)="filter.set('active')">Active</button>
+        <button type="button" class="pl-filter" [class.pl-filter-selected]="filter()==='used'" (click)="filter.set('used')">Used</button>
+        <app-table-page-size storageKey="payment-links" [totalItems]="filteredLinks().length"></app-table-page-size>
+      </div>
+    </div>
+    @if(loading()) { <div class="flex items-center justify-center gap-2 py-16 text-sm text-slate-500"><lucide-icon [name]="icons.Loader2" class="h-5 w-5 animate-spin"></lucide-icon> Loading payment links…</div> }
+    @else if (!filteredLinks().length) { <div class="px-5 py-16 text-center"><div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><lucide-icon [name]="icons.Link2" class="h-6 w-6"></lucide-icon></div><h2 class="mt-4 font-semibold text-slate-950">No payment links found</h2><p class="mt-1 text-sm text-slate-500">{{visibleCount() ? 'Try another search or status.' : 'Create your first payment link to get started.'}}</p></div> }
     @else {
-      <table class="pl-table w-full text-sm"><thead><tr class="text-left border-b"><th class="p-3">Created</th><th class="p-3">Items</th><th class="p-3">Status</th><th class="p-3 text-right">Actions</th></tr></thead>
-      <tbody>@for (link of links(); track link.id) {
-        <tr class="border-b"><td class="p-3">{{link.created * 1000 | date:'mediumDate'}}</td><td class="p-3">{{link.items.length ? link.items[0].name : link.id}}</td><td class="p-3">{{link.paidCount > 0 ? 'Used' : link.active ? 'Active' : 'Inactive'}}</td>
-          <td class="p-3 text-right space-x-3"><button class="pl-text-button cursor-pointer" type="button" (click)="copy(link.url)">Copy</button><a [href]="link.url" target="_blank" rel="noopener noreferrer" class="pl-text-button">Open</a>@if(link.active){<button class="pl-text-button cursor-pointer" type="button" (click)="deactivate(link)">Deactivate</button>}</td></tr>
-      }</tbody></table>
+      <div class="overflow-x-auto"><table class="w-full min-w-[780px] border-collapse text-left"><thead class="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400"><tr><th class="px-5 py-3">Items</th><th class="px-4 py-3">Created</th><th class="px-4 py-3 text-right">Amount</th><th class="px-4 py-3">Status</th><th class="px-5 py-3 text-right">Actions</th></tr></thead><tbody class="divide-y divide-slate-100">
+        @for(link of tablePagination.slice('payment-links', filteredLinks()); track link.id) {<tr class="transition hover:bg-slate-50/70"><td class="px-5 py-4"><p class="max-w-[360px] truncate text-sm font-semibold text-slate-950" [title]="linkItemSummary(link)">{{linkItemSummary(link)}}</p><p class="mt-1 max-w-[300px] truncate text-xs text-slate-400">{{link.id}}</p></td><td class="px-4 py-4 text-sm text-slate-600">{{link.created * 1000 | date:'mediumDate'}}</td><td class="px-4 py-4 text-right text-sm font-semibold text-slate-950">{{money(linkTotalCents(link))}}</td><td class="px-4 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset" [ngClass]="linkStatus(link)==='used' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : linkStatus(link)==='active' ? 'bg-blue-50 text-blue-700 ring-blue-200' : 'bg-slate-100 text-slate-600 ring-slate-200'">{{linkStatus(link)==='used' ? 'Used' : linkStatus(link)==='active' ? 'Active' : 'Inactive'}}</span></td><td class="px-5 py-4"><div class="flex items-center justify-end gap-2"><button type="button" class="pl-action" (click)="copy(link.url)"><lucide-icon [name]="icons.Copy" class="h-4 w-4"></lucide-icon>Copy</button><a class="pl-action" [href]="link.url" target="_blank" rel="noopener noreferrer"><lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon>Open</a>@if(link.active){<button type="button" class="pl-action text-rose-600 hover:text-rose-700" (click)="deactivate(link)">Deactivate</button>}</div></td></tr>}
+      </tbody></table></div>
+      <app-table-pagination storageKey="payment-links" [totalItems]="filteredLinks().length" singularLabel="link" pluralLabel="links"></app-table-pagination>
     }
   </section>
 </div>
