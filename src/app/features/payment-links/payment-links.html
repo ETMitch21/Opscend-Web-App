@@ -7,7 +7,7 @@
     </div>
     <div class="flex flex-wrap items-center gap-2">
       <button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50" [disabled]="loading()" (click)="load()"><lucide-icon [name]="loading() ? icons.Loader2 : icons.RefreshCw" class="h-4 w-4" [class.animate-spin]="loading()"></lucide-icon> Refresh</button>
-      <button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600" (click)="showCreate = true"><lucide-icon [name]="icons.Plus" class="h-4 w-4"></lucide-icon>Create payment link</button>
+      <button type="button" class="cursor-pointer rounded-xl bg-brand px-4 py-2 text-sm font-medium text-white" (click)="showCreate = true">New Payment Link</button>
     </div>
   </div>
   @if(error()) { <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{error()}}</div> }
