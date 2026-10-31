@@ -7,7 +7,7 @@ import { AppConfigService } from '../../core/app-config/app-config.service';
 
 type Item = { name: string; price: number | null; quantity: number };
 type PaymentLink = { id: string; url: string; active: boolean; created: number; paidCount: number; items: { name: string; quantity: number; unitAmountCents: number }[] };
-@Component({ selector: 'app-payment-links', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './payment-links.html' })
+@Component({ selector: 'app-payment-links', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './payment-links.html', styleUrl: './payment-links.css' })
 export class PaymentLinks implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly config = inject(AppConfigService);
