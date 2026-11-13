@@ -74,6 +74,12 @@ export const routes: Routes = [
     { path: "login", component: LoginComponent, canActivate: [PublicGuard] },
     { path: "forgot", component: ForgotComponent, canActivate: [PublicGuard] },
     { path: "reset", component: ResetComponent, canActivate: [PublicGuard] },
+    {
+        path: 'app/:key',
+        loadComponent: () => import('./features/apps/embedded-app/embedded-app').then(m => m.EmbeddedApp),
+        canActivate: [PermissionGuard],
+        data: { permission: 'apps:read' }
+    },
     { path: "dashboard", component: DashboardComponent, canActivate: [PermissionGuard], data: { permission: "repairs:read" } },
     {
         path: "crm",

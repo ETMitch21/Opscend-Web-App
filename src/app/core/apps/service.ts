@@ -19,6 +19,12 @@ export class AppsService {
     return `${this.appConfig.config.apiBase}/apps`;
   }
 
+  launch(key: string): Observable<{ data: { appKey: string; runtimeUrl: string; token: string; expiresIn: number } }> {
+    return this.http.post<{ data: { appKey: string; runtimeUrl: string; token: string; expiresIn: number } }>(
+      `${this.base}/${encodeURIComponent(key)}/launch`, {},
+    );
+  }
+
   list(): Observable<{ data: OpscendApp[] }> {
     return this.http.get<{ data: OpscendApp[] }>(this.base);
   }

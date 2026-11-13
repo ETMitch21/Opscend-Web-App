@@ -59,6 +59,8 @@ import type { WorkQueueItem, WorkQueueSummary } from '../../core/work-queue/mode
 import { AiAssistant } from '../../features/ai-assistant/ai-assistant';
 import { SessionIdleService } from '../../core/auth/session-idle.service';
 import { BusinessSettingsService } from '../../core/business-settings/service';
+import { AppsService } from '../../core/apps/service';
+import { ShieldCheckIcon } from 'lucide-angular';
 
 type NavItem = {
   label: string;
@@ -141,6 +143,8 @@ export class AppShellComponent implements OnInit, OnDestroy {
   private workQueueService = inject(WorkQueueService);
   private readonly sessionIdle = inject(SessionIdleService);
   private readonly businessSettings = inject(BusinessSettingsService);
+  private readonly appsService = inject(AppsService);
+  private readonly installedAppNav = signal<NavItem[]>([]);
   private readonly crmFeatureEnabled = signal(true);
   private readonly businessAccountsFeatureEnabled = signal(true);
   private readonly currentUser = toSignal(this.auth.currentUser$, {
@@ -353,7 +357,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
 
   get visibleNavItems(): NavItem[] {
 
-    return this.navItems
+    return [...this.navItems, ...this.installedAppNav()]
       .map((item) => ({
         ...item,
         children: item.children?.filter((child) => this.canAccess(child.permission)),
@@ -400,6 +404,7 @@ export class AppShellComponent implements OnInit, OnDestroy {
         this.refreshUnreadCommunicationCount({ notify: false }),
         this.refreshWorkQueueSummary(),
         this.refreshBusinessFeatureVisibility(),
+        this.refreshInstalledAppNavigation(),
       ]);
       this.startNotificationPolling();
       this.startCommunicationPolling();
@@ -420,6 +425,17 @@ export class AppShellComponent implements OnInit, OnDestroy {
           void this.refreshBusinessFeatureVisibility();
         }
       });
+  }
+
+  private async refreshInstalledAppNavigation(): Promise<void> {
+    if (!this.canAccess('apps:read')) return;
+    try {
+      const response = await firstValueFrom(this.appsService.list());
+      this.installedAppNav.set(response.data
+        .filter(app => app.installed && app.installation?.status === 'installed' &&
+          Array.isArray(app.manifest.extensions) && app.manifest.extensions.some(ext => ext.point === 'admin.navigation'))
+        .map(app => ({label: app.name, route: `/app/${encodeURIComponent(app.key)}`, icon: ShieldCheckIcon, permission: 'apps:read'})));
+    } catch { this.installedAppNav.set([]); }
   }
 
   private async refreshBusinessFeatureVisibility(): Promise<void> {
