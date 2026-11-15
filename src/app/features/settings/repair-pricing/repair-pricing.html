@@ -23,7 +23,8 @@
     <revo-grid class="block w-full" style="height: min(72vh, 760px)" theme="compact"
       [columns]="gridColumns" [source]="gridRows()" [editors]="gridEditors" [filter]="true" [range]="true" [readonly]="false"
       [resize]="true" [rowHeaders]="true"
-      (beforeedit)="onGridEdit($event)" (beforepasteapply)="onGridPaste($event)" (beforecellfocus)="onGridFocus($event)">
+      (beforeedit)="onGridEdit($event)" (beforepasteapply)="onGridPaste($event)" (beforecellfocus)="onGridFocus($event)"
+      (afterfilterapply)="clearGridFocus()" (aftersortingapply)="clearGridFocus()">
     </revo-grid>
     <div class="flex justify-between gap-2 border-t border-app-border px-3 py-2 text-xs text-app-text-muted">
       <span>Edit cells directly · ⌘/Ctrl+C/V · Tab · Arrow keys · Changes save automatically</span>

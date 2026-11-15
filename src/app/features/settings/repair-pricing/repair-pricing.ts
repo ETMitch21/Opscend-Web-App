@@ -248,6 +248,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   readonly gridBusy = signal(false);
   readonly gridSaveError = signal<string | null>(null);
   readonly gridOrigin = signal<{ row: number; col: number } | null>(null);
+  readonly gridFocusedOptionId = signal<string | null>(null);
   private readonly gridQueued = new Map<string, GridPricePatch>();
   readonly gridDrafts = signal<Record<string, GridPriceFields>>({});
   private gridFlushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -439,16 +440,22 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     return Number.isSafeInteger(cents) && cents <= 100000000 ? cents : undefined;
   }
 
+  // Keep the focused record ID, not its physical array index: RevoGrid filters
+  // and sorting change visible positions without changing the source array.
   onGridFocus(event: CustomEvent): void {
     const detail = event.detail as { model?: { id?: string }; prop?: string; cell?: { x?: number; y?: number }; rowIndex?: number; colIndex?: number } | undefined;
-    const row = detail?.model?.id
-      ? this.gridRows().findIndex(option => option.id === detail.model?.id)
-      : (detail?.cell?.y ?? detail?.rowIndex);
+    const row = detail?.cell?.y ?? detail?.rowIndex;
     const col = detail?.prop
       ? this.gridColumns.findIndex(column => column.prop === detail.prop)
       : (detail?.cell?.x ?? detail?.colIndex);
-    if (typeof row === 'number' && row >= 0 && typeof col === 'number' && col >= 0)
-      this.gridOrigin.set({ row, col });
+    if (typeof col !== 'number' || col < 0) return;
+    if (detail?.model?.id) this.gridFocusedOptionId.set(detail.model.id);
+    if (typeof row === 'number' && row >= 0) this.gridOrigin.set({ row, col });
+  }
+
+  clearGridFocus(): void {
+    this.gridOrigin.set(null);
+    this.gridFocusedOptionId.set(null);
   }
 
   private gridParse(prop: string, value: unknown): GridPriceFields | null {
@@ -522,29 +529,47 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     this.queueGridPatch(option, fields);
   }
 
-  onGridPaste(event: CustomEvent): void {
+  async onGridPaste(event: CustomEvent): Promise<void> {
     event.preventDefault();
     const details = event.detail as { parsed?: string[][]; raw?: string };
     const matrix = details?.parsed?.length ? details.parsed
       : String(details?.raw || '').replace(/\r/g, '').split('\n').filter(Boolean).map(line => line.split('\t'));
     const origin = this.gridOrigin();
-    if (!origin || !matrix.length) { this.toast.error('Select a destination cell before pasting.'); return; }
+    const focusedId = this.gridFocusedOptionId();
+    if (!origin || !focusedId || !matrix.length) { this.toast.error('Select a destination cell before pasting.'); return; }
+    // getVisibleSource reflects the grid's own filters and sort order, unlike
+    // gridRows(), which is in original source order.
+    const grid = event.target as EventTarget & { getVisibleSource?: () => Promise<Array<{ id: string }>> };
+    let visible: Array<{ id: string }>;
+    try {
+      if (!grid.getVisibleSource) throw new Error('Visible row mapping unavailable');
+      visible = await grid.getVisibleSource();
+    } catch (error) {
+      console.error('Cannot resolve visible pricing rows', error);
+      this.toast.error('Cannot safely map the visible rows. Nothing was saved.');
+      return;
+    }
+    const first = visible.findIndex(row => row.id === focusedId);
+    if (first < 0 || this.gridOrigin()?.col !== origin.col || this.gridFocusedOptionId() !== focusedId) {
+      this.toast.error('The focused row changed. Select the destination again. Nothing was saved.');
+      return;
+    }
     const pending = new Map<string, { option: PricingOption; fields: GridPriceFields }>();
+    const pendingBlanks: Array<{ id: string; draft: Record<string, string> }> = [];
     for (let y = 0; y < matrix.length; y++) {
-      const gridRow = this.gridRows()[origin.row + y];
-      if (!gridRow) { this.toast.error('Paste exceeds the displayed rows.'); return; }
+      const gridRow = visible[first + y];
+      if (!gridRow) { this.toast.error('Paste exceeds the displayed rows. Nothing was saved.'); return; }
       if (gridRow.id.startsWith('blank:')) {
         const draft = { ...(this.blankDrafts()[gridRow.id] || {}) };
         for (let x = 0; x < matrix[y].length; x++) {
           const prop = this.gridColumns[origin.col + x]?.prop;
           if (prop && ['device', 'repair', 'variant', 'part', 'labor', 'price'].includes(prop)) draft[prop] = matrix[y][x];
         }
-        this.blankDrafts.update(rows => ({ ...rows, [gridRow.id]: draft }));
-        if (draft['device'] && draft['repair']) void this.saveBlankRow(gridRow.id);
+        pendingBlanks.push({ id: gridRow.id, draft });
         continue;
       }
       const option = this.sheetOptions().find(o => o.id === gridRow.id);
-      if (!option) continue;
+      if (!option) { this.toast.error('A visible row is no longer available. Nothing was saved.'); return; }
       for (let x = 0; x < matrix[y].length; x++) {
         const prop = this.gridColumns[origin.col + x]?.prop;
         if (!['part', 'labor', 'price', 'mode', 'visibility', 'status'].includes(prop)) continue;
@@ -557,7 +582,12 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
         pending.set(option.id, { option, fields: { ...previous?.fields, ...fields } });
       }
     }
-    if (!pending.size && !matrix.some((_, i) => this.gridRows()[origin.row + i]?.id.startsWith('blank:'))) { this.toast.error('No editable price cells found.'); return; }
+    if (!pending.size && !pendingBlanks.length) { this.toast.error('No editable price cells found.'); return; }
+    // Apply only after the entire visible range is validated.
+    pendingBlanks.forEach(({ id, draft }) => {
+      this.blankDrafts.update(rows => ({ ...rows, [id]: draft }));
+      if (draft['device'] && draft['repair']) void this.saveBlankRow(id);
+    });
     pending.forEach(({ option, fields }) => this.queueGridPatch(option, fields));
   }
 
@@ -830,10 +860,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   }
 
   readonly gridRowActionBusy = signal(false);
-  readonly gridSelectedRowId = computed(() => {
-    const index = this.gridOrigin()?.row;
-    return index == null ? null : this.gridRows()[index]?.id ?? null;
-  });
+  readonly gridSelectedRowId = computed(() => this.gridFocusedOptionId());
 
   clearSelectedBlankRow(): void {
     const id = this.gridSelectedRowId();
