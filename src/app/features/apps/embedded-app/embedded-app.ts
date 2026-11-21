@@ -20,7 +20,7 @@ import { AppsService } from '../../../core/apps/service';
         </div>
       } @else {
         @if (frameUrl()) {
-          <iframe #appFrame [src]="frameUrl()" class="min-h-0 w-full flex-1 border-0 bg-app-bg" [attr.title]="title()" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
+          <iframe #appFrame [src]="frameUrl()" class="min-h-0 w-full flex-1 border-0 bg-app-bg" [attr.title]="title()" referrerpolicy="no-referrer" allow="clipboard-write" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
         } @else {
           <div class="p-6 text-sm text-app-text-muted">Opening app…</div>
         }
@@ -71,7 +71,42 @@ export class EmbeddedApp implements OnInit, OnDestroy {
   async reload(): Promise<void> { await this.open(); }
   private async onMessage(event: MessageEvent): Promise<void> {
     if (!this.origin || event.origin !== this.origin || event.source !== this.frame?.nativeElement.contentWindow) return;
-    if (!event.data || event.data.protocol !== 'opscend-app-v1' || event.data.type !== 'READY') return;
+    if (!event.data || event.data.protocol !== 'opscend-app-v1') return;
+    if (event.data.type === 'COPY_TEXT') {
+      const text = event.data.text;
+      const requestId = event.data.requestId;
+      // Only copy this app's public request URL, never arbitrary content.
+      if (typeof text !== 'string' || text.length > 2048 ||
+          typeof requestId !== 'string' || requestId.length > 100) return;
+      let allowed = false;
+      try {
+        const link = new URL(text);
+        allowed = link.origin === this.origin &&
+          (link.pathname.startsWith('/request/') || link.pathname.startsWith('/claim/'));
+      } catch { /* Ignore invalid URLs. */ }
+      if (!allowed) return;
+      let ok = false;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        }
+      } catch { /* Try a traditional copy, without opening a modal. */ }
+      if (!ok) {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.setAttribute('readonly', '');
+        el.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0';
+        document.body.append(el);
+        try { el.focus(); el.select(); ok = document.execCommand('copy') === true; } catch { /* Blocked. */ }
+        finally { el.remove(); }
+      }
+      this.frame?.nativeElement.contentWindow?.postMessage(
+        { protocol: 'opscend-app-v1', type: 'COPY_RESULT', requestId, ok }, this.origin
+      );
+      return;
+    }
+    if (event.data.type !== 'READY') return;
     try {
       if (!this.launchToken || Date.now() >= this.expiry - 30000) await this.launch();
       this.frame?.nativeElement.contentWindow?.postMessage({ protocol: 'opscend-app-v1', type: 'LAUNCH', token: this.launchToken }, this.origin);
