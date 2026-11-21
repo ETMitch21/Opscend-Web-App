@@ -11,7 +11,7 @@
   </div>
 </section>
 <section class="settings-card mt-3">
-  <div class="settings-card-header"><div><h2 class="settings-card-title">Recent tip payments</h2><p class="settings-card-description">Tips collected on orders, newest first. Load more orders to see older tips.</p></div><button type="button" class="settings-secondary-action" (click)="loadTips()" [disabled]="tipsLoading()">Refresh</button></div></div>
+  <div class="settings-card-header"><div><h2 class="settings-card-title">Recent tip payments</h2><p class="settings-card-description">Tips collected on orders, newest first. Load more orders to see older tips.</p></div><button type="button" class="settings-secondary-action" (click)="loadTips()" [disabled]="tipsLoading()">Refresh</button></div>
   <div class="settings-card-body space-y-3">
     @if(tipsError()){<div class="settings-alert is-error">{{tipsError()}}</div>}
     <div class="flex flex-wrap items-baseline justify-between gap-2"><div><p class="text-xs text-app-text-muted">Tips in loaded orders</p><p class="text-xl font-semibold text-app-text">{{formatMoney(loadedTipTotalCents)}}</p></div><p class="text-xs text-app-text-muted">{{tipOrdersScanned()}} orders checked — {{tipRecords().length}} tip payments</p></div>
