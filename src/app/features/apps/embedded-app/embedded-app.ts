@@ -69,7 +69,7 @@ export class EmbeddedApp implements OnInit, OnDestroy {
       if (!app) throw Error('This app is not installed or enabled for your shop.');
       this.title.set(app.name);
       await this.launch();
-      this.frameUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(`${this.origin}/workspace`));
+      this.frameUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(`${this.origin}/workspace?parentOrigin=${encodeURIComponent(window.location.origin)}`));
     } catch (error) { this.error.set(error instanceof Error ? error.message : 'The app is unavailable.'); }
   }
   async reload(): Promise<void> { await this.open(); }
