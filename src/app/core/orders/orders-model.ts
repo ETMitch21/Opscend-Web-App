@@ -23,6 +23,7 @@ export interface OrderPayment {
   method: PaymentMethod;
   reference: string | null;
   amountCents: number;
+  tipCents?: number;
   note: string | null;
   createdAt: string;
   createdBy: string;

@@ -146,11 +146,11 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
     items: [
       {
         label: 'Payments',
-        description: 'Deposit enforcement, full prepayment, discounts, and order defaults.',
+        description: 'Deposits, prepayment, customer tips, tip history, and order defaults.',
         route: '/settings/shop/payments',
         icon: WalletCardsIcon,
         permission: 'booking:read',
-        keywords: ['payments', 'deposit', 'prepay', 'discount', 'orders', 'stripe'],
+        keywords: ['payments', 'deposit', 'prepay', 'discount', 'orders', 'stripe', 'tips', 'tipping'],
       },
       {
         label: 'Repair pricing',
