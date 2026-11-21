@@ -11,7 +11,7 @@ import { AppsService } from '../../../core/apps/service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <section class="flex h-full min-h-0 flex-col bg-app-bg">
+    <section class="flex h-full min-h-0 flex-col overflow-hidden bg-app-bg">
       @if (error()) {
         <div class="m-6 rounded-app-md border border-app-border bg-app-surface p-5">
           <h2 class="text-lg font-semibold">Unable to open this app</h2>
@@ -19,12 +19,8 @@ import { AppsService } from '../../../core/apps/service';
           <a routerLink="/settings/apps" class="mt-4 inline-block cursor-pointer text-brand">Manage apps</a>
         </div>
       } @else {
-        <div class="flex items-center justify-between border-b border-app-border bg-app-surface px-5 py-3">
-          <div><h1 class="text-base font-semibold">{{ title() }}</h1><p class="text-xs text-app-text-muted">Installed Opscend app</p></div>
-          <button type="button" class="cursor-pointer rounded-app-md border border-app-border px-3 py-1.5 text-sm" (click)="reload()">Reload</button>
-        </div>
         @if (frameUrl()) {
-          <iframe #appFrame [src]="frameUrl()" class="min-h-0 w-full flex-1 border-0" title="Installed app" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
+          <iframe #appFrame [src]="frameUrl()" class="min-h-0 w-full flex-1 border-0 bg-app-bg" [attr.title]="title()" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
         } @else {
           <div class="p-6 text-sm text-app-text-muted">Opening app…</div>
         }
