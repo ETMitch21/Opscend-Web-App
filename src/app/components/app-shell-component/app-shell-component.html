@@ -41,7 +41,10 @@
                     [class.compact-nav-list]="isCompactSidebarRoute()"
                     [ngClass]="isCompactSidebarRoute() ? 'px-0' : ''">
                     @if (isCompactSidebarRoute()) {
-                    @for (item of visibleNavItems; track item.label) {
+                    @for (item of visibleNavItems; track item.route ?? item.label; let navIndex = $index) {
+                    @if (navIndex === installedAppsSectionStart) {
+                    <div class="mx-2 my-3 border-t border-app-border" role="separator" aria-label="Apps"></div>
+                    }
                     <a [routerLink]="compactNavRoute(item)"
                         [attr.data-tooltip]="item.label"
                         [attr.aria-label]="item.label"
@@ -61,7 +64,12 @@
                     </a>
                     }
                     } @else {
-                    @for (item of visibleNavItems; track item.label) {
+                    @for (item of visibleNavItems; track item.route ?? item.label; let navIndex = $index) {
+                    @if (navIndex === installedAppsSectionStart) {
+                    <div class="mx-3 mb-2 mt-5 border-t border-app-border pt-4" role="separator" aria-label="Apps">
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-app-text-muted">Apps</span>
+                    </div>
+                    }
                     @if (item.children?.length) {
                     <div>
                         <button type="button"

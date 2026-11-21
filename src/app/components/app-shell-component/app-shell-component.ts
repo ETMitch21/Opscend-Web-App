@@ -371,6 +371,10 @@ export class AppShellComponent implements OnInit, OnDestroy {
       });
   }
 
+  get installedAppsSectionStart(): number {
+    return this.visibleNavItems.findIndex(item => item.route?.startsWith('/app/'));
+  }
+
   get visibleSecondaryNavGroups(): SecondaryNavGroup[] {
 
     return this.secondaryNavGroups
@@ -434,7 +438,16 @@ export class AppShellComponent implements OnInit, OnDestroy {
       this.installedAppNav.set(response.data
         .filter(app => app.installed && app.installation?.status === 'installed' &&
           Array.isArray(app.manifest.extensions) && app.manifest.extensions.some(ext => ext.point === 'admin.navigation'))
-        .map(app => ({label: app.name, route: `/app/${encodeURIComponent(app.key)}`, icon: ShieldCheckIcon, permission: 'apps:read'})));
+        .map(app => {
+          const navigation = app.manifest.extensions.find(ext => ext.point === 'admin.navigation');
+          const label = navigation?.['label'];
+          return {
+            label: typeof label === 'string' && label.trim() ? label.trim() : app.name,
+            route: `/app/${encodeURIComponent(app.key)}`,
+            icon: ShieldCheckIcon,
+            permission: 'apps:read',
+          };
+        }));
     } catch { this.installedAppNav.set([]); }
   }
 
