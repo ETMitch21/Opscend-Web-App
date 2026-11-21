@@ -510,9 +510,16 @@
               <h2 class="text-lg font-semibold">Repair history</h2>
               <p class="mt-1 text-sm text-slate-500">Completed and canceled service records.</p>
             </div>
+            @if (portal.warrantyRequestUrl) {
+              <div class="mx-5 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:mx-6">
+                <p class="text-sm text-slate-600">Having trouble after a previous repair?</p>
+                <a [href]="portal.warrantyRequestUrl" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Request warranty service <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon></a>
+              </div>
+            }
             <div class="divide-y divide-slate-100 px-5 sm:px-6">
               @for (repair of portal.repairHistory; track repair.id) {
-                <button type="button" class="group flex w-full cursor-pointer items-center gap-4 py-5 text-left" (click)="openRepair(repair)">
+                <div class="flex items-center gap-2 border-b border-slate-100 last:border-0">
+                <button type="button" class="group flex min-w-0 flex-1 cursor-pointer items-center gap-4 py-5 text-left" (click)="openRepair(repair)">
                   <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
                     <lucide-icon [name]="icons.History" class="h-5 w-5"></lucide-icon>
                   </div>
@@ -526,6 +533,10 @@
                   </div>
                   <lucide-icon [name]="icons.ChevronRight" class="h-5 w-5 text-slate-300 transition group-hover:text-slate-600"></lucide-icon>
                 </button>
+                @if (repair.warrantyRequestUrl) {
+                  <a [href]="repair.warrantyRequestUrl" target="_blank" rel="noopener noreferrer" (click)="$event.stopPropagation()" class="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Warranty</a>
+                }
+                </div>
               } @empty {
                 <div class="py-12 text-center text-sm text-slate-500">No repair history yet.</div>
               }

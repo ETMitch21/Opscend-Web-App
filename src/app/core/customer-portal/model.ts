@@ -147,6 +147,7 @@ export interface CustomerPortalQuote {
 }
 
 export interface CustomerPortalRepair {
+  warrantyRequestUrl?: string | null;
   id: string;
   status: string;
   statusLabel: string;
@@ -349,6 +350,7 @@ export interface CustomerPortalSummary {
 }
 
 export interface CustomerPortalDashboard {
+  warrantyRequestUrl?: string | null;
   shop: CustomerPortalShop;
   customer: CustomerPortalCustomer;
   summary: CustomerPortalSummary;

@@ -246,6 +246,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly repairFormsError = signal<string | null>(null);
 
   readonly repairId = signal<string | null>(null);
+  readonly warrantyRequestUrl = signal<string | null>(null);
   readonly accessoriesList = signal<string[]>([]);
   readonly accessoryInput = signal('');
 
@@ -533,6 +534,17 @@ export class RepairDetail implements OnInit, OnDestroy {
   });
 
 
+  private async loadWarrantyRequestLink(repairId: string): Promise<void> {
+    try {
+      const response = await firstValueFrom(this.http.get<{data: {requestUrl: string | null}}>(
+        `${this.apiBase}/apps/warranty-request-link`, { params: { repairId } }
+      ));
+      if (this.repairId() === repairId) this.warrantyRequestUrl.set(response.data?.requestUrl ?? null);
+    } catch {
+      if (this.repairId() === repairId) this.warrantyRequestUrl.set(null);
+    }
+  }
+
   private get apiBase(): string {
     return this.appConfig.config.apiBase;
   }
@@ -603,6 +615,8 @@ export class RepairDetail implements OnInit, OnDestroy {
       return;
     }
 
+    // Optional installed-app action; errors must not affect repair details.
+    void this.loadWarrantyRequestLink(id);
     await this.loadRepairNotifications(id);
     await this.loadRepairPayouts(id);
     await this.loadRepairForms(id);
