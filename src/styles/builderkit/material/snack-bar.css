@@ -1,0 +1,105 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-snack-bar-container {
+    /* Surface */
+    .mat-mdc-snackbar-surface {
+      isolation: isolate;
+      position: relative;
+      border-width: 1px;
+      border-style: solid;
+      border-color: transparent;
+
+      border-radius: var(--snackbar-border-radius);
+      box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.05),
+        0 4px 6px -4px rgb(0 0 0 / 0.05);
+
+      /* Border color as the snackbar background to avoid corner rendering
+         issues and better shadow/background-color blending. */
+      background: var(--snackbar-border-color);
+
+      /* Snackbar background implemented as the 'before' pseudo element */
+      &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -10;
+        pointer-events: none;
+        background: var(--snackbar-bg-color);
+        border-radius: calc(var(--snackbar-border-radius) - 1px);
+        box-shadow:
+          0 1px 3px 0 var(--snackbar-shadow-color),
+          0 1px 2px -1px var(--snackbar-shadow-color);
+      }
+
+      /* Disable 'after' */
+      &:after {
+        content: none;
+        display: none;
+      }
+
+      /* Dark theme */
+      @container style(--scheme: dark) {
+        /* Move the background and border back to the snackbar itself */
+        background: var(--snackbar-bg-color);
+        border-color: var(--snackbar-border-color);
+
+        /* Hide the 'before' pseudo element */
+        &:before {
+          display: none;
+        }
+      }
+    }
+
+    /* Label */
+    .mdc-snackbar__label {
+      font-family: var(--snackbar-font-family);
+      font-feature-settings: var(--snackbar-font-feature-settings);
+      font-optical-sizing: var(--snackbar-font-optical-sizing);
+      -webkit-font-smoothing: var(--snackbar-font-smoothing);
+
+      font-size: var(--snackbar-font-size);
+      line-height: var(--snackbar-line-height);
+      font-weight: var(--snackbar-font-weight);
+      letter-spacing: var(--snackbar-letter-spacing);
+
+      color: var(--snackbar-text-color);
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-snack-bar-container {
+    /* Typography */
+    --snackbar-font-family: var(--font-sans);
+    --snackbar-font-feature-settings: var(--font-sans--font-feature-settings);
+    --snackbar-font-optical-sizing: var(--font-optical-sizing);
+    --snackbar-font-smoothing: var(--font-smoothing);
+
+    --snackbar-font-size: var(--text-base); /* 13px */
+    --snackbar-line-height: var(--leading-5); /* 20px */
+    --snackbar-font-weight: var(--font-weight-medium);
+    --snackbar-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --snackbar-border-radius: calc(var(--theme-border-radius) * 4 / 3);
+
+    /* Color */
+    --snackbar-text-color: light-dark(
+      var(--color-neutral-12),
+      var(--color-white)
+    );
+    --snackbar-bg-color: light-dark(var(--color-white), var(--color-neutral-4));
+    --snackbar-border-color: light-dark(
+      var(--color-neutral-a4),
+      var(--color-white-a3)
+    );
+    --snackbar-shadow-color: light-dark(
+      var(--color-neutral-a5),
+      var(--color-black-a4)
+    );
+  }
+}

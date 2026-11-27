@@ -1,0 +1,83 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-drawer-container {
+    display: flex;
+    flex: 1 1 auto;
+
+    color: var(--sidenav-container-text-color);
+    background: var(--sidenav-container-bg-color);
+
+    .mat-drawer-backdrop {
+      &.mat-drawer-shown {
+        background: var(--sidenav-scrim-color);
+        backdrop-filter: blur(var(--sidenav-backdrop-blur));
+      }
+    }
+
+    .mat-drawer {
+      width: var(--sidenav-width);
+      border-radius: var(--sidenav-border-radius);
+
+      color: var(--sidenav-text-color);
+      background: var(--sidenav-bg-color);
+
+      .mat-drawer-inner-container {
+        display: flex;
+        scrollbar-width: none;
+        overscroll-behavior-y: contain;
+      }
+
+      &.mat-drawer-side {
+        border-inline-end-color: var(--sidenav-divider-color);
+
+        &.mat-drawer-end {
+          border-inline-end-color: transparent;
+          border-inline-start-color: var(--sidenav-divider-color);
+        }
+      }
+    }
+
+    .mat-drawer-content {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      height: auto;
+
+      color: var(--sidenav-content-text-color);
+      background: var(--sidenav-content-bg-color);
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-drawer-container {
+    /* Size */
+    --sidenav-width: 16rem; /* 256px; */
+    --sidenav-border-radius: 0;
+    --sidenav-backdrop-blur: var(--blur-sm);
+
+    /* Color */
+    --sidenav-text-color: var(--color-neutral-12);
+    --sidenav-bg-color: light-dark(
+      var(--color-neutral-2),
+      var(--color-neutral-1)
+    );
+    --sidenav-divider-color: var(--color-neutral-a4);
+    --sidenav-scrim-color: var(--color-black-a6);
+
+    --sidenav-content-text-color: var(--color-neutral-12);
+    --sidenav-content-bg-color: light-dark(
+      var(--color-white),
+      var(--color-neutral-2)
+    );
+
+    --sidenav-container-bg-color: light-dark(
+      var(--color-neutral-2),
+      var(--color-neutral-1)
+    );
+    --sidenav-container-text-color: var(--color-neutral-12);
+  }
+}

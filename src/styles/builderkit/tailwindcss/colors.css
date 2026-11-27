@@ -1,0 +1,2146 @@
+/* -------------------------------------------------------------------------- */
+/* Colors                                                                     */
+/* -------------------------------------------------------------------------- */
+@theme {
+  --color-*: initial;
+
+  /* Black */
+  --color-black: oklch(0 0 none / 1);
+  --color-black-a1: oklch(0 0 none / 0.05);
+  --color-black-a2: oklch(0 0 none / 0.1);
+  --color-black-a3: oklch(0 0 none / 0.15);
+  --color-black-a4: oklch(0 0 none / 0.2);
+  --color-black-a5: oklch(0 0 none / 0.3);
+  --color-black-a6: oklch(0 0 none / 0.4);
+  --color-black-a7: oklch(0 0 none / 0.5);
+  --color-black-a8: oklch(0 0 none / 0.6);
+  --color-black-a9: oklch(0 0 none / 0.7);
+  --color-black-a10: oklch(0 0 none / 0.8);
+  --color-black-a11: oklch(0 0 none / 0.9);
+  --color-black-a12: oklch(0 0 none / 0.95);
+
+  /* White */
+  --color-white: oklch(1 0 none / 1);
+  --color-white-a1: oklch(1 0 none / 0.05);
+  --color-white-a2: oklch(1 0 none / 0.1);
+  --color-white-a3: oklch(1 0 none / 0.15);
+  --color-white-a4: oklch(1 0 none / 0.2);
+  --color-white-a5: oklch(1 0 none / 0.3);
+  --color-white-a6: oklch(1 0 none / 0.4);
+  --color-white-a7: oklch(1 0 none / 0.5);
+  --color-white-a8: oklch(1 0 none / 0.6);
+  --color-white-a9: oklch(1 0 none / 0.7);
+  --color-white-a10: oklch(1 0 none / 0.8);
+  --color-white-a11: oklch(1 0 none / 0.9);
+  --color-white-a12: oklch(1 0 none / 0.95);
+
+  /* Neutral */
+  --color-gray: var(--color-gray-9);
+  --color-gray-1: light-dark(oklch(99.1% 0 none), oklch(17.8% 0 none));
+  --color-gray-2: light-dark(oklch(98.1% 0 none), oklch(21.3% 0 none));
+  --color-gray-3: light-dark(oklch(95.3% 0 none), oklch(25.4% 0 none));
+  --color-gray-4: light-dark(oklch(93% 0 none), oklch(28.3% 0 none));
+  --color-gray-5: light-dark(oklch(90.8% 0 none), oklch(31.3% 0 none));
+  --color-gray-6: light-dark(oklch(88.4% 0 none), oklch(34.9% 0 none));
+  --color-gray-7: light-dark(oklch(85.1% 0 none), oklch(40.2% 0 none));
+  --color-gray-8: light-dark(oklch(79.1% 0 none), oklch(48.8% 0 none));
+  --color-gray-9: light-dark(oklch(64.3% 0 none), oklch(53.8% 0 none));
+  --color-gray-10: light-dark(oklch(60.9% 0 none), oklch(58.4% 0 none));
+  --color-gray-11: light-dark(oklch(50.3% 0 none), oklch(77% 0 none));
+  --color-gray-12: light-dark(oklch(24.3% 0 none), oklch(94.9% 0 none));
+
+  --color-gray-a1: light-dark(oklch(0% 0 none / 0.012), oklch(0% 0 none / 0));
+  --color-gray-a2: light-dark(
+    oklch(0% 0 none / 0.024),
+    oklch(100% 0 none / 0.034)
+  );
+  --color-gray-a3: light-dark(
+    oklch(0% 0 none / 0.063),
+    oklch(100% 0 none / 0.071)
+  );
+  --color-gray-a4: light-dark(
+    oklch(0% 0 none / 0.09),
+    oklch(100% 0 none / 0.105)
+  );
+  --color-gray-a5: light-dark(
+    oklch(0% 0 none / 0.122),
+    oklch(100% 0 none / 0.134)
+  );
+  --color-gray-a6: light-dark(
+    oklch(0% 0 none / 0.153),
+    oklch(100% 0 none / 0.172)
+  );
+  --color-gray-a7: light-dark(
+    oklch(0% 0 none / 0.192),
+    oklch(100% 0 none / 0.231)
+  );
+  --color-gray-a8: light-dark(
+    oklch(0% 0 none / 0.267),
+    oklch(100% 0 none / 0.332)
+  );
+  --color-gray-a9: light-dark(
+    oklch(0% 0 none / 0.447),
+    oklch(100% 0 none / 0.391)
+  );
+  --color-gray-a10: light-dark(
+    oklch(0% 0 none / 0.486),
+    oklch(100% 0 none / 0.445)
+  );
+  --color-gray-a11: light-dark(
+    oklch(0% 0 none / 0.608),
+    oklch(100% 0 none / 0.685)
+  );
+  --color-gray-a12: light-dark(
+    oklch(0% 0 none / 0.875),
+    oklch(100% 0 none / 0.929)
+  );
+
+  --color-mauve: var(--color-mauve-9);
+  --color-mauve-1: light-dark(oklch(99.2% 0.002 321), oklch(18% 0.004 308));
+  --color-mauve-2: light-dark(oklch(98.3% 0.003 311), oklch(21.5% 0.004 308));
+  --color-mauve-3: light-dark(oklch(95.6% 0.006 314), oklch(25.5% 0.006 306));
+  --color-mauve-4: light-dark(oklch(93.2% 0.008 310), oklch(28.4% 0.008 308));
+  --color-mauve-5: light-dark(oklch(90.9% 0.01 307), oklch(31.4% 0.009 307));
+  --color-mauve-6: light-dark(oklch(88.6% 0.012 304), oklch(35% 0.01 304));
+  --color-mauve-7: light-dark(oklch(85.4% 0.014 301), oklch(40.2% 0.012 304));
+  --color-mauve-8: light-dark(oklch(79.4% 0.019 294), oklch(49.2% 0.016 301));
+  --color-mauve-9: light-dark(oklch(64.6% 0.019 293), oklch(54% 0.017 294));
+  --color-mauve-10: light-dark(oklch(61.1% 0.018 293), oklch(58.6% 0.017 295));
+  --color-mauve-11: light-dark(oklch(50.5% 0.016 296), oklch(77% 0.014 297));
+  --color-mauve-12: light-dark(oklch(24.5% 0.013 298), oklch(94.9% 0.003 286));
+
+  --color-mauve-a1: light-dark(
+    oklch(34% 0.162 331 / 0.012),
+    oklch(0% 0 none / 0)
+  );
+  --color-mauve-a2: light-dark(
+    oklch(26.9% 0.139 301 / 0.024),
+    oklch(99.5% 0.003 311 / 0.034)
+  );
+  --color-mauve-a3: light-dark(
+    oklch(21.6% 0.114 302 / 0.063),
+    oklch(95.5% 0.022 290 / 0.077)
+  );
+  --color-mauve-a4: light-dark(
+    oklch(19.2% 0.099 297 / 0.095),
+    oklch(95.2% 0.032 311 / 0.111)
+  );
+  --color-mauve-a5: light-dark(
+    oklch(19.5% 0.103 298 / 0.126),
+    oklch(94.2% 0.035 304 / 0.145)
+  );
+  --color-mauve-a6: light-dark(
+    oklch(16.2% 0.09 290 / 0.153),
+    oklch(95.5% 0.028 306 / 0.183)
+  );
+  --color-mauve-a7: light-dark(
+    oklch(17% 0.089 293 / 0.197),
+    oklch(95.5% 0.027 298 / 0.246)
+  );
+  --color-mauve-a8: light-dark(
+    oklch(14.9% 0.09 276 / 0.271),
+    oklch(94.8% 0.031 298 / 0.361)
+  );
+  --color-mauve-a9: light-dark(
+    oklch(12.1% 0.064 286 / 0.451),
+    oklch(94.7% 0.031 295 / 0.424)
+  );
+  --color-mauve-a10: light-dark(
+    oklch(11% 0.058 281 / 0.491),
+    oklch(95.2% 0.029 297 / 0.479)
+  );
+  --color-mauve-a11: light-dark(
+    oklch(9.46% 0.052 300 / 0.612),
+    oklch(97.4% 0.015 292 / 0.712)
+  );
+  --color-mauve-a12: light-dark(
+    oklch(7.31% 0.04 303 / 0.879),
+    oklch(99.5% 0.003 286 / 0.937)
+  );
+
+  --color-slate: var(--color-slate-9);
+  --color-slate-1: light-dark(oklch(99.1% 0.001 286), oklch(17.9% 0.004 286));
+  --color-slate-2: light-dark(oklch(98.2% 0.003 286), oklch(21.3% 0.004 264));
+  --color-slate-3: light-dark(oklch(95.6% 0.004 282), oklch(25.3% 0.006 261));
+  --color-slate-4: light-dark(oklch(93.1% 0.006 283), oklch(28.3% 0.007 260));
+  --color-slate-5: light-dark(oklch(91% 0.008 284), oklch(31.1% 0.008 260));
+  --color-slate-6: light-dark(oklch(88.8% 0.009 282), oklch(34.6% 0.01 257));
+  --color-slate-7: light-dark(oklch(85.3% 0.012 281), oklch(39.8% 0.012 254));
+  --color-slate-8: light-dark(oklch(79.4% 0.016 278), oklch(49% 0.016 248));
+  --color-slate-9: light-dark(oklch(64.6% 0.016 278), oklch(53.7% 0.015 261));
+  --color-slate-10: light-dark(oklch(61% 0.016 273), oklch(58.3% 0.014 263));
+  --color-slate-11: light-dark(oklch(50.3% 0.014 263), oklch(76.8% 0.01 261));
+  --color-slate-12: light-dark(oklch(24.1% 0.01 250), oklch(94.9% 0.003 265));
+
+  --color-slate-a1: light-dark(
+    oklch(22.8% 0.142 267 / 0.012),
+    oklch(0% 0 none / 0)
+  );
+  --color-slate-a2: light-dark(
+    oklch(22.8% 0.142 267 / 0.024),
+    oklch(97.1% 0.04 200 / 0.034)
+  );
+  --color-slate-a3: light-dark(
+    oklch(15.6% 0.102 266 / 0.059),
+    oklch(94.3% 0.028 247 / 0.077)
+  );
+  --color-slate-a4: light-dark(
+    oklch(15.5% 0.09 269 / 0.091),
+    oklch(95.3% 0.029 229 / 0.111)
+  );
+  --color-slate-a5: light-dark(
+    oklch(17.4% 0.087 261 / 0.122),
+    oklch(94.1% 0.031 251 / 0.145)
+  );
+  --color-slate-a6: light-dark(
+    oklch(14.3% 0.085 269 / 0.15),
+    oklch(95.1% 0.029 233 / 0.183)
+  );
+  --color-slate-a7: light-dark(
+    oklch(16.3% 0.084 265 / 0.197),
+    oklch(94.2% 0.031 255 / 0.246)
+  );
+  --color-slate-a8: light-dark(
+    oklch(16.1% 0.08 262 / 0.275),
+    oklch(94.3% 0.033 242 / 0.361)
+  );
+  --color-slate-a9: light-dark(
+    oklch(12.9% 0.055 261 / 0.455),
+    oklch(94.9% 0.027 256 / 0.42)
+  );
+  --color-slate-a10: light-dark(
+    oklch(13.3% 0.047 256 / 0.499),
+    oklch(95.7% 0.022 262 / 0.475)
+  );
+  --color-slate-a11: light-dark(
+    oklch(11.4% 0.037 244 / 0.62),
+    oklch(97.4% 0.012 252 / 0.708)
+  );
+  --color-slate-a12: light-dark(
+    oklch(9.32% 0.027 237 / 0.887),
+    oklch(99.4% 0.003 261 / 0.937)
+  );
+
+  --color-sage: var(--color-sage-9);
+  --color-sage-1: light-dark(oklch(99.2% 0.003 160), oklch(17.9% 0.004 167));
+  --color-sage-2: light-dark(oklch(98.1% 0.003 171), oklch(21.1% 0.004 160));
+  --color-sage-3: light-dark(oklch(95.5% 0.003 170), oklch(25.1% 0.004 164));
+  --color-sage-4: light-dark(oklch(93.1% 0.003 170), oklch(28.1% 0.005 165));
+  --color-sage-5: light-dark(oklch(90.9% 0.004 168), oklch(31.1% 0.005 167));
+  --color-sage-6: light-dark(oklch(88.5% 0.004 168), oklch(34.7% 0.006 167));
+  --color-sage-7: light-dark(oklch(85.1% 0.004 170), oklch(39.9% 0.008 167));
+  --color-sage-8: light-dark(oklch(79.2% 0.005 169), oklch(48.8% 0.009 170));
+  --color-sage-9: light-dark(oklch(63.9% 0.01 172), oklch(53.3% 0.018 171));
+  --color-sage-10: light-dark(oklch(60.5% 0.01 173), oklch(57.9% 0.016 171));
+  --color-sage-11: light-dark(oklch(50.1% 0.008 176), oklch(76.6% 0.01 168));
+  --color-sage-12: light-dark(oklch(24% 0.012 167), oklch(94.7% 0.002 168));
+
+  --color-sage-a1: light-dark(
+    oklch(52.6% 0.173 156 / 0.016),
+    oklch(0% 0 none / 0)
+  );
+  --color-sage-a2: light-dark(
+    oklch(33.5% 0.102 159 / 0.032),
+    oklch(98.8% 0.004 176 / 0.03)
+  );
+  --color-sage-a3: light-dark(
+    oklch(26.7% 0.071 168 / 0.067),
+    oklch(96.8% 0.016 21.3 / 0.072)
+  );
+  --color-sage-a4: light-dark(
+    oklch(18.4% 0.046 162 / 0.095),
+    oklch(99.5% 0.003 168 / 0.102)
+  );
+  --color-sage-a5: light-dark(
+    oklch(18.6% 0.056 156 / 0.126),
+    oklch(99.8% 0.003 168 / 0.131)
+  );
+  --color-sage-a6: light-dark(
+    oklch(16.6% 0.05 157 / 0.157),
+    oklch(99.2% 0.013 152 / 0.173)
+  );
+  --color-sage-a7: light-dark(
+    oklch(14.8% 0.038 175 / 0.2),
+    oklch(98.9% 0.017 165 / 0.233)
+  );
+  --color-sage-a8: light-dark(
+    oklch(13.7% 0.031 174 / 0.275),
+    oklch(99% 0.016 174 / 0.334)
+  );
+  --color-sage-a9: light-dark(
+    oklch(14.9% 0.036 170 / 0.471),
+    oklch(97.7% 0.037 170 / 0.397)
+  );
+  --color-sage-a10: light-dark(
+    oklch(13.5% 0.034 176 / 0.51),
+    oklch(98.3% 0.026 173 / 0.452)
+  );
+  --color-sage-a11: light-dark(
+    oklch(11.7% 0.03 176 / 0.624),
+    oklch(99.3% 0.012 173 / 0.688)
+  );
+  --color-sage-a12: light-dark(
+    oklch(11.1% 0.032 166 / 0.895),
+    oklch(99.8% 0.003 168 / 0.929)
+  );
+
+  --color-olive: var(--color-olive-9);
+  --color-olive-1: light-dark(oklch(99.3% 0.002 149), oklch(18% 0.004 128));
+  --color-olive-2: light-dark(oklch(98.3% 0.003 145), oklch(21.2% 0.004 128));
+  --color-olive-3: light-dark(oklch(95.6% 0.004 141), oklch(25.2% 0.005 129));
+  --color-olive-4: light-dark(oklch(93.2% 0.004 142), oklch(28.1% 0.006 131));
+  --color-olive-5: light-dark(oklch(90.9% 0.005 139), oklch(31% 0.007 131));
+  --color-olive-6: light-dark(oklch(88.6% 0.006 141), oklch(34.6% 0.008 134));
+  --color-olive-7: light-dark(oklch(85.2% 0.006 141), oklch(39.9% 0.01 136));
+  --color-olive-8: light-dark(oklch(79.2% 0.007 141), oklch(48.8% 0.012 141));
+  --color-olive-9: light-dark(oklch(64% 0.011 137), oklch(53.5% 0.018 140));
+  --color-olive-10: light-dark(oklch(60.5% 0.012 137), oklch(58.1% 0.016 140));
+  --color-olive-11: light-dark(oklch(50% 0.011 140), oklch(76.6% 0.013 139));
+  --color-olive-12: light-dark(oklch(24.2% 0.011 138), oklch(94.7% 0.003 145));
+
+  --color-olive-a1: light-dark(
+    oklch(39.5% 0.165 146 / 0.012),
+    oklch(0% 0 none / 0)
+  );
+  --color-olive-a2: light-dark(
+    oklch(35.9% 0.148 146 / 0.028),
+    oklch(98.9% 0.005 124 / 0.03)
+  );
+  --color-olive-a3: light-dark(
+    oklch(21.2% 0.084 146 / 0.063),
+    oklch(99.5% 0.003 131 / 0.068)
+  );
+  --color-olive-a4: light-dark(
+    oklch(18.1% 0.064 146 / 0.095),
+    oklch(98.4% 0.023 146 / 0.102)
+  );
+  --color-olive-a5: light-dark(
+    oklch(18.9% 0.061 139 / 0.126),
+    oklch(99.1% 0.017 146 / 0.131)
+  );
+  --color-olive-a6: light-dark(
+    oklch(17% 0.055 137 / 0.157),
+    oklch(99.2% 0.015 145 / 0.169)
+  );
+  --color-olive-a7: light-dark(
+    oklch(15% 0.051 135 / 0.2),
+    oklch(99.3% 0.016 132 / 0.228)
+  );
+  --color-olive-a8: light-dark(
+    oklch(15.1% 0.047 137 / 0.279),
+    oklch(98.8% 0.021 146 / 0.334)
+  );
+  --color-olive-a9: light-dark(
+    oklch(14.3% 0.042 135 / 0.467),
+    oklch(98.3% 0.034 138 / 0.397)
+  );
+  --color-olive-a10: light-dark(
+    oklch(14.1% 0.043 128 / 0.51),
+    oklch(98.6% 0.027 143 / 0.452)
+  );
+  --color-olive-a11: light-dark(
+    oklch(12.8% 0.044 135 / 0.628),
+    oklch(99.2% 0.015 139 / 0.688)
+  );
+  --color-olive-a12: light-dark(
+    oklch(11% 0.037 135 / 0.891),
+    oklch(99.8% 0.004 149 / 0.929)
+  );
+
+  --color-sand: var(--color-sand-9);
+  --color-sand-1: light-dark(oklch(99.4% 0.001 106), oklch(17.8% 0.002 107));
+  --color-sand-2: light-dark(oklch(98.2% 0.001 106), oklch(21.3% 0.002 107));
+  --color-sand-3: light-dark(oklch(95.6% 0.002 97.6), oklch(25.3% 0.003 107));
+  --color-sand-4: light-dark(oklch(93.2% 0.003 101), oklch(28.3% 0.004 99));
+  --color-sand-5: light-dark(oklch(91% 0.004 95.9), oklch(31.2% 0.004 101));
+  --color-sand-6: light-dark(oklch(88.6% 0.005 98.3), oklch(34.9% 0.006 102));
+  --color-sand-7: light-dark(oklch(85.3% 0.006 96.6), oklch(40.1% 0.007 96.1));
+  --color-sand-8: light-dark(oklch(79.2% 0.008 96.5), oklch(49% 0.01 91.7));
+  --color-sand-9: light-dark(oklch(64.1% 0.01 107), oklch(53.5% 0.011 94.1));
+  --color-sand-10: light-dark(oklch(60.6% 0.01 107), oklch(58.1% 0.011 94));
+  --color-sand-11: light-dark(oklch(49.8% 0.008 107), oklch(76.7% 0.009 97.4));
+  --color-sand-12: light-dark(oklch(24.3% 0.008 96.3), oklch(94.8% 0.003 106));
+
+  --color-sand-a1: light-dark(
+    oklch(44.8% 0.11 110 / 0.012),
+    oklch(0% 0 none / 0)
+  );
+  --color-sand-a2: light-dark(
+    oklch(27.2% 0.06 110 / 0.028),
+    oklch(99.4% 0.001 106 / 0.034)
+  );
+  --color-sand-a3: light-dark(
+    oklch(17.2% 0.036 110 / 0.063),
+    oklch(99.7% 0.001 106 / 0.072)
+  );
+  --color-sand-a4: light-dark(
+    oklch(23.9% 0.055 110 / 0.099),
+    oklch(99.1% 0.014 107 / 0.106)
+  );
+  --color-sand-a5: light-dark(
+    oklch(18.4% 0.038 83.2 / 0.126),
+    oklch(99.7% 0.013 107 / 0.135)
+  );
+  --color-sand-a6: light-dark(
+    oklch(19.1% 0.042 90 / 0.161),
+    oklch(98.3% 0.019 81 / 0.177)
+  );
+  --color-sand-a7: light-dark(
+    oklch(20.6% 0.05 110 / 0.208),
+    oklch(98.7% 0.021 91.5 / 0.236)
+  );
+  --color-sand-a8: light-dark(
+    oklch(18.5% 0.042 102 / 0.287),
+    oklch(98.3% 0.02 82.8 / 0.341)
+  );
+  --color-sand-a9: light-dark(
+    oklch(15.4% 0.034 110 / 0.471),
+    oklch(98.5% 0.021 87.9 / 0.395)
+  );
+  --color-sand-a10: light-dark(
+    oklch(14.9% 0.038 110 / 0.514),
+    oklch(99.1% 0.022 99.6 / 0.45)
+  );
+  --color-sand-a11: light-dark(
+    oklch(12.9% 0.033 110 / 0.632),
+    oklch(99.5% 0.013 101 / 0.685)
+  );
+  --color-sand-a12: light-dark(
+    oklch(11.4% 0.028 103 / 0.891),
+    oklch(99.9% 0.003 106 / 0.929)
+  );
+
+  /* Chromatic */
+  --color-tomato: var(--color-tomato-9);
+  --color-tomato-1: light-dark(
+    oklch(99.4% 0.003 22.8),
+    oklch(18.7% 0.012 19.6)
+  );
+  --color-tomato-2: light-dark(oklch(98.4% 0.007 31), oklch(20.8% 0.017 32));
+  --color-tomato-3: light-dark(
+    oklch(95.4% 0.022 30.9),
+    oklch(25.4% 0.054 26.9)
+  );
+  --color-tomato-4: light-dark(
+    oklch(92.6% 0.047 31.8),
+    oklch(29.1% 0.087 28.2)
+  );
+  --color-tomato-5: light-dark(
+    oklch(89.2% 0.063 31.5),
+    oklch(33.1% 0.097 28.7)
+  );
+  --color-tomato-6: light-dark(oklch(85.2% 0.077 32), oklch(38% 0.099 30));
+  --color-tomato-7: light-dark(
+    oklch(80.3% 0.094 32.2),
+    oklch(44.7% 0.107 31.5)
+  );
+  --color-tomato-8: light-dark(oklch(74.1% 0.118 32.1), oklch(53.8% 0.13 32.9));
+  --color-tomato-9: light-dark(
+    oklch(62.7% 0.194 33.3),
+    oklch(62.7% 0.194 33.3)
+  );
+  --color-tomato-10: light-dark(
+    oklch(60.4% 0.195 33.3),
+    oklch(66.5% 0.179 34.1)
+  );
+  --color-tomato-11: light-dark(oklch(56.7% 0.198 32.8), oklch(78.4% 0.164 36));
+  --color-tomato-12: light-dark(
+    oklch(34.6% 0.08 30.5),
+    oklch(89.9% 0.047 31.1)
+  );
+
+  --color-tomato-a1: light-dark(
+    oklch(48.5% 0.221 28.6 / 0.012),
+    oklch(63.9% 0.289 28.4 / 0.026)
+  );
+  --color-tomato-a2: light-dark(
+    oklch(54% 0.227 31.7 / 0.032),
+    oklch(70.3% 0.236 33.9 / 0.051)
+  );
+  --color-tomato-a3: light-dark(
+    oklch(58.3% 0.24 32.8 / 0.091),
+    oklch(68% 0.261 30.8 / 0.148)
+  );
+  --color-tomato-a4: light-dark(
+    oklch(65.3% 0.277 32 / 0.165),
+    oklch(66.7% 0.279 29.9 / 0.232)
+  );
+  --color-tomato-a5: light-dark(
+    oklch(62.5% 0.262 32.4 / 0.232),
+    oklch(68.3% 0.261 30.2 / 0.29)
+  );
+  --color-tomato-a6: light-dark(
+    oklch(58.8% 0.247 32.4 / 0.302),
+    oklch(71.2% 0.231 31.6 / 0.353)
+  );
+  --color-tomato-a7: light-dark(
+    oklch(55.9% 0.233 32.7 / 0.389),
+    oklch(73.5% 0.208 31.7 / 0.45)
+  );
+  --color-tomato-a8: light-dark(
+    oklch(53.7% 0.224 32.6 / 0.499),
+    oklch(74.6% 0.198 33 / 0.601)
+  );
+  --color-tomato-a9: light-dark(
+    oklch(55.2% 0.233 32.2 / 0.769),
+    oklch(71.6% 0.227 33.5 / 0.82)
+  );
+  --color-tomato-a10: light-dark(
+    oklch(53.9% 0.228 32.1 / 0.8),
+    oklch(74.1% 0.203 34.2 / 0.853)
+  );
+  --color-tomato-a11: light-dark(
+    oklch(56.7% 0.198 32.8),
+    oklch(78.4% 0.164 36)
+  );
+  --color-tomato-a12: light-dark(
+    oklch(34.6% 0.08 30.5),
+    oklch(89.9% 0.047 31.1)
+  );
+
+  --color-red: var(--color-red-9);
+  --color-red-1: light-dark(oklch(99.4% 0.003 22.8), oklch(18.8% 0.013 19.4));
+  --color-red-2: light-dark(oklch(98.3% 0.008 16), oklch(20.5% 0.022 14.7));
+  --color-red-3: light-dark(oklch(95.6% 0.021 16.2), oklch(25% 0.064 13.1));
+  --color-red-4: light-dark(oklch(92.8% 0.047 16.7), oklch(28.9% 0.096 14.3));
+  --color-red-5: light-dark(oklch(89.6% 0.062 17.3), oklch(33.2% 0.107 15.5));
+  --color-red-6: light-dark(oklch(85.7% 0.075 17.9), oklch(38.3% 0.111 16.9));
+  --color-red-7: light-dark(oklch(80.7% 0.089 18.4), oklch(45.1% 0.121 18.9));
+  --color-red-8: light-dark(oklch(74.5% 0.113 19.1), oklch(54.4% 0.147 21.4));
+  --color-red-9: light-dark(oklch(62.5% 0.193 23), oklch(62.5% 0.193 23));
+  --color-red-10: light-dark(oklch(60% 0.195 23.9), oklch(66.5% 0.177 23.1));
+  --color-red-11: light-dark(oklch(55.7% 0.198 25.1), oklch(78.4% 0.162 22.3));
+  --color-red-12: light-dark(oklch(33.9% 0.109 16.7), oklch(90.2% 0.053 6.14));
+
+  --color-red-a1: light-dark(
+    oklch(48.5% 0.221 28.6 / 0.012),
+    oklch(64.4% 0.292 28.4 / 0.03)
+  );
+  --color-red-a2: light-dark(
+    oklch(58.2% 0.266 28.7 / 0.028),
+    oklch(68.3% 0.258 24.9 / 0.055)
+  );
+  --color-red-a3: light-dark(
+    oklch(54.5% 0.251 28.9 / 0.075),
+    oklch(66.6% 0.281 21.8 / 0.156)
+  );
+  --color-red-a4: light-dark(
+    oklch(64.9% 0.299 28.9 / 0.134),
+    oklch(66% 0.288 21 / 0.236)
+  );
+  --color-red-a5: light-dark(
+    oklch(60.8% 0.28 28.9 / 0.189),
+    oklch(67.3% 0.273 20.2 / 0.303)
+  );
+  --color-red-a6: light-dark(
+    oklch(56.5% 0.259 29.1 / 0.251),
+    oklch(69.7% 0.248 19.4 / 0.374)
+  );
+  --color-red-a7: light-dark(
+    oklch(51.9% 0.238 29.1 / 0.33),
+    oklch(72% 0.223 20.3 / 0.475)
+  );
+  --color-red-a8: light-dark(
+    oklch(49.6% 0.228 29 / 0.428),
+    oklch(73% 0.213 21.9 / 0.635)
+  );
+  --color-red-a9: light-dark(
+    oklch(52.2% 0.24 29.1 / 0.675),
+    oklch(71.5% 0.228 23.1 / 0.82)
+  );
+  --color-red-a10: light-dark(
+    oklch(50.4% 0.232 29.1 / 0.714),
+    oklch(74.1% 0.202 23 / 0.853)
+  );
+  --color-red-a11: light-dark(oklch(55.7% 0.198 25.1), oklch(78.4% 0.162 22.3));
+  --color-red-a12: light-dark(oklch(33.9% 0.109 16.7), oklch(90.2% 0.053 6.14));
+
+  --color-ruby: var(--color-ruby-9);
+  --color-ruby-1: light-dark(oklch(99.4% 0.003 356), oklch(18.9% 0.014 2.9));
+  --color-ruby-2: light-dark(oklch(98.3% 0.008 8.41), oklch(20.8% 0.016 5.29));
+  --color-ruby-3: light-dark(oklch(95.4% 0.022 8.56), oklch(25.4% 0.06 6.54));
+  --color-ruby-4: light-dark(oklch(92.8% 0.042 8.46), oklch(29.2% 0.089 5.5));
+  --color-ruby-5: light-dark(oklch(89.6% 0.055 8.16), oklch(33.3% 0.1 6.4));
+  --color-ruby-6: light-dark(oklch(85.8% 0.066 7.84), oklch(38.2% 0.105 7.59));
+  --color-ruby-7: light-dark(oklch(81% 0.08 7.49), oklch(44.8% 0.117 9.02));
+  --color-ruby-8: light-dark(oklch(74.9% 0.101 6.86), oklch(54.4% 0.145 11.1));
+  --color-ruby-9: light-dark(oklch(62.8% 0.195 13.2), oklch(62.8% 0.195 13.2));
+  --color-ruby-10: light-dark(oklch(60.1% 0.196 13.4), oklch(66.4% 0.179 13.7));
+  --color-ruby-11: light-dark(oklch(54.9% 0.199 13.9), oklch(78.6% 0.161 17));
+  --color-ruby-12: light-dark(oklch(34.1% 0.11 10), oklch(90.5% 0.053 356));
+
+  --color-ruby-a1: light-dark(
+    oklch(50% 0.224 1.78 / 0.012),
+    oklch(65.1% 0.288 16.1 / 0.03)
+  );
+  --color-ruby-a2: light-dark(
+    oklch(58.2% 0.266 28.7 / 0.028),
+    oklch(71.7% 0.23 8.82 / 0.051)
+  );
+  --color-ruby-a3: light-dark(
+    oklch(55.2% 0.252 25.8 / 0.079),
+    oklch(67.3% 0.276 13.1 / 0.152)
+  );
+  --color-ruby-a4: light-dark(
+    oklch(60.6% 0.277 26 / 0.13),
+    oklch(67.3% 0.281 11.7 / 0.227)
+  );
+  --color-ruby-a5: light-dark(
+    oklch(56.6% 0.258 24.9 / 0.185),
+    oklch(68.9% 0.264 10.6 / 0.29)
+  );
+  --color-ruby-a6: light-dark(
+    oklch(52.2% 0.238 24.7 / 0.244),
+    oklch(71% 0.243 9.59 / 0.358)
+  );
+  --color-ruby-a7: light-dark(
+    oklch(48.7% 0.222 24.1 / 0.314),
+    oklch(73.1% 0.22 9.82 / 0.458)
+  );
+  --color-ruby-a8: light-dark(
+    oklch(46.7% 0.212 22.6 / 0.412),
+    oklch(73.6% 0.213 11.4 / 0.627)
+  );
+  --color-ruby-a9: light-dark(
+    oklch(52.6% 0.24 24.1 / 0.679),
+    oklch(71.7% 0.231 13.5 / 0.82)
+  );
+  --color-ruby-a10: light-dark(
+    oklch(50.6% 0.23 23.8 / 0.714),
+    oklch(74% 0.207 14 / 0.849)
+  );
+  --color-ruby-a11: light-dark(oklch(54.9% 0.199 13.9), oklch(78.6% 0.161 17));
+  --color-ruby-a12: light-dark(oklch(34.1% 0.11 10), oklch(90.5% 0.053 356));
+
+  --color-crimson: var(--color-crimson-9);
+  --color-crimson-1: light-dark(oklch(99.4% 0.003 356), oklch(18.9% 0.014 354));
+  --color-crimson-2: light-dark(oklch(98.2% 0.008 357), oklch(20.7% 0.022 353));
+  --color-crimson-3: light-dark(oklch(95.4% 0.026 356), oklch(25.6% 0.059 354));
+  --color-crimson-4: light-dark(oklch(92.5% 0.041 356), oklch(29.3% 0.094 354));
+  --color-crimson-5: light-dark(oklch(89.3% 0.054 356), oklch(33.3% 0.104 355));
+  --color-crimson-6: light-dark(oklch(85.5% 0.065 356), oklch(38.2% 0.109 355));
+  --color-crimson-7: light-dark(oklch(80.8% 0.078 355), oklch(45% 0.12 357));
+  --color-crimson-8: light-dark(oklch(75% 0.099 354), oklch(54.2% 0.148 358));
+  --color-crimson-9: light-dark(oklch(63.4% 0.213 1.3), oklch(63.4% 0.213 1.3));
+  --color-crimson-10: light-dark(
+    oklch(60.8% 0.211 2.36),
+    oklch(66.4% 0.197 1.95)
+  );
+  --color-crimson-11: light-dark(
+    oklch(55.2% 0.207 4.49),
+    oklch(78.7% 0.167 6.72)
+  );
+  --color-crimson-12: light-dark(
+    oklch(34.1% 0.113 357),
+    oklch(90.9% 0.054 347)
+  );
+
+  --color-crimson-a1: light-dark(
+    oklch(50% 0.224 1.78 / 0.012),
+    oklch(65.9% 0.293 6.22 / 0.03)
+  );
+  --color-crimson-a2: light-dark(
+    oklch(53.5% 0.239 13.8 / 0.032),
+    oklch(70% 0.263 1.88 / 0.055)
+  );
+  --color-crimson-a3: light-dark(
+    oklch(58.6% 0.264 14.7 / 0.083),
+    oklch(69% 0.278 0.29 / 0.148)
+  );
+  --color-crimson-a4: light-dark(
+    oklch(57.1% 0.256 13.4 / 0.134),
+    oklch(68.2% 0.292 360 / 0.227)
+  );
+  --color-crimson-a5: light-dark(
+    oklch(53.2% 0.239 12.8 / 0.189),
+    oklch(69.5% 0.28 358 / 0.286)
+  );
+  --color-crimson-a6: light-dark(
+    oklch(49.4% 0.222 12.7 / 0.244),
+    oklch(71.9% 0.253 357 / 0.349)
+  );
+  --color-crimson-a7: light-dark(
+    oklch(46.3% 0.208 9.38 / 0.318),
+    oklch(74.1% 0.227 358 / 0.454)
+  );
+  --color-crimson-a8: light-dark(
+    oklch(45.3% 0.204 8.32 / 0.408),
+    oklch(74.2% 0.22 359 / 0.614)
+  );
+  --color-crimson-a9: light-dark(
+    oklch(54.5% 0.246 11.5 / 0.702),
+    oklch(71.7% 0.247 1.63 / 0.832)
+  );
+  --color-crimson-a10: light-dark(
+    oklch(52.4% 0.236 12.1 / 0.734),
+    oklch(73.9% 0.221 2.36 / 0.853)
+  );
+  --color-crimson-a11: light-dark(
+    oklch(55.2% 0.207 4.49),
+    oklch(78.7% 0.167 6.72)
+  );
+  --color-crimson-a12: light-dark(
+    oklch(34.1% 0.113 357),
+    oklch(90.9% 0.054 347)
+  );
+
+  --color-pink: var(--color-pink-9);
+  --color-pink-1: light-dark(oklch(99.4% 0.004 336), oklch(19.1% 0.017 335));
+  --color-pink-2: light-dark(oklch(98.3% 0.009 340), oklch(20.7% 0.031 338));
+  --color-pink-3: light-dark(oklch(95.4% 0.027 341), oklch(26.1% 0.061 337));
+  --color-pink-4: light-dark(oklch(92.5% 0.042 341), oklch(29.9% 0.098 340));
+  --color-pink-5: light-dark(oklch(89.3% 0.054 341), oklch(33.8% 0.104 341));
+  --color-pink-6: light-dark(oklch(85.5% 0.067 341), oklch(38.9% 0.107 342));
+  --color-pink-7: light-dark(oklch(80.9% 0.083 341), oklch(45.9% 0.119 343));
+  --color-pink-8: light-dark(oklch(75.2% 0.107 342), oklch(54.5% 0.145 344));
+  --color-pink-9: light-dark(oklch(61.7% 0.208 346), oklch(61.7% 0.208 346));
+  --color-pink-10: light-dark(oklch(59.6% 0.207 347), oklch(65% 0.197 346));
+  --color-pink-11: light-dark(oklch(55.7% 0.206 347), oklch(78.9% 0.19 351));
+  --color-pink-12: light-dark(oklch(35% 0.129 345), oklch(90.5% 0.059 343));
+
+  --color-pink-a1: light-dark(
+    oklch(54.1% 0.266 331 / 0.012),
+    oklch(70% 0.333 339 / 0.03)
+  );
+  --color-pink-a2: light-dark(
+    oklch(55.5% 0.257 351 / 0.032),
+    oklch(71.1% 0.31 343 / 0.059)
+  );
+  --color-pink-a3: light-dark(
+    oklch(56% 0.261 350 / 0.083),
+    oklch(73.7% 0.299 338 / 0.139)
+  );
+  --color-pink-a4: light-dark(
+    oklch(54.4% 0.254 350 / 0.134),
+    oklch(71.2% 0.315 342 / 0.219)
+  );
+  --color-pink-a5: light-dark(
+    oklch(50.3% 0.234 350 / 0.185),
+    oklch(72.7% 0.294 342 / 0.274)
+  );
+  --color-pink-a6: light-dark(
+    oklch(47.7% 0.223 350 / 0.244),
+    oklch(75.3% 0.257 343 / 0.337)
+  );
+  --color-pink-a7: light-dark(
+    oklch(46.6% 0.218 349 / 0.318),
+    oklch(77% 0.231 344 / 0.442)
+  );
+  --color-pink-a8: light-dark(
+    oklch(45.4% 0.212 348 / 0.412),
+    oklch(77.5% 0.222 344 / 0.585)
+  );
+  --color-pink-a9: light-dark(
+    oklch(51.1% 0.238 352 / 0.702),
+    oklch(74.2% 0.258 346 / 0.761)
+  );
+  --color-pink-a10: light-dark(
+    oklch(49.6% 0.23 352 / 0.73),
+    oklch(75.9% 0.235 347 / 0.795)
+  );
+  --color-pink-a11: light-dark(oklch(55.7% 0.206 347), oklch(78.9% 0.19 351));
+  --color-pink-a12: light-dark(oklch(35% 0.129 345), oklch(90.5% 0.059 343));
+
+  --color-plum: var(--color-plum-9);
+  --color-plum-1: light-dark(oklch(99.3% 0.005 317), oklch(19% 0.017 327));
+  --color-plum-2: light-dark(oklch(98.3% 0.009 326), oklch(21% 0.031 328));
+  --color-plum-3: light-dark(oklch(95.7% 0.027 325), oklch(26.6% 0.062 327));
+  --color-plum-4: light-dark(oklch(92.9% 0.044 325), oklch(30.7% 0.088 325));
+  --color-plum-5: light-dark(oklch(89.8% 0.057 324), oklch(34.3% 0.095 325));
+  --color-plum-6: light-dark(oklch(86% 0.072 324), oklch(38.9% 0.097 324));
+  --color-plum-7: light-dark(oklch(80.9% 0.091 323), oklch(45.6% 0.106 323));
+  --color-plum-8: light-dark(oklch(74.2% 0.12 322), oklch(54.5% 0.128 322));
+  --color-plum-9: light-dark(oklch(57.9% 0.188 322), oklch(57.9% 0.188 322));
+  --color-plum-10: light-dark(oklch(55.3% 0.181 322), oklch(61.6% 0.182 322));
+  --color-plum-11: light-dark(oklch(52.1% 0.173 322), oklch(78.6% 0.154 322));
+  --color-plum-12: light-dark(oklch(33.8% 0.125 321), oklch(90.6% 0.055 326));
+
+  --color-plum-a1: light-dark(
+    oklch(60.5% 0.321 311 / 0.012),
+    oklch(71.3% 0.349 331 / 0.026)
+  );
+  --color-plum-a2: light-dark(
+    oklch(48.5% 0.237 331 / 0.028),
+    oklch(72.3% 0.315 327 / 0.059)
+  );
+  --color-plum-a3: light-dark(
+    oklch(54.6% 0.277 324 / 0.079),
+    oklch(73% 0.293 326 / 0.148)
+  );
+  --color-plum-a4: light-dark(
+    oklch(52.9% 0.269 324 / 0.126),
+    oklch(72.4% 0.297 325 / 0.219)
+  );
+  --color-plum-a5: light-dark(
+    oklch(50.3% 0.258 323 / 0.177),
+    oklch(74.2% 0.274 325 / 0.269)
+  );
+  --color-plum-a6: light-dark(
+    oklch(47.9% 0.246 321 / 0.236),
+    oklch(76% 0.243 324 / 0.328)
+  );
+  --color-plum-a7: light-dark(
+    oklch(45.2% 0.233 320 / 0.314),
+    oklch(78.1% 0.215 323 / 0.425)
+  );
+  --color-plum-a8: light-dark(
+    oklch(44.1% 0.228 319 / 0.42),
+    oklch(78.9% 0.204 322 / 0.568)
+  );
+  --color-plum-a9: light-dark(
+    oklch(42.7% 0.222 319 / 0.687),
+    oklch(74% 0.253 322 / 0.69)
+  );
+  --color-plum-a10: light-dark(
+    oklch(40.5% 0.209 320 / 0.71),
+    oklch(75.6% 0.236 322 / 0.732)
+  );
+  --color-plum-a11: light-dark(oklch(52.1% 0.173 322), oklch(78.6% 0.154 322));
+  --color-plum-a12: light-dark(oklch(33.8% 0.125 321), oklch(90.6% 0.055 326));
+
+  --color-purple: var(--color-purple-9);
+  --color-purple-1: light-dark(oklch(99.3% 0.004 325), oklch(19.2% 0.022 316));
+  --color-purple-2: light-dark(oklch(98.2% 0.009 313), oklch(21.3% 0.031 314));
+  --color-purple-3: light-dark(oklch(95.9% 0.024 313), oklch(26.6% 0.062 312));
+  --color-purple-4: light-dark(oklch(93.3% 0.039 312), oklch(30.8% 0.083 311));
+  --color-purple-5: light-dark(oklch(90.1% 0.054 312), oklch(34.4% 0.091 310));
+  --color-purple-6: light-dark(oklch(86% 0.071 311), oklch(38.8% 0.097 310));
+  --color-purple-7: light-dark(oklch(80.4% 0.093 310), oklch(45% 0.108 309));
+  --color-purple-8: light-dark(oklch(73.3% 0.123 308), oklch(54.1% 0.133 307));
+  --color-purple-9: light-dark(oklch(55.5% 0.183 306), oklch(55.5% 0.183 306));
+  --color-purple-10: light-dark(oklch(52.4% 0.176 306), oklch(59.6% 0.177 306));
+  --color-purple-11: light-dark(oklch(51.6% 0.174 306), oklch(78.5% 0.156 308));
+  --color-purple-12: light-dark(oklch(32.2% 0.11 304), oklch(91.1% 0.049 311));
+
+  --color-purple-a1: light-dark(
+    oklch(54.1% 0.266 331 / 0.012),
+    oklch(61% 0.318 312 / 0.038)
+  );
+  --color-purple-a2: light-dark(
+    oklch(46% 0.246 306 / 0.028),
+    oklch(65.3% 0.28 312 / 0.072)
+  );
+  --color-purple-a3: light-dark(
+    oklch(50.8% 0.275 306 / 0.071),
+    oklch(66.7% 0.259 310 / 0.169)
+  );
+  --color-purple-a4: light-dark(
+    oklch(48.9% 0.27 301 / 0.114),
+    oklch(66.4% 0.257 309 / 0.248)
+  );
+  --color-purple-a5: light-dark(
+    oklch(47.1% 0.26 301 / 0.165),
+    oklch(68.4% 0.24 309 / 0.303)
+  );
+  --color-purple-a6: light-dark(
+    oklch(44.5% 0.248 299 / 0.228),
+    oklch(70.5% 0.221 308 / 0.366)
+  );
+  --color-purple-a7: light-dark(
+    oklch(42.7% 0.239 298 / 0.31),
+    oklch(72.9% 0.202 308 / 0.458)
+  );
+  --color-purple-a8: light-dark(
+    oklch(41.4% 0.235 294 / 0.416),
+    oklch(73.3% 0.195 307 / 0.622)
+  );
+  --color-purple-a9: light-dark(
+    oklch(38.8% 0.22 295 / 0.683),
+    oklch(67.6% 0.235 305 / 0.736)
+  );
+  --color-purple-a10: light-dark(
+    oklch(36.2% 0.205 295 / 0.71),
+    oklch(70% 0.217 306 / 0.778)
+  );
+  --color-purple-a11: light-dark(
+    oklch(51.6% 0.174 306),
+    oklch(78.5% 0.156 308)
+  );
+  --color-purple-a12: light-dark(oklch(32.2% 0.11 304), oklch(91.1% 0.049 311));
+
+  --color-violet: var(--color-violet-9);
+  --color-violet-1: light-dark(oklch(99.2% 0.003 308), oklch(19.1% 0.026 291));
+  --color-violet-2: light-dark(oklch(98.3% 0.009 295), oklch(21.1% 0.032 299));
+  --color-violet-3: light-dark(oklch(96.3% 0.019 297), oklch(27.1% 0.066 294));
+  --color-violet-4: light-dark(oklch(93.4% 0.039 295), oklch(31.2% 0.093 292));
+  --color-violet-5: light-dark(oklch(90.4% 0.057 294), oklch(34.8% 0.099 291));
+  --color-violet-6: light-dark(oklch(86.4% 0.072 294), oklch(39% 0.102 292));
+  --color-violet-7: light-dark(oklch(80.6% 0.09 293), oklch(44.5% 0.111 292));
+  --color-violet-8: light-dark(oklch(72.9% 0.119 292), oklch(51.6% 0.131 290));
+  --color-violet-9: light-dark(oklch(54.2% 0.179 288), oklch(54.2% 0.179 288));
+  --color-violet-10: light-dark(oklch(51.1% 0.177 288), oklch(58.8% 0.17 290));
+  --color-violet-11: light-dark(oklch(50.8% 0.159 289), oklch(77.8% 0.137 294));
+  --color-violet-12: light-dark(oklch(31.3% 0.098 287), oklch(91.2% 0.045 293));
+
+  --color-violet-a1: light-dark(
+    oklch(41.6% 0.229 299 / 0.012),
+    oklch(50.8% 0.297 276 / 0.055)
+  );
+  --color-violet-a2: light-dark(
+    oklch(43.2% 0.279 271 / 0.028),
+    oklch(58.6% 0.271 293 / 0.08)
+  );
+  --color-violet-a3: light-dark(
+    oklch(43.9% 0.28 274 / 0.059),
+    oklch(60.2% 0.249 289 / 0.202)
+  );
+  --color-violet-a4: light-dark(
+    oklch(48.1% 0.314 271 / 0.102),
+    oklch(60.5% 0.247 288 / 0.299)
+  );
+  --color-violet-a5: light-dark(
+    oklch(47.8% 0.315 269 / 0.15),
+    oklch(62.9% 0.232 290 / 0.353)
+  );
+  --color-violet-a6: light-dark(
+    oklch(44.4% 0.292 270 / 0.208),
+    oklch(66.2% 0.211 291 / 0.408)
+  );
+  --color-violet-a7: light-dark(
+    oklch(40.4% 0.264 271 / 0.287),
+    oklch(68.2% 0.196 290 / 0.496)
+  );
+  --color-violet-a8: light-dark(
+    oklch(38.8% 0.254 271 / 0.397),
+    oklch(69% 0.19 290 / 0.631)
+  );
+  --color-violet-a9: light-dark(
+    oklch(35.8% 0.234 271 / 0.659),
+    oklch(64% 0.222 288 / 0.769)
+  );
+  --color-violet-a10: light-dark(
+    oklch(34% 0.221 271 / 0.695),
+    oklch(67.5% 0.201 290 / 0.811)
+  );
+  --color-violet-a11: light-dark(
+    oklch(50.8% 0.159 289),
+    oklch(77.8% 0.137 294)
+  );
+  --color-violet-a12: light-dark(
+    oklch(31.3% 0.098 287),
+    oklch(91.2% 0.045 293)
+  );
+
+  --color-iris: var(--color-iris-9);
+  --color-iris-1: light-dark(oklch(99.4% 0.003 286), oklch(19.3% 0.022 284));
+  --color-iris-2: light-dark(oklch(98.1% 0.009 284), oklch(20.9% 0.029 287));
+  --color-iris-3: light-dark(oklch(96.1% 0.018 284), oklch(27.3% 0.069 279));
+  --color-iris-4: light-dark(oklch(93.5% 0.035 283), oklch(31.9% 0.102 276));
+  --color-iris-5: light-dark(oklch(90.4% 0.053 284), oklch(35.8% 0.109 277));
+  --color-iris-6: light-dark(oklch(86.5% 0.07 283), oklch(39.9% 0.112 280));
+  --color-iris-7: light-dark(oklch(80.8% 0.088 283), oklch(44.8% 0.12 281));
+  --color-iris-8: light-dark(oklch(72.9% 0.118 281), oklch(50.7% 0.138 281));
+  --color-iris-9: light-dark(oklch(54% 0.184 278), oklch(54% 0.184 278));
+  --color-iris-10: light-dark(oklch(50.9% 0.186 277), oklch(58.7% 0.172 281));
+  --color-iris-11: light-dark(oklch(51% 0.173 280), oklch(77.6% 0.131 287));
+  --color-iris-12: light-dark(oklch(31.5% 0.099 277), oklch(91.4% 0.042 287));
+
+  --color-iris-a1: light-dark(
+    oklch(46.9% 0.322 264 / 0.008),
+    oklch(51.6% 0.286 270 / 0.051)
+  );
+  --color-iris-a2: light-dark(
+    oklch(42.1% 0.287 265 / 0.028),
+    oklch(56.7% 0.259 278 / 0.08)
+  );
+  --color-iris-a3: light-dark(
+    oklch(42.7% 0.286 264 / 0.059),
+    oklch(58.7% 0.243 275 / 0.219)
+  );
+  --color-iris-a4: light-dark(
+    oklch(47.1% 0.32 264 / 0.099),
+    oklch(57.8% 0.249 273 / 0.337)
+  );
+  --color-iris-a5: light-dark(
+    oklch(46.9% 0.321 264 / 0.142),
+    oklch(60.2% 0.234 275 / 0.4)
+  );
+  --color-iris-a6: light-dark(
+    oklch(44.7% 0.308 264 / 0.2),
+    oklch(63.3% 0.216 278 / 0.454)
+  );
+  --color-iris-a7: light-dark(
+    oklch(41.3% 0.284 264 / 0.279),
+    oklch(65.7% 0.201 279 / 0.534)
+  );
+  --color-iris-a8: light-dark(
+    oklch(39.2% 0.268 264 / 0.389),
+    oklch(66.3% 0.198 280 / 0.652)
+  );
+  --color-iris-a9: light-dark(
+    oklch(35.9% 0.249 264 / 0.644),
+    oklch(62.3% 0.222 278 / 0.799)
+  );
+  --color-iris-a10: light-dark(
+    oklch(34.4% 0.239 264 / 0.683),
+    oklch(66% 0.2 281 / 0.832)
+  );
+  --color-iris-a11: light-dark(oklch(51% 0.173 280), oklch(77.6% 0.131 287));
+  --color-iris-a12: light-dark(oklch(31.5% 0.099 277), oklch(91.4% 0.042 287));
+
+  --color-indigo: var(--color-indigo-9);
+  --color-indigo-1: light-dark(oklch(99.4% 0.001 286), oklch(19.1% 0.025 277));
+  --color-indigo-2: light-dark(oklch(98.3% 0.008 271), oklch(20.9% 0.03 276));
+  --color-indigo-3: light-dark(oklch(96.1% 0.017 269), oklch(27.2% 0.069 268));
+  --color-indigo-4: light-dark(oklch(93.5% 0.034 268), oklch(31.9% 0.093 267));
+  --color-indigo-5: light-dark(oklch(90.3% 0.051 270), oklch(36.2% 0.105 268));
+  --color-indigo-6: light-dark(oklch(86.3% 0.071 272), oklch(40.4% 0.111 268));
+  --color-indigo-7: light-dark(oklch(80.7% 0.087 271), oklch(45% 0.12 269));
+  --color-indigo-8: light-dark(oklch(73% 0.113 271), oklch(50.3% 0.137 268));
+  --color-indigo-9: light-dark(oklch(54.4% 0.191 267), oklch(54.4% 0.191 267));
+  --color-indigo-10: light-dark(oklch(51.1% 0.195 266), oklch(59% 0.176 269));
+  --color-indigo-11: light-dark(oklch(51% 0.173 267), oklch(77.7% 0.123 273));
+  --color-indigo-12: light-dark(oklch(31.3% 0.086 269), oklch(91.1% 0.043 270));
+
+  --color-indigo-a1: light-dark(
+    oklch(28.9% 0.192 265 / 0.008),
+    oklch(50% 0.298 264 / 0.055)
+  );
+  --color-indigo-a2: light-dark(
+    oklch(44.3% 0.272 264 / 0.028),
+    oklch(55.8% 0.255 268 / 0.085)
+  );
+  --color-indigo-a3: light-dark(
+    oklch(47.3% 0.263 262 / 0.067),
+    oklch(58.4% 0.244 265 / 0.223)
+  );
+  --color-indigo-a4: light-dark(
+    oklch(50.9% 0.294 262 / 0.114),
+    oklch(59.3% 0.238 265 / 0.324)
+  );
+  --color-indigo-a5: light-dark(
+    oklch(50.5% 0.297 262 / 0.169),
+    oklch(61.3% 0.224 266 / 0.4)
+  );
+  --color-indigo-a6: light-dark(
+    oklch(49.3% 0.297 263 / 0.232),
+    oklch(63.7% 0.209 267 / 0.467)
+  );
+  --color-indigo-a7: light-dark(
+    oklch(44.6% 0.27 263 / 0.314),
+    oklch(65% 0.201 268 / 0.547)
+  );
+  --color-indigo-a8: light-dark(
+    oklch(42.7% 0.257 263 / 0.432),
+    oklch(65.6% 0.197 268 / 0.652)
+  );
+  --color-indigo-a9: light-dark(
+    oklch(41% 0.248 263 / 0.726),
+    oklch(61.3% 0.224 267 / 0.824)
+  );
+  --color-indigo-a10: light-dark(
+    oklch(39.4% 0.241 263 / 0.765),
+    oklch(65.1% 0.2 269 / 0.858)
+  );
+  --color-indigo-a11: light-dark(oklch(51% 0.173 267), oklch(77.7% 0.123 273));
+  --color-indigo-a12: light-dark(
+    oklch(31.3% 0.086 269),
+    oklch(91.1% 0.043 270)
+  );
+
+  --color-blue: var(--color-blue-9);
+  --color-blue-1: light-dark(oklch(99.3% 0.003 248), oklch(19.3% 0.026 257));
+  --color-blue-2: light-dark(oklch(98.2% 0.01 243), oklch(21.3% 0.03 259));
+  --color-blue-3: light-dark(oklch(96% 0.02 237), oklch(27.4% 0.067 254));
+  --color-blue-4: light-dark(oklch(93.7% 0.037 239), oklch(31.7% 0.1 248));
+  --color-blue-5: light-dark(oklch(90.6% 0.053 243), oklch(36.5% 0.108 250));
+  --color-blue-6: light-dark(oklch(86.4% 0.069 243), oklch(41.6% 0.112 252));
+  --color-blue-7: light-dark(oklch(80.9% 0.088 243), oklch(47.5% 0.121 253));
+  --color-blue-8: light-dark(oklch(73.5% 0.121 243), oklch(54.1% 0.14 253));
+  --color-blue-9: light-dark(oklch(64.9% 0.193 252), oklch(64.9% 0.193 252));
+  --color-blue-10: light-dark(oklch(62.1% 0.184 252), oklch(68.9% 0.17 251));
+  --color-blue-11: light-dark(oklch(55.8% 0.189 253), oklch(76.8% 0.135 249));
+  --color-blue-12: light-dark(oklch(32.4% 0.097 259), oklch(90.7% 0.051 238));
+
+  --color-blue-a1: light-dark(
+    oklch(62.2% 0.228 250 / 0.016),
+    oklch(53.9% 0.275 260 / 0.059)
+  );
+  --color-blue-a2: light-dark(
+    oklch(60.4% 0.199 246 / 0.04),
+    oklch(58.4% 0.241 257 / 0.085)
+  );
+  --color-blue-a3: light-dark(
+    oklch(60.1% 0.203 247 / 0.087),
+    oklch(60% 0.237 256 / 0.219)
+  );
+  --color-blue-a4: light-dark(
+    oklch(63.8% 0.22 248 / 0.146),
+    oklch(59.8% 0.24 253 / 0.324)
+  );
+  --color-blue-a5: light-dark(
+    oklch(61.2% 0.226 250 / 0.212),
+    oklch(62.2% 0.226 252 / 0.4)
+  );
+  --color-blue-a6: light-dark(
+    oklch(58% 0.217 251 / 0.291),
+    oklch(65.3% 0.205 252 / 0.475)
+  );
+  --color-blue-a7: light-dark(
+    oklch(55.2% 0.206 251 / 0.393),
+    oklch(67.4% 0.191 253 / 0.572)
+  );
+  --color-blue-a8: light-dark(
+    oklch(54.7% 0.204 251 / 0.55),
+    oklch(68% 0.187 253 / 0.702)
+  );
+  --color-blue-a9: light-dark(
+    oklch(56.4% 0.242 256 / 0.753),
+    oklch(66.3% 0.197 252 / 0.967)
+  );
+  --color-blue-a10: light-dark(
+    oklch(52.9% 0.228 256 / 0.765),
+    oklch(70.5% 0.173 251 / 0.971)
+  );
+  --color-blue-a11: light-dark(oklch(55.8% 0.189 253), oklch(76.8% 0.135 249));
+  --color-blue-a12: light-dark(oklch(32.4% 0.097 259), oklch(90.7% 0.051 238));
+
+  --color-cyan: var(--color-cyan-9);
+  --color-cyan-1: light-dark(oklch(99.2% 0.004 219), oklch(19.1% 0.017 220));
+  --color-cyan-2: light-dark(oklch(98% 0.009 203), oklch(21.4% 0.018 225));
+  --color-cyan-3: light-dark(oklch(95.8% 0.026 204), oklch(27.2% 0.044 222));
+  --color-cyan-4: light-dark(oklch(93.2% 0.041 205), oklch(31.5% 0.063 222));
+  --color-cyan-5: light-dark(oklch(90% 0.054 206), oklch(36.2% 0.07 222));
+  --color-cyan-6: light-dark(oklch(85.9% 0.066 208), oklch(41.4% 0.075 222));
+  --color-cyan-7: light-dark(oklch(80.5% 0.082 210), oklch(47.8% 0.083 221));
+  --color-cyan-8: light-dark(oklch(72.7% 0.11 212), oklch(55.8% 0.098 221));
+  --color-cyan-9: light-dark(oklch(66.1% 0.122 221), oklch(66.1% 0.122 221));
+  --color-cyan-10: light-dark(oklch(62.7% 0.114 221), oklch(69.8% 0.12 219));
+  --color-cyan-11: light-dark(oklch(54% 0.127 224), oklch(78.6% 0.115 213));
+  --color-cyan-12: light-dark(oklch(33.2% 0.053 219), oklch(90.9% 0.057 212));
+
+  --color-cyan-a1: light-dark(
+    oklch(64% 0.158 224 / 0.02),
+    oklch(69% 0.198 237 / 0.034)
+  );
+  --color-cyan-a2: light-dark(
+    oklch(58.8% 0.134 210 / 0.044),
+    oklch(74.2% 0.183 228 / 0.059)
+  );
+  --color-cyan-a3: light-dark(
+    oklch(69% 0.158 208 / 0.114),
+    oklch(74.6% 0.182 227 / 0.152)
+  );
+  --color-cyan-a4: light-dark(
+    oklch(67.9% 0.156 209 / 0.181),
+    oklch(73.6% 0.188 228 / 0.227)
+  );
+  --color-cyan-a5: light-dark(
+    oklch(64% 0.148 211 / 0.248),
+    oklch(75.6% 0.18 225 / 0.29)
+  );
+  --color-cyan-a6: light-dark(
+    oklch(61.2% 0.143 214 / 0.33),
+    oklch(78.2% 0.167 223 / 0.358)
+  );
+  --color-cyan-a7: light-dark(
+    oklch(58.1% 0.137 216 / 0.436),
+    oklch(79.6% 0.157 222 / 0.446)
+  );
+  --color-cyan-a8: light-dark(
+    oklch(57.6% 0.137 218 / 0.612),
+    oklch(80.3% 0.152 222 / 0.572)
+  );
+  --color-cyan-a9: light-dark(
+    oklch(54.6% 0.141 229 / 0.718),
+    oklch(80.5% 0.153 221 / 0.748)
+  );
+  --color-cyan-a10: light-dark(
+    oklch(50.7% 0.131 228 / 0.738),
+    oklch(82% 0.145 219 / 0.786)
+  );
+  --color-cyan-a11: light-dark(oklch(54% 0.127 224), oklch(78.6% 0.115 213));
+  --color-cyan-a12: light-dark(oklch(33.2% 0.053 219), oklch(90.9% 0.057 212));
+
+  --color-teal: var(--color-teal-9);
+  --color-teal-1: light-dark(oklch(99.4% 0.005 178), oklch(18.9% 0.012 184));
+  --color-teal-2: light-dark(oklch(98.1% 0.009 179), oklch(21.7% 0.017 189));
+  --color-teal-3: light-dark(oklch(96.1% 0.027 180), oklch(27.4% 0.038 186));
+  --color-teal-4: light-dark(oklch(93.5% 0.042 180), oklch(31.7% 0.055 187));
+  --color-teal-5: light-dark(oklch(90% 0.054 180), oklch(36.3% 0.06 187));
+  --color-teal-6: light-dark(oklch(85.6% 0.064 181), oklch(41.4% 0.065 185));
+  --color-teal-7: light-dark(oklch(79.7% 0.076 182), oklch(47.3% 0.074 185));
+  --color-teal-8: light-dark(oklch(72.1% 0.097 183), oklch(53.9% 0.087 184));
+  --color-teal-9: light-dark(oklch(64.9% 0.113 182), oklch(64.9% 0.113 182));
+  --color-teal-10: light-dark(oklch(61.9% 0.11 181), oklch(68.7% 0.123 180));
+  --color-teal-11: light-dark(oklch(53% 0.124 179), oklch(78.9% 0.147 176));
+  --color-teal-12: light-dark(oklch(32.7% 0.05 185), oklch(90.5% 0.072 175));
+
+  --color-teal-a1: light-dark(
+    oklch(70.4% 0.203 165 / 0.016),
+    oklch(86.8% 0.233 171 / 0.017)
+  );
+  --color-teal-a2: light-dark(
+    oklch(62.9% 0.174 168 / 0.044),
+    oklch(88.3% 0.197 184 / 0.047)
+  );
+  --color-teal-a3: light-dark(
+    oklch(69.7% 0.188 170 / 0.106),
+    oklch(88.9% 0.201 182 / 0.118)
+  );
+  --color-teal-a4: light-dark(
+    oklch(67% 0.179 171 / 0.169),
+    oklch(88.7% 0.201 186 / 0.173)
+  );
+  --color-teal-a5: light-dark(
+    oklch(62.8% 0.167 171 / 0.24),
+    oklch(89.6% 0.188 186 / 0.227)
+  );
+  --color-teal-a6: light-dark(
+    oklch(57.5% 0.15 173 / 0.318),
+    oklch(90.3% 0.174 185 / 0.286)
+  );
+  --color-teal-a7: light-dark(
+    oklch(53.9% 0.137 176 / 0.42),
+    oklch(90.6% 0.166 184 / 0.366)
+  );
+  --color-teal-a8: light-dark(
+    oklch(53.1% 0.133 178 / 0.569),
+    oklch(90.8% 0.163 184 / 0.454)
+  );
+  --color-teal-a9: light-dark(
+    oklch(51.2% 0.128 178 / 0.702),
+    oklch(90.2% 0.167 182 / 0.61)
+  );
+  --color-teal-a10: light-dark(
+    oklch(48.8% 0.124 176 / 0.726),
+    oklch(90.1% 0.169 180 / 0.669)
+  );
+  --color-teal-a11: light-dark(oklch(53% 0.124 179), oklch(78.9% 0.147 176));
+  --color-teal-a12: light-dark(oklch(32.7% 0.05 185), oklch(90.5% 0.072 175));
+
+  --color-jade: var(--color-jade-9);
+  --color-jade-1: light-dark(oklch(99.5% 0.004 173), oklch(18.8% 0.014 166));
+  --color-jade-2: light-dark(oklch(98.2% 0.009 160), oklch(21.6% 0.018 166));
+  --color-jade-3: light-dark(oklch(96% 0.022 162), oklch(27.2% 0.042 167));
+  --color-jade-4: light-dark(oklch(93.4% 0.034 164), oklch(31.6% 0.057 168));
+  --color-jade-5: light-dark(oklch(90.2% 0.046 165), oklch(36.2% 0.064 169));
+  --color-jade-6: light-dark(oklch(85.9% 0.059 167), oklch(41.1% 0.068 170));
+  --color-jade-7: light-dark(oklch(80% 0.077 170), oklch(46.8% 0.075 171));
+  --color-jade-8: light-dark(oklch(72.1% 0.103 173), oklch(53.7% 0.088 172));
+  --color-jade-9: light-dark(oklch(64.2% 0.115 171), oklch(64.2% 0.115 171));
+  --color-jade-10: light-dark(oklch(61.3% 0.11 171), oklch(67.8% 0.125 170));
+  --color-jade-11: light-dark(oklch(52.9% 0.127 167), oklch(78.5% 0.156 167));
+  --color-jade-12: light-dark(oklch(32.6% 0.041 170), oklch(90.3% 0.078 167));
+
+  --color-jade-a1: light-dark(
+    oklch(70.4% 0.203 165 / 0.016),
+    oklch(84.7% 0.337 149 / 0.017)
+  );
+  --color-jade-a2: light-dark(
+    oklch(59.2% 0.223 150 / 0.04),
+    oklch(86.9% 0.233 160 / 0.047)
+  );
+  --color-jade-a3: light-dark(
+    oklch(58.2% 0.214 152 / 0.087),
+    oklch(87.5% 0.24 162 / 0.118)
+  );
+  --color-jade-a4: light-dark(
+    oklch(57.7% 0.206 153 / 0.142),
+    oklch(87.5% 0.23 164 / 0.173)
+  );
+  --color-jade-a5: light-dark(
+    oklch(55.8% 0.197 153 / 0.204),
+    oklch(88.5% 0.211 166 / 0.227)
+  );
+  --color-jade-a6: light-dark(
+    oklch(53.3% 0.175 157 / 0.287),
+    oklch(89.6% 0.186 169 / 0.286)
+  );
+  --color-jade-a7: light-dark(
+    oklch(52.1% 0.164 159 / 0.397),
+    oklch(90.2% 0.174 169 / 0.362)
+  );
+  --color-jade-a8: light-dark(
+    oklch(52.4% 0.152 164 / 0.561),
+    oklch(90.6% 0.165 172 / 0.45)
+  );
+  --color-jade-a9: light-dark(
+    oklch(48.8% 0.143 164 / 0.683),
+    oklch(89.9% 0.173 171 / 0.606)
+  );
+  --color-jade-a10: light-dark(
+    oklch(45.8% 0.135 164 / 0.702),
+    oklch(90.1% 0.175 170 / 0.656)
+  );
+  --color-jade-a11: light-dark(oklch(52.9% 0.127 167), oklch(78.5% 0.156 167));
+  --color-jade-a12: light-dark(oklch(32.6% 0.041 170), oklch(90.3% 0.078 167));
+
+  --color-green: var(--color-green-9);
+  --color-green-1: light-dark(oklch(99.4% 0.004 159), oklch(18.9% 0.013 163));
+  --color-green-2: light-dark(oklch(98.2% 0.009 155), oklch(21.3% 0.016 162));
+  --color-green-3: light-dark(oklch(95.9% 0.023 156), oklch(27.1% 0.039 163));
+  --color-green-4: light-dark(oklch(93.3% 0.036 157), oklch(31.8% 0.057 162));
+  --color-green-5: light-dark(oklch(90% 0.05 157), oklch(36.5% 0.066 161));
+  --color-green-6: light-dark(oklch(85.7% 0.065 158), oklch(41.3% 0.073 161));
+  --color-green-7: light-dark(oklch(79.8% 0.084 159), oklch(46.7% 0.083 160));
+  --color-green-8: light-dark(oklch(71.4% 0.112 161), oklch(52.7% 0.096 159));
+  --color-green-9: light-dark(oklch(64% 0.133 158), oklch(64% 0.133 158));
+  --color-green-10: light-dark(oklch(61.1% 0.126 158), oklch(67.6% 0.141 158));
+  --color-green-11: light-dark(oklch(52.9% 0.133 158), oklch(78% 0.166 157));
+  --color-green-12: light-dark(oklch(32.2% 0.047 165), oklch(90.5% 0.083 158));
+
+  --color-green-a1: light-dark(
+    oklch(69.3% 0.264 150 / 0.016),
+    oklch(84.7% 0.337 149 / 0.017)
+  );
+  --color-green-a2: light-dark(
+    oklch(55.7% 0.225 148 / 0.036),
+    oklch(86.4% 0.235 158 / 0.043)
+  );
+  --color-green-a3: light-dark(
+    oklch(57.9% 0.234 148 / 0.087),
+    oklch(87.9% 0.227 159 / 0.114)
+  );
+  --color-green-a4: light-dark(
+    oklch(57.3% 0.231 148 / 0.142),
+    oklch(87.5% 0.237 159 / 0.173)
+  );
+  --color-green-a5: light-dark(
+    oklch(54% 0.212 149 / 0.204),
+    oklch(88.5% 0.218 160 / 0.232)
+  );
+  --color-green-a6: light-dark(
+    oklch(52.4% 0.204 149 / 0.283),
+    oklch(89.4% 0.199 160 / 0.29)
+  );
+  --color-green-a7: light-dark(
+    oklch(50.1% 0.19 150 / 0.389),
+    oklch(89.8% 0.191 159 / 0.362)
+  );
+  --color-green-a8: light-dark(
+    oklch(49.6% 0.178 153 / 0.55),
+    oklch(90% 0.185 159 / 0.442)
+  );
+  --color-green-a9: light-dark(
+    oklch(47.8% 0.178 151 / 0.667),
+    oklch(89.3% 0.198 157 / 0.61)
+  );
+  --color-green-a10: light-dark(
+    oklch(44.9% 0.166 152 / 0.691),
+    oklch(89.5% 0.199 157 / 0.66)
+  );
+  --color-green-a11: light-dark(oklch(52.9% 0.133 158), oklch(78% 0.166 157));
+  --color-green-a12: light-dark(oklch(32.2% 0.047 165), oklch(90.5% 0.083 158));
+
+  --color-grass: var(--color-grass-9);
+  --color-grass-1: light-dark(oklch(99.4% 0.005 146), oklch(18.8% 0.014 156));
+  --color-grass-2: light-dark(oklch(98.2% 0.009 146), oklch(21.1% 0.014 151));
+  --color-grass-3: light-dark(oklch(96.1% 0.023 145), oklch(26.7% 0.03 151));
+  --color-grass-4: light-dark(oklch(93.4% 0.037 146), oklch(31.9% 0.052 150));
+  --color-grass-5: light-dark(oklch(90.1% 0.053 146), oklch(36.7% 0.062 150));
+  --color-grass-6: light-dark(oklch(85.8% 0.071 147), oklch(41.6% 0.072 149));
+  --color-grass-7: light-dark(oklch(79.8% 0.095 147), oklch(46.8% 0.084 149));
+  --color-grass-8: light-dark(oklch(71.6% 0.13 148), oklch(52.4% 0.097 148));
+  --color-grass-9: light-dark(oklch(65.2% 0.147 147), oklch(65.2% 0.147 147));
+  --color-grass-10: light-dark(oklch(61.4% 0.142 147), oklch(69% 0.145 148));
+  --color-grass-11: light-dark(oklch(52.7% 0.13 147), oklch(78% 0.142 148));
+  --color-grass-12: light-dark(oklch(32.7% 0.053 149), oklch(91.1% 0.078 145));
+
+  --color-grass-a1: light-dark(
+    oklch(68.9% 0.297 146 / 0.016),
+    oklch(84.4% 0.364 146 / 0.017)
+  );
+  --color-grass-a2: light-dark(
+    oklch(55.6% 0.238 146 / 0.036),
+    oklch(88.5% 0.227 152 / 0.038)
+  );
+  --color-grass-a3: light-dark(
+    oklch(56.4% 0.241 145 / 0.083),
+    oklch(89.1% 0.212 149 / 0.106)
+  );
+  --color-grass-a4: light-dark(
+    oklch(55.6% 0.239 145 / 0.134),
+    oklch(88.7% 0.229 149 / 0.169)
+  );
+  --color-grass-a5: light-dark(
+    oklch(54.2% 0.232 145 / 0.197),
+    oklch(89.6% 0.215 149 / 0.227)
+  );
+  --color-grass-a6: light-dark(
+    oklch(51% 0.219 145 / 0.275),
+    oklch(90.1% 0.203 149 / 0.29)
+  );
+  --color-grass-a7: light-dark(
+    oklch(49.5% 0.214 146 / 0.377),
+    oklch(90.4% 0.197 148 / 0.358)
+  );
+  --color-grass-a8: light-dark(
+    oklch(48.4% 0.209 146 / 0.522),
+    oklch(90.5% 0.195 148 / 0.433)
+  );
+  --color-grass-a9: light-dark(
+    oklch(46% 0.199 146 / 0.624),
+    oklch(89.8% 0.216 147 / 0.622)
+  );
+  --color-grass-a10: light-dark(
+    oklch(42.4% 0.183 145 / 0.659),
+    oklch(90.1% 0.2 148 / 0.673)
+  );
+  --color-grass-a11: light-dark(oklch(52.7% 0.13 147), oklch(78% 0.142 148));
+  --color-grass-a12: light-dark(oklch(32.7% 0.053 149), oklch(91.1% 0.078 145));
+
+  --color-brown: var(--color-brown-9);
+  --color-brown-1: light-dark(oklch(99.4% 0.002 63.2), oklch(17.8% 0.005 81.5));
+  --color-brown-2: light-dark(oklch(98.3% 0.006 65.7), oklch(21.3% 0.007 51.6));
+  --color-brown-3: light-dark(oklch(95.4% 0.013 67.8), oklch(25.4% 0.013 53.5));
+  --color-brown-4: light-dark(oklch(92.6% 0.02 66.9), oklch(28.8% 0.018 55.4));
+  --color-brown-5: light-dark(oklch(89.7% 0.029 65.8), oklch(32.5% 0.024 55.9));
+  --color-brown-6: light-dark(oklch(86.2% 0.039 65.5), oklch(37% 0.032 57.7));
+  --color-brown-7: light-dark(oklch(81.5% 0.053 64.2), oklch(42.9% 0.041 59.8));
+  --color-brown-8: light-dark(oklch(74.7% 0.072 62.4), oklch(50.9% 0.053 62.2));
+  --color-brown-9: light-dark(oklch(63.3% 0.078 60.8), oklch(63.3% 0.078 60.8));
+  --color-brown-10: light-dark(
+    oklch(59.7% 0.072 59.3),
+    oklch(67.4% 0.075 61.5)
+  );
+  --color-brown-11: light-dark(
+    oklch(51.2% 0.058 55.5),
+    oklch(79.8% 0.063 62.5)
+  );
+  --color-brown-12: light-dark(oklch(33.2% 0.018 47), oklch(91.8% 0.036 75.7));
+
+  --color-brown-a1: light-dark(
+    oklch(56.1% 0.159 53.5 / 0.012),
+    oklch(58% 0.262 29.8 / 0.005)
+  );
+  --color-brown-a2: light-dark(
+    oklch(56.1% 0.159 53.5 / 0.036),
+    oklch(83.1% 0.121 51 / 0.043)
+  );
+  --color-brown-a3: light-dark(
+    oklch(50.6% 0.137 57.9 / 0.091),
+    oklch(85.5% 0.111 51.6 / 0.093)
+  );
+  --color-brown-a4: light-dark(
+    oklch(49% 0.132 58.9 / 0.146),
+    oklch(86.6% 0.106 54 / 0.135)
+  );
+  --color-brown-a5: light-dark(
+    oklch(49.1% 0.138 54.8 / 0.204),
+    oklch(86.4% 0.108 53.5 / 0.181)
+  );
+  --color-brown-a6: light-dark(
+    oklch(49% 0.135 56.5 / 0.271),
+    oklch(86.9% 0.105 56.2 / 0.24)
+  );
+  --color-brown-a7: light-dark(
+    oklch(48.8% 0.138 54.5 / 0.361),
+    oklch(86.9% 0.107 59.3 / 0.32)
+  );
+  --color-brown-a8: light-dark(
+    oklch(48% 0.138 53.2 / 0.487),
+    oklch(87.1% 0.109 60.8 / 0.433)
+  );
+  --color-brown-a9: light-dark(
+    oklch(41.4% 0.119 53.6 / 0.632),
+    oklch(86.5% 0.115 61.1 / 0.627)
+  );
+  --color-brown-a10: light-dark(
+    oklch(37.5% 0.108 53.7 / 0.655),
+    oklch(87.8% 0.103 61 / 0.677)
+  );
+  --color-brown-a11: light-dark(
+    oklch(51.2% 0.058 55.5),
+    oklch(79.8% 0.063 62.5)
+  );
+  --color-brown-a12: light-dark(oklch(33.2% 0.018 47), oklch(91.8% 0.036 75.7));
+
+  --color-bronze: var(--color-bronze-9);
+  --color-bronze-1: light-dark(
+    oklch(99.2% 0.001 15.9),
+    oklch(18.1% 0.005 41.6)
+  );
+  --color-bronze-2: light-dark(oklch(98.1% 0.007 43), oklch(21.5% 0.005 41.5));
+  --color-bronze-3: light-dark(oklch(95.3% 0.01 44.3), oklch(25.5% 0.008 42.7));
+  --color-bronze-4: light-dark(oklch(92.5% 0.014 43.6), oklch(29.1% 0.01 45.5));
+  --color-bronze-5: light-dark(
+    oklch(89.5% 0.018 42.6),
+    oklch(32.9% 0.013 43.3)
+  );
+  --color-bronze-6: light-dark(oklch(86% 0.023 43.4), oklch(37.4% 0.016 44.3));
+  --color-bronze-7: light-dark(oklch(81.1% 0.03 41.9), oklch(43% 0.02 44.8));
+  --color-bronze-8: light-dark(
+    oklch(74.2% 0.039 41.2),
+    oklch(49.9% 0.024 45.2)
+  );
+  --color-bronze-9: light-dark(
+    oklch(62.7% 0.046 44.3),
+    oklch(62.7% 0.046 44.3)
+  );
+  --color-bronze-10: light-dark(
+    oklch(58.8% 0.045 42.4),
+    oklch(66.9% 0.045 44.3)
+  );
+  --color-bronze-11: light-dark(oklch(51% 0.044 38.4), oklch(79.2% 0.043 44.5));
+  --color-bronze-12: light-dark(
+    oklch(32.9% 0.029 35.2),
+    oklch(91.5% 0.017 50.3)
+  );
+
+  --color-bronze-a1: light-dark(
+    oklch(30.6% 0.133 27.5 / 0.012),
+    oklch(62.3% 0.282 29.6 / 0.009)
+  );
+  --color-bronze-a2: light-dark(
+    oklch(53.4% 0.199 36.7 / 0.04),
+    oklch(88.2% 0.074 45.3 / 0.043)
+  );
+  --color-bronze-a3: light-dark(
+    oklch(42.2% 0.134 45.5 / 0.083),
+    oklch(91.1% 0.059 51.2 / 0.085)
+  );
+  --color-bronze-a4: light-dark(
+    oklch(37.1% 0.133 39.1 / 0.122),
+    oklch(90.9% 0.06 38.2 / 0.127)
+  );
+  --color-bronze-a5: light-dark(
+    oklch(36.4% 0.122 42.6 / 0.169),
+    oklch(91.9% 0.058 52 / 0.173)
+  );
+  --color-bronze-a6: light-dark(
+    oklch(35.1% 0.123 40 / 0.224),
+    oklch(92.2% 0.055 43.8 / 0.227)
+  );
+  --color-bronze-a7: light-dark(
+    oklch(33.4% 0.119 39 / 0.295),
+    oklch(92.4% 0.053 44.5 / 0.295)
+  );
+  --color-bronze-a8: light-dark(
+    oklch(32% 0.113 39.2 / 0.393),
+    oklch(92% 0.057 44.4 / 0.387)
+  );
+  --color-bronze-a9: light-dark(
+    oklch(29% 0.099 42.4 / 0.546),
+    oklch(89.8% 0.072 43.5 / 0.585)
+  );
+  --color-bronze-a10: light-dark(
+    oklch(26.8% 0.09 43.2 / 0.585),
+    oklch(90.9% 0.065 43.6 / 0.635)
+  );
+  --color-bronze-a11: light-dark(
+    oklch(51% 0.044 38.4),
+    oklch(79.2% 0.043 44.5)
+  );
+  --color-bronze-a12: light-dark(
+    oklch(32.9% 0.029 35.2),
+    oklch(91.5% 0.017 50.3)
+  );
+
+  --color-gold: var(--color-gold-9);
+  --color-gold-1: light-dark(oklch(99.4% 0.001 106), oklch(18.2% 0.002 107));
+  --color-gold-2: light-dark(oklch(98.1% 0.009 97.3), oklch(21.6% 0.006 92.5));
+  --color-gold-3: light-dark(oklch(95.3% 0.012 94.7), oklch(25.5% 0.008 88.3));
+  --color-gold-4: light-dark(oklch(92.6% 0.015 93.2), oklch(29.1% 0.01 86.8));
+  --color-gold-5: light-dark(oklch(89.6% 0.019 90.7), oklch(32.9% 0.011 83.7));
+  --color-gold-6: light-dark(oklch(86% 0.025 88.4), oklch(37.4% 0.014 82.4));
+  --color-gold-7: light-dark(oklch(81% 0.032 83.4), oklch(42.9% 0.016 80.9));
+  --color-gold-8: light-dark(oklch(73.9% 0.042 78.2), oklch(49.8% 0.02 79.5));
+  --color-gold-9: light-dark(oklch(62.1% 0.049 78.1), oklch(62.1% 0.049 78.1));
+  --color-gold-10: light-dark(oklch(58.8% 0.047 77.4), oklch(66.2% 0.047 77.2));
+  --color-gold-11: light-dark(oklch(50.4% 0.039 78.1), oklch(79.4% 0.041 77.2));
+  --color-gold-12: light-dark(oklch(33.2% 0.019 81.7), oklch(91.5% 0.014 77.4));
+
+  --color-gold-a1: light-dark(
+    oklch(44.8% 0.11 110 / 0.012),
+    oklch(85.7% 0.215 110 / 0.005)
+  );
+  --color-gold-a2: light-dark(
+    oklch(61% 0.144 97.8 / 0.048),
+    oklch(91.9% 0.103 90.2 / 0.043)
+  );
+  --color-gold-a3: light-dark(
+    oklch(46.7% 0.111 101 / 0.091),
+    oklch(95.9% 0.073 93.6 / 0.08)
+  );
+  --color-gold-a4: light-dark(
+    oklch(42% 0.098 95 / 0.134),
+    oklch(95.5% 0.054 81.5 / 0.118)
+  );
+  --color-gold-a5: light-dark(
+    oklch(40.7% 0.096 93.3 / 0.185),
+    oklch(96.2% 0.056 88.8 / 0.16)
+  );
+  --color-gold-a6: light-dark(
+    oklch(39.5% 0.092 88.1 / 0.244),
+    oklch(95.1% 0.053 77.3 / 0.215)
+  );
+  --color-gold-a7: light-dark(
+    oklch(38.1% 0.091 77 / 0.322),
+    oklch(96.2% 0.046 82.4 / 0.278)
+  );
+  --color-gold-a8: light-dark(
+    oklch(37.3% 0.091 71.6 / 0.436),
+    oklch(95.8% 0.048 79.9 / 0.366)
+  );
+  --color-gold-a9: light-dark(
+    oklch(32.8% 0.081 72.2 / 0.589),
+    oklch(92.3% 0.08 77.5 / 0.551)
+  );
+  --color-gold-a10: light-dark(
+    oklch(30.5% 0.075 73.2 / 0.62),
+    oklch(93.2% 0.072 76.1 / 0.601)
+  );
+  --color-gold-a11: light-dark(
+    oklch(50.4% 0.039 78.1),
+    oklch(79.4% 0.041 77.2)
+  );
+  --color-gold-a12: light-dark(
+    oklch(33.2% 0.019 81.7),
+    oklch(91.5% 0.014 77.4)
+  );
+
+  --color-sky: var(--color-sky-9);
+  --color-sky-1: light-dark(oklch(99.3% 0.005 212), oklch(19% 0.024 257));
+  --color-sky-2: light-dark(oklch(98% 0.01 218), oklch(21.6% 0.029 258));
+  --color-sky-3: light-dark(oklch(96.1% 0.024 220), oklch(27.1% 0.054 252));
+  --color-sky-4: light-dark(oklch(93.6% 0.036 220), oklch(32.2% 0.07 248));
+  --color-sky-5: light-dark(oklch(90.3% 0.047 221), oklch(37.2% 0.079 246));
+  --color-sky-6: light-dark(oklch(86.1% 0.058 223), oklch(42.7% 0.087 244));
+  --color-sky-7: light-dark(oklch(80.6% 0.072 226), oklch(48.8% 0.098 241));
+  --color-sky-8: light-dark(oklch(72.9% 0.096 228), oklch(55.7% 0.114 237));
+  --color-sky-9: light-dark(oklch(86.1% 0.103 218), oklch(86.1% 0.103 218));
+  --color-sky-10: light-dark(oklch(83.8% 0.104 220), oklch(90.8% 0.073 215));
+  --color-sky-11: light-dark(oklch(52.6% 0.108 233), oklch(79.3% 0.099 232));
+  --color-sky-12: light-dark(oklch(35.1% 0.057 242), oklch(93.4% 0.053 214));
+
+  --color-sky-a1: light-dark(
+    oklch(78% 0.185 218 / 0.02),
+    oklch(51.9% 0.286 261 / 0.055)
+  );
+  --color-sky-a2: light-dark(
+    oklch(62.4% 0.15 220 / 0.048),
+    oklch(60.3% 0.231 256 / 0.089)
+  );
+  --color-sky-a3: light-dark(
+    oklch(67.9% 0.171 226 / 0.102),
+    oklch(63.3% 0.215 254 / 0.19)
+  );
+  --color-sky-a4: light-dark(
+    oklch(64.5% 0.169 230 / 0.157),
+    oklch(66.6% 0.2 249 / 0.274)
+  );
+  --color-sky-a5: light-dark(
+    oklch(61.3% 0.159 229 / 0.224),
+    oklch(69.4% 0.185 246 / 0.349)
+  );
+  --color-sky-a6: light-dark(
+    oklch(56.8% 0.154 233 / 0.299),
+    oklch(71.1% 0.175 245 / 0.433)
+  );
+  --color-sky-a7: light-dark(
+    oklch(53.5% 0.149 235 / 0.397),
+    oklch(73% 0.166 242 / 0.526)
+  );
+  --color-sky-a8: light-dark(
+    oklch(51.9% 0.15 238 / 0.542),
+    oklch(74.2% 0.164 238 / 0.643)
+  );
+  --color-sky-a9: light-dark(
+    oklch(72.2% 0.183 227 / 0.416),
+    oklch(87.3% 0.105 217 / 0.984)
+  );
+  --color-sky-a10: light-dark(
+    oklch(67.9% 0.178 230 / 0.444),
+    oklch(91.4% 0.074 215 / 0.992)
+  );
+  --color-sky-a11: light-dark(oklch(52.6% 0.108 233), oklch(79.3% 0.099 232));
+  --color-sky-a12: light-dark(oklch(35.1% 0.057 242), oklch(93.4% 0.053 214));
+
+  --color-mint: var(--color-mint-9);
+  --color-mint-1: light-dark(oklch(99.3% 0.005 184), oklch(18.8% 0.012 192));
+  --color-mint-2: light-dark(oklch(98.2% 0.01 179), oklch(21% 0.017 197));
+  --color-mint-3: light-dark(oklch(96% 0.03 180), oklch(26.9% 0.039 193));
+  --color-mint-4: light-dark(oklch(93.3% 0.047 179), oklch(31.3% 0.058 192));
+  --color-mint-5: light-dark(oklch(89.9% 0.061 179), oklch(35.9% 0.063 189));
+  --color-mint-6: light-dark(oklch(85.6% 0.072 179), oklch(41% 0.067 186));
+  --color-mint-7: light-dark(oklch(79.8% 0.085 178), oklch(47.1% 0.073 183));
+  --color-mint-8: light-dark(oklch(72.2% 0.107 178), oklch(54% 0.085 180));
+  --color-mint-9: light-dark(oklch(87% 0.1 178), oklch(87% 0.1 178));
+  --color-mint-10: light-dark(oklch(84.1% 0.1 178), oklch(91.6% 0.08 179));
+  --color-mint-11: light-dark(oklch(51.2% 0.095 176), oklch(79.5% 0.118 176));
+  --color-mint-12: light-dark(oklch(35% 0.051 181), oklch(93% 0.057 168));
+
+  --color-mint-a1: light-dark(
+    oklch(74.1% 0.199 170 / 0.02),
+    oklch(88.7% 0.204 193 / 0.017)
+  );
+  --color-mint-a2: light-dark(
+    oklch(62.9% 0.174 168 / 0.044),
+    oklch(88% 0.201 193 / 0.043)
+  );
+  --color-mint-a3: light-dark(
+    oklch(70.9% 0.196 168 / 0.114),
+    oklch(89.3% 0.198 193 / 0.11)
+  );
+  --color-mint-a4: light-dark(
+    oklch(69.6% 0.191 169 / 0.181),
+    oklch(88.9% 0.204 191 / 0.169)
+  );
+  --color-mint-a5: light-dark(
+    oklch(65.2% 0.176 170 / 0.255),
+    oklch(89.4% 0.195 188 / 0.223)
+  );
+  --color-mint-a6: light-dark(
+    oklch(60.8% 0.164 170 / 0.334),
+    oklch(90.1% 0.179 185 / 0.286)
+  );
+  --color-mint-a7: light-dark(
+    oklch(55.9% 0.15 170 / 0.432),
+    oklch(90.7% 0.164 182 / 0.362)
+  );
+  --color-mint-a8: light-dark(
+    oklch(54.4% 0.148 170 / 0.581),
+    oklch(90.8% 0.16 179 / 0.454)
+  );
+  --color-mint-a9: light-dark(
+    oklch(71.3% 0.194 169 / 0.381),
+    oklch(93.2% 0.108 178 / 0.904)
+  );
+  --color-mint-a10: light-dark(
+    oklch(66% 0.18 169 / 0.416),
+    oklch(94.9% 0.082 179 / 0.95)
+  );
+  --color-mint-a11: light-dark(oklch(51.2% 0.095 176), oklch(79.5% 0.118 176));
+  --color-mint-a12: light-dark(oklch(35% 0.051 181), oklch(93% 0.057 168));
+
+  --color-lime: var(--color-lime-9);
+  --color-lime-1: light-dark(oklch(99.2% 0.004 121), oklch(18% 0.014 120));
+  --color-lime-2: light-dark(oklch(98.2% 0.01 117), oklch(20.8% 0.019 129));
+  --color-lime-3: light-dark(oklch(95.9% 0.043 119), oklch(26.6% 0.034 132));
+  --color-lime-4: light-dark(oklch(93.2% 0.069 120), oklch(31.7% 0.047 132));
+  --color-lime-5: light-dark(oklch(89.7% 0.087 122), oklch(36.3% 0.058 132));
+  --color-lime-6: light-dark(oklch(85.3% 0.099 123), oklch(41.2% 0.069 131));
+  --color-lime-7: light-dark(oklch(79.5% 0.111 125), oklch(46.4% 0.08 131));
+  --color-lime-8: light-dark(oklch(72.4% 0.135 128), oklch(52.4% 0.095 131));
+  --color-lime-9: light-dark(oklch(88.8% 0.175 126), oklch(88.8% 0.175 126));
+  --color-lime-10: light-dark(oklch(85.9% 0.188 127), oklch(94.2% 0.175 124));
+  --color-lime-11: light-dark(oklch(54.4% 0.111 129), oklch(86.8% 0.156 125));
+  --color-lime-12: light-dark(oklch(35.4% 0.057 121), oklch(94.6% 0.082 123));
+
+  --color-lime-a1: light-dark(
+    oklch(62.3% 0.198 131 / 0.02),
+    oklch(81.1% 0.35 145 / 0.009)
+  );
+  --color-lime-a2: light-dark(
+    oklch(63.4% 0.174 120 / 0.048),
+    oklch(88.5% 0.304 136 / 0.038)
+  );
+  --color-lime-a3: light-dark(
+    oklch(74.9% 0.225 127 / 0.15),
+    oklch(90.8% 0.242 134 / 0.101)
+  );
+  --color-lime-a4: light-dark(
+    oklch(74% 0.226 128 / 0.24),
+    oklch(91.6% 0.222 133 / 0.16)
+  );
+  --color-lime-a5: light-dark(
+    oklch(69.7% 0.213 128 / 0.322),
+    oklch(92% 0.21 133 / 0.215)
+  );
+  --color-lime-a6: light-dark(
+    oklch(64% 0.201 130 / 0.4),
+    oklch(92.5% 0.203 132 / 0.274)
+  );
+  --color-lime-a7: light-dark(
+    oklch(58.7% 0.188 131 / 0.491),
+    oklch(92.6% 0.196 132 / 0.341)
+  );
+  --color-lime-a8: light-dark(
+    oklch(55.9% 0.185 133 / 0.624),
+    oklch(92.9% 0.192 131 / 0.416)
+  );
+  --color-lime-a9: light-dark(
+    oklch(81% 0.261 131 / 0.534),
+    oklch(93.9% 0.186 126 / 0.925)
+  );
+  --color-lime-a10: light-dark(
+    oklch(78.2% 0.252 131 / 0.604),
+    oklch(94.6% 0.176 124 / 0.996)
+  );
+  --color-lime-a11: light-dark(oklch(54.4% 0.111 129), oklch(86.8% 0.156 125));
+  --color-lime-a12: light-dark(oklch(35.4% 0.057 121), oklch(94.6% 0.082 123));
+
+  --color-yellow: var(--color-yellow-9);
+  --color-yellow-1: light-dark(oklch(99.3% 0.005 106), oklch(18.1% 0.013 86));
+  --color-yellow-2: light-dark(oklch(98.8% 0.025 103), oklch(20.9% 0.017 92.1));
+  --color-yellow-3: light-dark(oklch(97.4% 0.084 104), oklch(25.9% 0.047 90.3));
+  --color-yellow-4: light-dark(oklch(95.3% 0.117 102), oklch(29.3% 0.069 94.2));
+  --color-yellow-5: light-dark(
+    oklch(92.5% 0.141 98.2),
+    oklch(33.3% 0.079 94.6)
+  );
+  --color-yellow-6: light-dark(
+    oklch(88.1% 0.134 95.4),
+    oklch(38.4% 0.077 93.3)
+  );
+  --color-yellow-7: light-dark(oklch(83.6% 0.12 92.8), oklch(45.2% 0.081 91.5));
+  --color-yellow-8: light-dark(
+    oklch(76.6% 0.137 89.8),
+    oklch(53.5% 0.095 89.9)
+  );
+  --color-yellow-9: light-dark(oklch(92.7% 0.209 102), oklch(92.7% 0.209 102));
+  --color-yellow-10: light-dark(
+    oklch(89.7% 0.185 97.5),
+    oklch(97.1% 0.182 109)
+  );
+  --color-yellow-11: light-dark(oklch(57.4% 0.136 81.7), oklch(90% 0.166 102));
+  --color-yellow-12: light-dark(
+    oklch(35.8% 0.046 86.6),
+    oklch(94.1% 0.075 101)
+  );
+
+  --color-yellow-a1: light-dark(
+    oklch(71.9% 0.181 110 / 0.024),
+    oklch(69% 0.241 40.9 / 0.013)
+  );
+  --color-yellow-a2: light-dark(
+    oklch(88.1% 0.212 101 / 0.079),
+    oklch(86.3% 0.203 88.6 / 0.038)
+  );
+  --color-yellow-a3: light-dark(
+    oklch(92.5% 0.227 105 / 0.251),
+    oklch(82.5% 0.198 77.7 / 0.11)
+  );
+  --color-yellow-a4: light-dark(
+    oklch(89.8% 0.216 100 / 0.373),
+    oklch(83.9% 0.199 81.9 / 0.152)
+  );
+  --color-yellow-a5: light-dark(
+    oklch(86.7% 0.205 94.4 / 0.491),
+    oklch(85% 0.201 85.1 / 0.202)
+  );
+  --color-yellow-a6: light-dark(
+    oklch(79% 0.186 90.9 / 0.526),
+    oklch(87.4% 0.203 91.3 / 0.261)
+  );
+  --color-yellow-a7: light-dark(
+    oklch(70.8% 0.167 87.8 / 0.542),
+    oklch(88.5% 0.184 90.4 / 0.345)
+  );
+  --color-yellow-a8: light-dark(
+    oklch(66.8% 0.158 84.3 / 0.687),
+    oklch(88.6% 0.175 89.1 / 0.463)
+  );
+  --color-yellow-a9: light-dark(
+    oklch(91.4% 0.221 101 / 0.781),
+    oklch(92.8% 0.209 102)
+  );
+  --color-yellow-a10: light-dark(
+    oklch(86.5% 0.205 94 / 0.71),
+    oklch(97.1% 0.182 109)
+  );
+  --color-yellow-a11: light-dark(oklch(57.4% 0.136 81.7), oklch(90% 0.166 102));
+  --color-yellow-a12: light-dark(
+    oklch(35.8% 0.046 86.6),
+    oklch(94.1% 0.075 101)
+  );
+
+  --color-amber: var(--color-amber-9);
+  --color-amber-1: light-dark(oklch(99.4% 0.003 84.6), oklch(18.4% 0.013 77.3));
+  --color-amber-2: light-dark(oklch(98.6% 0.024 100), oklch(21.2% 0.018 78.7));
+  --color-amber-3: light-dark(oklch(96.9% 0.069 100), oklch(25.8% 0.044 74.6));
+  --color-amber-4: light-dark(oklch(94.5% 0.104 98.2), oklch(29.6% 0.071 76.2));
+  --color-amber-5: light-dark(oklch(91.8% 0.133 98.4), oklch(33.7% 0.081 76.4));
+  --color-amber-6: light-dark(oklch(88.1% 0.124 93.2), oklch(38.7% 0.078 75.1));
+  --color-amber-7: light-dark(oklch(82.7% 0.122 86.2), oklch(45.3% 0.082 74.5));
+  --color-amber-8: light-dark(oklch(75.8% 0.14 76.7), oklch(53.6% 0.096 73.6));
+  --color-amber-9: light-dark(oklch(85.6% 0.178 81.4), oklch(85.6% 0.178 81.4));
+  --color-amber-10: light-dark(oklch(83.1% 0.168 80.9), oklch(90.2% 0.206 97));
+  --color-amber-11: light-dark(
+    oklch(56.9% 0.144 67.3),
+    oklch(87.1% 0.175 85.1)
+  );
+  --color-amber-12: light-dark(oklch(35.2% 0.049 53.7), oklch(93.5% 0.072 86));
+
+  --color-amber-a1: light-dark(
+    oklch(66.2% 0.16 73.4 / 0.016),
+    oklch(68% 0.261 36.1 / 0.017)
+  );
+  --color-amber-a2: light-dark(
+    oklch(84.3% 0.203 100 / 0.079),
+    oklch(79.7% 0.198 70.4 / 0.047)
+  );
+  --color-amber-a3: light-dark(
+    oklch(88.6% 0.213 99.9 / 0.22),
+    oklch(78% 0.204 62.7 / 0.118)
+  );
+  --color-amber-a4: light-dark(
+    oklch(86.8% 0.206 94.9 / 0.35),
+    oklch(76.3% 0.21 57.4 / 0.185)
+  );
+  --color-amber-a5: light-dark(
+    oklch(84.7% 0.201 95.8 / 0.475),
+    oklch(77.7% 0.205 61.7 / 0.24)
+  );
+  --color-amber-a6: light-dark(
+    oklch(77.6% 0.183 86.8 / 0.495),
+    oklch(80.5% 0.196 69.3 / 0.299)
+  );
+  --color-amber-a7: light-dark(
+    oklch(70.4% 0.169 78.2 / 0.557),
+    oklch(83.1% 0.175 72.4 / 0.383)
+  );
+  --color-amber-a8: light-dark(
+    oklch(66.6% 0.168 68.1 / 0.699),
+    oklch(83.8% 0.167 73.3 / 0.5)
+  );
+  --color-amber-a9: light-dark(
+    oklch(81.6% 0.199 74 / 0.742),
+    oklch(85.6% 0.178 81.2)
+  );
+  --color-amber-a10: light-dark(
+    oklch(78% 0.19 73.4 / 0.726),
+    oklch(90.2% 0.207 97.1)
+  );
+  --color-amber-a11: light-dark(
+    oklch(56.9% 0.144 67.3),
+    oklch(87.1% 0.175 85.1)
+  );
+  --color-amber-a12: light-dark(oklch(35.2% 0.049 53.7), oklch(93.5% 0.072 86));
+
+  --color-orange: var(--color-orange-9);
+  --color-orange-1: light-dark(
+    oklch(99.2% 0.003 40.7),
+    oklch(18.6% 0.012 53.7)
+  );
+  --color-orange-2: light-dark(
+    oklch(97.9% 0.015 70.8),
+    oklch(20.9% 0.019 67.4)
+  );
+  --color-orange-3: light-dark(
+    oklch(95.8% 0.037 78.1),
+    oklch(25.7% 0.045 59.5)
+  );
+  --color-orange-4: light-dark(oklch(92% 0.081 74.2), oklch(29.3% 0.08 58.6));
+  --color-orange-5: light-dark(oklch(89% 0.107 70.8), oklch(33.5% 0.087 58.1));
+  --color-orange-6: light-dark(oklch(85.7% 0.11 64.4), oklch(38.6% 0.087 55.2));
+  --color-orange-7: light-dark(
+    oklch(80.5% 0.113 59.9),
+    oklch(45.3% 0.095 53.1)
+  );
+  --color-orange-8: light-dark(
+    oklch(74.5% 0.132 54.8),
+    oklch(54.1% 0.116 49.7)
+  );
+  --color-orange-9: light-dark(
+    oklch(68.9% 0.191 44.8),
+    oklch(68.9% 0.191 44.8)
+  );
+  --color-orange-10: light-dark(
+    oklch(66.2% 0.194 43.5),
+    oklch(74.1% 0.199 46.3)
+  );
+  --color-orange-11: light-dark(oklch(59.2% 0.186 47), oklch(79.9% 0.163 50.8));
+  --color-orange-12: light-dark(oklch(35% 0.069 40.8), oklch(92.5% 0.052 66.2));
+
+  --color-orange-a1: light-dark(
+    oklch(56.8% 0.202 39.1 / 0.016),
+    oklch(65.5% 0.263 34.2 / 0.022)
+  );
+  --color-orange-a2: light-dark(
+    oklch(71.4% 0.186 63.1 / 0.067),
+    oklch(75% 0.212 54.7 / 0.051)
+  );
+  --color-orange-a3: light-dark(
+    oklch(74.7% 0.189 67.1 / 0.15),
+    oklch(73.6% 0.221 50 / 0.131)
+  );
+  --color-orange-a4: light-dark(
+    oklch(78.2% 0.204 63.1 / 0.314),
+    oklch(70.4% 0.244 41.3 / 0.211)
+  );
+  --color-orange-a5: light-dark(
+    oklch(76.8% 0.208 58.8 / 0.416),
+    oklch(72.7% 0.229 46.8 / 0.265)
+  );
+  --color-orange-a6: light-dark(
+    oklch(72.1% 0.207 53.4 / 0.455),
+    oklch(75.4% 0.209 51.9 / 0.332)
+  );
+  --color-orange-a7: light-dark(
+    oklch(64.8% 0.194 50.3 / 0.514),
+    oklch(77.1% 0.191 51.3 / 0.429)
+  );
+  --color-orange-a8: light-dark(
+    oklch(61.3% 0.197 45.6 / 0.62),
+    oklch(77.8% 0.182 50.1 / 0.572)
+  );
+  --color-orange-a9: light-dark(
+    oklch(63.4% 0.226 39.7 / 0.8),
+    oklch(74.3% 0.21 44.4 / 0.895)
+  );
+  --color-orange-a10: light-dark(
+    oklch(61.2% 0.222 38.9 / 0.836),
+    oklch(75.3% 0.202 46.5 / 0.979)
+  );
+  --color-orange-a11: light-dark(
+    oklch(59.2% 0.186 47),
+    oklch(79.9% 0.163 50.8)
+  );
+  --color-orange-a12: light-dark(
+    oklch(35% 0.069 40.8),
+    oklch(92.5% 0.052 66.2)
+  );
+
+  /* Surface */
+  --color-gray-surface: light-dark(
+    oklch(100% 0 none / 0.8),
+    oklch(24.4% 0 none / 0.5)
+  );
+  --color-mauve-surface: light-dark(
+    oklch(100% 0 none / 0.8),
+    oklch(24.7% 0.006 329 / 0.5)
+  );
+  --color-slate-surface: light-dark(
+    oklch(100% 0 none / 0.8),
+    oklch(24.2% 0.006 243 / 0.5)
+  );
+  --color-sage-surface: light-dark(
+    oklch(100% 0 none / 0.8),
+    oklch(24% 0.006 149 / 0.5)
+  );
+  --color-olive-surface: light-dark(
+    oklch(100% 0 none / 0.8),
+    oklch(24% 0.006 149 / 0.5)
+  );
+  --color-sand-surface: light-dark(
+    oklch(100% 0 none / 0.8),
+    oklch(24.4% 0 none / 0.5)
+  );
+
+  --color-tomato-surface: light-dark(
+    oklch(97.9% 0.01 24.7 / 0.8),
+    oklch(23.1% 0.033 32.2 / 0.5)
+  );
+  --color-red-surface: light-dark(
+    oklch(98% 0.011 16.1 / 0.8),
+    oklch(23% 0.04 19 / 0.5)
+  );
+  --color-ruby-surface: light-dark(
+    oklch(98% 0.011 16.1 / 0.8),
+    oklch(23.4% 0.033 3.73 / 0.5)
+  );
+  --color-crimson-surface: light-dark(
+    oklch(97.8% 0.012 354 / 0.8),
+    oklch(23.4% 0.042 356 / 0.5)
+  );
+  --color-pink-surface: light-dark(
+    oklch(97.9% 0.013 342 / 0.8),
+    oklch(23.7% 0.057 340 / 0.5)
+  );
+  --color-plum-surface: light-dark(
+    oklch(97.9% 0.01 329 / 0.8),
+    oklch(24.1% 0.057 327 / 0.5)
+  );
+  --color-purple-surface: light-dark(
+    oklch(97.9% 0.012 314 / 0.8),
+    oklch(24.3% 0.057 311 / 0.5)
+  );
+  --color-violet-surface: light-dark(
+    oklch(97.7% 0.012 299 / 0.8),
+    oklch(24.5% 0.057 297 / 0.5)
+  );
+  --color-iris-surface: light-dark(
+    oklch(97.6% 0.012 286 / 0.8),
+    oklch(23.8% 0.056 285 / 0.5)
+  );
+  --color-indigo-surface: light-dark(
+    oklch(97.9% 0.009 269 / 0.8),
+    oklch(24% 0.057 274 / 0.5)
+  );
+  --color-blue-surface: light-dark(
+    oklch(97.9% 0.011 238 / 0.8),
+    oklch(24.4% 0.055 256 / 0.5)
+  );
+  --color-cyan-surface: light-dark(
+    oklch(97.5% 0.012 203 / 0.8),
+    oklch(24.9% 0.032 225 / 0.5)
+  );
+  --color-teal-surface: light-dark(
+    oklch(97.7% 0.012 182 / 0.8),
+    oklch(25.2% 0.028 186 / 0.5)
+  );
+  --color-jade-surface: light-dark(
+    oklch(97.8% 0.012 158 / 0.8),
+    oklch(24.9% 0.033 165 / 0.5)
+  );
+  --color-green-surface: light-dark(
+    oklch(97.9% 0.011 154 / 0.8),
+    oklch(24.4% 0.028 159 / 0.5)
+  );
+  --color-grass-surface: light-dark(
+    oklch(97.8% 0.012 149 / 0.8),
+    oklch(24% 0.023 148 / 0.5)
+  );
+  --color-brown-surface: light-dark(
+    oklch(98% 0.007 71.1 / 0.8),
+    oklch(24.1% 0.014 51.3 / 0.5)
+  );
+  --color-bronze-surface: light-dark(
+    oklch(97.5% 0.009 35.9 / 0.8),
+    oklch(24.8% 0.009 44.4 / 0.5)
+  );
+  --color-gold-surface: light-dark(
+    oklch(97.8% 0.012 99.8 / 0.8),
+    oklch(25.2% 0.013 89.5 / 0.5)
+  );
+  --color-sky-surface: light-dark(
+    oklch(97.5% 0.012 209 / 0.8),
+    oklch(25.3% 0.05 258 / 0.5)
+  );
+  --color-mint-surface: light-dark(
+    oklch(97.7% 0.012 182 / 0.8),
+    oklch(25.3% 0.025 185 / 0.5)
+  );
+  --color-lime-surface: light-dark(
+    oklch(97.9% 0.013 113 / 0.8),
+    oklch(23.4% 0.026 125 / 0.5)
+  );
+  --color-yellow-surface: light-dark(
+    oklch(98.8% 0.033 105 / 0.8),
+    oklch(23.6% 0.025 89.9 / 0.5)
+  );
+  --color-amber-surface: light-dark(
+    oklch(98.4% 0.03 102 / 0.8),
+    oklch(23.9% 0.023 77.1 / 0.5)
+  );
+  --color-orange-surface: light-dark(
+    oklch(97.5% 0.02 69 / 0.8),
+    oklch(23.4% 0.025 69.2 / 0.5)
+  );
+
+  /* Contrasts */
+  --color-gray-contrast: oklch(1 0 0 / 1);
+  --color-mauve-contrast: oklch(1 0 0 / 1);
+  --color-slate-contrast: oklch(1 0 0 / 1);
+  --color-sage-contrast: oklch(1 0 0 / 1);
+  --color-olive-contrast: oklch(1 0 0 / 1);
+  --color-sand-contrast: oklch(1 0 0 / 1);
+
+  --color-tomato-contrast: oklch(1 0 0 / 1);
+  --color-red-contrast: oklch(1 0 0 / 1);
+  --color-ruby-contrast: oklch(1 0 0 / 1);
+  --color-crimson-contrast: oklch(1 0 0 / 1);
+  --color-pink-contrast: oklch(1 0 0 / 1);
+  --color-plum-contrast: oklch(1 0 0 / 1);
+  --color-purple-contrast: oklch(1 0 0 / 1);
+  --color-violet-contrast: oklch(1 0 0 / 1);
+  --color-iris-contrast: oklch(1 0 0 / 1);
+  --color-indigo-contrast: oklch(1 0 0 / 1);
+  --color-blue-contrast: oklch(1 0 0 / 1);
+  --color-cyan-contrast: oklch(1 0 0 / 1);
+  --color-teal-contrast: oklch(1 0 0 / 1);
+  --color-jade-contrast: oklch(1 0 0 / 1);
+  --color-green-contrast: oklch(1 0 0 / 1);
+  --color-grass-contrast: oklch(1 0 0 / 1);
+  --color-brown-contrast: oklch(1 0 0 / 1);
+  --color-bronze-contrast: oklch(1 0 0 / 1);
+  --color-gold-contrast: oklch(1 0 0 / 1);
+  --color-sky-contrast: oklch(0.24 0.01 0);
+  --color-mint-contrast: oklch(0.24 0.01 167.52);
+  --color-lime-contrast: oklch(0.24 0.01 139.38);
+  --color-yellow-contrast: oklch(0.24 0.01 0);
+  --color-amber-contrast: oklch(0.24 0.01 0);
+  --color-orange-contrast: oklch(1 0 0 / 1);
+}

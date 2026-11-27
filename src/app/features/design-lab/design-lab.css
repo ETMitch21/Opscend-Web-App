@@ -1,0 +1,99 @@
+ :host { display:block; min-height:100%; }
+#bui.lab {
+  color-scheme: dark;
+  --ops-ink:#ececef; --ops-muted:#a0a1aa; --ops-border:#303137;
+  --ops-surface:#191a1e; --ops-canvas:#101113; --ops-control:#202126;
+  --ops-hover:#28292f; --ops-accent:#ff9554; --ops-accent-ink:#171313;
+  --ops-focus:#f4a67d; --ops-field-border:#45464e;
+  --ops-progress:#e7b66c; --ops-ready:#86c9a6; --ops-waiting:#a8b7db;
+  --ops-danger:#f49a9e;
+  --theme-border-radius:6px;
+  font:400 13px/1.5 Inter,system-ui,sans-serif;
+  color:var(--ops-ink); background:var(--ops-canvas); min-height:100%;
+  padding:32px clamp(16px,4vw,52px); display:grid; align-content:start; gap:20px;
+}
+#bui.lab.lab-light {
+  color-scheme:light;
+  --ops-ink:#202126; --ops-muted:#62646e; --ops-border:#e0e1e5;
+  --ops-surface:#fff; --ops-canvas:#f5f5f7; --ops-control:#fafafb;
+  --ops-hover:#f0f0f3; --ops-accent:#ff9554; --ops-accent-ink:#20140e;
+  --ops-focus:#b74d20; --ops-field-border:#9698a1;
+  --ops-progress:#8a560d; --ops-ready:#226b48; --ops-waiting:#415c9a;
+  --ops-danger:#a92d3a;
+}
+.lab-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.lab h1 { font-size:26px; line-height:1.2; font-weight:600; letter-spacing:-.04em; margin:8px 0; }
+.lab h2 { font-size:15px; font-weight:600; letter-spacing:-.015em; margin:0 0 4px; }
+.eyebrow,.muted { color:var(--ops-muted); margin:0; }
+.eyebrow { font-size:12px; }
+.lab-card { border:1px solid var(--ops-border); border-radius:8px; background:var(--ops-surface); padding:20px; min-width:0; }
+.lab-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:16px 0; }
+.heading-actions { margin:0; }
+.lab-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:16px; }
+.lab-fields.single { grid-template-columns:1fr; }
+.lab label { display:flex; flex-direction:column; gap:6px; font-size:12px; font-weight:500; }
+.lab input,.lab textarea,.lab .ops-select-shell { border:1px solid var(--ops-field-border); border-radius:6px; background-color:var(--ops-control); color:var(--ops-ink); padding:8px 12px; min-height:36px; width:100%; font:inherit; font-size:13px; font-weight:400; }
+.lab input::placeholder,.lab textarea::placeholder { color:var(--ops-muted); }
+.lab textarea { resize:vertical; }
+.lab input:focus-visible,.lab textarea:focus-visible,.lab button:focus-visible { outline:2px solid var(--ops-focus); outline-offset:2px; }
+.lab .ops-select-shell:focus-within { outline:2px solid var(--ops-focus); outline-offset:2px; }
+.lab .ops-select-shell { display:flex; align-items:center; padding:0; overflow:hidden; }
+.lab .ops-mat-select { width:100%; }
+.lab .ops-mat-select .mat-mdc-select-trigger { min-height:36px; padding:0 40px 0 12px; }
+.lab .ops-mat-select .mat-mdc-select-value-text { color:var(--ops-ink); }
+.lab .ops-mat-select .mat-mdc-select-arrow-wrapper { transform:none; }
+.lab .ops-mat-select .mat-mdc-select-arrow { width:16px; height:16px; border:0; margin:0; background-color:var(--ops-muted); clip-path:path("M6.47 8.47a.75.75 0 0 1 1.06 0L12 12.94l4.47-4.47a.75.75 0 1 1 1.06 1.06l-5 5a.75.75 0 0 1-1.06 0l-5-5a.75.75 0 0 1 0-1.06Z"); }
+.search-label { width:min(100%,260px); }
+.lab-table-scroll { overflow-x:auto; margin-top:16px; border:1px solid var(--ops-border); border-radius:6px; }
+.lab table { width:100%; border-collapse:collapse; text-align:left; white-space:nowrap; }
+.lab th,.lab td { padding:11px 14px; border-bottom:1px solid var(--ops-border); }
+.lab th { background:var(--ops-control); color:var(--ops-muted); font-size:12px; font-weight:500; }
+.lab tbody tr:hover { background:var(--ops-hover); }
+.lab tbody tr:last-child td { border-bottom:0; }
+.identifier { font-weight:500; }.amount { text-align:right; font-variant-numeric:tabular-nums; }
+.status { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:500; }
+.status::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex:none; }
+.status[data-tone=progress] { color:var(--ops-progress); }
+.status[data-tone=ready] { color:var(--ops-ready); }
+.status[data-tone=waiting] { color:var(--ops-waiting); }
+.lab-drawer { position:fixed; inset:0 0 0 auto; margin:0; width:min(100%,400px); max-width:none; height:100%; max-height:none; border:0; border-left:1px solid var(--ops-border); background:var(--ops-surface); color:var(--ops-ink); padding:0; }
+.lab-drawer::backdrop { background:#09090b80; }
+.drawer-content { display:flex; flex-direction:column; height:100%; min-height:0; }
+.lab-drawer .lab-heading { padding:14px 16px; border-bottom:1px solid var(--ops-border); flex-wrap:nowrap; gap:8px; }
+.lab-drawer .lab-heading h2 { margin:0 0 2px; }
+.lab-drawer .lab-heading .muted { font-size:11px; }
+.lab-drawer .lab-fields { margin:0; padding:14px 16px; gap:10px; overflow:auto; flex:1; align-content:start; }
+.lab-drawer label { gap:4px; }
+.lab-drawer input,.lab-drawer textarea,.lab-drawer .ops-select-shell { padding:6px 10px; min-height:34px; }
+.lab-drawer .ops-mat-select .mat-mdc-select-trigger { min-height:34px; padding:0 30px 0 0; }
+.lab-drawer textarea { min-height:70px; }
+.drawer-content footer { margin:0; justify-content:flex-end; padding:10px 16px; border-top:1px solid var(--ops-border); gap:6px; flex-shrink:0; }
+
+/* Refined open dropdown panel for the dark-first pilot */
+:root .cdk-overlay-pane .ops-select-panel.mat-mdc-select-panel {
+  margin-top:6px;
+  padding:6px;
+  border-radius:10px;
+  border:1px solid color-mix(in srgb, var(--ops-field-border) 80%, transparent);
+  background:color-mix(in srgb, var(--ops-surface) 94%, black 6%);
+  box-shadow:0 12px 32px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.02);
+}
+:root .cdk-overlay-pane .ops-select-panel .mat-mdc-option {
+  min-height:36px;
+  padding:0 10px;
+  border-radius:8px;
+}
+:root .cdk-overlay-pane .ops-select-panel .mdc-list-item__primary-text {
+  font-size:13px;
+  font-weight:500;
+  color:var(--ops-ink);
+}
+:root .cdk-overlay-pane .ops-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+:root .cdk-overlay-pane .ops-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mat-mdc-option-multiple) {
+  background:color-mix(in srgb, var(--ops-accent) 12%, var(--ops-surface));
+}
+:root .cdk-overlay-pane .ops-select-panel .mat-pseudo-checkbox-minimal {
+  display:none;
+}
+
+@media(max-width:640px) { #bui.lab { padding:16px; }.lab-fields { grid-template-columns:1fr; }.lab-card { padding:14px; } }

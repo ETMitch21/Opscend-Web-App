@@ -1,0 +1,249 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+
+  /* Common */
+  .mat-mdc-select,
+  select {
+    font-family: var(--select-font-family);
+    font-feature-settings: var(--select-font-feature-settings);
+    font-optical-sizing: var(--select-font-optical-sizing);
+    -webkit-font-smoothing: var(--select-font-smoothing);
+
+    font-size: var(--select-font-size);
+    line-height: var(--select-line-height);
+    font-weight: var(--select-font-weight);
+    letter-spacing: var(--select-letter-spacing);
+  }
+
+  /* mat-select */
+  .mat-mdc-select {
+    display: flex;
+
+    /* Trigger */
+    .mat-mdc-select-trigger {
+      column-gap: var(--select-trigger-gap-x);
+
+      /* Arrow */
+      .mat-mdc-select-arrow-wrapper {
+        height: var(--select-line-height);
+        transform: none;
+
+        .mat-mdc-select-arrow {
+          width: var(--select-arrow-size);
+          height: var(--select-arrow-size);
+          background-color: var(--select-icon-color);
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+            center / contain no-repeat;
+          transform: none;
+          transition: none;
+
+          svg {
+            display: none;
+          }
+        }
+      }
+
+      /* Placeholder */
+      .mat-mdc-select-placeholder {
+        color: var(--select-placeholder-color);
+        -webkit-text-fill-color: var(--select-placeholder-color);
+      }
+
+      /* Selected value */
+      .mat-mdc-select-value {
+        color: var(--select-text-color);
+      }
+    }
+
+    /* Disabled */
+    &.mat-mdc-select-disabled {
+      /* Trigger */
+      .mat-mdc-select-trigger {
+        /* Arrow */
+        .mat-mdc-select-arrow-wrapper {
+          .mat-mdc-select-arrow {
+            background-color: var(--select-icon-color-disabled);
+          }
+        }
+
+        /* Placeholder */
+        .mat-mdc-select-placeholder {
+          color: var(--select-placeholder-color-disabled);
+          -webkit-text-fill-color: var(--select-placeholder-color-disabled);
+        }
+
+        /* Selected value */
+        .mat-mdc-select-value {
+          color: var(--select-text-color-disabled);
+        }
+      }
+    }
+  }
+
+  /* Form field */
+  .mat-mdc-form-field {
+    /* Native select */
+    &.mat-mdc-form-field-type-mat-native-select {
+      .mat-mdc-form-field-infix {
+        /* Drop down arrow */
+        &:after {
+          display: none;
+        }
+
+        /* Native element */
+        select {
+          position: relative;
+          padding: 0;
+          padding-inline-end: var(--select-padding-x);
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300000d9b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right center;
+          background-size: var(--select-arrow-size);
+
+          [dir='rtl'] & {
+            background-position: left center;
+          }
+
+          /* Dark theme */
+          @container style(--scheme: dark) {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f5ffb3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+          }
+        }
+      }
+
+      /* Disabled */
+      &.mat-form-field-disabled {
+        .mat-mdc-form-field-infix {
+          /* Native element */
+          select {
+            opacity: 1;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300002d45' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
+            /* Dark theme */
+            @container style(--scheme: dark) {
+              background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9e9fd58' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* Panel */
+  .mat-mdc-select-panel {
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--select-panel-gap-y);
+    margin-inline: 0;
+    margin-block: var(--select-panel-margin-y);
+    padding-inline: var(--select-panel-padding-x);
+    padding-block: var(--select-panel-padding-y);
+    max-height: var(--select-panel-max-height);
+    background: var(--select-panel-bg-color);
+    border-radius: var(--select-panel-border-radius);
+    border: 1px solid var(--select-panel-border-color);
+    box-shadow:
+      0 10px 15px -3px var(--select-panel-shadow-color),
+      0 4px 6px -4px var(--select-panel-shadow-color);
+
+    /* Animation: Material's keyframe kept, its animationend detaches the panel */
+    &.mat-select-panel-animations-enabled {
+      animation:
+        _mat-select-enter 100ms ease,
+        panel-enter 100ms ease;
+
+      &.mat-select-panel-exit {
+        animation:
+          _mat-select-exit 100ms ease forwards,
+          panel-exit 100ms ease forwards;
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-select,
+  .mat-mdc-form-field.mat-mdc-form-field-type-mat-select,
+  .mat-mdc-form-field.mat-mdc-form-field-type-mat-native-select {
+    /* Typography */
+    --select-font-family: var(--font-sans);
+    --select-font-feature-settings: var(--font-sans--font-feature-settings);
+    --select-font-optical-sizing: var(--font-optical-sizing);
+    --select-font-smoothing: var(--font-smoothing);
+
+    --select-font-size: var(--text-base); /* 13px */
+    --select-line-height: var(--leading-5); /* 20px */
+    --select-font-weight: var(--font-weight-normal);
+    --select-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --select-padding-x: 1.125rem; /* 18px */
+    --select-trigger-gap-x: 0.5rem; /* 8px */
+    --select-arrow-size: 1rem; /* 16px */
+
+    /* Color */
+    --select-text-color: var(--color-neutral-12);
+    --select-text-color-disabled: var(--color-neutral-a8);
+
+    --select-placeholder-color: var(--color-neutral-a9);
+    --select-placeholder-color-disabled: var(--color-neutral-a7);
+
+    --select-icon-color: var(--color-neutral-a11);
+    --select-icon-color-disabled: var(--color-neutral-a8);
+  }
+
+  /* Panel */
+  .mat-mdc-select-panel {
+    /* Size */
+    --select-panel-max-height: 16.625rem; /* 266px (7 items + half of the 8th item) */
+    --select-panel-margin-y: 0.25rem; /* 4px */
+    --select-panel-padding-y: 0.25rem; /* 4px */
+    --select-panel-padding-x: 0.25rem; /* 4px */
+    --select-panel-gap-y: 0.125rem; /* 2px */
+    --select-panel-border-radius: var(--theme-border-radius);
+    --select-panel-backdrop-blur: 1.5rem; /* 24px */
+
+    /* Color */
+    --select-panel-bg-color: light-dark(
+      var(--color-white),
+      var(--color-neutral-3)
+    );
+    --select-panel-border-color: var(--color-neutral-a6);
+    --select-panel-shadow-color: light-dark(
+      var(--color-neutral-a4),
+      var(--color-black-a4)
+    );
+  }
+
+  /* Size: tiny */
+  .mat-mdc-form-field.tiny {
+    select,
+    .mat-mdc-select {
+      --select-font-size: var(--text-sm); /* 12px */
+      --select-line-height: var(--leading-4); /* 16px */
+      --select-arrow-size: 0.875rem; /* 14px */
+    }
+  }
+
+  /* Size: small */
+  .mat-mdc-form-field.small {
+    select,
+    .mat-mdc-select {
+      --select-font-size: var(--text-base); /* 13px */
+      --select-arrow-size: 0.875rem; /* 14px */
+    }
+  }
+
+  /* Size: large */
+  .mat-mdc-form-field.large {
+    select,
+    .mat-mdc-select {
+      --select-font-size: var(--text-xl); /* 16px */
+      --select-line-height: var(--leading-5); /* 20px */
+    }
+  }
+}

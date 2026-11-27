@@ -3,6 +3,7 @@
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
 @import "./app/features/settings/settings-layout/settings-system.css";
+@import "./styles/opscend-v2.css";
 
 @theme {
   /* Brand */

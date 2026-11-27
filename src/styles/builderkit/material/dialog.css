@@ -1,0 +1,169 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-dialog-panel {
+    width: 100%;
+    /* Keep Material's small-screen gutter */
+    max-width: min(var(--dialog-max-width), 100vw - 2rem);
+    max-height: calc(100dvh - 4rem);
+
+    @media (width >= 40rem) {
+      max-height: 85dvh;
+    }
+  }
+
+  .mat-mdc-dialog-container {
+    font-family: var(--dialog-font-family);
+    font-feature-settings: var(--dialog-font-feature-settings);
+    font-optical-sizing: var(--dialog-font-optical-sizing);
+    -webkit-font-smoothing: var(--dialog-font-smoothing);
+
+    .mat-mdc-dialog-inner-container {
+      border-width: 1px;
+      border-style: solid;
+      border-color: var(--dialog-border-color);
+      border-radius: calc(var(--dialog-border-radius) + 1px);
+    }
+
+    .mat-mdc-dialog-surface {
+      /* Disable scaling effect */
+      transform: scale(1);
+
+      background: var(--dialog-bg-color);
+      color: var(--dialog-text-color);
+
+      border-radius: var(--dialog-border-radius);
+      box-shadow:
+        0 10px 15px -3px var(--dialog-shadow-color),
+        0 4px 6px -4px var(--dialog-shadow-color);
+
+      &:before {
+        display: none;
+      }
+
+      /* Host component */
+      .mat-mdc-dialog-component-host {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        padding: var(--dialog-padding);
+      }
+
+      /* Title */
+      .mat-mdc-dialog-title {
+        font-size: var(--dialog-title-font-size);
+        line-height: var(--dialog-title-line-height);
+        font-weight: var(--dialog-title-font-weight);
+        letter-spacing: var(--dialog-title-letter-spacing);
+
+        color: var(--dialog-text-color);
+
+        margin: 0;
+        padding: 0;
+
+        &:before {
+          display: none;
+        }
+
+        & + * {
+          margin-top: calc(var(--dialog-gap-y) - 0.25rem);
+        }
+      }
+
+      /* Content */
+      .mat-mdc-dialog-content {
+        font-size: var(--dialog-content-font-size);
+        line-height: var(--dialog-content-line-height);
+        font-weight: var(--dialog-content-font-weight);
+        letter-spacing: var(--dialog-content-letter-spacing);
+
+        color: var(--dialog-text-color);
+
+        /* Flex with the panel max-height instead of Material's 65vh cap */
+        max-height: none;
+        min-height: 0;
+
+        /* Room for the focus ring inside the scroll container */
+        margin-inline: calc(var(--dialog-padding) * -1);
+        padding: 0.25rem var(--dialog-padding);
+
+        & + * {
+          margin-top: calc(var(--dialog-gap-y) - 0.25rem);
+        }
+      }
+
+      /* Actions */
+      .mat-mdc-dialog-actions {
+        column-gap: var(--dialog-gap-x-actions);
+        min-height: 0;
+        border: none;
+        padding: 0;
+
+        .mat-mdc-button-base {
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  /* Overlay */
+  .cdk-overlay-popover:has(.mat-mdc-dialog-panel) > .cdk-overlay-backdrop {
+    background: var(--dialog-backdrop-bg-color);
+    backdrop-filter: blur(var(--dialog-backdrop-blur));
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-dialog-container {
+    /* Typography */
+    --dialog-font-family: var(--font-sans);
+    --dialog-font-feature-settings: var(--font-sans--font-feature-settings);
+    --dialog-font-optical-sizing: var(--font-optical-sizing);
+    --dialog-font-smoothing: var(--font-smoothing);
+
+    --dialog-title-font-size: var(--text-xl); /* 16px */
+    --dialog-title-line-height: var(--leading-5); /* 20px */
+    --dialog-title-font-weight: var(--font-weight-medium);
+    --dialog-title-letter-spacing: var(--tracking-normal);
+
+    --dialog-content-font-size: var(--text-base); /* 13px */
+    --dialog-content-line-height: var(--leading-5); /* 20px */
+    --dialog-content-font-weight: var(--font-weight-normal);
+    --dialog-content-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --dialog-border-radius: calc(var(--theme-border-radius) * 2);
+    --dialog-padding: 1.5rem; /* 24px */
+    --dialog-gap-y: 1.5rem; /* 24px */
+
+    --dialog-gap-x-actions: 0.75rem; /* 12px */
+
+    /* Color */
+    --dialog-text-color: var(--color-neutral-12);
+    --dialog-bg-color: light-dark(var(--color-white), var(--color-neutral-3));
+
+    --dialog-border-color: light-dark(
+      var(--color-neutral-a4),
+      var(--color-neutral-a5)
+    );
+    --dialog-shadow-color: light-dark(
+      var(--color-neutral-a5),
+      var(--color-black-a2)
+    );
+  }
+
+  .mat-mdc-dialog-panel {
+    /* Size */
+    --dialog-max-width: 28rem; /* 448px */
+  }
+
+  .cdk-overlay-backdrop {
+    /* Size */
+    --dialog-backdrop-blur: var(--blur-xs);
+
+    /* Color */
+    --dialog-backdrop-bg-color: var(--color-black-a5);
+  }
+}

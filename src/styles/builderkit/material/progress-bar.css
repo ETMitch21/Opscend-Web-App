@@ -1,0 +1,53 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-progress-bar {
+    height: var(--progress-bar-height);
+    border-radius: var(--progress-bar-border-radius);
+    overflow: hidden;
+
+    .mdc-linear-progress__bar {
+      height: var(--progress-bar-height);
+
+      .mdc-linear-progress__bar-inner {
+        border-color: var(--progress-bar-indicator-color);
+        border-top-width: var(--progress-bar-height);
+      }
+    }
+
+    .mdc-linear-progress__buffer {
+      height: var(--progress-bar-height);
+      border-radius: var(--progress-bar-border-radius);
+
+      .mdc-linear-progress__buffer-bar {
+        background: var(--progress-bar-track-color);
+      }
+
+      .mdc-linear-progress__buffer-dots {
+        background-image: radial-gradient(
+          circle,
+          var(--progress-bar-track-color) calc(var(--progress-bar-height) / 2),
+          transparent 0
+        );
+        background-position: center;
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-progress-bar {
+    /* Size */
+    --progress-bar-height: 0.25rem; /* 4px */
+    --progress-bar-border-radius: min(
+      calc(var(--theme-border-radius) * 9999),
+      9999px
+    );
+
+    /* Color */
+    --progress-bar-indicator-color: var(--color-primary-9);
+    --progress-bar-track-color: var(--color-primary-a3);
+  }
+}

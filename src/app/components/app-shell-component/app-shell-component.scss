@@ -76,3 +76,37 @@
     padding-inline: 1.25rem;
   }
 }
+
+
+/* Dark chrome, deliberately isolated from unconverted operational pages. */
+.ops-v2-shell { background:#101113; }
+.ops-v2-sidebar, .ops-v2-header {
+  --color-app-bg:#101113;
+  --color-app-surface:#191a1e;
+  --color-app-surface-muted:#27282e;
+  --color-app-border:#34353c;
+  --color-app-text:#ececef;
+  --color-app-text-muted:#a0a1aa;
+  color:var(--color-app-text);
+  background:#151619;
+  border-color:var(--color-app-border);
+  color-scheme:dark;
+}
+.ops-v2-brand { border-color:transparent; color:var(--color-app-text); }
+.ops-v2-nav a, .ops-v2-nav button { font-size:13px; border-radius:6px; }
+.ops-v2-nav a[class~="bg-brand/8"], .ops-v2-nav button[class~="bg-brand/8"] {
+  background:#292a30; color:#f1f1f3; border-color:transparent;
+}
+.ops-v2-nav a[class~="bg-brand/8"] > lucide-icon:first-child,
+.ops-v2-nav button[class~="bg-brand/8"] > lucide-icon:first-child { color:#f58549; }
+.ops-v2-nav a:hover, .ops-v2-nav button:hover { color:var(--color-app-text); }
+.ops-v2-search { min-height:36px; background:#202126; border-radius:6px; color:#ececef; }
+.ops-v2-search:focus { background:#202126; }
+.ops-v2-search::placeholder { color:#a0a1aa; }
+.ops-v2-header .rounded-3xl, .ops-v2-header .rounded-2xl { border-radius:8px; }
+.ops-v2-header .rounded-xl, .ops-v2-header .rounded-lg { border-radius:6px; }
+.ops-v2-main { background:white; color:var(--color-app-text); }
+@media (min-width:1024px) {
+  .ops-v2-sidebar { border-right:0; }
+  .ops-v2-workspace { margin:8px 8px 8px 0; border:1px solid #303137; border-radius:8px; background:white; box-shadow:none; }
+}

@@ -1,0 +1,16 @@
+/* -------------------------------------------------------------------------- */
+/* Dark mode                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/* Nearest scheme region wins: Query the inherited marker, plus the scheme
+   element itself */
+@custom-variant dark {
+  @container style(--scheme: dark) {
+    &:where(:not(.scheme-light)) {
+      @slot;
+    }
+  }
+  &:where(.scheme-dark) {
+    @slot;
+  }
+}

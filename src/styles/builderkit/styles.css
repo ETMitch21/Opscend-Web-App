@@ -1,0 +1,73 @@
+/* -------------------------------------------------------------------------- */
+/* Tailwind CSS                                                               */
+/* -------------------------------------------------------------------------- */
+@import 'tailwindcss' important;
+@import './tailwindcss/animations.css';
+@import './tailwindcss/variants.css';
+@import './tailwindcss/colors.css';
+@import './tailwindcss/theme.css';
+@import './tailwindcss/utilities.css';
+
+/* -------------------------------------------------------------------------- */
+/* Base                                                                       */
+/* -------------------------------------------------------------------------- */
+@import './base/base.css';
+@import './base/typography.css';
+
+/* -------------------------------------------------------------------------- */
+/* Components                                                                 */
+/* -------------------------------------------------------------------------- */
+@import './components/a.css';
+@import './components/input.css';
+@import './components/kbd.css';
+
+/* -------------------------------------------------------------------------- */
+/* Angular CDK                                                                */
+/* -------------------------------------------------------------------------- */
+@import '@angular/cdk/overlay-prebuilt.css';
+
+/* -------------------------------------------------------------------------- */
+/* Angular Material                                                           */
+/* -------------------------------------------------------------------------- */
+@import './material/autocomplete.css';
+@import './material/badge.css';
+@import './material/bottom-sheet.css';
+@import './material/button.css';
+@import './material/button-toggle.css';
+@import './material/card.css';
+@import './material/checkbox.css';
+@import './material/chips.css';
+@import './material/core.css';
+@import './material/datepicker.css';
+@import './material/dialog.css';
+@import './material/divider.css';
+@import './material/expansion.css';
+@import './material/fab.css';
+@import './material/form-field.css';
+@import './material/grid-list.css';
+@import './material/icon.css';
+@import './material/icon-button.css';
+@import './material/list.css';
+@import './material/menu.css';
+@import './material/paginator.css';
+@import './material/progress-bar.css';
+@import './material/progress-spinner.css';
+@import './material/radio.css';
+@import './material/select.css';
+@import './material/sidenav.css';
+@import './material/slide-toggle.css';
+@import './material/slider.css';
+@import './material/snack-bar.css';
+@import './material/sort.css';
+@import './material/stepper.css';
+@import './material/table.css';
+@import './material/tabs.css';
+@import './material/timepicker.css';
+@import './material/toolbar.css';
+@import './material/tooltip.css';
+@import './material/tree.css';
+
+/* -------------------------------------------------------------------------- */
+/* Third Party                                                                */
+/* -------------------------------------------------------------------------- */
+@import './third-party/lucide-icons.css';

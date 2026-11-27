@@ -1,0 +1,59 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-tree {
+    background: transparent;
+
+    .mat-tree-node,
+    .mat-nested-tree-node {
+      font-family: var(--tree-font-family);
+      font-feature-settings: var(--tree-font-feature-settings);
+      font-optical-sizing: var(--tree-font-optical-sizing);
+      -webkit-font-smoothing: var(--tree-font-smoothing);
+
+      font-size: var(--tree-font-size);
+      line-height: var(--tree-line-height);
+      font-weight: var(--tree-font-weight);
+      letter-spacing: var(--tree-letter-spacing);
+
+      color: var(--tree-node-text-color);
+    }
+
+    .mat-tree-node,
+    .mat-nested-tree-node {
+      min-height: var(--tree-node-min-height);
+    }
+
+    .mat-nested-tree-node {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      align-items: flex-start;
+      justify-content: center;
+      word-wrap: break-word;
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-tree {
+    /* Typography */
+    --tree-font-family: var(--font-sans);
+    --tree-font-feature-settings: var(--font-sans--font-feature-settings);
+    --tree-font-optical-sizing: var(--font-optical-sizing);
+    --tree-font-smoothing: var(--font-smoothing);
+
+    --tree-font-size: var(--text-base); /* 13px */
+    --tree-line-height: var(--leading-5); /* 20px */
+    --tree-font-weight: var(--font-weight-normal);
+    --tree-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --tree-node-min-height: 2rem; /* 32px */
+
+    /* Color */
+    --tree-node-text-color: var(--color-neutral-12);
+  }
+}

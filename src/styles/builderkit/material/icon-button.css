@@ -1,0 +1,178 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-button-base.mat-mdc-icon-button {
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-button-size);
+    height: var(--icon-button-size);
+
+    border-radius: var(--icon-button-border-radius);
+    padding: var(--icon-button-padding);
+    color: var(--icon-button-icon-color);
+
+    /* Disable focus indicator */
+    .mat-mdc-focus-indicator {
+      display: none;
+    }
+
+    /* Disable ripple */
+    .mat-mdc-button-ripple,
+    .mat-mdc-button-persistent-ripple {
+      display: none;
+    }
+
+    /* Touch target adjustments */
+    .mat-mdc-button-touch-target {
+      width: max(100%, 2.75rem);
+      height: max(100%, 2.75rem);
+      top: 50%;
+      left: 50%;
+      right: unset;
+      transform: translateY(-50%) translateX(-50%);
+    }
+
+    /* Hide the touch target */
+    .mat-mdc-button-touch-target {
+      display: none;
+    }
+
+    /* Focus */
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible,
+    &.cdk-keyboard-focused {
+      outline: var(--icon-button-outline-color) solid 2px;
+      outline-offset: 2px;
+    }
+
+    /* Icon */
+    .mat-icon {
+      color: var(--icon-button-icon-color);
+      font-size: var(--icon-button-icon-size);
+      width: var(--icon-button-icon-size);
+      height: var(--icon-button-icon-size);
+    }
+
+    img,
+    svg:not(.mat-mdc-progress-spinner svg) {
+      width: var(--icon-button-icon-size);
+      height: var(--icon-button-icon-size);
+    }
+
+    /* Progress */
+    .mat-mdc-progress-spinner {
+      width: var(--icon-button-progress-spinner-size) !important;
+      height: var(--icon-button-progress-spinner-size) !important;
+
+      .mdc-circular-progress__determinate-circle-graphic {
+        width: inherit;
+        height: inherit;
+      }
+
+      .mdc-circular-progress__indeterminate-circle-graphic {
+        height: 100%;
+      }
+    }
+
+    /* Hover & expanded */
+    &:hover,
+    &[aria-expanded='true'] {
+      background: var(--icon-button-bg-color-hover);
+    }
+
+    /* Disabled */
+    &:disabled,
+    &.mat-mdc-button-disabled {
+      background: var(--icon-button-bg-color-disabled);
+      color: var(--icon-button-icon-color-disabled);
+
+      .mat-icon {
+        color: var(--icon-button-icon-color-disabled);
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-button-base.mat-mdc-icon-button {
+    /* Size */
+    --icon-button-size: 2rem; /* 32px */
+    --icon-button-icon-size: 1rem; /* 16px */
+    --icon-button-padding: 0.5rem; /* 8px */
+    --icon-button-border-radius: var(--theme-border-radius);
+    --icon-button-progress-spinner-size: 1rem; /* 16px */
+
+    /* Color */
+    --icon-button-bg-color-hover: var(--color-neutral-a3);
+    --icon-button-bg-color-disabled: transparent;
+
+    --icon-button-icon-color: var(--color-neutral-a11);
+    --icon-button-icon-color-disabled: var(--color-neutral-a8);
+
+    --icon-button-outline-color: var(--color-primary-a9);
+
+    /* Progress */
+    .mat-mdc-progress-spinner {
+      --progress-spinner-indicator-color: var(--color-neutral-11);
+    }
+
+    &:disabled,
+    &.mat-mdc-button-disabled {
+      .mat-mdc-progress-spinner {
+        --progress-spinner-indicator-color: var(--color-neutral-8);
+      }
+    }
+
+    /* Destructive */
+    &.destructive {
+      --icon-button-icon-color: var(--color-error-a11);
+
+      --icon-button-bg-color-hover: var(--color-error-a3);
+      --icon-button-bg-color-active: var(--color-error-a4);
+
+      /* Progress */
+      .mat-mdc-progress-spinner {
+        --progress-spinner-indicator-color: var(--color-error-11);
+      }
+
+      &:disabled,
+      &.mat-mdc-button-disabled {
+        .mat-mdc-progress-spinner {
+          --progress-spinner-indicator-color: var(--color-neutral-8);
+        }
+      }
+    }
+
+    /* Size: tiny */
+    &.tiny {
+      --icon-button-size: 1.5rem; /* 24px */
+      --icon-button-icon-size: 0.875rem; /* 14px */
+      --icon-button-padding: 0.3125rem; /* 5px */
+      --icon-button-progress-spinner-size: 0.875rem; /* 14px */
+    }
+
+    /* Size: small */
+    &.small {
+      --icon-button-size: 1.75rem; /* 28px */
+      --icon-button-icon-size: 0.875rem; /* 14px */
+      --icon-button-padding: 0.4375rem; /* 7px */
+      --icon-button-progress-spinner-size: 0.875rem; /* 14px */
+    }
+
+    /* Size: large */
+    &.large {
+      --icon-button-size: 2.25rem; /* 36px */
+      --icon-button-icon-size: 1.25rem; /* 20px */
+      --icon-button-padding: 0.5rem; /* 8px */
+      --icon-button-border-radius: calc(var(--theme-border-radius) * 4 / 3);
+      --icon-button-progress-spinner-size: 1.25rem; /* 20px */
+    }
+  }
+}

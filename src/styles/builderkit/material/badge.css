@@ -1,0 +1,102 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-badge {
+    .mat-badge-content {
+      font-family: var(--badge-font-family);
+      font-feature-settings: var(--badge-font-feature-settings);
+      font-optical-sizing: var(--badge-font-optical-sizing);
+      -webkit-font-smoothing: var(--badge-font-smoothing);
+
+      font-size: var(--badge-font-size);
+      line-height: var(--badge-line-height);
+      font-weight: var(--badge-font-weight);
+      letter-spacing: var(--badge-letter-spacing);
+
+      background: var(--badge-bg-color);
+      color: var(--badge-text-color);
+
+      min-width: var(--badge-size);
+      min-height: var(--badge-size);
+      border-radius: var(--badge-border-radius);
+      padding: var(--badge-padding);
+      margin: var(--badge-margin);
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: none;
+    }
+
+    /* Disabled */
+    &.mat-badge-disabled {
+      .mat-badge-content {
+        background: var(--badge-bg-color-disabled);
+        color: var(--badge-text-color-disabled);
+      }
+    }
+
+    /* Hidden */
+    &.mat-badge-hidden {
+      .mat-badge-content {
+        display: none;
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-badge {
+    /* Typography */
+    --badge-font-family: var(--font-sans);
+    --badge-font-feature-settings: var(--font-sans--font-feature-settings);
+    --badge-font-optical-sizing: var(--font-optical-sizing);
+    --badge-font-smoothing: var(--font-smoothing);
+
+    --badge-font-size: var(--text-xs); /* 11px */
+    --badge-line-height: var(--leading-4); /* 16px */
+    --badge-font-weight: var(--font-weight-semibold);
+    --badge-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --badge-size: 1rem; /* 16px */
+    /* Fully rounded, but squares off when the theme radius is 0 */
+    --badge-border-radius: min(
+      calc(var(--theme-border-radius) * 9999),
+      9999px
+    );
+    --badge-padding: 0 0.25rem; /* 0 4px */
+    --badge-margin: -0.5rem 0; /* 8px 0 */
+
+    /* Color */
+    --badge-text-color: var(--color-primary-contrast);
+    --badge-text-color-disabled: var(--color-neutral-a8);
+
+    --badge-bg-color: var(--color-primary-9);
+    --badge-bg-color-disabled: var(--color-neutral-a3);
+
+    /* Overlap */
+    &.mat-badge-overlap {
+      --badge-margin: -0.5rem; /* 8px */
+    }
+
+    /* Small */
+    &.mat-badge-small {
+      /* Typography */
+      --badge-font-size: 0;
+      --badge-line-height: 0.375rem; /* 6px */
+
+      /* Size */
+      --badge-size: 0.375rem; /* 6px */
+      --badge-padding: 0;
+      --badge-margin: -0.1875rem 0; /* -3px 0 */
+
+      /* Overlap */
+      &.mat-badge-overlap {
+        --badge-margin: -0.1875rem; /* -3px */
+      }
+    }
+  }
+}

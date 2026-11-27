@@ -1,0 +1,46 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-tooltip {
+    .mat-mdc-tooltip-surface {
+      font-family: var(--tooltip-font-family);
+      font-feature-settings: var(--tooltip-font-feature-settings);
+      font-optical-sizing: var(--tooltip-font-optical-sizing);
+      -webkit-font-smoothing: var(--tooltip-font-smoothing);
+
+      font-size: var(--tooltip-font-size);
+      line-height: var(--tooltip-line-height);
+      font-weight: var(--tooltip-font-weight);
+      letter-spacing: var(--tooltip-letter-spacing);
+
+      border-radius: var(--tooltip-border-radius);
+
+      color: var(--tooltip-text-color);
+      background: var(--tooltip-bg-color);
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-tooltip {
+    /* Typography */
+    --tooltip-font-family: var(--font-sans);
+    --tooltip-font-feature-settings: var(--font-sans--font-feature-settings);
+    --tooltip-font-optical-sizing: var(--font-optical-sizing);
+    --tooltip-font-smoothing: var(--font-smoothing);
+
+    --tooltip-font-size: var(--text-sm); /* 12px */
+    --tooltip-line-height: var(--leading-4); /* 16px */
+    --tooltip-font-weight: var(--font-weight-normal);
+    --tooltip-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --tooltip-border-radius: var(--theme-border-radius);
+
+    /* Color */
+    --tooltip-text-color: light-dark(var(--color-white), var(--color-black));
+    --tooltip-bg-color: var(--color-neutral-12);
+  }
+}

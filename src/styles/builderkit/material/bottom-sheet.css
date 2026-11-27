@@ -1,0 +1,61 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-bottom-sheet-container {
+    font-family: var(--bottom-sheet-font-family);
+    font-feature-settings: var(--bottom-sheet-font-feature-settings);
+    font-optical-sizing: var(--bottom-sheet-font-optical-sizing);
+    -webkit-font-smoothing: var(--bottom-sheet-font-smoothing);
+
+    font-size: var(--bottom-sheet-font-size);
+    line-height: var(--bottom-sheet-line-height);
+    font-weight: var(--bottom-sheet-font-weight);
+    letter-spacing: var(--bottom-sheet-letter-spacing);
+
+    background: var(--bottom-sheet-bg-color);
+    color: var(--bottom-sheet-text-color);
+
+    border-top-left-radius: var(--bottom-sheet-border-radius);
+    border-top-right-radius: var(--bottom-sheet-border-radius);
+
+    padding: var(--bottom-sheet-padding);
+
+    box-shadow:
+      inset 0 0 0 1px var(--bottom-sheet-highlight-color),
+      0 8px 10px -5px rgba(0, 0, 0, 0.2),
+      0 16px 24px 2px rgba(0, 0, 0, 0.14),
+      0 6px 30px 5px rgba(0, 0, 0, 0.12);
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-bottom-sheet-container {
+    /* Typography */
+    --bottom-sheet-font-family: var(--font-sans);
+    --bottom-sheet-font-feature-settings: var(
+      --font-sans--font-feature-settings
+    );
+    --bottom-sheet-font-optical-sizing: var(--font-optical-sizing);
+    --bottom-sheet-font-smoothing: var(--font-smoothing);
+
+    --bottom-sheet-font-size: var(--text-base); /* 13px */
+    --bottom-sheet-line-height: var(--leading-5); /* 20px */
+    --bottom-sheet-font-weight: var(--font-weight-normal);
+    --bottom-sheet-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --bottom-sheet-border-radius: calc(var(--theme-border-radius) * 2);
+    --bottom-sheet-padding: 1rem; /* 16px */
+
+    /* Color */
+    --bottom-sheet-text-color: var(--color-neutral-12);
+    --bottom-sheet-highlight-color: var(--color-white-a2);
+
+    --bottom-sheet-bg-color: light-dark(
+      var(--color-white),
+      var(--color-neutral-3)
+    );
+  }
+}

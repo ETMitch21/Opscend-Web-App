@@ -1,0 +1,62 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-toolbar {
+    font-family: var(--toolbar-font-family);
+    font-feature-settings: var(--toolbar-font-feature-settings);
+    font-optical-sizing: var(--toolbar-font-optical-sizing);
+    -webkit-font-smoothing: var(--toolbar-font-smoothing);
+
+    font-size: var(--toolbar-font-size);
+    line-height: var(--toolbar-line-height);
+    font-weight: var(--toolbar-font-weight);
+    letter-spacing: var(--toolbar-letter-spacing);
+
+    background: transparent;
+    color: inherit;
+
+    .mat-mdc-button-base.mat-mdc-icon-button,
+    .mat-mdc-button-base.mat-mdc-icon-button .mat-icon,
+    .mat-icon {
+      color: inherit;
+    }
+
+    &.mat-toolbar-single-row,
+    .mat-toolbar-row {
+      padding: 0;
+    }
+
+    /* Min height */
+    &.mat-toolbar-single-row {
+      height: auto;
+      min-height: var(--toolbar-min-height);
+    }
+
+    &.mat-toolbar-multiple-rows {
+      .mat-toolbar-row {
+        height: auto;
+        min-height: var(--toolbar-min-height);
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-toolbar {
+    /* Typography */
+    --toolbar-font-family: var(--font-sans);
+    --toolbar-font-feature-settings: var(--font-sans--font-feature-settings);
+    --toolbar-font-optical-sizing: var(--font-optical-sizing);
+    --toolbar-font-smoothing: var(--font-smoothing);
+
+    --toolbar-font-size: var(--text-base); /* 13px */
+    --toolbar-line-height: var(--leading-5); /* 20px */
+    --toolbar-font-weight: var(--font-weight-normal);
+    --toolbar-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --toolbar-min-height: 2.25rem; /* 36px; */
+  }
+}

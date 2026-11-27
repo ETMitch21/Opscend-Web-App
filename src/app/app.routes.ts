@@ -82,6 +82,7 @@ export const routes: Routes = [
         data: { permission: 'apps:read' }
     },
     { path: "dashboard", component: DashboardComponent, canActivate: [PermissionGuard], data: { permission: "repairs:read" } },
+    { path: 'design-lab', canActivate: [AuthGuard], loadComponent: () => import('./features/design-lab/design-lab').then(m => m.DesignLab) },
     {
         path: "crm",
         children: [

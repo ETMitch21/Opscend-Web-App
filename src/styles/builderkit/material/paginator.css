@@ -1,0 +1,114 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-paginator {
+    font-family: var(--paginator-font-family);
+    font-feature-settings: var(--paginator-font-feature-settings);
+    font-optical-sizing: var(--paginator-font-optical-sizing);
+    -webkit-font-smoothing: var(--paginator-font-smoothing);
+
+    font-size: var(--paginator-font-size);
+    line-height: var(--paginator-line-height);
+    font-weight: var(--paginator-font-weight);
+    letter-spacing: var(--paginator-letter-spacing);
+
+    color: var(--paginator-text-color);
+    background: var(--paginator-bg-color);
+
+    /* Disable the subscript wrapper on any form field in the paginator */
+    .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
+
+    /* Touch target adjustments */
+    .mat-mdc-paginator-touch-target {
+      width: max(100%, 2.75rem);
+      height: max(100%, 2.75rem);
+      top: 50%;
+      left: 50%;
+      right: unset;
+      transform: translateY(-50%) translateX(-50%);
+    }
+
+    /* Hide the touch target */
+    .mat-mdc-paginator-touch-target {
+      display: none;
+    }
+
+    .mat-mdc-paginator-outer-container {
+      .mat-mdc-paginator-container {
+        justify-content: space-between;
+        column-gap: var(--paginator-container-gap-x);
+        row-gap: var(--paginator-container-gap-y);
+        padding: 0;
+
+        /* Page size */
+        .mat-mdc-paginator-page-size {
+          margin: 0;
+          column-gap: var(--paginator-page-size-gap-x);
+
+          .mat-mdc-paginator-page-size-label {
+            margin: 0;
+          }
+
+          .mat-mdc-form-field {
+            margin: 0;
+          }
+        }
+
+        /* Range actions */
+        .mat-mdc-paginator-range-actions {
+          /* Label */
+          .mat-mdc-paginator-range-label {
+            margin: 0;
+            margin-inline-end: var(--paginator-container-gap-x);
+          }
+
+          /* Icon buttons */
+          .mat-mdc-icon-button {
+            .mat-mdc-paginator-icon {
+              fill: var(--paginator-icon-color);
+            }
+
+            /* Disabled & Interactive disabled */
+            &[disabled],
+            &[aria-disabled] {
+              .mat-mdc-paginator-icon {
+                fill: var(--paginator-icon-color-disabled);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-paginator {
+    /* Typography */
+    --paginator-font-family: var(--font-sans);
+    --paginator-font-feature-settings: var(--font-sans--font-feature-settings);
+    --paginator-font-optical-sizing: var(--font-optical-sizing);
+    --paginator-font-smoothing: var(--font-smoothing);
+
+    --paginator-font-size: var(--text-base); /* 13px */
+    --paginator-line-height: var(--leading-5); /* 20px */
+    --paginator-font-weight: var(--font-weight-normal);
+    --paginator-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --paginator-container-gap-x: 1rem; /* 16px */
+    --paginator-container-gap-y: 1rem; /* 16px */
+    --paginator-page-size-gap-x: 0.5rem; /* 8px */
+
+    /* Color */
+    --paginator-text-color: var(--color-neutral-12);
+    --paginator-bg-color: transparent;
+
+    --paginator-icon-color: var(--color-neutral-a11);
+    --paginator-icon-color-disabled: var(--color-neutral-a8);
+  }
+}

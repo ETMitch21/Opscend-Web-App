@@ -1,0 +1,353 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-menu-panel {
+    font-family: var(--menu-item-font-family);
+    font-feature-settings: var(--menu-item-font-feature-settings);
+    font-optical-sizing: var(--menu-item-font-optical-sizing);
+    -webkit-font-smoothing: var(--menu-item-font-smoothing);
+
+    font-size: var(--menu-item-font-size);
+    line-height: var(--menu-item-line-height);
+    font-weight: var(--menu-item-font-weight);
+    letter-spacing: var(--menu-item-letter-spacing);
+
+    isolation: isolate;
+    min-width: var(--menu-panel-min-width);
+    max-width: var(--menu-panel-max-width);
+    margin-inline: 0;
+    margin-block: var(--menu-panel-margin-y);
+    padding-inline: var(--menu-panel-padding-x);
+    padding-block: var(--menu-panel-padding-y);
+    background: var(--menu-panel-bg-color);
+    border: 1px solid var(--menu-panel-border-color);
+    border-radius: var(--menu-panel-border-radius);
+    box-shadow:
+      0 10px 15px -3px var(--menu-panel-shadow-color),
+      0 4px 6px -4px var(--menu-panel-shadow-color);
+
+    /* Animation: Material's keyframe kept, its animationend detaches the panel */
+    &:not(.mat-menu-panel-animations-disabled) {
+      animation:
+        _mat-menu-enter 100ms ease,
+        panel-enter 100ms ease;
+
+      &.mat-menu-panel-exit-animation {
+        animation:
+          _mat-menu-exit 100ms ease forwards,
+          panel-exit 100ms ease forwards;
+      }
+    }
+
+    /* Menu content */
+    .mat-mdc-menu-content,
+    .mat-mdc-menu-content
+      > div:first-child:not(.not-mat-menu-wrapper):not(.menu-label) {
+      display: flex;
+      flex-direction: column;
+      row-gap: var(--menu-panel-gap-y);
+      padding: 0;
+
+      /* Menu item */
+      .mat-mdc-menu-item {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        min-height: 0;
+        column-gap: var(--menu-item-gap-x);
+        border-radius: var(--menu-item-border-radius);
+        padding-inline: var(--menu-item-padding-inline);
+        padding-block: var(--menu-item-padding-block);
+
+        color: var(--menu-item-text-color);
+
+        /* Disable ripple */
+        .mat-ripple {
+          display: none;
+        }
+
+        /* Focus */
+        &.cdk-keyboard-focused:not([disabled]) {
+          background: var(--menu-item-bg-color-hover);
+        }
+
+        /* Menu label/text content */
+        .mat-mdc-menu-item-text {
+          display: flex;
+          align-items: center;
+          min-width: 0;
+        }
+
+        /* Icon */
+        .mat-icon {
+          font-size: var(--menu-item-icon-size);
+          width: var(--menu-item-icon-size);
+          height: var(--menu-item-icon-size);
+          color: var(--menu-item-icon-color);
+          margin: 0;
+        }
+
+        /* Submenu icon */
+        .mat-mdc-menu-submenu-icon {
+          width: var(--menu-item-submenu-icon-size);
+          height: var(--menu-item-submenu-icon-size);
+          padding: 0;
+          background-color: var(--menu-item-icon-color);
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E")
+            center / contain no-repeat;
+
+          [dir='rtl'] & {
+            transform: scaleX(-1);
+          }
+
+          polygon {
+            display: none;
+          }
+        }
+
+        /* Pseudo checkbox */
+        .mat-pseudo-checkbox {
+          order: 9999;
+          padding: 0;
+          margin: 0;
+          margin-inline-start: var(--menu-item-gap-x);
+        }
+
+        /* Disabled */
+        &[disabled] {
+          opacity: 1;
+          color: var(--menu-item-text-color-disabled);
+
+          /* Icon */
+          .mat-icon {
+            color: var(--menu-item-icon-color-disabled);
+          }
+
+          /* Submenu icon */
+          .mat-mdc-menu-submenu-icon {
+            background-color: var(--menu-item-icon-color-disabled);
+          }
+        }
+      }
+
+      /* Label */
+      .menu-label {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        column-gap: var(--menu-item-gap-x);
+        padding-inline: var(--menu-item-padding-inline);
+        padding-block: var(--menu-item-padding-block);
+        font-weight: var(--font-weight-medium);
+        color: var(--menu-item-text-color);
+      }
+
+      /* Hover - Only apply hover state if the mat-menu-item is given to a "button" or "a" */
+      button.mat-mdc-menu-item:hover:not([disabled]),
+      a.mat-mdc-menu-item:hover:not([disabled]) {
+        background: var(--menu-item-bg-color-hover);
+      }
+
+      /* Divider */
+      .mat-divider {
+        margin-inline: calc(-1 * var(--menu-panel-padding-x));
+        margin-block: var(--menu-item-divider-margin-y);
+        color: var(--menu-item-divider-color);
+      }
+    }
+  }
+
+  /* CDK Menu panel */
+  .cdk-menu {
+    font-family: var(--menu-item-font-family);
+    font-feature-settings: var(--menu-item-font-feature-settings);
+    font-optical-sizing: var(--menu-item-font-optical-sizing);
+    -webkit-font-smoothing: var(--menu-item-font-smoothing);
+
+    font-size: var(--menu-item-font-size);
+    line-height: var(--menu-item-line-height);
+    font-weight: var(--menu-item-font-weight);
+    letter-spacing: var(--menu-item-letter-spacing);
+
+    isolation: isolate;
+    min-width: var(--menu-panel-min-width);
+    max-width: var(--menu-panel-max-width);
+    margin-inline: 0;
+    margin-block: var(--menu-panel-margin-y);
+    padding-inline: var(--menu-panel-padding-x);
+    padding-block: var(--menu-panel-padding-y);
+    background: var(--menu-panel-bg-color);
+    border: 1px solid var(--menu-panel-border-color);
+    border-radius: var(--menu-panel-border-radius);
+    box-shadow:
+      0 10px 15px -3px var(--menu-panel-shadow-color),
+      0 4px 6px -4px var(--menu-panel-shadow-color);
+
+    /* Menu group */
+    &.cdk-menu-group,
+    .cdk-menu-group {
+      display: flex;
+      flex-direction: column;
+      row-gap: var(--menu-panel-gap-y);
+    }
+
+    /* Menu item */
+    .cdk-menu-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      width: 100%;
+
+      column-gap: var(--menu-item-gap-x);
+      border-radius: var(--menu-item-border-radius);
+      padding-inline: var(--menu-item-padding-inline);
+      padding-block: var(--menu-item-padding-block);
+
+      color: var(--menu-item-text-color);
+
+      /* Icon */
+      .mat-icon {
+        font-size: var(--menu-item-icon-size);
+        width: var(--menu-item-icon-size);
+        height: var(--menu-item-icon-size);
+        color: var(--menu-item-icon-color);
+      }
+
+      /* Disabled */
+      &[disabled] {
+        opacity: 1;
+        color: var(--menu-item-text-color-disabled);
+
+        /* Icon */
+        .mat-icon {
+          color: var(--menu-item-icon-color-disabled);
+        }
+
+        /* Submenu icon */
+        .mat-mdc-menu-submenu-icon {
+          background-color: var(--menu-item-icon-color-disabled);
+        }
+      }
+    }
+
+    /* Hover - Only apply hover state if the cdk-menu-item is given to a "button" or "a" */
+    button.cdk-menu-item:hover:not([disabled]),
+    a.cdk-menu-item:hover:not([disabled]) {
+      background: var(--menu-item-bg-color-hover);
+    }
+
+    /* Divider */
+    .mat-divider {
+      margin-inline: calc(-1 * var(--menu-panel-padding-x));
+      margin-block: var(--menu-item-divider-margin-y);
+      color: var(--menu-item-divider-color);
+    }
+
+    /* Pseudo checkbox support */
+    /* When cdk menu has a pseudo checkbox, we will treat the entire menu as if there is at least */
+    /* one checkbox/radio style item. This will push all individual menu items to the end to give space */
+    /* to the pseudo checkbox if there is at least one checked checkbox. If all checkboxes are unchecked, */
+    /* we will render the menus without the indentation. */
+    &:has(mat-pseudo-checkbox) {
+      /* Menu item */
+      .cdk-menu-item {
+        /* Pseudo checkbox */
+        mat-pseudo-checkbox {
+          position: absolute;
+          left: var(--menu-item-pseudo-checkbox-margin-inline);
+
+          [dir='rtl'] & {
+            left: 0;
+            right: var(--menu-item-pseudo-checkbox-margin-inline);
+          }
+        }
+      }
+    }
+
+    &:has(mat-pseudo-checkbox.mat-pseudo-checkbox-checked) {
+      /* Menu item */
+      .cdk-menu-item {
+        padding-block: var(--menu-item-padding-block);
+        padding-inline: var(--menu-item-padding-inline-start)
+          var(--menu-item-padding-inline);
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-menu-panel,
+  .cdk-menu {
+    /* Panel */
+    /* Size */
+    --menu-panel-min-width: 7.5rem; /* 120px */
+    --menu-panel-max-width: 17.5rem; /* 280px */
+    --menu-panel-margin-y: 0.25rem; /* 4px */
+    --menu-panel-padding-y: 0.25rem; /* 4px */
+    --menu-panel-padding-x: 0.25rem; /* 4px */
+    --menu-panel-gap-y: 0.125rem; /* 2px */
+    --menu-panel-border-radius: var(--theme-border-radius);
+    --menu-panel-backdrop-blur: 1.5rem; /* 24px */
+
+    /* Color */
+    --menu-panel-bg-color: light-dark(
+      var(--color-white),
+      var(--color-neutral-3)
+    );
+    --menu-panel-border-color: var(--color-neutral-a6);
+    --menu-panel-shadow-color: light-dark(
+      var(--color-neutral-a4),
+      var(--color-black-a4)
+    );
+
+    /* Menu items */
+    /* Typography */
+    --menu-item-font-family: var(--font-sans);
+    --menu-item-font-feature-settings: var(--font-sans--font-feature-settings);
+    --menu-item-font-optical-sizing: var(--font-optical-sizing);
+    --menu-item-font-smoothing: var(--font-smoothing);
+
+    --menu-item-font-size: var(--text-base); /* 13px */
+    --menu-item-line-height: var(--leading-5); /* 20px */
+    --menu-item-font-weight: var(--font-weight-normal);
+    --menu-item-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --menu-item-border-radius: calc(var(--theme-border-radius) * 2 / 3);
+    --menu-item-gap-x: 0.5rem; /* 8px */
+    --menu-item-icon-size: 1rem; /* 16px */
+    --menu-item-submenu-icon-size: 1rem; /* 16px */
+    --menu-item-padding-inline: 0.4375rem; /* 7px */
+    --menu-item-padding-block: 0.375rem; /* 6px */
+
+    --menu-item-divider-margin-y: 0.125rem; /* 2px */
+
+    /* Color */
+    --menu-item-text-color: var(--color-neutral-12);
+    --menu-item-text-color-disabled: var(--color-neutral-a8);
+
+    --menu-item-icon-color: var(--color-neutral-a11);
+    --menu-item-icon-color-disabled: var(--color-neutral-a8);
+
+    --menu-item-bg-color-hover: var(--color-neutral-a3);
+
+    --menu-item-divider-color: var(--color-neutral-a3);
+
+    /* Pseudo checkbox support */
+    --menu-item-padding-inline-start: 1.5rem; /* 24px */
+    --menu-item-pseudo-checkbox-margin-inline: 0.25rem; /* 4px */
+
+    /* KBD support */
+    kbd {
+      --kbd-font-weight: var(--font-weight-normal);
+      --kbd-padding-x: 0;
+      --kbd-padding-y: 0;
+      --kbd-border-color: transparent;
+      --kbd-bg-color: transparent;
+      --kbd-text-color: var(--color-neutral-a8);
+    }
+  }
+}

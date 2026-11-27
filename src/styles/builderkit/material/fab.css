@@ -1,0 +1,193 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-button-base.mdc-fab {
+    isolation: isolate;
+    width: fit-content; /* Prevents the width from stretching when inside a Flex/Grid parent */
+    height: fit-content; /* Prevents the height from stretching when inside a Flex/Grid parent */
+
+    font-family: var(--fab-font-family);
+    font-feature-settings: var(--fab-font-feature-settings);
+    font-optical-sizing: var(--fab-font-optical-sizing);
+    -webkit-font-smoothing: var(--fab-font-smoothing);
+
+    font-size: var(--fab-font-size);
+    line-height: var(--fab-line-height);
+    font-weight: var(--fab-font-weight);
+    letter-spacing: var(--fab-letter-spacing);
+
+    border-radius: var(--fab-border-radius);
+    padding-inline: var(--fab-padding-x);
+    padding-block: var(--fab-padding-y);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.16),
+      0 4px 6px -4px rgb(0 0 0 / 0.2);
+
+    background: var(--fab-bg-color);
+    color: var(--fab-text-color);
+
+    /* Disable focus indicator */
+    .mat-mdc-focus-indicator {
+      display: none;
+    }
+
+    /* Disable ripple */
+    .mat-mdc-button-ripple,
+    .mat-mdc-button-persistent-ripple {
+      display: none;
+    }
+
+    /* Touch target adjustments */
+    .mat-mdc-button-touch-target {
+      width: max(100%, 2.75rem);
+      height: max(100%, 2.75rem);
+      top: 50%;
+      left: 50%;
+      right: unset;
+      transform: translateY(-50%) translateX(-50%);
+    }
+
+    /* Hide the touch target */
+    .mat-mdc-button-touch-target {
+      display: none;
+    }
+
+    /* Focus */
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible,
+    &.cdk-keyboard-focused {
+      outline: var(--fab-outline-color) solid 2px;
+      outline-offset: 2px;
+    }
+
+    /* Icon */
+    .mat-icon,
+    .mdc-button__label + .mat-icon {
+      display: flex;
+      color: var(--fab-icon-color);
+      width: var(--fab-icon-size);
+      height: var(--fab-icon-size);
+      font-size: var(--fab-icon-size);
+    }
+
+    /* Button background implemented as the 'before' pseudo element */
+    &:before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -10;
+      pointer-events: none;
+      background: var(--fab-bg-color);
+      border-radius: var(--fab-border-radius);
+    }
+
+    /* Hover */
+    &:hover {
+      box-shadow:
+        0 20px 25px -5px rgb(0 0 0 / 0.16),
+        0 8px 10px -6px rgb(0 0 0 / 0.2);
+
+      &:before {
+        background: var(--fab-bg-color-hover);
+      }
+    }
+
+    /* Disabled */
+    &:disabled,
+    &.mat-mdc-button-disabled {
+      color: var(--fab-text-color-disabled);
+      background: var(--fab-bg-color-disabled);
+      box-shadow: none;
+
+      &:before,
+      &:after {
+        display: none;
+      }
+
+      /* Icon */
+      .mat-icon {
+        color: var(--fab-icon-color-disabled);
+      }
+    }
+
+    /* Extended FAB */
+    &.mat-mdc-extended-fab {
+      column-gap: var(--fab-gap-x);
+
+      /* Icon */
+      .mat-icon,
+      .mdc-button__label + .mat-icon {
+        margin-inline: var(--fab-icon-margin-x);
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-button-base.mdc-fab {
+    /* Typography */
+    --fab-font-family: var(--font-sans);
+    --fab-font-feature-settings: var(--font-sans--font-feature-settings);
+    --fab-font-optical-sizing: var(--font-optical-sizing);
+    --fab-font-smoothing: var(--font-smoothing);
+
+    --fab-font-size: var(--text-base); /* 13px */
+    --fab-line-height: var(--leading-5); /* 20px */
+    --fab-font-weight: var(--font-weight-medium);
+    --fab-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --fab-border-radius: calc(var(--theme-border-radius) * 2);
+    --fab-padding-y: 0.75rem; /* 12px */
+    --fab-padding-x: 0.75rem; /* 12px */
+    --fab-icon-size: 1.5rem; /* 24px */
+
+    /* Color */
+    --fab-text-color: var(--color-primary-contrast);
+    --fab-text-color-disabled: var(--color-neutral-a8);
+
+    --fab-icon-color: var(--color-primary-contrast);
+    --fab-icon-color-disabled: var(--color-neutral-a8);
+
+    --fab-bg-color: var(--color-primary-9);
+    --fab-bg-color-hover: var(--color-primary-10);
+    --fab-bg-color-active: var(--color-primary-10);
+    --fab-bg-color-disabled: var(--color-neutral-a3);
+
+    --fab-outline-color: var(--color-primary-a9);
+
+    /* Progress */
+    .mat-mdc-progress-spinner {
+      --progress-spinner-indicator-color: var(--color-primary-contrast);
+    }
+
+    &:disabled,
+    &.mat-mdc-button-disabled {
+      .mat-mdc-progress-spinner {
+        --progress-spinner-indicator-color: var(--color-neutral-8);
+      }
+    }
+
+    /* Mini FAB */
+    &.mat-mdc-mini-fab {
+      /* Size */
+      --fab-padding-y: 0.625rem; /* 10px */
+      --fab-padding-x: 0.625rem; /* 10px */
+      --fab-icon-size: 1.25rem; /* 20px */
+    }
+
+    /* Extended FAB */
+    &.mat-mdc-extended-fab {
+      /* Size */
+      --fab-padding-y: 0.75rem; /* 12px */
+      --fab-padding-x: 1rem; /* 16px */
+      --fab-gap-x: 0.5rem; /* 8px */
+      --fab-icon-margin-x: -0.125rem; /* 2px */
+    }
+  }
+}

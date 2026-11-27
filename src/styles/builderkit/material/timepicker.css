@@ -1,0 +1,60 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-timepicker-panel {
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--timepicker-panel-gap-y);
+    margin-inline: 0;
+    margin-block: var(--timepicker-panel-margin-y);
+    padding-inline: var(--timepicker-panel-padding-x);
+    padding-block: var(--timepicker-panel-padding-y);
+    max-height: var(--timepicker-panel-max-height);
+    background: var(--timepicker-panel-bg-color);
+    border-radius: var(--timepicker-panel-border-radius);
+    border: 1px solid var(--timepicker-panel-border-color);
+    box-shadow:
+      0 10px 15px -3px var(--timepicker-panel-shadow-color),
+      0 4px 6px -4px var(--timepicker-panel-shadow-color);
+
+    /* Animation: Material's keyframe kept, its animationend detaches the panel */
+    &.mat-timepicker-panel-animations-enabled {
+      animation:
+        _mat-timepicker-enter 100ms ease,
+        panel-enter 100ms ease;
+
+      &.mat-timepicker-panel-exit {
+        animation:
+          _mat-timepicker-exit 100ms ease forwards,
+          panel-exit 100ms ease forwards;
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-timepicker-panel {
+    /* Size */
+    --timepicker-panel-max-height: 16.625rem; /* 266px (7 items + half of the 8th item) */
+    --timepicker-panel-margin-y: 0.25rem; /* 4px */
+    --timepicker-panel-padding-y: 0.25rem; /* 2px */
+    --timepicker-panel-padding-x: 0.25rem; /* 2px */
+    --timepicker-panel-gap-y: 0.125rem; /* 2px */
+    --timepicker-panel-border-radius: var(--theme-border-radius);
+    --timepicker-panel-backdrop-blur: 1.5rem; /* 24px */
+
+    /* Color */
+    --timepicker-panel-bg-color: light-dark(
+      var(--color-white),
+      var(--color-neutral-3)
+    );
+    --timepicker-panel-border-color: var(--color-neutral-a6);
+    --timepicker-panel-shadow-color: light-dark(
+      var(--color-neutral-a4),
+      var(--color-black-a4)
+    );
+  }
+}

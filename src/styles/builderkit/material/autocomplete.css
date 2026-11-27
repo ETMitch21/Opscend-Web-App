@@ -1,0 +1,58 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-autocomplete-panel {
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--autocomplete-panel-gap-y);
+    margin-inline: 0;
+    margin-block: var(--autocomplete-panel-margin-y);
+    padding-inline: var(--autocomplete-panel-padding-x);
+    padding-block: var(--autocomplete-panel-padding-y);
+    max-height: var(--autocomplete-panel-max-height);
+    background: var(--autocomplete-panel-bg-color);
+    border-radius: var(--autocomplete-panel-border-radius);
+    border: 1px solid var(--autocomplete-panel-border-color);
+    box-shadow:
+      0 10px 15px -3px var(--autocomplete-panel-shadow-color),
+      0 4px 6px -4px var(--autocomplete-panel-shadow-color);
+
+    /* Animation */
+    &.mat-autocomplete-panel-animations-enabled {
+      animation: panel-enter 100ms ease;
+    }
+
+    /* Hidden panel */
+    &.mat-mdc-autocomplete-hidden {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-autocomplete-panel {
+    /* Size */
+    --autocomplete-panel-max-height: 16.625rem; /* 266px (7 items + half of the 8th item) */
+    --autocomplete-panel-margin-y: 0.25rem; /* 4px */
+    --autocomplete-panel-padding-y: 0.25rem; /* 4px */
+    --autocomplete-panel-padding-x: 0.25rem; /* 4px */
+    --autocomplete-panel-gap-y: 0.125rem; /* 2px */
+    --autocomplete-panel-border-radius: var(--theme-border-radius);
+    --autocomplete-panel-backdrop-blur: 1.5rem; /* 24px */
+
+    /* Color */
+    --autocomplete-panel-bg-color: light-dark(
+      var(--color-white),
+      var(--color-neutral-3)
+    );
+    --autocomplete-panel-border-color: var(--color-neutral-a6);
+    --autocomplete-panel-shadow-color: light-dark(
+      var(--color-neutral-a4),
+      var(--color-black-a4)
+    );
+  }
+}

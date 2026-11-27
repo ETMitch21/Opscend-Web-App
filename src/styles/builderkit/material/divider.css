@@ -1,0 +1,33 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-divider {
+    border-top-color: var(--divider-color);
+    border-top-width: var(--divider-width);
+
+    /* Vertical */
+    &.mat-divider-vertical {
+      border-right-color: var(--divider-color);
+      border-right-width: var(--divider-width);
+    }
+
+    /* Inset */
+    &.mat-divider-inset {
+      margin: 0;
+      margin-inline-start: var(--divider-inset);
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-divider {
+    /* Size */
+    --divider-width: 1px;
+    --divider-inset: 5rem; /* 80px */
+
+    /* Color */
+    --divider-color: var(--color-neutral-a4);
+  }
+}

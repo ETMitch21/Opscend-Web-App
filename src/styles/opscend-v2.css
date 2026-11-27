@@ -1,0 +1,275 @@
+/* Scoped BuilderKit pilot. Existing Tailwind scales remain intact. */
+@import './builderkit/material/button.css';
+@import './builderkit/material/icon-button.css';
+
+.ops-v2-shell, #bui {
+  color-scheme: light;
+
+  --color-primary: var(--theme-color-primary-9);
+  --color-primary-contrast: var(--theme-color-primary-contrast);
+  --color-primary-surface: var(--theme-color-primary-surface);
+  --color-primary-1: var(--theme-color-primary-1);
+  --color-primary-2: var(--theme-color-primary-2);
+  --color-primary-3: var(--theme-color-primary-3);
+  --color-primary-4: var(--theme-color-primary-4);
+  --color-primary-5: var(--theme-color-primary-5);
+  --color-primary-6: var(--theme-color-primary-6);
+  --color-primary-7: var(--theme-color-primary-7);
+  --color-primary-8: var(--theme-color-primary-8);
+  --color-primary-9: var(--theme-color-primary-9);
+  --color-primary-10: var(--theme-color-primary-10);
+  --color-primary-11: var(--theme-color-primary-11);
+  --color-primary-12: var(--theme-color-primary-12);
+  --color-primary-a1: var(--theme-color-primary-a1);
+  --color-primary-a2: var(--theme-color-primary-a2);
+  --color-primary-a3: var(--theme-color-primary-a3);
+  --color-primary-a4: var(--theme-color-primary-a4);
+  --color-primary-a5: var(--theme-color-primary-a5);
+  --color-primary-a6: var(--theme-color-primary-a6);
+  --color-primary-a7: var(--theme-color-primary-a7);
+  --color-primary-a8: var(--theme-color-primary-a8);
+  --color-primary-a9: var(--theme-color-primary-a9);
+  --color-primary-a10: var(--theme-color-primary-a10);
+  --color-primary-a11: var(--theme-color-primary-a11);
+  --color-primary-a12: var(--theme-color-primary-a12);
+
+  --color-error: var(--theme-color-error-9);
+  --color-error-contrast: var(--theme-color-error-contrast);
+  --color-error-surface: var(--theme-color-error-surface);
+  --color-error-1: var(--theme-color-error-1);
+  --color-error-2: var(--theme-color-error-2);
+  --color-error-3: var(--theme-color-error-3);
+  --color-error-4: var(--theme-color-error-4);
+  --color-error-5: var(--theme-color-error-5);
+  --color-error-6: var(--theme-color-error-6);
+  --color-error-7: var(--theme-color-error-7);
+  --color-error-8: var(--theme-color-error-8);
+  --color-error-9: var(--theme-color-error-9);
+  --color-error-10: var(--theme-color-error-10);
+  --color-error-11: var(--theme-color-error-11);
+  --color-error-12: var(--theme-color-error-12);
+  --color-error-a1: var(--theme-color-error-a1);
+  --color-error-a2: var(--theme-color-error-a2);
+  --color-error-a3: var(--theme-color-error-a3);
+  --color-error-a4: var(--theme-color-error-a4);
+  --color-error-a5: var(--theme-color-error-a5);
+  --color-error-a6: var(--theme-color-error-a6);
+  --color-error-a7: var(--theme-color-error-a7);
+  --color-error-a8: var(--theme-color-error-a8);
+  --color-error-a9: var(--theme-color-error-a9);
+  --color-error-a10: var(--theme-color-error-a10);
+  --color-error-a11: var(--theme-color-error-a11);
+  --color-error-a12: var(--theme-color-error-a12);
+
+  --color-neutral: var(--theme-color-neutral-9);
+  --color-neutral-surface: var(--theme-color-neutral-surface);
+  --color-neutral-1: var(--theme-color-neutral-1);
+  --color-neutral-2: var(--theme-color-neutral-2);
+  --color-neutral-3: var(--theme-color-neutral-3);
+  --color-neutral-4: var(--theme-color-neutral-4);
+  --color-neutral-5: var(--theme-color-neutral-5);
+  --color-neutral-6: var(--theme-color-neutral-6);
+  --color-neutral-7: var(--theme-color-neutral-7);
+  --color-neutral-8: var(--theme-color-neutral-8);
+  --color-neutral-9: var(--theme-color-neutral-9);
+  --color-neutral-10: var(--theme-color-neutral-10);
+  --color-neutral-11: var(--theme-color-neutral-11);
+  --color-neutral-12: var(--theme-color-neutral-12);
+  --color-neutral-a1: var(--theme-color-neutral-a1);
+  --color-neutral-a2: var(--theme-color-neutral-a2);
+  --color-neutral-a3: var(--theme-color-neutral-a3);
+  --color-neutral-a4: var(--theme-color-neutral-a4);
+  --color-neutral-a5: var(--theme-color-neutral-a5);
+  --color-neutral-a6: var(--theme-color-neutral-a6);
+  --color-neutral-a7: var(--theme-color-neutral-a7);
+  --color-neutral-a8: var(--theme-color-neutral-a8);
+  --color-neutral-a9: var(--theme-color-neutral-a9);
+  --color-neutral-a10: var(--theme-color-neutral-a10);
+  --color-neutral-a11: var(--theme-color-neutral-a11);
+  --color-neutral-a12: var(--theme-color-neutral-a12);
+  --ops-ink: #20242b;
+  --ops-muted: #626a76;
+  --ops-border: #e2e5e9;
+  --ops-surface: #fff;
+  --ops-canvas: #f4f5f7;
+}
+#bui {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-sans--font-feature-settings: normal;
+  --font-optical-sizing: auto;
+  --font-smoothing: antialiased;
+  --font-weight-medium: 550;
+  --font-weight-normal: 450;
+  --text-base: .8125rem;
+  --text-xs: .6875rem;
+  --text-sm: .75rem;
+  --text-lg: .875rem;
+  --leading-4: 1rem;
+  --leading-5: 1.25rem;
+  --tracking-normal: 0em;
+  --color-white-a1: rgb(255 255 255 / .05);
+  --color-black-a1: rgb(0 0 0 / .05);
+  --color-black-a2: rgb(0 0 0 / .1);
+  font: 400 13px/1.5 Inter, system-ui, sans-serif;
+  color: var(--ops-ink);
+}
+
+/* Legacy native select support plus refined Material select treatment for migrated screens. */
+.ops-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 40px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239b9ca6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px 16px;
+}
+.ops-v2-shell .ops-select-shell, #bui.lab .ops-select-shell {
+  position:relative;
+  border:1px solid var(--ops-field-border, #45464e);
+  border-radius:6px;
+  background:var(--ops-control, #202126);
+  color:var(--ops-ink, #ececef);
+}
+.ops-v2-shell .ops-mat-select, #bui.lab .ops-mat-select { width:100%; }
+.ops-v2-shell .ops-mat-select .mat-mdc-select-trigger, #bui.lab .ops-mat-select .mat-mdc-select-trigger {
+  min-height:38px;
+  padding:0 40px 0 12px;
+}
+.ops-v2-shell .ops-mat-select .mat-mdc-select-arrow-wrapper, #bui.lab .ops-mat-select .mat-mdc-select-arrow-wrapper { transform:none; }
+.ops-v2-shell .ops-mat-select .mat-mdc-select-arrow, #bui.lab .ops-mat-select .mat-mdc-select-arrow {
+  width:16px; height:16px; border:0; margin:0; background-color:var(--ops-muted, #9b9ca6);
+  clip-path:path("M6.47 8.47a.75.75 0 0 1 1.06 0L12 12.94l4.47-4.47a.75.75 0 1 1 1.06 1.06l-5 5a.75.75 0 0 1-1.06 0l-5-5a.75.75 0 0 1 0-1.06Z");
+}
+.cdk-overlay-pane .ops-select-panel.mat-mdc-select-panel {
+  margin-top:6px;
+  padding:6px;
+  border-radius:10px;
+  border:1px solid color-mix(in srgb, var(--ops-field-border, #45464e) 80%, transparent);
+  background:color-mix(in srgb, var(--ops-surface, #191a1e) 94%, black 6%);
+  box-shadow:0 12px 32px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.02);
+}
+.cdk-overlay-pane .ops-select-panel .mat-mdc-option {
+  min-height:36px;
+  padding:0 10px;
+  border-radius:8px;
+}
+.cdk-overlay-pane .ops-select-panel .mdc-list-item__primary-text {
+  font-size:13px;
+  font-weight:500;
+}
+.cdk-overlay-pane .ops-select-panel .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+.cdk-overlay-pane .ops-select-panel .mat-mdc-option.mdc-list-item--selected:not(.mat-mdc-option-multiple) {
+  background:color-mix(in srgb, var(--ops-action, #ff9554) 12%, var(--ops-surface, #191a1e));
+}
+.cdk-overlay-pane .ops-select-panel .mat-pseudo-checkbox-minimal { display:none; }
+@media (forced-colors: active) {
+  .ops-select { appearance:auto; background-image:none; padding-inline-end:12px !important; }
+}
+/* Refine actual BuilderKit Material buttons only in the dark-first pilot. */
+#bui.lab .mat-mdc-button-base:not(.mat-mdc-icon-button):not(.mdc-fab) {
+  --button-border-radius:6px;
+  --button-font-size:13px;
+  --button-line-height:20px;
+  --button-font-weight:500;
+  --button-padding-y:7px;
+  --button-padding-x:12px;
+  --button-text-color:var(--ops-ink);
+  --button-bg-color:var(--ops-control);
+  --button-bg-color-hover:var(--ops-hover);
+  --button-border-color:var(--ops-field-border);
+  --button-shadow-color:transparent;
+  --button-highlight-color:transparent;
+  --button-outline-color:var(--ops-focus);
+  --button-text-color-disabled:var(--ops-muted);
+  --button-bg-color-disabled:var(--ops-surface);
+}
+#bui.lab .mat-mdc-button-base.primary {
+  --button-text-color:var(--ops-accent-ink);
+  --button-bg-color:var(--ops-accent);
+  --button-bg-color-hover:color-mix(in srgb,var(--ops-accent) 88%,var(--ops-ink));
+  --button-border-color:var(--ops-accent);
+}
+#bui.lab .mat-mdc-button-base.tertiary { --button-bg-color:transparent; --button-border-color:transparent; }
+#bui.lab .mat-mdc-button-base.destructive { --button-text-color:var(--ops-danger); }
+/* Only the lab route gets a dark content canvas during this pilot. */
+.ops-v2-main:has(app-design-lab) { padding:0; background:#101113; }
+
+/* Shared action treatment: explicit primary actions only, never status chips or shop-branded public pages. */
+.ops-v2-shell, #bui.lab {
+  --ops-action: #ff9554;
+  --ops-action-hover: #ffa66f;
+  --ops-action-active: #ed8240;
+  --ops-action-ink: #20140e;
+}
+#bui.lab .mat-mdc-button-base:not(.mat-mdc-icon-button):not(.mdc-fab) {
+  min-height:32px;
+  padding:5px 11px;
+  font-size:13px;
+  font-weight:500;
+  line-height:20px;
+  border-radius:6px;
+  transition:background-color 120ms ease,border-color 120ms ease;
+}
+/* Set the rendered surface explicitly: the vendor variant uses pseudo-element backgrounds. */
+#bui.lab .mat-mdc-button-base.primary:not(:disabled):not(.mat-mdc-button-disabled),
+.ops-v2-shell :is(button,a):is(.primary-btn,.btn-primary,.settings-primary-action,.bg-brand,.bg-orange-500,.bg-orange-600):not(:disabled):not([aria-disabled="true"]) {
+  background:var(--ops-action) !important;
+  color:var(--ops-action-ink) !important;
+  border-color:var(--ops-action) !important;
+  border-radius:6px !important;
+  font-weight:600;
+  box-shadow:inset 0 1px 0 rgb(255 255 255 / .16);
+  transition:background-color 120ms ease,border-color 120ms ease;
+}
+#bui.lab .mat-mdc-button-base.primary:not(:disabled):not(.mat-mdc-button-disabled)::before,
+#bui.lab .mat-mdc-button-base.primary:not(:disabled):not(.mat-mdc-button-disabled)::after { display:none; }
+#bui.lab .mat-mdc-button-base.primary:not(:disabled):not(.mat-mdc-button-disabled):hover,
+.ops-v2-shell :is(button,a):is(.primary-btn,.btn-primary,.settings-primary-action,.bg-brand,.bg-orange-500,.bg-orange-600):not(:disabled):not([aria-disabled="true"]):hover { background:var(--ops-action-hover) !important; border-color:var(--ops-action-hover) !important; }
+#bui.lab .mat-mdc-button-base.primary:not(:disabled):not(.mat-mdc-button-disabled):active,
+.ops-v2-shell :is(button,a):is(.primary-btn,.btn-primary,.settings-primary-action,.bg-brand,.bg-orange-500,.bg-orange-600):not(:disabled):not([aria-disabled="true"]):active { background:var(--ops-action-active) !important; border-color:var(--ops-action-active) !important; }
+.ops-v2-shell :is(button,a):is(.primary-btn,.btn-primary,.settings-primary-action,.secondary-btn,.btn-secondary) { border-radius:6px !important; }
+#bui.lab .mat-mdc-button-base:focus-visible { outline:2px solid var(--ops-focus); outline-offset:2px; }
+
+/* Opscend standard select chevron */
+
+.ops-mat-select {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.ops-mat-select .mat-mdc-select-arrow-wrapper {
+  display: none !important;
+}
+
+.ops-v2-shell .ops-mat-select .mat-mdc-select-trigger,
+#bui.lab .ops-mat-select .mat-mdc-select-trigger {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0 38px 0 12px;
+}
+
+.ops-mat-select::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  background-color: #a0a1aa;
+
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+
+  transform: translateY(-50%);
+  transition: transform 120ms ease;
+}
+
+.ops-mat-select[aria-expanded="true"]::after {
+  transform: translateY(-50%) rotate(180deg);
+}

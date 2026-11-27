@@ -1,0 +1,269 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-chip {
+    display: flex;
+    height: var(--chip-height);
+    border-radius: var(--chip-border-radius);
+    padding-inline: var(--chip-padding-x);
+    padding-block: var(--chip-padding-y);
+    gap: var(--chip-gap-x);
+
+    /* Disable focus overlay */
+    .mat-mdc-chip-focus-overlay {
+      display: none;
+    }
+
+    /* Disable ripple */
+    .mat-ripple {
+      display: none;
+    }
+
+    /* Touch target adjustments */
+    .mat-mdc-chip-touch-target {
+      width: max(100%, 2.75rem);
+      height: max(100%, 2.75rem);
+      top: 50%;
+      left: 50%;
+      right: unset;
+      transform: translateY(-50%) translateX(-50%);
+    }
+
+    /* Hide the touch target */
+    .mat-mdc-chip-touch-target {
+      display: none;
+    }
+
+    /* Disable outline border */
+    .mdc-evolution-chip__action--primary:before {
+      border: none;
+    }
+
+    /* Default */
+    &:not(.mdc-evolution-chip--selected):not(.mdc-evolution-chip--disabled) {
+      background: var(--chip-bg-color);
+      color: var(--chip-text-color);
+    }
+
+    /* Selected */
+    &.mdc-evolution-chip--selected:not(.mdc-evolution-chip--disabled) {
+      background: var(--chip-bg-color-selected);
+    }
+
+    /* Disabled */
+    &.mdc-evolution-chip--disabled {
+      background: var(--chip-bg-color-disabled);
+      color: var(--chip-text-color-disabled);
+
+      .mat-icon {
+        color: var(--chip-icon-color-disabled);
+      }
+    }
+
+    /* Icon */
+    .mat-icon {
+      width: var(--chip-icon-size);
+      height: var(--chip-icon-size);
+      font-size: var(--chip-icon-size);
+      color: var(--chip-icon-color);
+    }
+
+    /* Label */
+    .mdc-evolution-chip__text-label {
+      font-family: var(--chip-font-family);
+      font-feature-settings: var(--chip-font-feature-settings);
+      font-optical-sizing: var(--chip-font-optical-sizing);
+      -webkit-font-smoothing: var(--chip-font-smoothing);
+      font-size: var(--chip-font-size);
+      font-weight: var(--chip-font-weight);
+    }
+
+    /* Graphic */
+    .mdc-evolution-chip__graphic {
+      width: var(--chip-icon-size);
+      height: var(--chip-icon-size);
+      font-size: var(--chip-icon-size);
+    }
+
+    &.mdc-evolution-chip--with-avatar {
+      /* Edit button takes the start edge in editable rows */
+      &:not(.mdc-evolution-chip--with-leading-action) {
+        padding-inline-start: var(--chip-avatar-inset);
+      }
+
+      .mdc-evolution-chip__graphic {
+        width: var(--chip-graphic-size);
+        height: var(--chip-graphic-size);
+        font-size: var(--chip-graphic-size);
+      }
+    }
+
+    &:not(.mdc-evolution-chip--with-primary-icon) {
+      .mdc-evolution-chip__graphic {
+        display: none;
+      }
+    }
+
+    /* Disable the selected check icon */
+    .mdc-evolution-chip__checkmark {
+      display: none;
+    }
+
+    /* Primary action (Leading icon / Avatar + Label) */
+    .mdc-evolution-chip__action--primary {
+      display: flex;
+      padding: 0 !important;
+      gap: var(--chip-gap-x);
+
+      * {
+        padding: 0 !important;
+      }
+
+      /* Leading icon / Avatar */
+      .mdc-evolution-chip__graphic {
+        .mdc-evolution-chip__icon--primary {
+          opacity: 1 !important;
+        }
+      }
+
+      /* Label */
+      .mdc-evolution-chip__text-label {
+      }
+    }
+
+    /* Secondary actions (Edit / Remove button) */
+    .mdc-evolution-chip__action--secondary {
+      display: flex;
+      width: var(--chip-icon-size);
+      height: var(--chip-icon-size);
+      padding: 0 !important;
+      gap: var(--chip-gap-x);
+
+      mat-icon {
+        color: currentColor;
+      }
+
+      &:is(button) {
+        color: var(--chip-action-button-icon-color);
+
+        &:hover {
+          color: var(--chip-action-button-icon-color-hover);
+        }
+      }
+
+      * {
+        padding: 0 !important;
+      }
+    }
+
+    /* Trailing cell (Trailing icon + Remove button) */
+    .mdc-evolution-chip__cell--trailing {
+      gap: var(--chip-gap-x);
+    }
+
+    /* Edit / Remove icon: state layer doubles as an 18px click target */
+    .mat-mdc-chip-edit:after,
+    .mat-mdc-chip-remove:after {
+      inset: -0.1875rem; /* -3px */
+      padding: 0;
+      margin: 0;
+    }
+  }
+
+  /* Chip set */
+  .mdc-evolution-chip-set {
+    .mdc-evolution-chip-set__chips {
+      margin: 0;
+      row-gap: var(--chip-set-gap-y);
+      column-gap: var(--chip-set-gap-x);
+
+      .mdc-evolution-chip {
+        margin: 0;
+      }
+    }
+
+    &:has(.mdc-evolution-chip-set__chips:empty) {
+      display: none;
+    }
+  }
+
+  /* Chip set inside form field */
+  .mat-mdc-form-field.mat-mdc-form-field-type-mat-chip-grid {
+    .mat-mdc-form-field-infix {
+      flex-wrap: wrap;
+      gap: 0.25rem; /* 4px */
+      margin-inline: -0.3125rem; /* -5px */
+
+      /* Chip set */
+      .mdc-evolution-chip-set {
+        width: 100%;
+      }
+
+      /* Chip */
+      .mat-mdc-chip {
+        --chip-border-radius: calc(var(--theme-border-radius) * 2 / 3);
+      }
+
+      /* Chip input */
+      .mat-mdc-chip-input {
+        margin-inline-start: 0.25rem; /* 4px */
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-chip {
+    /* Typography */
+    --chip-font-family: var(--font-sans);
+    --chip-font-feature-settings: var(--font-sans--font-feature-settings);
+    --chip-font-optical-sizing: var(--font-optical-sizing);
+    --chip-font-smoothing: var(--font-smoothing);
+
+    --chip-font-size: var(--text-sm); /* 12px */
+    --chip-line-height: var(--leading-4); /* 16px */
+    --chip-font-weight: 500;
+    --chip-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --chip-height: 1.25rem; /* 20px */
+    --chip-border-radius: var(--theme-border-radius);
+    --chip-padding-y: 0;
+    --chip-padding-x: 0.4375rem; /* 7px */
+    --chip-gap-x: 0.25rem; /* 4px */
+    --chip-icon-size: 0.75rem; /* 12px */
+    --chip-graphic-size: 1rem; /* 16px */
+    --chip-avatar-inset: calc(
+      (var(--chip-height) - var(--chip-graphic-size)) / 2
+    ); /* 2px */
+    --mat-chip-with-icon-icon-size: var(--chip-graphic-size);
+    /* Concentric with the chip */
+    --mat-chip-with-avatar-avatar-shape-radius: max(
+      0px,
+      calc(var(--chip-border-radius) - var(--chip-avatar-inset))
+    );
+
+    /* Color */
+    --chip-text-color: var(--color-neutral-a12);
+    --chip-text-color-disabled: var(--color-neutral-a8);
+
+    --chip-icon-color: var(--color-neutral-11);
+    --chip-icon-color-disabled: var(--color-neutral-8);
+
+    --chip-action-button-icon-color: var(--color-neutral-9);
+    --chip-action-button-icon-color-hover: var(--color-neutral-12);
+
+    --chip-bg-color: var(--color-neutral-a3);
+    --chip-bg-color-selected: var(--color-neutral-a7);
+    --chip-bg-color-disabled: var(--color-neutral-a3);
+  }
+
+  /* Chip set */
+  .mdc-evolution-chip-set {
+    /* Size */
+    --chip-set-gap-x: 0.375rem; /* 6px */
+    --chip-set-gap-y: 0.375rem; /* 6px */
+  }
+}

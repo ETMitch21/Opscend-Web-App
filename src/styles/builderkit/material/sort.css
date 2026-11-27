@@ -1,0 +1,36 @@
+#bui {
+  .mat-sort-header {
+    &.cdk-keyboard-focused .mat-sort-header-container,
+    &.cdk-program-focused .mat-sort-header-container {
+      border-bottom: none;
+      border-radius: var(--sort-border-radius);
+      outline: var(--sort-outline-color) solid 2px;
+      outline-offset: var(--sort-outline-offset);
+    }
+
+    .mat-sort-header-arrow {
+      color: var(--sort-icon-color);
+
+      & svg {
+        width: var(--sort-icon-size);
+        height: var(--sort-icon-size);
+        margin-block-start: calc(-1 * calc(var(--sort-icon-size) / 2));
+        margin-inline-start: calc(-1 * calc(var(--sort-icon-size) / 2));
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-sort-header {
+    /* Size */
+    --sort-border-radius: calc(var(--theme-border-radius) * 2 / 3);
+    --sort-outline-offset: 0.125rem; /* 2px */
+    --sort-icon-size: 1.125rem; /* 18px */
+
+    /* Color */
+    --sort-outline-color: var(--color-primary-a9);
+    --sort-icon-color: var(--color-neutral-11);
+  }
+}

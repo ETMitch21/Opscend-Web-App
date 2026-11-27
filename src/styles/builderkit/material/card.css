@@ -1,0 +1,273 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-card {
+    isolation: isolate;
+    position: relative;
+
+    font-family: var(--card-font-family);
+    font-feature-settings: var(--card-font-feature-settings);
+    font-optical-sizing: var(--card-font-optical-sizing);
+    -webkit-font-smoothing: var(--card-font-smoothing);
+
+    font-size: var(--card-font-size);
+    line-height: var(--card-line-height);
+    font-weight: var(--card-font-weight);
+    letter-spacing: var(--card-letter-spacing);
+
+    row-gap: var(--card-gap-y);
+    padding: var(--card-padding);
+    border-radius: var(--card-border-radius);
+
+    /* Disable 'after' */
+    &:after {
+      content: none;
+      display: none;
+    }
+
+    /* Outlined & Raised card */
+    &.mat-mdc-card-outlined,
+    &:not(.mat-mdc-card-outlined):not(.mat-mdc-card-filled) {
+      border-width: 1px;
+      border-style: solid;
+      border-color: transparent;
+
+      color: var(--card-text-color);
+
+      /* Border color as the card background to avoid corner rendering issues
+         and better shadow/background-color blending. */
+      background: var(--card-border-color);
+
+      /* Card background implemented as the 'before' pseudo element */
+      &:before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -10;
+        pointer-events: none;
+        background: var(--card-bg-color);
+        border-radius: calc(var(--card-border-radius) - 1px);
+        box-shadow:
+          0 1px 3px 0 var(--card-shadow-color),
+          0 1px 2px -1px var(--card-shadow-color);
+      }
+
+      /* Dark theme */
+      @container style(--scheme: dark) {
+        /* Move the background and border back to the card itself */
+        background: var(--card-bg-color);
+        border-color: var(--card-border-color);
+
+        box-shadow:
+          0 0 0 1px var(--card-shadow-color),
+          0 1px 3px 0 var(--card-shadow-color),
+          0 1px 2px -1px var(--card-shadow-color);
+
+        /* Hide the 'before' pseudo element */
+        &:before {
+          display: none;
+        }
+      }
+    }
+
+    /* Card content elements */
+    .mat-mdc-card-header,
+    .mat-mdc-card-content,
+    .mat-mdc-card-footer,
+    .mat-mdc-card-actions {
+      padding: 0;
+      margin: 0;
+      /*margin: var(--card-content-margin);*/
+    }
+
+    /* Avatar */
+    .mat-mdc-card-avatar {
+      margin-bottom: 0;
+    }
+
+    /* Title */
+    .mat-mdc-card-title {
+      font-size: var(--card-title-font-size);
+      line-height: var(--card-title-line-height);
+      font-weight: var(--card-title-font-weight);
+      letter-spacing: var(--card-title-letter-spacing);
+    }
+
+    /* Subtitle */
+    .mat-mdc-card-subtitle {
+      font-size: var(--card-subtitle-font-size);
+      line-height: var(--card-subtitle-line-height);
+      font-weight: var(--card-subtitle-font-weight);
+      letter-spacing: var(--card-subtitle-letter-spacing);
+
+      color: var(--card-subtitle-color);
+    }
+
+    /* Image */
+    .mat-mdc-card-image {
+      overflow: hidden;
+      border-radius: max(
+        calc(var(--card-border-radius) * 0.5),
+        calc(var(--card-border-radius) - var(--card-padding))
+      );
+    }
+
+    /* Content */
+    .mat-mdc-card-content {
+      background: var(--card-surface-bg-color);
+      padding: var(--card-surface-padding);
+    }
+
+    /* Actions */
+    .mat-mdc-card-actions {
+      min-height: 0;
+      column-gap: var(--card-actions-gap-x);
+    }
+
+    /* Footer */
+    .mat-mdc-card-footer {
+      display: flex;
+      min-height: 0;
+      column-gap: var(--card-actions-gap-x);
+    }
+
+    /* Filled card */
+    &.mat-mdc-card-filled {
+      background: var(--card-bg-color);
+      color: var(--card-text-color);
+
+      .mat-mdc-card-header {
+        padding: var(--card-header-padding);
+      }
+
+      .mat-mdc-card-content {
+        position: relative;
+        z-index: 0;
+        border-width: 1px;
+        border-style: solid;
+        border-color: transparent;
+
+        padding: var(--card-surface-padding);
+        border-radius: calc(var(--card-border-radius) - var(--card-padding));
+
+        color: var(--card-text-color);
+
+        /* Border color as the card background to avoid corner rendering issues
+             and better shadow/background-color blending. */
+        background: var(--card-border-color);
+
+        /* Card background implemented as the 'before' pseudo element */
+        &:before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: -10;
+          pointer-events: none;
+          background: var(--card-surface-bg-color);
+          border-radius: calc(
+            var(--card-border-radius) - var(--card-padding) - 1px
+          );
+          box-shadow:
+            0 1px 3px 0 var(--card-shadow-color),
+            0 1px 2px -1px var(--card-shadow-color);
+        }
+
+        /* Dark theme */
+        @container style(--scheme: dark) {
+          /* Move the background and border back to the card itself */
+          background: var(--card-surface-bg-color);
+          border-color: var(--card-border-color);
+
+          box-shadow:
+            0 1px 3px 0 var(--card-shadow-color),
+            0 1px 2px -1px var(--card-shadow-color);
+
+          /* Hide the 'before' pseudo element */
+          &:before {
+            display: none;
+          }
+        }
+      }
+
+      /* Optically evens the gap, which the content border makes look bigger */
+      .mat-mdc-card-header + .mat-mdc-card-content {
+        margin-block-start: -1px;
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-mdc-card {
+    /* Typography */
+    --card-font-family: var(--font-sans);
+    --card-font-feature-settings: var(--font-sans--font-feature-settings);
+    --card-font-optical-sizing: var(--font-optical-sizing);
+    --card-font-smoothing: var(--font-smoothing);
+
+    --card-font-size: var(--text-base); /* 13px */
+    --card-line-height: var(--leading-5); /* 20px */
+    --card-font-weight: var(--font-weight-normal);
+    --card-letter-spacing: var(--tracking-normal);
+
+    --card-title-font-size: var(--text-base); /* 13px */
+    --card-title-line-height: var(--leading-5); /* 20px */
+    --card-title-font-weight: var(--font-weight-medium);
+    --card-title-letter-spacing: var(--tracking-normal);
+
+    --card-subtitle-font-size: var(--text-base); /* 13px */
+    --card-subtitle-line-height: var(--leading-5); /* 20px */
+    --card-subtitle-font-weight: var(--font-weight-normal);
+    --card-subtitle-letter-spacing: var(--tracking-normal);
+
+    /* Size */
+    --card-border-width: 1px;
+    --card-border-radius: calc(var(--theme-border-radius) * 1.5);
+    --card-padding: 1rem; /* 16px */
+    --card-gap-y: 1rem; /* 16px */
+    --card-actions-gap-x: 0.5rem; /* 8px */
+    --card-surface-padding: 0;
+
+    /* Color */
+    --card-text-color: var(--color-neutral-12);
+    --card-bg-color: light-dark(var(--color-white), var(--color-neutral-a2));
+    --card-border-color: light-dark(
+      var(--color-neutral-a4),
+      var(--color-neutral-a5)
+    );
+    --card-shadow-color: light-dark(
+      var(--color-neutral-a5),
+      var(--color-black-a5)
+    );
+
+    --card-surface-bg-color: transparent;
+    --card-subtitle-color: var(--color-neutral-a11);
+
+    /* Filled card */
+    &.mat-mdc-card-filled {
+      /* Typography */
+      --card-subtitle-font-size: var(--text-sm); /* 12px */
+      --card-subtitle-line-height: var(--leading-4); /* 16px */
+
+      /* Size */
+      --card-padding: 0.25rem; /* 4px */
+      --card-surface-padding: 1rem; /* 16px */
+      --card-gap-y: 0.25rem; /* 4px */
+      --card-actions-gap-x: 0.25rem; /* 4px */
+      --card-header-padding: 0.5rem 0.75rem; /* 8px 12px */
+
+      /* Color */
+      --card-bg-color: light-dark(
+        var(--color-neutral-a3),
+        var(--color-black-a5)
+      );
+      --card-surface-bg-color: light-dark(
+        var(--color-white),
+        var(--color-neutral-a3)
+      );
+      --card-border-color: var(--color-neutral-a4);
+    }
+  }
+}

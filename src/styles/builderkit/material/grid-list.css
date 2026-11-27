@@ -1,0 +1,66 @@
+#bui {
+  /* ------------------------------------------------------------------------ */
+  /* Styles                                                                   */
+  /* ------------------------------------------------------------------------ */
+  .mat-grid-list {
+    font-family: var(--grid-list-font-family);
+    font-feature-settings: var(--grid-list-font-feature-settings);
+    font-optical-sizing: var(--grid-list-font-optical-sizing);
+    -webkit-font-smoothing: var(--grid-list-font-smoothing);
+
+    .mat-grid-tile .mat-grid-list-text > * {
+      font-weight: inherit;
+    }
+
+    /* Header */
+    .mat-grid-tile-header {
+      font-size: var(--grid-list-title-font-size);
+      line-height: var(--grid-list-title-line-height);
+      font-weight: var(--grid-list-title-font-weight);
+      letter-spacing: var(--grid-list-title-letter-spacing);
+
+      .mat-line:nth-child(n + 2) {
+        font-size: var(--grid-list-subtitle-font-size);
+        line-height: var(--grid-list-subtitle-line-height);
+        font-weight: var(--grid-list-subtitle-font-weight);
+        letter-spacing: var(--grid-list-subtitle-letter-spacing);
+      }
+    }
+
+    /* Footer */
+    .mat-grid-tile-footer {
+      font-size: var(--grid-list-title-font-size);
+      line-height: var(--grid-list-title-line-height);
+      font-weight: var(--grid-list-title-font-weight);
+      letter-spacing: var(--grid-list-title-letter-spacing);
+
+      .mat-line:nth-child(n + 2) {
+        font-size: var(--grid-list-subtitle-font-size);
+        line-height: var(--grid-list-subtitle-line-height);
+        font-weight: var(--grid-list-subtitle-font-weight);
+        letter-spacing: var(--grid-list-subtitle-letter-spacing);
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Variables                                                                */
+  /* ------------------------------------------------------------------------ */
+  .mat-grid-list {
+    /* Typography */
+    --grid-list-font-family: var(--font-sans);
+    --grid-list-font-feature-settings: var(--font-sans--font-feature-settings);
+    --grid-list-font-optical-sizing: var(--font-optical-sizing);
+    --grid-list-font-smoothing: var(--font-smoothing);
+
+    --grid-list-title-font-size: var(--text-xl); /* 16px */
+    --grid-list-title-line-height: var(--leading-5); /* 20px */
+    --grid-list-title-font-weight: var(--font-weight-semibold);
+    --grid-list-title-letter-spacing: var(--tracking-tight);
+
+    --grid-list-subtitle-font-size: var(--text-base); /* 13px */
+    --grid-list-subtitle-line-height: var(--leading-5); /* 20px */
+    --grid-list-subtitle-font-weight: var(--font-weight-normal);
+    --grid-list-subtitle-letter-spacing: var(--tracking-normal);
+  }
+}

@@ -19,6 +19,10 @@ import { tenantInterceptor } from './core/tenant/tenant-interceptor';
 import { AuthInterceptor } from './core/auth/auth.interceptor';
 import { AppConfigService } from './core/app-config/app-config.service';
 import { TenantService } from './core/tenant/tenant.service';
+import { provideTheming } from './core/theming';
+import { provideLocalStorage } from './core/local-storage';
+import { provideMedia } from './core/media';
+import { provideWindow } from './core/window';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -30,6 +34,11 @@ export const appConfig: ApplicationConfig = {
       withInterceptorsFromDi()
     ),
     provideRouter(routes),
+    // BuilderKit palette only. Never install its mock HTTP backend in Opscend.
+    provideWindow(),
+    provideLocalStorage(),
+    provideMedia(),
+    provideTheming({ scheme: 'light', primary: '#c65b25', error: '#E5484D', neutral: '#8B8D98' }),
     provideAppInitializer(() => {
       // Tenant context must exist before the router starts its initial
       // navigation. Initializing it from App.ngOnInit() is too late on a
