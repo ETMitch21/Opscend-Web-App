@@ -7,8 +7,6 @@ import { mapMobileSentrixItems } from '../../../core/mobilesentrix/mobilesentrix
 import { ServicesService } from '../../../core/services/service';
 import { Product } from '../../../core/products/products-model';
 import { Service } from '../../../core/services/model';
-import { RevoGrid, Editor, type Editors } from '@revolist/angular-datagrid';
-import { PricingSelectEditorComponent } from './pricing-select-editor';
 import { PricingGridLookups } from './pricing-grid-lookups';
 import {
   Component,
@@ -204,7 +202,6 @@ function parsePricingCsv(content: string): Array<Record<string, string>> {
     LucideAngularModule,
     SettingsLayoutComponent,
     RepairTypesDrawer,
-    RevoGrid,
   ],
   templateUrl: './repair-pricing.html',
 })
@@ -243,7 +240,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     X: XIcon,
   };
 
-  // RevoGrid handles editing/selection. Writes are queued, sent automatically,
+  // Writes are queued, sent automatically,
   // and displayed optimistically until the API confirms them.
   readonly gridBusy = signal(false);
   readonly gridSaveError = signal<string | null>(null);
@@ -254,7 +251,6 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
   private gridFlushTimer: ReturnType<typeof setTimeout> | null = null;
   private gridFlushing = false;
   // Dropdowns are real grid cell editors, not a second form above the worksheet.
-  readonly gridEditors: Editors = { pricingSelect: Editor(PricingSelectEditorComponent) };
   readonly blankCount = signal(10);
   readonly blankDrafts = signal<Record<string, Record<string, string>>>({});
   readonly blankCreating = signal<Set<string>>(new Set());
@@ -269,35 +265,7 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     { prop: 'mode', name: 'Pricing mode', size: 140, editor: 'pricingSelect' },
     { prop: 'visibility', name: 'Visibility', size: 125, editor: 'pricingSelect' },
     { prop: 'status', name: 'Status', size: 110, editor: 'pricingSelect' },
-    { prop: 'actions', name: 'Actions', size: 116, pin: 'colPinEnd' as const, readonly: true, filter: false, sortable: false,
-      cellTemplate: (h: any, p: any) => {
-        const icon = (paths: string[]) => h('svg', {
-          xmlns: 'http://www.w3.org/2000/svg', width: '16', height: '16',
-          viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
-          'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
-          'aria-hidden': 'true',
-        }, paths.map(d => h('path', { d })));
-        const button = (label: string, paths: string[], action: () => void, danger = false) =>
-          h('button', {
-            type: 'button', title: label, 'aria-label': label,
-            onClick: (e: Event) => { e.stopPropagation(); action(); },
-            style: {
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: '28px', height: '28px', borderRadius: '6px',
-              border: '1px solid transparent', background: 'transparent',
-              color: danger ? '#dc2626' : 'var(--app-text, #64748b)', cursor: 'pointer',
-            },
-          }, [icon(paths)]);
-        return h('div', {
-          style: { display: 'flex', gap: '3px', alignItems: 'center',
-            justifyContent: 'center', height: '100%' },
-        }, [
-          button('Edit details', ['M12 20h9', 'M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z'], () => this.openGridDrawer(p.model.id)),
-          button('Reset row', ['M3 12a9 9 0 1 0 3-6.7', 'M3 3v6h6'], () => { void this.resetGridRow(p.model.id); }),
-          button('Delete row', ['M3 6h18', 'M8 6V4h8v2', 'M19 6l-1 14H6L5 6', 'M10 11v5', 'M14 11v5'], () => { void this.deleteGridRow(p.model.id); }, true),
-        ]);
-      },
-    },
+    { prop: 'actions', name: 'Actions', size: 116 },
   ];
   readonly gridChoices = computed(() => ({
     device: this.gridCatalogModels().map(m => `${m.brandName} ${m.name}`),
@@ -487,6 +455,14 @@ export class RepairPricingSettings implements OnInit, OnDestroy {
     this.gridSaveError.set(null);
     if (this.gridFlushTimer) clearTimeout(this.gridFlushTimer);
     this.gridFlushTimer = setTimeout(() => { this.gridFlushTimer = null; void this.flushGridChanges(); }, 180);
+  }
+
+  readonly nativeRowLimit = signal(100);
+
+  editNativeCell(id: string, prop: string, value: string): void {
+    this.onGridEdit(new CustomEvent('pricing-edit', {
+      cancelable: true, detail: { model: { id }, prop, val: value },
+    }));
   }
 
   onGridEdit(event: CustomEvent): void {

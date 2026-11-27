@@ -1,4 +1,4 @@
-<app-settings-layout pageDescription="Edit and paste prices directly. Changes save automatically.">
+<app-settings-layout pageDescription="Manage repair prices. Changes to table fields save automatically.">
   <section class="overflow-hidden rounded-lg border border-app-border bg-app-surface">
     <div class="flex flex-wrap items-center gap-2 border-b border-app-border px-3 py-2">
       <strong class="text-sm">Repair pricing</strong>
@@ -20,15 +20,41 @@
       }
     </div>
     @if (initialLoading() || listLoading()) { <p class="p-4 text-xs text-app-text-muted">Loading prices…</p> }
-    <revo-grid class="block w-full" style="height: min(72vh, 760px)" theme="compact"
-      [columns]="gridColumns" [source]="gridRows()" [editors]="gridEditors" [filter]="true" [range]="true" [readonly]="false"
-      [resize]="true" [rowHeaders]="true"
-      (beforeedit)="onGridEdit($event)" (beforepasteapply)="onGridPaste($event)" (beforecellfocus)="onGridFocus($event)"
-      (afterfilterapply)="clearGridFocus()" (aftersortingapply)="clearGridFocus()">
-    </revo-grid>
-    <div class="flex justify-between gap-2 border-t border-app-border px-3 py-2 text-xs text-app-text-muted">
-      <span>Edit cells directly · ⌘/Ctrl+C/V · Tab · Arrow keys · Changes save automatically</span>
-      <span>Select Device and Repair in a blank row to create a private draft</span>
+    <div class="flex flex-wrap items-center gap-2 border-b border-app-border p-3">
+      <input aria-label="Search pricing" placeholder="Search device, repair, option or SKU" class="min-w-64 rounded border border-app-border bg-app-surface px-3 py-2 text-sm" [ngModel]="pricingSearch()" (ngModelChange)="onPricingSearch($event); nativeRowLimit.set(100)" />
+      <select aria-label="Filter prices" class="rounded border border-app-border bg-app-surface px-3 py-2 text-sm" [ngModel]="sheetFilter()" (ngModelChange)="sheetFilter.set($event); nativeRowLimit.set(100)">
+        <option value="all">All prices</option><option value="active">Active</option><option value="unpriced">Unpriced</option>
+      </select>
+      <button type="button" class="ml-auto rounded bg-orange-600 px-3 py-2 text-sm font-medium text-white" (click)="newOption()">New repair</button>
+    </div>
+    <div class="overflow-auto" style="max-height: min(72vh, 760px)">
+      <table class="w-full whitespace-nowrap text-left text-sm">
+        <thead class="sticky top-0 z-10 bg-app-surface-muted"><tr>
+          @for (column of gridColumns; track column.prop) { <th scope="col" class="border-b border-app-border px-3 py-3 font-medium">{{ column.name }}</th> }
+        </tr></thead>
+        <tbody>
+          @for (row of gridRows().slice(0, sheetOptions().length).slice(0, nativeRowLimit()); track row.id) {
+            <tr class="border-b border-app-border">
+              <td class="px-3 py-2">{{ row.device }}</td>
+              <td class="px-3 py-2">{{ row.repair }}</td>
+              <td class="px-3 py-2"><input aria-label="Option" class="w-28 rounded border border-app-border bg-app-surface px-2 py-1.5" [value]="row.variant" (change)="editNativeCell(row.id, 'variant', $any($event.target).value)" /></td>
+              @for (field of ['part', 'labor', 'price']; track field) {
+                <td class="px-3 py-2"><input [attr.aria-label]="field" inputmode="decimal" class="w-24 rounded border border-app-border bg-app-surface px-2 py-1.5" [value]="$any(row)[field]" [disabled]="field === 'price' && row.mode === 'Automatic'" (change)="editNativeCell(row.id, field, $any($event.target).value)" /></td>
+              }
+              @for (field of ['mode', 'visibility', 'status']; track field) {
+                <td class="px-3 py-2"><select [attr.aria-label]="field" class="rounded border border-app-border bg-app-surface px-2 py-1.5" [value]="$any(row)[field]" (change)="editNativeCell(row.id, field, $any($event.target).value)">
+                  @for (choice of $any(gridChoices())[field]; track choice) { <option [value]="choice" [selected]="choice === $any(row)[field]">{{ choice }}</option> }
+                </select></td>
+              }
+              <td class="px-3 py-2"><div class="flex gap-2"><button type="button" class="rounded border border-app-border px-2 py-1" (click)="openGridDrawer(row.id)">Details</button><button type="button" class="rounded border border-app-border px-2 py-1" (click)="resetGridRow(row.id)">Reset</button><button type="button" class="rounded border border-app-border px-2 py-1 text-red-600" (click)="deleteGridRow(row.id)">Delete</button></div></td>
+            </tr>
+          } @empty { <tr><td colspan="10" class="p-6 text-center text-app-text-muted">No matching prices.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+    <div class="flex items-center justify-between gap-2 p-3 text-xs text-app-text-muted">
+      <span>Showing {{ nativeRowLimit() < sheetOptions().length ? nativeRowLimit() : sheetOptions().length }} of {{ sheetOptions().length }} prices. Use CSV for bulk changes.</span>
+      @if (nativeRowLimit() < sheetOptions().length) { <button type="button" class="rounded border border-app-border px-3 py-2" (click)="nativeRowLimit.set(nativeRowLimit() + 100)">Show more</button> }
     </div>
   </section>
 </app-settings-layout>
