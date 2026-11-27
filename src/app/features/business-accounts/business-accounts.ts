@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -31,7 +31,7 @@ import { ToastService } from '../../core/toast/toast-service';
 @Component({
   selector: 'app-business-accounts',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
+  imports: [FormsModule, RouterLink, LucideAngularModule],
   templateUrl: './business-accounts.html',
   styleUrl: './business-accounts.scss',
 })

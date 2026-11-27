@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -29,7 +29,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 @Component({
   selector: 'app-quick-replies-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SettingsLayoutComponent, LucideAngularModule],
+  imports: [ReactiveFormsModule, SettingsLayoutComponent, LucideAngularModule],
   templateUrl: './quick-replies.html',
 })
 export class QuickRepliesSettingsComponent implements OnInit {

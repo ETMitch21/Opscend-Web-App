@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -34,7 +34,7 @@ type EnrollmentDeviceRow = PublicBusinessEnrollmentDeviceInput & { categoryId: s
 @Component({
   selector: 'app-business-enrollment',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [FormsModule, LucideAngularModule],
   templateUrl: './business-enrollment.html',
   styleUrl: './business-enrollment.scss',
 })

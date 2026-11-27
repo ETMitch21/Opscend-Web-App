@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -26,7 +26,7 @@ interface ShopResponse {
 @Component({
   selector: 'app-shop-settings-page',
   standalone: true,
-  imports: [SettingsLayoutComponent, CommonModule, FormsModule],
+  imports: [SettingsLayoutComponent, FormsModule],
   templateUrl: './shop-settings.html',
 })
 export class ShopSettings implements OnInit {

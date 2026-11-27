@@ -5,7 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import {
   CheckCircle2Icon,
@@ -48,7 +48,7 @@ type PayoutActivityEvent = {
 @Component({
   selector: 'app-contractor-payouts',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, TablePagination, TablePageSize],
+  imports: [RouterLink, LucideAngularModule, TablePagination, TablePageSize],
   templateUrl: './contractor-payouts.html',
   styleUrl: './contractor-payouts.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

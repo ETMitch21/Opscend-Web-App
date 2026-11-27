@@ -1,6 +1,6 @@
 // reset-component.ts
 import { Component, OnInit, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import {
   AbstractControl,
   FormBuilder,
@@ -23,7 +23,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   selector: "app-reset",
   standalone: true,
   templateUrl: "./reset-component.html",
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [ReactiveFormsModule, RouterModule],
 })
 export class ResetComponent implements OnInit {
   private fb = inject(FormBuilder);

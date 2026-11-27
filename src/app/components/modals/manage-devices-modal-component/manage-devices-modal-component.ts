@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,7 +19,7 @@ type DeviceForm = FormGroup<{
 
 @Component({
   selector: 'manage-devices-modal-component',
-  imports: [ModalComponent, CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [ModalComponent, FormsModule, ReactiveFormsModule],
   templateUrl: './manage-devices-modal-component.html',
   styleUrl: './manage-devices-modal-component.scss',
 })

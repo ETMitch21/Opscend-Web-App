@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -31,7 +31,7 @@ import { ToastService } from '../../../core/toast/toast-service';
 @Component({
   selector: 'app-crm-overview',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, LucideAngularModule],
+  imports: [FormsModule, DragDropModule, LucideAngularModule],
   templateUrl: './crm-overview.html',
   styleUrl: './crm-overview.scss',
 })

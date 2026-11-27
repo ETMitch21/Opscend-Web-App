@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -22,7 +22,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-opscend-apps-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
   templateUrl: './apps.html',
 })
 export class OpscendAppsSettings implements OnInit {

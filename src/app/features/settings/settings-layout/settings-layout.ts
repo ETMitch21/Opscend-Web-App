@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { ArrowLeftIcon, LucideAngularModule } from 'lucide-angular';
@@ -13,7 +13,7 @@ import {
 @Component({
   selector: 'app-settings-layout',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule],
+  imports: [RouterLink, LucideAngularModule],
   templateUrl: './settings-layout.html',
 })
 export class SettingsLayoutComponent implements OnDestroy {

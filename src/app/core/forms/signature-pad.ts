@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import {
   AfterViewInit,
   Component,
@@ -12,7 +12,7 @@ import {
 @Component({
   selector: 'app-signature-pad',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <canvas

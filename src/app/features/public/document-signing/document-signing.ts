@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +8,7 @@ import { DocumentsService } from '../../../core/documents/documents.service';
 @Component({
   selector: 'app-document-signing',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <main class="min-h-screen bg-[#f5f5f7] px-4 py-6 text-slate-900" [style.--customer-brand]="brandColor()">
       <div class="mx-auto max-w-3xl space-y-5">

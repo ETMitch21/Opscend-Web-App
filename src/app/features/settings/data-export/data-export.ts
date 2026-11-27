@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import {
   ArchiveIcon,
@@ -21,7 +21,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-data-export',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [LucideAngularModule, SettingsLayoutComponent],
   templateUrl: './data-export.html',
 })
 export class DataExportSettings implements OnInit {

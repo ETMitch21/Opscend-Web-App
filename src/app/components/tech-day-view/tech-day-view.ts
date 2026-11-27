@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppointmentsStore } from '../../core/appointments/appointments.store';
@@ -16,7 +16,7 @@ type TechDayRow = {
 @Component({
   selector: 'app-tech-day-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [FormsModule, LucideAngularModule],
   templateUrl: './tech-day-view.html',
 })
 export class TechDayView implements OnInit {

@@ -3,17 +3,16 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angu
 import { Router, RouterModule } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { AuthService } from "../../../core/auth/auth.service";
-import { CommonModule } from "@angular/common";
+
 
 @Component({
   selector: "app-signup",
   standalone: true,
   imports: [
-    CommonModule,
     RouterModule,
     FormsModule,
     ReactiveFormsModule
-  ],
+],
   templateUrl: "./signup-component.html",
 })
 export class SignupComponent {

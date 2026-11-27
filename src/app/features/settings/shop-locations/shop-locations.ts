@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -25,7 +25,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-shop-locations',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
   templateUrl: './shop-locations.html',
 })
 export class ShopLocations {

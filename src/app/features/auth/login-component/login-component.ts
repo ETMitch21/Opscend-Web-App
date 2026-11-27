@@ -3,13 +3,12 @@ import { Component, inject } from "@angular/core";
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router, RouterLink } from "@angular/router";
 import { AuthService } from "../../../core/auth/auth.service";
-import { CommonModule } from "@angular/common";
+
 import { ToastService } from "../../../core/toast/toast-service";
 
 @Component({
   selector: "app-login",
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterLink

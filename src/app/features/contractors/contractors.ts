@@ -5,7 +5,7 @@ import {
     inject,
     signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import {
     FormBuilder,
     ReactiveFormsModule,
@@ -55,7 +55,7 @@ type ContractorFilter = 'all' | 'active' | 'inactive';
 @Component({
     selector: 'app-contractors',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, LucideAngularModule, TablePagination, TablePageSize],
+    imports: [ReactiveFormsModule, LucideAngularModule, TablePagination, TablePageSize],
     templateUrl: './contractors.html',
     styleUrl: './contractors.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

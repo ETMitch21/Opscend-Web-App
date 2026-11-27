@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UsersStore } from '../../../../core/users/users-store';
@@ -9,7 +9,7 @@ import { SettingsLayoutComponent } from '../../settings-layout/settings-layout';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [SettingsLayoutComponent, CommonModule, ReactiveFormsModule],
+  imports: [SettingsLayoutComponent, ReactiveFormsModule],
   templateUrl: './my-profile.component.html',
 })
 export class MyProfileComponent implements OnInit {

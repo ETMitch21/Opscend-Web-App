@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -30,7 +30,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-fleet-plans',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
   templateUrl: './fleet-plans.html',
   styleUrl: './fleet-plans.scss',
 })

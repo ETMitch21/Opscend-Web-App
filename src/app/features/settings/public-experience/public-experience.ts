@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -86,7 +86,7 @@ interface PublicExperienceShop {
 @Component({
   selector: 'app-public-experience-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SettingsLayoutComponent],
+  imports: [FormsModule, RouterModule, SettingsLayoutComponent],
   templateUrl: './public-experience.html',
 })
 export class PublicExperienceSettings implements OnInit {

@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { debounceTime, firstValueFrom, merge } from 'rxjs';
@@ -31,7 +31,7 @@ type AddressForm = FormGroup<{
 
 @Component({
   selector: 'app-new-customer',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule],
   templateUrl: './new-customer.html',
   styleUrl: './new-customer.scss',
 })

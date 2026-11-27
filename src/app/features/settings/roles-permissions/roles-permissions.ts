@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -16,7 +16,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-roles-permissions',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
   templateUrl: './roles-permissions.html',
   styleUrl: './roles-permissions.scss',
 })

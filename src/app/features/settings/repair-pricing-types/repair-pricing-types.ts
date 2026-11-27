@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -29,11 +29,10 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   selector: 'app-repair-pricing-types',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     LucideAngularModule,
-    SettingsLayoutComponent,
-  ],
+    SettingsLayoutComponent
+],
   templateUrl: './repair-pricing-types.html',
 })
 export class RepairPricingTypes implements OnInit {

@@ -6,7 +6,7 @@ import type {
   AvailabilityRule,
   DayOfWeek,
 } from '../../../../../core/availability/availability-model';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ToastService } from '../../../../../core/toast/toast-service';
 import { SettingsLayoutComponent } from '../../../settings-layout/settings-layout';
@@ -25,10 +25,9 @@ type EditableDay = {
   standalone: true,
   imports: [
     SettingsLayoutComponent,
-    CommonModule,
     FormsModule,
     ReactiveFormsModule
-  ],
+],
   templateUrl: './my-availability.component.html',
 })
 export class MyAvailabilityComponent implements OnInit {

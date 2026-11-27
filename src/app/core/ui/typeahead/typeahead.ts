@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import {
   Component,
@@ -29,7 +29,7 @@ let nextTypeaheadId = 0;
 @Component({
   selector: 'app-typeahead',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, OverlayModule],
+  imports: [LucideAngularModule, OverlayModule],
   templateUrl: './typeahead.html',
   styleUrl: './typeahead.scss',
 })

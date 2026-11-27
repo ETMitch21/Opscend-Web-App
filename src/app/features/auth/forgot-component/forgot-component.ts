@@ -2,17 +2,16 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Router, RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
+
 import { ToastService } from '../../../core/toast/toast-service';
 
 @Component({
   selector: 'app-forgot-component',
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule
-  ],
+],
   templateUrl: './forgot-component.html',
   styleUrl: './forgot-component.scss',
 })

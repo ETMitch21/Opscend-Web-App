@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -40,7 +40,7 @@ type PayoutsPageState =
 @Component({
   selector: 'app-payouts',
   standalone: true,
-  imports: [SettingsLayoutComponent, CommonModule, RouterLink, LucideAngularModule],
+  imports: [SettingsLayoutComponent, RouterLink, LucideAngularModule],
   templateUrl: './payouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

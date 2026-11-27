@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +9,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 
 interface ShopResponse { id: string; settings: { communications: { smsEnabled: boolean; twilioPhoneNumber: string | null } } }
 
-@Component({ selector: 'app-shop-communications-settings', standalone: true, imports: [CommonModule, FormsModule, RouterModule, SettingsLayoutComponent], templateUrl: './shop-communications.html' })
+@Component({ selector: 'app-shop-communications-settings', standalone: true, imports: [FormsModule, RouterModule, SettingsLayoutComponent], templateUrl: './shop-communications.html' })
 export class ShopCommunicationsSettings implements OnInit {
   private readonly appConfig = inject(AppConfigService);
   private readonly http = inject(HttpClient);

@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -39,7 +39,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-business-fleet-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
   templateUrl: './business-fleet.html',
   styleUrl: './business-fleet.scss',
 })

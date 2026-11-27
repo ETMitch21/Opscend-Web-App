@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   FormBuilder,
@@ -22,7 +22,7 @@ type BookingSettingsTab = 'general' | 'pricing' | 'scheduling' | 'embed';
 @Component({
   selector: 'app-shop-bookings',
   standalone: true,
-  imports: [SettingsLayoutComponent, CommonModule, ReactiveFormsModule],
+  imports: [SettingsLayoutComponent, ReactiveFormsModule],
   templateUrl: './shop-bookings.html',
   styleUrl: './shop-bookings.scss',
 })
