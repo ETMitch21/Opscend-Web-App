@@ -11,6 +11,7 @@ import {
   provideHttpClient,
   withInterceptors,
   withInterceptorsFromDi,
+  withXhr
 } from '@angular/common/http';
 
 import { routes } from './app.routes';
@@ -24,7 +25,7 @@ export const appConfig: ApplicationConfig = {
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideHttpClient(
+    provideHttpClient(withXhr(), 
       withInterceptors([tenantInterceptor]),
       withInterceptorsFromDi()
     ),

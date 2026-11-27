@@ -1,5 +1,5 @@
 
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -36,6 +36,7 @@ type EnrollmentDeviceRow = PublicBusinessEnrollmentDeviceInput & { categoryId: s
   standalone: true,
   imports: [FormsModule, OpscendIconComponent],
   templateUrl: './business-enrollment.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-enrollment.scss',
 })
 export class BusinessEnrollment implements OnInit {

@@ -1,5 +1,5 @@
 import { CommonModule, TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import {
@@ -29,6 +29,7 @@ type InventoryView = 'all' | 'low' | 'out' | 'available';
   selector: 'app-inventory',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, TitleCasePipe, OpscendIconComponent, TablePagination, TablePageSize],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './inventory.html',
 })
 export class Inventory implements OnInit {

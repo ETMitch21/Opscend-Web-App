@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -38,6 +38,7 @@ type EditorType = 'category' | 'brand' | 'model';
   selector: 'app-device-catalog-settings',
   standalone: true,
   imports: [SettingsLayoutComponent, CommonModule, FormsModule, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './device-catalog.html',
 })
 export class DeviceCatalogSettings implements OnInit {

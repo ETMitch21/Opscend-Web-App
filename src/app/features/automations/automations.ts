@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -47,6 +47,7 @@ type PageTab = 'automations' | 'templates' | 'history';
   selector: 'app-automations',
   standalone: true,
   imports: [CommonModule, FormsModule, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './automations.html',
 })
 export class Automations implements OnInit {

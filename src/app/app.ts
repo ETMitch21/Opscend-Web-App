@@ -1,5 +1,5 @@
 import { DocumentPreviewComponent } from './core/documents/document-preview.component';
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { NgxSonnerToaster } from 'ngx-sonner';
 import { AuthService } from './core/auth/auth.service';
@@ -13,6 +13,7 @@ import { ShopContextService } from './core/shop/shop-context.store';
   selector: 'app-root',
   imports: [RouterOutlet, NgxSonnerToaster, AppShellComponent, SessionLockComponent, DocumentPreviewComponent],
   templateUrl: './app.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.scss'
 })
 export class App implements OnInit, OnDestroy {

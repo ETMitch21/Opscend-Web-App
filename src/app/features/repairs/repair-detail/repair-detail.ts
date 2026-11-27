@@ -12,6 +12,7 @@ import {
   effect,
   inject,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -111,6 +112,7 @@ interface ShopListResponse {
     PhonePipe,
   ],
   templateUrl: './repair-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './repair-detail.scss',
 })
 export class RepairDetail implements OnInit, OnDestroy {

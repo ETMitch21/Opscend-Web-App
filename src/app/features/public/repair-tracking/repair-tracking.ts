@@ -7,6 +7,7 @@ import {
   computed,
   inject,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -286,6 +287,7 @@ function buildPublicTrackerSteps(status: PublicRepairStatus | null | undefined):
   selector: 'app-repair-tracking-page',
   standalone: true,
   imports: [CommonModule, OpscendIconComponent, DatePipe, ReactiveFormsModule, PhonePipe],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-tracking.html',
 })
 export class RepairTracking implements AfterViewChecked {

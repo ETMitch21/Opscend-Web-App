@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -142,6 +142,7 @@ const PUBLIC_POPULAR_BRANDS_BY_CATEGORY: Record<string, string[]> = {
   selector: 'app-public-booking-page',
   standalone: true,
   imports: [CommonModule, OpscendIconComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './public-booking.html',
 })
 export class PublicBooking implements OnDestroy {

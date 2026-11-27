@@ -1,5 +1,5 @@
 
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   DollarSignIcon,
@@ -33,6 +33,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
     OpscendIconComponent,
     SettingsLayoutComponent
 ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-pricing-types.html',
 })
 export class RepairPricingTypes implements OnInit {

@@ -9,6 +9,7 @@ import {
   computed,
   inject,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
@@ -60,6 +61,7 @@ import { ToastService } from '../../../core/toast/toast-service';
   selector: 'app-quick-quote-modal',
   standalone: true,
   imports: [CommonModule, OpscendIconComponent, TypeaheadComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './quick-quote-modal.html',
 })
 export class QuickQuoteModalComponent implements OnInit, OnDestroy {

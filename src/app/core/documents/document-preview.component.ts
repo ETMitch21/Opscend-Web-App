@@ -1,5 +1,5 @@
 
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { DocumentsService } from './documents.service';
 
@@ -7,6 +7,7 @@ import { DocumentsService } from './documents.service';
   selector: 'app-document-preview',
   standalone: true,
   imports: [],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (documents.preview(); as preview) {
       <div class="fixed inset-0 z-[1000] flex flex-col bg-slate-950/80" role="dialog" aria-modal="true" aria-label="Document preview">

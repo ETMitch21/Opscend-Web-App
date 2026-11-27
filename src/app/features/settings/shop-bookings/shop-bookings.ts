@@ -1,5 +1,5 @@
 
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -24,6 +24,7 @@ type BookingSettingsTab = 'general' | 'pricing' | 'scheduling' | 'embed';
   standalone: true,
   imports: [SettingsLayoutComponent, ReactiveFormsModule],
   templateUrl: './shop-bookings.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './shop-bookings.scss',
 })
 export class ShopBookingsComponent implements OnInit {

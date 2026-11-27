@@ -1,5 +1,5 @@
 
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppointmentsStore } from '../../core/appointments/appointments.store';
 import { UsersStore } from '../../core/users/users-store';
@@ -17,6 +17,7 @@ type TechDayRow = {
   selector: 'app-tech-day-view',
   standalone: true,
   imports: [FormsModule, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './tech-day-view.html',
 })
 export class TechDayView implements OnInit {

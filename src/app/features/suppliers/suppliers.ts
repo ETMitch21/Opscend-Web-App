@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   OpscendIconComponent,
@@ -32,6 +32,7 @@ type SupplierView = 'active' | 'inactive' | 'archived' | 'all';
   selector: 'app-suppliers',
   standalone: true,
   imports: [CommonModule, FormsModule, DatePipe, OpscendIconComponent, TablePagination, TablePageSize],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './suppliers.html',
 })
 export class Suppliers implements OnInit {

@@ -7,6 +7,7 @@ import {
   OnChanges,
   Output,
   SimpleChanges,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {
   CheckIcon,
@@ -31,6 +32,7 @@ let nextTypeaheadId = 0;
   standalone: true,
   imports: [OpscendIconComponent, OverlayModule],
   templateUrl: './typeahead.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './typeahead.scss',
 })
 export class TypeaheadComponent implements OnChanges {

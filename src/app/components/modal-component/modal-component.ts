@@ -4,6 +4,7 @@ import {
   HostListener,
   Input,
   Output,
+  ChangeDetectionStrategy
 } from '@angular/core';
 
 
@@ -12,6 +13,7 @@ import {
   standalone: true,
   imports: [],
   templateUrl: './modal-component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './modal-component.scss'
 })
 export class ModalComponent {

@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   ArrowDownIcon,
@@ -30,6 +30,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
   selector: 'app-quick-replies-settings',
   standalone: true,
   imports: [ReactiveFormsModule, SettingsLayoutComponent, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './quick-replies.html',
 })
 export class QuickRepliesSettingsComponent implements OnInit {

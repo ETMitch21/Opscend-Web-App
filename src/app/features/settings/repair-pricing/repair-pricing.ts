@@ -16,6 +16,7 @@ import {
   effect,
   inject,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -203,6 +204,7 @@ function parsePricingCsv(content: string): Array<Record<string, string>> {
     SettingsLayoutComponent,
     RepairTypesDrawer,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-pricing.html',
 })
 export class RepairPricingSettings implements OnInit, OnDestroy {

@@ -9,6 +9,7 @@ import {
   input,
   output,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { AvailabilityStore } from '../../../core/availability/availability-store';
@@ -29,6 +30,7 @@ import { AppointmentsStore } from '../../../core/appointments/appointments.store
   standalone: true,
   imports: [CommonModule],
   templateUrl: './scheduling-picker-modal.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './scheduling-picker-modal.scss',
 })
 export class SchedulingPickerModalComponent implements OnInit, OnDestroy {

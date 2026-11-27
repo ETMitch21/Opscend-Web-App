@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -92,6 +92,7 @@ const EMPTY_DRAFT: ArticleDraft = {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, OpscendIconComponent],
   templateUrl: './knowledge-base.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './knowledge-base.scss',
 })
 export class KnowledgeBase implements OnInit {

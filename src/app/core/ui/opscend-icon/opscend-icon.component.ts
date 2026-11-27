@@ -1,4 +1,4 @@
-import { Component, Input, numberAttribute } from '@angular/core';
+import { Component, Input, numberAttribute, ChangeDetectionStrategy } from '@angular/core';
 import { LucideDynamicIcon as ModernLucideIcon, lucideLegacyIcon, type LucideIconData } from '@lucide/angular';
 
 const emptyIcon = lucideLegacyIcon('opscend-empty', []);
@@ -11,6 +11,7 @@ const emptyIcon = lucideLegacyIcon('opscend-empty', []);
   standalone: true,
   imports: [ModernLucideIcon],
   template: '<svg [lucideIcon]="img ?? name ?? empty" [size]="size" aria-hidden="true"></svg>',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
     svg { display: block; max-width: 100%; max-height: 100%; flex-shrink: 0; }

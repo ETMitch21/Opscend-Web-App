@@ -1,6 +1,6 @@
 
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
@@ -27,6 +27,7 @@ interface ShopResponse {
   selector: 'app-shop-settings-page',
   standalone: true,
   imports: [SettingsLayoutComponent, FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './shop-settings.html',
 })
 export class ShopSettings implements OnInit {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -62,6 +62,7 @@ type FieldTypeOption = {
   selector: 'app-forms',
   standalone: true,
   imports: [CommonModule, FormsModule, DragDropModule, OpscendIconComponent, SignaturePadComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './forms.html',
 })
 export class FormsPage implements OnInit {

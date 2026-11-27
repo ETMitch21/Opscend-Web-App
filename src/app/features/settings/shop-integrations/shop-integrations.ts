@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { CheckIcon, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
@@ -22,6 +22,7 @@ import { AuthService } from '../../../core/auth/auth.service';
   selector: 'app-shop-integrations',
   imports: [SettingsLayoutComponent, CommonModule, OpscendIconComponent],
   templateUrl: './shop-integrations.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './shop-integrations.scss',
 })
 export class ShopIntegrations {

@@ -1,6 +1,6 @@
 
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -33,6 +33,7 @@ import { ToastService } from '../../../core/toast/toast-service';
   standalone: true,
   imports: [FormsModule, DragDropModule, OpscendIconComponent],
   templateUrl: './crm-overview.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './crm-overview.scss',
 })
 export class CrmOverviewComponent implements OnInit {

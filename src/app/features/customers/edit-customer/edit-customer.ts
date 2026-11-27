@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -160,6 +160,7 @@ type AddressForm = FormGroup<{
     OpscendIconComponent,
   ],
   templateUrl: './edit-customer.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './edit-customer.scss',
 })
 export class EditCustomer implements OnInit {

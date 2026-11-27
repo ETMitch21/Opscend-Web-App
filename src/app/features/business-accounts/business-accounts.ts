@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -33,6 +33,7 @@ import { ToastService } from '../../core/toast/toast-service';
   standalone: true,
   imports: [FormsModule, RouterLink, OpscendIconComponent],
   templateUrl: './business-accounts.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-accounts.scss',
 })
 export class BusinessAccounts implements OnInit {

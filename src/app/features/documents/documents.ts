@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { SettingsLayoutComponent } from '../settings/settings-layout/settings-layout';
@@ -9,6 +9,7 @@ import { DocumentsService, type DocumentSettings, type SavedDocumentRow, type Sc
   selector: 'app-documents-page',
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule, SettingsLayoutComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './documents.html',
 })
 export class DocumentsPage implements OnInit {

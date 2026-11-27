@@ -1,5 +1,5 @@
 
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, ChangeDetectionStrategy } from '@angular/core';
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,6 +13,7 @@ import { TablePaginationStateService } from './table-pagination-state.service';
   selector: 'app-table-pagination',
   standalone: true,
   imports: [OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     @if (totalItems > 0) {
       <div class="flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">

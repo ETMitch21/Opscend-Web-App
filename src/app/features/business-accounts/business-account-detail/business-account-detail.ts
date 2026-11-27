@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -71,6 +71,7 @@ import { TablePaginationStateService } from '../../../shared/table-pagination/ta
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, OpscendIconComponent, TablePagination, TablePageSize],
   templateUrl: './business-account-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-account-detail.scss',
 })
 export class BusinessAccountDetail implements OnInit {

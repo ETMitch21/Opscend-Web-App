@@ -7,6 +7,7 @@ import {
   computed,
   inject,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -93,6 +94,7 @@ type DepositPreview = {
     SettingsLayoutComponent,
     TypeaheadComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-pricing-editor.html',
 })
 export class RepairPricingEditor implements OnInit, OnDestroy {
@@ -779,12 +781,15 @@ export class RepairPricingEditor implements OnInit, OnDestroy {
     this.form.controls.productId.setValue(product?.id ?? '');
 
     const links = product?.supplierLinks ?? [];
+    const explicitSupplier = selectedSupplierId
+      ? links.find((link) => link.id === selectedSupplierId)
+      : undefined;
+
     const supplier =
-      (selectedSupplierId
-        ? links.find((link) => link.id === selectedSupplierId) ?? null
-        : null) ??
+      explicitSupplier ??
       links.find((link) => link.isPreferred) ??
-      (links.length === 1 ? links[0] ?? null : null);
+      (links.length === 1 ? links[0] : undefined) ??
+      null;
 
     this.selectedSupplier.set(supplier);
     this.form.controls.productSupplierId.setValue(supplier?.id ?? '');

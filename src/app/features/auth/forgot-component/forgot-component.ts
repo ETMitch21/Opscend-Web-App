@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Router, RouterModule } from '@angular/router';
@@ -13,6 +13,7 @@ import { ToastService } from '../../../core/toast/toast-service';
     RouterModule
 ],
   templateUrl: './forgot-component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './forgot-component.scss',
 })
 export class ForgotComponent {

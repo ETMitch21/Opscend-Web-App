@@ -12,7 +12,7 @@
     } @else if (form(); as assignment) {
       <header class="mb-6 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-          @if (assignment.shop?.logoUrl) { <img [src]="assignment.shop?.logoUrl" class="h-11 w-11 rounded-2xl border border-slate-200 bg-white object-contain p-1 shadow-sm" /> }
+          @if (assignment.shop?.logoUrl) { <img [src]="$safeNavigationMigration(assignment.shop?.logoUrl)" class="h-11 w-11 rounded-2xl border border-slate-200 bg-white object-contain p-1 shadow-sm" /> }
           @else { <div class="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-sm" [style.background-color]="brandColor()"><lucide-icon [name]="icons.ClipboardList" class="h-5 w-5"></lucide-icon></div> }
           <div><p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Secure form</p><p class="text-sm font-semibold text-slate-950">{{ assignment.shop?.name || 'Opscend' }}</p></div>
         </div>

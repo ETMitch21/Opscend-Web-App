@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { firstValueFrom } from 'rxjs';
@@ -9,6 +9,7 @@ import { BusinessSettingsService } from '../../core/business-settings/service';
 @Component({
   selector: 'app-home-redirect',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 export class HomeRedirectComponent implements OnInit {

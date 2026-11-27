@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
@@ -40,6 +40,7 @@ type SeverityFilter = 'all' | 'critical' | 'warning';
     OpscendIconComponent,
     SettingsLayoutComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './system-health.html',
 })
 export class SystemHealthSettings implements OnInit {

@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   Building2,
@@ -41,6 +41,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   standalone: true,
   imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './business-fleet.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-fleet.scss',
 })
 export class BusinessFleetSettings implements OnInit {

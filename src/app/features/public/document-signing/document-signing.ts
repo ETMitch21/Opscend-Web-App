@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -9,12 +9,13 @@ import { DocumentsService } from '../../../core/documents/documents.service';
   selector: 'app-document-signing',
   standalone: true,
   imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <main class="min-h-screen bg-[#f5f5f7] px-4 py-6 text-slate-900" [style.--customer-brand]="brandColor()">
       <div class="mx-auto max-w-3xl space-y-5">
         <header class="rounded-[1.75rem] bg-white p-6 shadow-sm border border-slate-200">
           <div class="flex items-center gap-3">
-            @if (details()?.shopLogoUrl) { <img [src]="details()?.shopLogoUrl" alt="Shop logo" class="h-11 w-11 object-contain rounded-xl" /> }
+            @if (details()?.shopLogoUrl) { <img [src]="$safeNavigationMigration(details()?.shopLogoUrl)" alt="Shop logo" class="h-11 w-11 object-contain rounded-xl" /> }
             <div class="text-xs uppercase tracking-wider font-semibold text-slate-500">Secure customer approval</div>
           </div>
           <h1 class="mt-2 text-2xl font-semibold">{{ details()?.shopName || 'Document review' }}</h1>

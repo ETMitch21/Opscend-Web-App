@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, firstValueFrom, Subscription } from 'rxjs';
@@ -128,6 +128,7 @@ type FlatSearchRow =
     AiAssistant,
   ],
   templateUrl: './app-shell-component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app-shell-component.scss',
 })
 export class AppShellComponent implements OnInit, OnDestroy {

@@ -1,5 +1,5 @@
 
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { debounceTime, firstValueFrom, merge } from 'rxjs';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -33,6 +33,7 @@ type AddressForm = FormGroup<{
   selector: 'app-new-customer',
   imports: [FormsModule, ReactiveFormsModule],
   templateUrl: './new-customer.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './new-customer.scss',
 })
 export class NewCustomer implements OnInit {

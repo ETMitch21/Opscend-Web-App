@@ -49,7 +49,7 @@
                         <div class="rounded-[10px] bg-app-surface-muted px-3 py-2">
                             <p class="text-app-text-muted">Last sync</p>
                             <p class="mt-0.5 font-semibold text-app-text">
-                                {{ googleStatus?.lastSyncAt ? (googleStatus?.lastSyncAt | date:'short') : '—' }}
+                                {{ googleStatus?.lastSyncAt ? ($safeNavigationMigration(googleStatus?.lastSyncAt) | date:'short') : '—' }}
                             </p>
                         </div>
                     </div>
@@ -269,11 +269,11 @@
                     <div class="grid gap-2 text-[10.5px] sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                         <div class="rounded-[10px] bg-app-surface-muted px-3 py-2">
                             <p class="text-app-text-muted">Connected</p>
-                            <p class="mt-0.5 font-semibold text-app-text">{{ status?.connectedAt ? (status?.connectedAt | date:'short') : '—' }}</p>
+                            <p class="mt-0.5 font-semibold text-app-text">{{ status?.connectedAt ? ($safeNavigationMigration(status?.connectedAt) | date:'short') : '—' }}</p>
                         </div>
                         <div class="rounded-[10px] bg-app-surface-muted px-3 py-2">
                             <p class="text-app-text-muted">Last updated</p>
-                            <p class="mt-0.5 font-semibold text-app-text">{{ status?.updatedAt ? (status?.updatedAt | date:'short') : '—' }}</p>
+                            <p class="mt-0.5 font-semibold text-app-text">{{ status?.updatedAt ? ($safeNavigationMigration(status?.updatedAt) | date:'short') : '—' }}</p>
                         </div>
                     </div>
 

@@ -1,5 +1,5 @@
 
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -21,6 +21,7 @@ type DeviceForm = FormGroup<{
   selector: 'manage-devices-modal-component',
   imports: [ModalComponent, FormsModule, ReactiveFormsModule],
   templateUrl: './manage-devices-modal-component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './manage-devices-modal-component.scss',
 })
 export class ManageDevicesModalComponent implements OnInit {

@@ -1,5 +1,5 @@
 
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
@@ -20,6 +20,7 @@ import {
   selector: 'app-settings-home',
   standalone: true,
   imports: [RouterLink, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './settings-home.html',
 })
 export class SettingsHome {

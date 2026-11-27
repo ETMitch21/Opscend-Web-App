@@ -58,7 +58,7 @@
   } @else {
   <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
     <p class="text-sm font-semibold text-emerald-900">Catalog is up to date · Revision {{ syncStatus()?.lastSyncedRevision }}</p>
-    <p class="mt-1 text-sm text-emerald-700">Last updated {{ formatSyncDate(syncStatus()?.lastSyncedAt) }}</p>
+    <p class="mt-1 text-sm text-emerald-700">Last updated {{ formatSyncDate($safeNavigationMigration(syncStatus()?.lastSyncedAt)) }}</p>
   </div>
   }
 

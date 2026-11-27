@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Customer } from '../../core/customers/customer.model';
@@ -16,6 +16,7 @@ import { TablePaginationStateService } from '../../shared/table-pagination/table
   selector: 'app-customer-list',
   standalone: true,
   imports: [CommonModule, FormsModule, PhonePipe, TablePagination, TablePageSize],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './customers.html',
 })
 export class CustomerComponent implements OnInit {

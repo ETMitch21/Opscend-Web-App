@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -46,6 +46,7 @@ import { ToastService } from '../../../core/toast/toast-service';
   standalone: true,
   imports: [CommonModule, FormsModule, OpscendIconComponent],
   templateUrl: './crm-company-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './crm-company-detail.scss',
 })
 export class CrmCompanyDetailComponent implements OnInit {

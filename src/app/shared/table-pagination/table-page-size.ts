@@ -1,11 +1,12 @@
 
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, inject, ChangeDetectionStrategy } from '@angular/core';
 import { TablePaginationStateService } from './table-pagination-state.service';
 
 @Component({
   selector: 'app-table-page-size',
   standalone: true,
   imports: [],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <label class="inline-flex items-center gap-2 whitespace-nowrap text-sm text-gray-500">
       <span>Rows</span>

@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import {
   ArchiveIcon,
   DatabaseIcon,
@@ -22,6 +22,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   selector: 'app-data-export',
   standalone: true,
   imports: [OpscendIconComponent, SettingsLayoutComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './data-export.html',
 })
 export class DataExportSettings implements OnInit {

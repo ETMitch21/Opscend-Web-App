@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
@@ -49,6 +49,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     OpscendIconComponent,
   ],
   templateUrl: './voice-agent.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './voice-agent.scss',
 })
 export class VoiceAgentSettingsComponent implements OnInit {

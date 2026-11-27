@@ -7,12 +7,14 @@ import {
   Input,
   Output,
   ViewChild,
+  ChangeDetectionStrategy
 } from '@angular/core';
 
 @Component({
   selector: 'app-signature-pad',
   standalone: true,
   imports: [],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <canvas

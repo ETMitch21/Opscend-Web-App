@@ -11,6 +11,7 @@ import {
   output,
   signal,
   viewChild,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {
   FormArray,
@@ -72,6 +73,7 @@ interface CatalogItemOption {
   selector: 'app-repair-order-card',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-order-card.html',
 })
 export class RepairOrderCard {

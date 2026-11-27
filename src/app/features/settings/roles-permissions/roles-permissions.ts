@@ -1,5 +1,5 @@
 
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { CheckIcon, LockKeyholeIcon, PlusIcon, ShieldCheckIcon, Trash2Icon, UsersIcon } from '../../../core/ui/opscend-icon/index';
@@ -18,6 +18,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   standalone: true,
   imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './roles-permissions.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './roles-permissions.scss',
 })
 export class RolesPermissions {

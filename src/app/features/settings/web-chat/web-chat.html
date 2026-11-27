@@ -76,7 +76,7 @@
                 <div class="preview-brand-row">
                   <div class="preview-logo">
                     @if (settings()?.shop?.logoUrl) {
-                      <img [src]="settings()?.shop?.logoUrl" alt="" />
+                      <img [src]="$safeNavigationMigration(settings()?.shop?.logoUrl)" alt="" />
                     } @else {
                       {{ (settings()?.shop?.name || 'O').slice(0, 1) }}
                     }

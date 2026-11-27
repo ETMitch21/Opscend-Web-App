@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   BadgeDollarSign,
@@ -32,6 +32,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   standalone: true,
   imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './fleet-plans.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './fleet-plans.scss',
 })
 export class FleetPlansSettings implements OnInit {

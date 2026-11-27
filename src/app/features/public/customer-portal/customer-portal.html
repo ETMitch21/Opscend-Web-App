@@ -31,7 +31,7 @@
             <div>
               <div class="flex items-center gap-3">
                 @if (displayShop()?.logoUrl) {
-                  <img [src]="displayShop()?.logoUrl" [alt]="displayShop()?.name || 'Shop'" class="h-12 w-12 rounded-2xl bg-white object-contain p-1.5" />
+                  <img [src]="$safeNavigationMigration(displayShop()?.logoUrl)" [alt]="displayShop()?.name || 'Shop'" class="h-12 w-12 rounded-2xl bg-white object-contain p-1.5" />
                 } @else {
                   <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-lg font-semibold">
                     {{ (displayShop()?.name || 'S').charAt(0) }}
@@ -72,7 +72,7 @@
             <div class="mx-auto w-full max-w-md">
               <div class="flex items-center gap-3 lg:hidden">
                 @if (displayShop()?.logoUrl) {
-                  <img [src]="displayShop()?.logoUrl" [alt]="displayShop()?.name || 'Shop'" class="h-11 w-11 rounded-2xl border border-slate-200 bg-white object-contain p-1.5" />
+                  <img [src]="$safeNavigationMigration(displayShop()?.logoUrl)" [alt]="displayShop()?.name || 'Shop'" class="h-11 w-11 rounded-2xl border border-slate-200 bg-white object-contain p-1.5" />
                 } @else {
                   <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-sm font-semibold text-white">
                     {{ (displayShop()?.name || 'S').charAt(0) }}
@@ -438,12 +438,12 @@
                   @for (repair of upcomingAppointments().slice(0, 3); track repair.id) {
                     <button type="button" class="flex w-full cursor-pointer items-center gap-4 py-4 text-left" (click)="openRepair(repair)">
                       <div class="w-14 shrink-0 text-center">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ date(repair.appointment?.startAt) }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ date($safeNavigationMigration(repair.appointment?.startAt)) }}</p>
                       </div>
                       <div class="h-10 w-px bg-slate-100"></div>
                       <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold">{{ deviceName(repair) }}</p>
-                        <p class="mt-1 text-xs text-slate-500">{{ dateTime(repair.appointment?.startAt) }} · {{ serviceModeLabel(repair.serviceMode) }}</p>
+                        <p class="mt-1 text-xs text-slate-500">{{ dateTime($safeNavigationMigration(repair.appointment?.startAt)) }} · {{ serviceModeLabel(repair.serviceMode) }}</p>
                       </div>
                     </button>
                   } @empty {
@@ -913,7 +913,7 @@
               </div>
               @if (business.agreement?.signed) {
                 <div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                  <div class="flex items-start gap-3"><lucide-icon [name]="icons.CheckCircle2" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-700"></lucide-icon><div><p class="text-sm font-semibold text-emerald-950">Signed agreement on file</p><p class="mt-1 text-xs leading-5 text-emerald-800">Signed by {{ business.agreement?.signerName || 'authorized representative' }}@if (business.agreement?.signerTitle) { · {{ business.agreement?.signerTitle }} } @if (business.agreement?.signedAt) { on {{ date(business.agreement?.signedAt) }} }</p></div></div>
+                  <div class="flex items-start gap-3"><lucide-icon [name]="icons.CheckCircle2" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-700"></lucide-icon><div><p class="text-sm font-semibold text-emerald-950">Signed agreement on file</p><p class="mt-1 text-xs leading-5 text-emerald-800">Signed by {{ business.agreement?.signerName || 'authorized representative' }}@if (business.agreement?.signerTitle) { · {{ business.agreement?.signerTitle }} } @if (business.agreement?.signedAt) { on {{ date($safeNavigationMigration(business.agreement?.signedAt)) }} }</p></div></div>
                 </div>
                 <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
                   <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Effective</dt><dd class="mt-1 font-semibold">{{ date(business.contractStartsAt) }}</dd></div>
@@ -1042,11 +1042,11 @@
         </header>
         <div class="space-y-5 px-5 py-6 sm:px-7">
           <label class="block"><span class="text-sm font-semibold text-slate-700">What does the device need? *</span><textarea rows="3" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" [ngModel]="fleetRequestProblem()" (ngModelChange)="setFleetRequestProblem($event)" placeholder="Describe the issue or requested service"></textarea></label>
-          @if (dashboard()?.business?.purchaseOrderRequired || dashboard()?.business?.purchaseOrderThresholdCents !== null) {
+          @if (dashboard()?.business?.purchaseOrderRequired || $safeNavigationMigration(dashboard()?.business?.purchaseOrderThresholdCents) !== null) {
             <label class="block"><span class="text-sm font-semibold text-slate-700">Purchase order number</span><input class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" [ngModel]="fleetRequestPo()" (ngModelChange)="setFleetRequestPo($event)" placeholder="PO number, if available" /></label>
           }
           <label class="block"><span class="text-sm font-semibold text-slate-700">Additional notes</span><textarea rows="2" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-slate-400" [ngModel]="fleetRequestNotes()" (ngModelChange)="setFleetRequestNotes($event)" placeholder="Anything the shop should know"></textarea></label>
-          @if (dashboard()?.business?.authorizationThresholdCents !== null) { <p class="rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">Some repairs may require approval from an authorized business contact before work begins.</p> }
+          @if ($safeNavigationMigration(dashboard()?.business?.authorizationThresholdCents) !== null) { <p class="rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">Some repairs may require approval from an authorized business contact before work begins.</p> }
         </div>
         <footer class="flex justify-end gap-3 border-t border-slate-100 px-5 py-4 sm:px-7"><button class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold" (click)="closeFleetRepairRequest()">Cancel</button><button class="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" [style.background-color]="brandColor()" [disabled]="fleetRequestSubmitting() || !fleetRequestProblem().trim()" (click)="submitFleetRepairRequest()">{{ fleetRequestSubmitting() ? 'Submitting…' : 'Submit request' }}</button></footer>
       </section>
@@ -1199,9 +1199,9 @@
                 @if (repair.quote?.publicApprovalToken) {
                   <section class="rounded-3xl border border-amber-200 bg-amber-50 p-5">
                     <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">Related quote</p>
-                    <p class="mt-2 text-lg font-semibold text-amber-950">{{ money(repair.quote?.estimatedTotalCents) }}</p>
+                    <p class="mt-2 text-lg font-semibold text-amber-950">{{ money($safeNavigationMigration(repair.quote?.estimatedTotalCents)) }}</p>
                     <p class="mt-1 text-sm text-amber-800/75">{{ repair.quote?.statusLabel }}</p>
-                    <a [routerLink]="['/quote', repair.quote?.publicApprovalToken]" class="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-amber-950 hover:underline">
+                    <a [routerLink]="['/quote', $safeNavigationMigration(repair.quote?.publicApprovalToken)]" class="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-amber-950 hover:underline">
                       View quote
                       <lucide-icon [name]="icons.ChevronRight" class="h-4 w-4"></lucide-icon>
                     </a>

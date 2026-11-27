@@ -1,6 +1,6 @@
 
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -87,6 +87,7 @@ interface PublicExperienceShop {
   selector: 'app-public-experience-settings',
   standalone: true,
   imports: [FormsModule, RouterModule, SettingsLayoutComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './public-experience.html',
 })
 export class PublicExperienceSettings implements OnInit {

@@ -205,7 +205,7 @@
                   <strong>{{ money(company.openOneTimeValueCents) }}</strong><small>open one-time</small>
                 }
               </span>
-              <span class="owner-cell"><b>{{ ownerInitials(company.owner?.name) }}</b><span>{{ company.owner?.name || 'Unassigned' }}</span></span>
+              <span class="owner-cell"><b>{{ ownerInitials($safeNavigationMigration(company.owner?.name)) }}</b><span>{{ company.owner?.name || 'Unassigned' }}</span></span>
               <span class="follow-cell" [class.overdue]="company.nextFollowUpAt && relativeFollowUp(company.nextFollowUpAt).includes('overdue')"><strong>{{ relativeFollowUp(company.nextFollowUpAt) }}</strong><small>{{ company.nextFollowUpAt ? shortDate(company.nextFollowUpAt) : '—' }}</small></span>
               <lucide-icon [img]="arrowIcon" [size]="18"></lucide-icon>
             </button>

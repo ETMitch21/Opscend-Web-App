@@ -6,6 +6,7 @@ import {
   OnInit,
   inject,
   signal,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {
   FormControl,
@@ -221,6 +222,7 @@ interface SelectedPartDraft {
     SchedulingPickerModalComponent,
   ],
   templateUrl: './new-repair.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './new-repair.scss',
 })
 export class NewRepair implements OnInit {

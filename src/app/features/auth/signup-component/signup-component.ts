@@ -1,4 +1,4 @@
-import { Component, inject } from "@angular/core";
+import { Component, inject, ChangeDetectionStrategy } from "@angular/core";
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Router, RouterModule } from "@angular/router";
 import { firstValueFrom } from "rxjs";
@@ -13,6 +13,7 @@ import { AuthService } from "../../../core/auth/auth.service";
     FormsModule,
     ReactiveFormsModule
 ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: "./signup-component.html",
 })
 export class SignupComponent {

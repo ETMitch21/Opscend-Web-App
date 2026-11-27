@@ -1,5 +1,5 @@
 
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   BlocksIcon,
@@ -23,6 +23,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   selector: 'app-opscend-apps-settings',
   standalone: true,
   imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './apps.html',
 })
 export class OpscendAppsSettings implements OnInit {

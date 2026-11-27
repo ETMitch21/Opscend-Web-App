@@ -273,7 +273,7 @@
 
               <div class="text-right">
                 <p class="text-xs text-gray-900">
-                  {{ money(toCents(item.get('unitPriceDollars')?.value)) }}
+                  {{ money(toCents($safeNavigationMigration(item.get('unitPriceDollars')?.value))) }}
                 </p>
               </div>
 

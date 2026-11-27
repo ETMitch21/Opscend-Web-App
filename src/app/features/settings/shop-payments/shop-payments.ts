@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -14,7 +14,8 @@ interface ShopResponse { id:string; settings:{pos:{orders:{prefix:string|null;st
 interface CheckoutPreferences { tipsEnabled: boolean; paymentMethods: Array<'card'|'cash'|'check'> }
 interface TipRecord { id:string; orderId:string; orderNumber:string; amountCents:number; date:string; reference:string|null; }
 interface PaymentSettings { adminDepositEnforcement:AdminDepositEnforcement; fullPrepaymentEnabled:boolean; fullPrepaymentDiscountPercent:number }
-@Component({selector:'app-shop-payments-settings',standalone:true,imports:[CommonModule,FormsModule,RouterModule,SettingsLayoutComponent],templateUrl:'./shop-payments.html'})
+@Component({selector:'app-shop-payments-settings',standalone:true,imports:[CommonModule,FormsModule,RouterModule,SettingsLayoutComponent],changeDetection: ChangeDetectionStrategy.Eager,
+templateUrl:'./shop-payments.html'})
 export class ShopPaymentsSettings implements OnInit {
   private readonly appConfig=inject(AppConfigService); private readonly http=inject(HttpClient); private readonly ordersService=inject(OrdersService);
   readonly tipsLoading=signal(false); readonly tipsError=signal<string|null>(null); readonly tipRecords=signal<TipRecord[]>([]); readonly tipsNextCursor=signal<string|null>(null); readonly tipOrdersScanned=signal(0); readonly loading=signal(true); readonly saving=signal(false); readonly error=signal<string|null>(null); readonly success=signal<string|null>(null); readonly shopId=signal<string|null>(null);

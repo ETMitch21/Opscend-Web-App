@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   BotIcon,
@@ -32,6 +32,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, SettingsLayoutComponent, OpscendIconComponent],
   templateUrl: './web-chat.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './web-chat.scss',
 })
 export class WebChatSettingsComponent implements OnInit {

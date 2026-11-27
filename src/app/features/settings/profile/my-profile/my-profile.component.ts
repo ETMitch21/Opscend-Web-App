@@ -1,5 +1,5 @@
 
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UsersStore } from '../../../../core/users/users-store';
 import { AuthService } from '../../../../core/auth/auth.service';
@@ -10,6 +10,7 @@ import { SettingsLayoutComponent } from '../../settings-layout/settings-layout';
   selector: 'app-profile-page',
   standalone: true,
   imports: [SettingsLayoutComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './my-profile.component.html',
 })
 export class MyProfileComponent implements OnInit {

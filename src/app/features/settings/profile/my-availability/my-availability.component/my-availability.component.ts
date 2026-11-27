@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { AvailabilityStore } from '../../../../../core/availability/availability-store';
 import { AuthService } from '../../../../../core/auth/auth.service';
 import type {
@@ -28,6 +28,7 @@ type EditableDay = {
     FormsModule,
     ReactiveFormsModule
 ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './my-availability.component.html',
 })
 export class MyAvailabilityComponent implements OnInit {

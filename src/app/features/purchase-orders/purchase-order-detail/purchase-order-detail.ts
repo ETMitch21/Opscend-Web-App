@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { OpscendIconComponent, ChevronLeftIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from '../../../core/ui/opscend-icon/index';
@@ -23,6 +23,7 @@ import { TablePaginationStateService } from '../../../shared/table-pagination/ta
   selector: 'app-purchase-order-detail',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, DatePipe, OpscendIconComponent, TablePagination, TablePageSize],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './purchase-order-detail.html',
 })
 export class PurchaseOrderDetail implements OnInit, OnDestroy {

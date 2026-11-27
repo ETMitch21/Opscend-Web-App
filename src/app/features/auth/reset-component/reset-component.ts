@@ -1,5 +1,5 @@
 // reset-component.ts
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, OnInit, inject, ChangeDetectionStrategy } from "@angular/core";
 
 import {
   AbstractControl,
@@ -23,6 +23,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   selector: "app-reset",
   standalone: true,
   templateUrl: "./reset-component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ReactiveFormsModule, RouterModule],
 })
 export class ResetComponent implements OnInit {

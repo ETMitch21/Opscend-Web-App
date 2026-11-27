@@ -1,5 +1,5 @@
 
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,6 +26,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   selector: 'app-shop-locations',
   standalone: true,
   imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './shop-locations.html',
 })
 export class ShopLocations {

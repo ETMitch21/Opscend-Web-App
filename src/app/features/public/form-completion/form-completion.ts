@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -23,6 +23,7 @@ import { FORM_PHOTO_MAX_BYTES, formImageFileToDataUrl } from '../../../core/form
   selector: 'app-form-completion',
   standalone: true,
   imports: [CommonModule, FormsModule, OpscendIconComponent, SignaturePadComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './form-completion.html',
 })
 export class FormCompletion implements OnInit {

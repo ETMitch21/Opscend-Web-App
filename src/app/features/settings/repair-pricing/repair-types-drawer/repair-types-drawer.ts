@@ -1,5 +1,5 @@
 
-import { Component, output } from '@angular/core';
+import { Component, output, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { OpscendIconComponent } from '../../../../core/ui/opscend-icon/index';
 import { RepairPricingTypes } from '../../repair-pricing-types/repair-pricing-types';
@@ -9,6 +9,7 @@ import { RepairPricingTypes } from '../../repair-pricing-types/repair-pricing-ty
   selector: 'app-repair-types-drawer',
   standalone: true,
   imports: [ReactiveFormsModule, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-types-drawer.html',
 })
 export class RepairTypesDrawer extends RepairPricingTypes {

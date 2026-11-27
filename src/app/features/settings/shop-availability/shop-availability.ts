@@ -1,6 +1,6 @@
 
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
@@ -55,6 +55,7 @@ interface DayRow {
   selector: 'app-shop-availability-page',
   standalone: true,
   imports: [SettingsLayoutComponent, FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './shop-availability.html',
 })
 export class ShopAvailability implements OnInit {

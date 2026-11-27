@@ -1,5 +1,5 @@
 import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -43,6 +43,7 @@ type PurchaseOrderView =
     TitleCasePipe,
     OpscendIconComponent,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './purchase-orders.html',
 })
 export class PurchaseOrders implements OnInit {

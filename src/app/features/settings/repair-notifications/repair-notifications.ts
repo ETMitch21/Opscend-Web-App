@@ -1,6 +1,6 @@
 
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -60,6 +60,7 @@ interface RepairNotificationTemplateListResponse {
   selector: 'app-repair-notification-settings',
   standalone: true,
   imports: [SettingsLayoutComponent, FormsModule, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-notifications.html',
 })
 export class RepairNotifications implements OnInit {

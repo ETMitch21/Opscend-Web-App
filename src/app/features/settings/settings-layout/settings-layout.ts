@@ -1,5 +1,5 @@
 
-import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
+import { Component, Input, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { ArrowLeftIcon, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 import { filter, Subscription } from 'rxjs';
@@ -14,6 +14,7 @@ import {
   selector: 'app-settings-layout',
   standalone: true,
   imports: [RouterLink, OpscendIconComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './settings-layout.html',
 })
 export class SettingsLayoutComponent implements OnDestroy {

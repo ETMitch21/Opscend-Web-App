@@ -1,6 +1,6 @@
 
 import { HttpClient } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -11,6 +11,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   selector: 'app-accept-invite-component',
   imports: [RouterModule, FormsModule, ReactiveFormsModule],
   templateUrl: './accept-invite-component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './accept-invite-component.scss',
 })
 export class AcceptInviteComponent {

@@ -874,7 +874,7 @@
               <p class="text-sm font-semibold text-gray-950">Need help sooner?</p>
               <p class="mt-1 text-sm leading-6 text-gray-500">
                 Give us a call and we’ll be happy to help.
-                <a class="font-semibold text-gray-950 underline underline-offset-4" [href]="'tel:' + settings()?.shop?.phone">
+                <a class="font-semibold text-gray-950 underline underline-offset-4" [href]="'tel:' + $safeNavigationMigration(settings()?.shop?.phone)">
                   {{ settings()?.shop?.phone }}
                 </a>
               </p>
@@ -1092,7 +1092,7 @@
             <p class="text-sm font-semibold text-gray-950">Thinking about other options?</p>
             <p class="mt-1 text-sm leading-6 text-gray-500">See what your device could be worth instead. This will not affect your current repair quote.</p>
             <a class="mt-3 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-950 shadow-sm ring-1 ring-black/5 transition hover:bg-gray-50"
-              [href]="settings()?.publicFunnel?.tradeInUrl" target="_blank" rel="noopener">
+              [href]="$safeNavigationMigration(settings()?.publicFunnel?.tradeInUrl)" target="_blank" rel="noopener">
               Check sell / trade-in options
             </a>
           </div>
