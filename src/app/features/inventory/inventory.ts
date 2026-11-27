@@ -14,6 +14,7 @@ import {
   ExternalLinkIcon,
 } from 'lucide-angular';
 
+import { DocumentsService } from '../../core/documents/documents.service';
 import { InventoryStore } from '../../core/inventory/inventory.store';
 import { InventoryBalance } from '../../core/inventory/inventory.model';
 import { PurchaseOrderStore } from '../../core/purchase-orders/purchase-orders.store';
@@ -33,6 +34,42 @@ type InventoryView = 'all' | 'low' | 'out' | 'available';
 export class Inventory implements OnInit {
   readonly tablePagination = inject(TablePaginationStateService);
   private readonly inventoryStore = inject(InventoryStore);
+  private readonly documents = inject(DocumentsService);
+  readonly pdfDownloading = signal(false);
+  async downloadInventoryReport(): Promise<void> {
+    if (this.pdfDownloading()) return;
+    this.pdfDownloading.set(true);
+    try { await this.documents.report('inventory'); }
+    catch { window.alert('Unable to download inventory report.'); }
+    finally { this.pdfDownloading.set(false); }
+  }
+
+  async printInventoryLabel(balance: InventoryBalance): Promise<void> {
+    this.closeActionMenu();
+    if (!balance.product) return;
+    try { await this.documents.previewLabel('product', balance.productId); }
+    catch { window.alert('Unable to generate the inventory label.'); }
+  }
+
+  readonly selectedLabelProductIds = signal<string[]>([]);
+  readonly labelBatchBusy = signal(false);
+  isLabelSelected(productId: string): boolean { return this.selectedLabelProductIds().includes(productId); }
+  toggleLabelSelection(productId: string, selected: boolean): void {
+    this.selectedLabelProductIds.update(ids => selected ? (ids.includes(productId) ? ids : [...ids, productId]) : ids.filter(id => id !== productId));
+  }
+  selectVisibleLabelProducts(): void {
+    const ids = [...new Set(this.filteredBalances().map(balance => balance.productId))].slice(0, 40);
+    this.selectedLabelProductIds.set(ids);
+  }
+  async printSelectedLabels(): Promise<void> {
+    const ids = this.selectedLabelProductIds();
+    if (!ids.length || this.labelBatchBusy()) return;
+    this.labelBatchBusy.set(true);
+    try { await this.documents.previewProductLabelBatch(ids); }
+    catch { window.alert('Unable to create the selected inventory labels.'); }
+    finally { this.labelBatchBusy.set(false); }
+  }
+
   private readonly purchaseOrderStore = inject(PurchaseOrderStore);
   private readonly router = inject(Router);
 

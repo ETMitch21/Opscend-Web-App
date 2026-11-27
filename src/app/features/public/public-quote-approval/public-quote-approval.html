@@ -63,6 +63,19 @@
         </div>
       </header>
 
+      <nav aria-label="Booking progress" class="mb-5 grid grid-cols-3 gap-2 rounded-[1.5rem] bg-white p-3 shadow-sm ring-1 ring-black/5">
+        @for (step of [{label:'Confirm', number:1}, {label:'Deposit', number:2}, {label:'Schedule', number:3}]; track step.number) {
+          <div class="rounded-xl px-2 py-3 text-center text-xs font-semibold"
+               [class.bg-gray-100]="currentCustomerStep() !== step.number"
+               [class.text-gray-500]="currentCustomerStep() < step.number"
+               [class.text-emerald-700]="currentCustomerStep() > step.number"
+               [style.background]="currentCustomerStep() === step.number ? brandColor() : null"
+               [style.color]="currentCustomerStep() === step.number ? brandContrastColor() : null">
+            {{ currentCustomerStep() > step.number ? '✓' : step.number }} · {{ step.label }}
+          </div>
+        }
+      </nav>
+
       @if (notice()) {
         <div class="mb-5 rounded-[1.35rem] bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100">
           {{ notice() }}
@@ -276,7 +289,7 @@
 
               <button
                 type="button"
-                class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-rose-700 shadow-sm ring-1 ring-rose-200 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-transparent px-5 py-3 text-sm font-semibold text-gray-500 transition hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 [disabled]="actioning() !== null || !canDecline(quoteValue)"
                 (click)="declineQuote()"
               >

@@ -15,3 +15,7 @@
 @if (!userIsLoggedIn || !sessionIdle.locked()) {
     <ngx-sonner-toaster position="top-right" [expand]="false" [visibleToasts]="4" [toastOptions]="toastOptions" />
 }
+
+@if (userIsLoggedIn && !sessionIdle.locked() && !standalonePublicRoute) {
+    <app-document-preview />
+}

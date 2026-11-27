@@ -592,6 +592,18 @@
 }
 
 <!-- Receive Modal -->
+@if (labelMessage()) {
+<div class="mx-6 my-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700" role="status">
+  <span>{{ labelMessage() }}</span>
+  <div class="flex items-center gap-2">
+    @if (recentlyReceivedLabels().length) {
+      <button type="button" class="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" [disabled]="receivingLabelBusy()" (click)="printReceivedLabels()">Preview received labels</button>
+    }
+    <button type="button" class="rounded-lg border border-gray-200 px-2 py-2" (click)="labelMessage.set('')">Dismiss</button>
+  </div>
+</div>
+}
+
 @if (receiveOpen() && order(); as po) {
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/30 px-4">
     <div class="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-xl">

@@ -8,6 +8,7 @@ import {
   CalendarCog,
   DollarSignIcon,
   DownloadIcon,
+  FilesIcon,
   LucideIconData,
   MapPinIcon,
   MessageCircle,
@@ -137,6 +138,20 @@ export const SETTINGS_GROUPS: SettingsNavGroup[] = [
         icon: MessageCircle,
         permission: 'communications:read',
         keywords: ['chat', 'website', 'webflow', 'ai', 'widget', 'proactive'],
+      },
+    ],
+  },
+  {
+    label: 'Documents',
+    description: 'Branding, PDF policies, receipts, and scheduled report delivery.',
+    items: [
+      {
+        label: 'Document settings',
+        description: 'Set branding, footers, document policies, and automatic delivery.',
+        route: '/settings/shop/documents',
+        icon: FilesIcon,
+        permission: 'shops:read',
+        keywords: ['pdf', 'documents', 'receipt', 'invoice', 'signature', 'reports', 'footer', 'logo'],
       },
     ],
   },

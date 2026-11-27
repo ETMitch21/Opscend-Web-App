@@ -33,6 +33,7 @@ import {
   type LucideIconData,
 } from 'lucide-angular';
 
+import { DocumentsService } from '../../core/documents/documents.service';
 import { AnalyticsService } from '../../core/analytics/service';
 import type {
   AnalyticsComparisonMetric,
@@ -70,6 +71,32 @@ interface AnalyticsStateCard {
 })
 export class Analytics implements OnInit {
   private readonly analyticsService = inject(AnalyticsService);
+  private readonly documents = inject(DocumentsService);
+  readonly pdfDownloading = signal(false);
+  async downloadSalesReport(): Promise<void> {
+    if (this.pdfDownloading()) return;
+    this.pdfDownloading.set(true);
+    try {
+      const days = Number(this.selectedRange().replace('d', ''));
+      const to = new Date();
+      const from = new Date(to.getTime() - (days - 1) * 86400000);
+      await this.documents.report('sales', from.toISOString().slice(0, 10), to.toISOString().slice(0, 10));
+    } catch { this.error.set('Unable to download sales report.'); }
+    finally { this.pdfDownloading.set(false); }
+  }
+
+
+  async archiveSalesReport(): Promise<void> {
+    if (this.pdfDownloading()) return;
+    this.pdfDownloading.set(true);
+    try {
+      const days = Number(this.selectedRange().replace('d', ''));
+      const to = new Date();
+      const from = new Date(to.getTime() - (days - 1) * 86400000);
+      await this.documents.archiveReport('sales', from.toISOString().slice(0, 10), to.toISOString().slice(0, 10));
+    } catch { this.error.set('Unable to save sales report.'); }
+    finally { this.pdfDownloading.set(false); }
+  }
 
   readonly icons = {
     AlertTriangle,

@@ -32,6 +32,7 @@ import { Services } from './features/services/services.component';
 import { CommunicationsInbox } from './features/communications/communications-inbox';
 
 export const routes: Routes = [
+    { path: 'sign/:token', loadComponent: () => import('./features/public/document-signing/document-signing').then(m => m.DocumentSigning) },
     {
         path: 'business-enroll/:token',
         loadComponent: () =>
@@ -150,6 +151,11 @@ export const routes: Routes = [
         data: { permission: 'knowledge:read' }
     },
     {
+        path: "documents",
+        loadComponent: () => import('./features/documents/documents').then(m => m.DocumentsPage),
+        canActivate: [AuthGuard],
+    },
+    {
         path: "analytics",
         loadComponent: () =>
             import('./features/analytics/analytics').then((m) => m.Analytics),
@@ -195,6 +201,12 @@ export const routes: Routes = [
             {
                 path: 'shop',
                 children: [
+                    {
+                        path: 'documents',
+                        loadComponent: () => import('./features/documents/documents').then(m => m.DocumentsPage),
+                        canActivate: [PermissionGuard],
+                        data: { permission: 'shops:read', documentSettingsMode: true },
+                    },
                     {
                         path: 'general',
                         loadComponent: () =>

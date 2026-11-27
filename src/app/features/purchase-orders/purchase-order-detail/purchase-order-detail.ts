@@ -13,6 +13,7 @@ import {
 import { ProductsStore } from '../../../core/products/products-store';
 import { Product } from '../../../core/products/products-model';
 import { SupplierStore } from '../../../core/suppliers/suppliers.store';
+import { DocumentsService } from '../../../core/documents/documents.service';
 
 import { TablePagination } from '../../../shared/table-pagination/table-pagination';
 import { TablePageSize } from '../../../shared/table-pagination/table-page-size';
@@ -30,6 +31,19 @@ export class PurchaseOrderDetail implements OnInit, OnDestroy {
   private readonly purchaseOrderStore = inject(PurchaseOrderStore);
   private readonly productsStore = inject(ProductsStore);
   private readonly supplierStore = inject(SupplierStore);
+  private readonly documents = inject(DocumentsService);
+  readonly recentlyReceivedLabels = signal<Array<{ productId: string; copies: number }>>([]);
+  readonly labelMessage = signal('');
+  readonly receivingLabelBusy = signal(false);
+  async printReceivedLabels(): Promise<void> {
+    const items = this.recentlyReceivedLabels();
+    if (!items.length || this.receivingLabelBusy()) return;
+    this.receivingLabelBusy.set(true);
+    this.labelMessage.set('');
+    try { await this.documents.previewProductLabelBatch(items); }
+    catch { this.labelMessage.set('Could not generate labels. The inventory receipt is still saved.'); }
+    finally { this.receivingLabelBusy.set(false); }
+  }
 
   readonly leftChevronIcon = ChevronLeftIcon;
   readonly moreHorizontalIcon = MoreHorizontalIcon;
@@ -467,6 +481,14 @@ export class PurchaseOrderDetail implements OnInit, OnDestroy {
 
     if (!updated) return;
 
+    const byId = new Map<string, number>();
+    for (const received of items) {
+      const original = order.items?.find(item => item.id === received.itemId);
+      if (original?.productId) byId.set(original.productId, (byId.get(original.productId) ?? 0) + received.quantityReceived);
+    }
+    const labels = [...byId].map(([productId, copies]) => ({ productId, copies }));
+    this.recentlyReceivedLabels.set(labels.length <= 40 && labels.reduce((sum, item) => sum + item.copies, 0) <= 100 ? labels : []);
+    this.labelMessage.set(this.recentlyReceivedLabels().length ? 'Stock received. Labels are ready to preview.' : 'Stock received. This receipt exceeds the 40-product / 100-label limit; print smaller batches from Inventory.');
     this.closeReceive();
   }
 

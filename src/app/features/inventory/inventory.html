@@ -8,6 +8,8 @@
             </p>
         </div>
 
+        <button type="button" [disabled]="pdfDownloading()" (click)="downloadInventoryReport()"
+            class="mr-2 cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50">Export PDF</button>
         <button
             class="cursor-pointer rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
             (click)="refresh()">
@@ -93,7 +95,14 @@
             </svg>
         </div>
 
-        <app-table-page-size storageKey="inventory" [totalItems]="filteredBalances().length"></app-table-page-size>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" (click)="selectVisibleLabelProducts()">Select filtered for labels</button>
+            @if (selectedLabelProductIds().length) {
+              <button type="button" class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" (click)="selectedLabelProductIds.set([])">Clear</button>
+              <button type="button" class="cursor-pointer rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" [disabled]="labelBatchBusy()" (click)="printSelectedLabels()">Print {{ selectedLabelProductIds().length }} product labels</button>
+            }
+            <app-table-page-size storageKey="inventory" [totalItems]="filteredBalances().length"></app-table-page-size>
+        </div>
     </div>
 </div>
 
@@ -132,6 +141,7 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50/80">
                     <tr>
+                        <th class="pl-5 pr-1 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Labels</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                             Product
                         </th>
@@ -159,6 +169,7 @@
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @for (balance of tablePagination.slice('inventory', filteredBalances()); track trackByBalanceId($index, balance)) {
                     <tr class="transition hover:bg-gray-50/70">
+                        <td class="pl-5 pr-1 py-4 align-top"><input type="checkbox" class="h-4 w-4 cursor-pointer accent-gray-800" [checked]="isLabelSelected(balance.productId)" [attr.aria-label]="'Select label for ' + (balance.product?.name || balance.productId)" (change)="toggleLabelSelection(balance.productId, $any($event.target).checked)" /></td>
                         <!-- Product -->
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-col gap-1">
@@ -266,6 +277,10 @@
                                         <lucide-icon [name]="plusCircleIcon" [size]="16"
                                             class="text-gray-400"></lucide-icon>
                                         <span>Adjust stock</span>
+                                    </button>
+
+                                    <button type="button" class="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-700 transition hover:bg-gray-50" (click)="printInventoryLabel(balance)">
+                                        <span>Print product label</span>
                                     </button>
 
                                     <button type="button"

@@ -75,6 +75,15 @@ export class PublicQuoteApproval implements OnInit {
     return raw && /^#[0-9a-f]{6}$/i.test(raw) ? raw : '#111827';
   });
 
+  readonly currentCustomerStep = computed(() => {
+    const quote = this.quote();
+    if (!quote) return 1;
+    if (this.scheduledResult() || ['scheduled', 'converted'].includes(quote.status)) return 4;
+    if (!this.isAcceptedStatus(quote.status)) return 1;
+    if (quote.depositRequired && !this.isDepositPaid(quote)) return 2;
+    return 3;
+  });
+
   readonly brandTintColor = computed(() => `${this.brandColor()}14`);
   readonly brandRingColor = computed(() => `${this.brandColor()}2e`);
 

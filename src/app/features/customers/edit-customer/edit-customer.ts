@@ -42,6 +42,7 @@ import {
   CustomerContactConflict,
 } from '../../../core/customers/customer.model';
 import { ToastService } from '../../../core/toast/toast-service';
+import { DocumentsService, type SavedDocumentRow } from '../../../core/documents/documents.service';
 import { CustomerDevicesStore } from '../../../core/customer-devices/customer-devices.store';
 import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
 import { ManageDevicesModalService } from '../../../components/modals/manage-devices-modal-component/manage-devices-modal-service';
@@ -76,6 +77,7 @@ type CustomerWorkspaceTab =
   | 'repairs'
   | 'quotes'
   | 'orders'
+  | 'documents'
   | 'devices'
   | 'addresses'
   | 'settings';
@@ -172,6 +174,37 @@ export class EditCustomer implements OnInit {
   private readonly repairsService = inject(RepairsService);
   private readonly bookingAdminService = inject(BookingAdminService);
   private readonly ordersService = inject(OrdersService);
+  private readonly documentsService = inject(DocumentsService);
+  public customerDocuments: SavedDocumentRow[] = [];
+  public documentsLoading = false;
+  public documentsError = '';
+  public documentsCursor: string | null = null;
+  private documentsLoadedFor: string | null = null;
+
+  async loadCustomerDocuments(reset = false): Promise<void> {
+    const customerId = this.customer?.id;
+    if (!customerId || this.documentsLoading) return;
+    if (reset || this.documentsLoadedFor !== customerId) {
+      this.customerDocuments = [];
+      this.documentsCursor = null;
+      this.documentsLoadedFor = customerId;
+    }
+    this.documentsLoading = true;
+    this.documentsError = '';
+    try {
+      const result = await this.documentsService.listArchive(undefined, this.documentsCursor ?? undefined, { customerId });
+      if (this.customer?.id !== customerId) return;
+      this.customerDocuments = [...this.customerDocuments, ...result.data];
+      this.documentsCursor = result.nextCursor;
+    } catch {
+      this.documentsError = 'Unable to load customer documents. Check your permissions.';
+    } finally { this.documentsLoading = false; }
+  }
+
+  async previewCustomerDocument(row: SavedDocumentRow): Promise<void> {
+    await this.documentsService.previewSaved(row);
+  }
+
   private readonly communicationService = inject(CommunicationService);
 
   public readonly leftChevronIcon = ArrowLeft;
@@ -363,6 +396,7 @@ export class EditCustomer implements OnInit {
     { key: 'repairs', label: 'Repairs', icon: this.repairIcon },
     { key: 'quotes', label: 'Quotes', icon: this.quoteIcon },
     { key: 'orders', label: 'Orders', icon: this.orderIcon },
+    { key: 'documents', label: 'Documents', icon: ReceiptText },
     { key: 'devices', label: 'Devices', icon: this.deviceIcon },
     { key: 'addresses', label: 'Addresses', icon: this.addressIcon },
     { key: 'settings', label: 'Settings', icon: this.settingsIcon },
@@ -1345,6 +1379,11 @@ export class EditCustomer implements OnInit {
 
     if (tab === 'quotes' && !this.quoteHistoryLoaded) {
       await this.loadQuoteHistory();
+      return;
+    }
+
+    if (tab === 'documents' && this.documentsLoadedFor !== this.customer.id) {
+      await this.loadCustomerDocuments(true);
       return;
     }
 

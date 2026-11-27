@@ -1265,6 +1265,33 @@
             </section>
             }
 
+            @if (activeTab === 'documents') {
+              <section class="rounded-[28px] border border-app-border bg-app-surface p-5 sm:p-7">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div><h2 class="text-xl font-bold text-app-text">Customer documents</h2>
+                    <p class="mt-1 text-sm text-app-text-muted">Saved receipts, invoices, quotes, and repair tickets for this customer.</p></div>
+                  <button type="button" (click)="loadCustomerDocuments(true)" [disabled]="documentsLoading" class="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text">Refresh</button>
+                </div>
+                @if (documentsError) { <p role="alert" class="mt-4 text-sm text-red-600">{{ documentsError }}</p> }
+                @if (!customerDocuments.length && !documentsLoading) { <p class="py-12 text-center text-sm text-app-text-muted">No archived documents for this customer yet.</p> }
+                @if (customerDocuments.length) {
+                  <div class="mt-5 divide-y divide-app-border overflow-hidden rounded-2xl border border-app-border">
+                    @for (doc of customerDocuments; track doc.id) {
+                      <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                        <div><div class="text-sm font-semibold text-app-text">{{ doc.documentNumber }}</div>
+                          <div class="mt-1 text-xs capitalize text-app-text-muted">{{ doc.kind.replace('-', ' ') }} · {{ doc.createdAt | date:'mediumDate' }}</div></div>
+                        <button type="button" (click)="previewCustomerDocument(doc)" class="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text hover:bg-app-surface-muted">Preview PDF</button>
+                      </div>
+                    }
+                  </div>
+                }
+                @if (documentsLoading) { <p class="py-5 text-center text-sm text-app-text-muted">Loading documents…</p> }
+                @if (documentsCursor && !documentsLoading) {
+                  <button type="button" (click)="loadCustomerDocuments()" class="mt-4 rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-text">Load more</button>
+                }
+              </section>
+            }
+
             @if (activeTab === 'addresses') {
             <section class="rounded-[28px] border border-app-border bg-app-surface">
                 <div class="flex flex-col gap-3 border-b border-app-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">

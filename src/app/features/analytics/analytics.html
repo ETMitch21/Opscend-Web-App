@@ -32,6 +32,13 @@
           }
         </div>
 
+        <button type="button" (click)="archiveSalesReport()" [disabled]="pdfDownloading()"
+          class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60">Save sales report</button>
+        <button type="button" (click)="downloadSalesReport()" [disabled]="pdfDownloading()"
+          class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60">
+          <lucide-icon [name]="icons.Download" class="h-4 w-4"></lucide-icon> Sales PDF
+        </button>
+
         <button
           type="button"
           class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"

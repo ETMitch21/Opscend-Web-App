@@ -1,6 +1,6 @@
 <div class="mx-auto max-w-7xl px-6 py-6">
-    <div class="flex items-center justify-between px-6 pt-1 pb-4">
-        <div class="flex justify-between items-center gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-1 pb-4">
+        <div class="flex min-w-0 items-center gap-2">
             <button type="button" class="cursor-pointer text-sm font-medium hover:text-brand"
                 [routerLink]="['/repairs']">
                 <lucide-icon [name]="leftChevronIcon"></lucide-icon>
@@ -9,7 +9,7 @@
                 Repair Details
             </h1>
         </div>
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
             @if (repair(); as currentRepair) {
             <a
                 class="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
@@ -26,6 +26,41 @@
               <lucide-icon [name]="icons.Shield" class="h-4 w-4"></lucide-icon>
               Warranty Request
             </a>
+            }
+            @if (repair(); as currentRepair) {
+            <div class="relative documents-menu-wrap">
+              <button type="button" (click)="toggleDocumentsMenu()" [attr.aria-expanded]="documentsMenuOpen()"
+                aria-haspopup="menu"
+                class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30">
+                <lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon>
+                Documents
+                <lucide-icon [name]="icons.ChevronDown" class="h-4 w-4 text-gray-400"></lucide-icon>
+              </button>
+              @if (documentsMenuOpen()) {
+                <div role="menu" aria-label="Repair documents"
+                  class="absolute right-0 top-full z-[80] mt-2 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl">
+                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Preview</p>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); downloadRepairTicket(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Repair ticket</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); printDeviceLabel(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print device label</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); downloadWorkOrder(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Work order</button>
+                  <div class="my-1 border-t border-gray-100"></div>
+                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Save & share</p>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); saveRepairPdf('ticket', currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Save ticket to library</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); saveRepairPdf('work-order', currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Save work order to library</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); emailRepairTicket(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Email ticket</button>
+                  <div class="my-1 border-t border-gray-100"></div>
+                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Authorization</p>
+                  @if (currentTicketAuthorization()?.status === 'signed') {
+                    <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); previewSignedTicket(currentTicketAuthorization()!.signedDocumentId!)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50" [disabled]="!currentTicketAuthorization()?.signedDocumentId">View signed authorization</button>
+                  } @else if (currentTicketAuthorization()?.status === 'pending') {
+                    <p class="px-4 py-2 text-sm text-amber-700">Awaiting customer signature</p>
+                  } @else {
+                    <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); requestTicketSignature(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Request authorization</button>
+                  }
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); toggleTicketSignatures(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">View history</button>
+                </div>
+              }
+            </div>
             }
             <div class="relative status-menu-wrap">
                 <button type="button" (click)="toggleStatusMenu()"
@@ -65,6 +100,46 @@
             </button>
         </div>
     </div>
+
+    @if (repair(); as currentRepair) {
+      @if (currentTicketAuthorization(); as authorization) {
+        <div class="mx-6 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm" [ngClass]="authorization.status === 'signed' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'">
+          <div>
+            <p class="font-semibold" [ngClass]="authorization.status === 'signed' ? 'text-emerald-900' : 'text-amber-900'">{{ authorization.status === 'signed' ? 'Repair authorized' : 'Authorization awaiting signature' }}</p>
+            <p class="mt-1 text-gray-600">@if (authorization.status === 'signed') { Signed by {{ authorization.signerName }} · {{ authorization.signedAt | date:'medium' }} } @else { A signature link has been issued. }</p>
+          </div>
+          <div class="flex items-center gap-3">
+            @if (authorization.status === 'signed' && authorization.signedDocumentId) {
+              <button type="button" class="rounded-lg bg-white px-3 py-2 font-medium text-emerald-800 shadow-sm hover:bg-emerald-100" (click)="previewSignedTicket(authorization.signedDocumentId)">View signed PDF</button>
+            }
+            @if (authorization.status === 'pending') {
+              <button type="button" class="font-medium text-amber-800 hover:underline" (click)="refreshTicketAuthorization(currentRepair.id)">Refresh status</button>
+              <button type="button" class="rounded-lg bg-white px-3 py-2 font-medium text-amber-800 shadow-sm hover:bg-amber-100" (click)="revokeTicketSignature(authorization.id, currentRepair.id)">Revoke request</button>
+            }
+            <button type="button" class="font-medium text-gray-600 hover:underline" (click)="toggleTicketSignatures(currentRepair.id)">History</button>
+          </div>
+        </div>
+      }
+    }
+    @if (ticketSignatureHistoryVisible()) {
+      <div class="mx-6 mb-4 rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-sm">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <h2 class="font-semibold text-gray-900">Authorization history</h2>
+          <button type="button" (click)="ticketSignatureHistoryVisible.set(false)" class="text-sm font-medium text-gray-500 hover:text-gray-900">Close</button>
+        </div>
+        @for (request of ticketSignatureHistory(); track request.id) {
+          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 py-2">
+            <span>{{ request.status }} @if (request.signerName) { · {{ request.signerName }} } @if (request.signedAt) { · {{ request.signedAt | date:'medium' }} }</span>
+            @if (request.status === 'signed' && request.signedDocumentId) { <button type="button" class="font-medium text-emerald-700 hover:underline" (click)="previewSignedTicket(request.signedDocumentId)">View signed PDF</button> }
+            @if (repair(); as currentRepair) {
+              @if (request.status === 'pending') {
+              <button type="button" class="font-medium text-red-700 hover:underline" (click)="revokeTicketSignature(request.id, currentRepair.id)">Revoke</button>
+              }
+            }
+          </div>
+        } @empty { <p class="text-gray-500">No authorizations yet.</p> }
+      </div>
+    }
 
     <div class="px-6 pb-8">
         @if (repair(); as repairValue) {

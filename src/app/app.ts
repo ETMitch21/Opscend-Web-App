@@ -1,3 +1,4 @@
+import { DocumentPreviewComponent } from './core/documents/document-preview.component';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { NgxSonnerToaster } from 'ngx-sonner';
@@ -10,7 +11,7 @@ import { ShopContextService } from './core/shop/shop-context.store';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NgxSonnerToaster, AppShellComponent, SessionLockComponent],
+  imports: [RouterOutlet, NgxSonnerToaster, AppShellComponent, SessionLockComponent, DocumentPreviewComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

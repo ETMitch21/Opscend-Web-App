@@ -35,6 +35,7 @@ import {
   ChevronLeftIcon,
 } from "lucide-angular";
 
+import { DocumentsService } from "../../../../core/documents/documents.service";
 import { BookingAdminService } from "../../../../core/booking/service";
 import { PhonePipe } from "../../../../core/pipes/phone-pipe";
 import { ToastService } from "../../../../core/toast/toast-service";
@@ -88,6 +89,7 @@ interface QuoteLineItemDraft {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuoteRequestDetail {
+  private readonly documents = inject(DocumentsService);
   private readonly bookingApi = inject(BookingAdminService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -95,6 +97,49 @@ export class QuoteRequestDetail {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private pendingQuoteRequestId: string | null = null;
+
+  readonly signatureHistory = signal<Array<{ id: string; status: string; signedAt: string | null; signerName: string | null }>>([]);
+  readonly signatureHistoryVisible = signal(false);
+  async toggleQuoteSignatures(id: string): Promise<void> {
+    if (this.signatureHistoryVisible()) { this.signatureHistoryVisible.set(false); return; }
+    try {
+      const result = await this.documents.signatureHistory('quote', id);
+      this.signatureHistory.set(result.requests); this.signatureHistoryVisible.set(true);
+    } catch { this.toast.error('Could not load signatures'); }
+  }
+  async revokeQuoteSignature(id: string, quoteId: string): Promise<void> {
+    if (!window.confirm('Revoke this unsigned authorization link?')) return;
+    try { await this.documents.revokeSignature(id); this.signatureHistoryVisible.set(false); await this.toggleQuoteSignatures(quoteId); }
+    catch { this.toast.error('Unable to revoke signature link'); }
+  }
+
+  async requestQuoteSignature(id: string): Promise<void> {
+    if (this.quoteDirty()) { this.toast.error('Save changes first', 'Save the quote before requesting a signature.'); return; }
+    try {
+      const result = await this.documents.createSignature('quote', id);
+      const url = `${window.location.origin}/sign/${encodeURIComponent(result.token)}`;
+      await navigator.clipboard.writeText(url);
+      this.toast.success('Signing link copied', 'Share this link with the customer. Valid for 7 days.');
+    } catch { this.toast.error('Signature link failed', 'Could not create or copy the link.'); }
+  }
+
+  async emailQuote(id: string): Promise<void> {
+    if (this.quoteDirty()) { this.toast.error('Save changes first', 'Save your quote before sending a PDF.'); return; }
+    if (!window.confirm('Email the quote PDF to the customer?')) return;
+    try { const recipient = await this.documents.email('quote', id); this.toast.success('Document sent', `Emailed to ${recipient}`); }
+    catch { this.toast.error('Email failed', 'Check the customer email and try again.'); }
+  }
+
+  async archiveQuote(id: string): Promise<void> {
+    try { await this.documents.archive('quote', id); this.toast.success('Saved to library', 'The quote PDF was archived.'); }
+    catch { this.toast.error('Save failed', 'Could not archive the quote.'); }
+  }
+
+  async downloadQuote(id: string): Promise<void> {
+    if (this.quoteDirty()) { this.toast.error('Save changes first', 'Save your quote before exporting a PDF.'); return; }
+    try { await this.documents.previewLive('quote', id); }
+    catch { this.toast.error('PDF unavailable', 'Could not generate the quote.'); }
+  }
 
   readonly chevronDownIcon = ChevronDownIcon;
   readonly leftChevronIcon = ChevronLeftIcon;

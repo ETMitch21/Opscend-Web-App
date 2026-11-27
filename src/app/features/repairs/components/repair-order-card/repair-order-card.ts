@@ -42,6 +42,7 @@ import {
 } from 'lucide-angular';
 import type { StripeCardElement, StripeElements } from '@stripe/stripe-js';
 
+import { DocumentsService } from '../../../../core/documents/documents.service';
 import { OrdersStore } from '../../../../core/orders/orders-store';
 import {
   CreateOrderItemPayload,
@@ -84,10 +85,27 @@ export class RepairOrderCard {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   readonly ordersStore = inject(OrdersStore);
+  private readonly documents = inject(DocumentsService);
   private readonly productsService = inject(ProductsService);
   private readonly servicesService = inject(ServicesService);
   private readonly stripeService = inject(StripeService);
   private readonly toast = inject(ToastService);
+
+  async emailOrderDocument(kind: 'receipt' | 'invoice', id: string): Promise<void> {
+    if (!window.confirm(`Email the ${kind} PDF to the customer's saved email address?`)) return;
+    try { const recipient = await this.documents.email(kind, id); this.toast.success('Document sent', `Emailed to ${recipient}`); }
+    catch { this.toast.error('Email failed', 'Check the customer email and try again.'); }
+  }
+
+  async archiveOrderDocument(kind: 'receipt' | 'invoice', id: string): Promise<void> {
+    try { await this.documents.archive(kind, id); this.toast.success('Saved to library', `${kind === 'receipt' ? 'Receipt' : 'Invoice'} archived.`); }
+    catch { this.toast.error('Save failed', 'Could not archive the PDF.'); }
+  }
+
+  async downloadOrderDocument(kind: 'receipt' | 'invoice', id: string): Promise<void> {
+    try { await this.documents.previewLive(kind, id); }
+    catch { this.toast.error('PDF unavailable', `Could not generate the ${kind}.`); }
+  }
 
   readonly stripeCardHost = viewChild<ElementRef<HTMLDivElement>>('stripeCardHost');
 

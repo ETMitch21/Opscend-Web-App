@@ -34,6 +34,7 @@ import {
   AlertTriangle,
   Zap,
   ClipboardList,
+  FilesIcon,
   Gauge,
   Bot,
   MapPinIcon,
@@ -324,6 +325,12 @@ export class AppShellComponent implements OnInit, OnDestroy {
           permission: 'forms:read',
           icon: this.formsIcon,
           description: 'Reusable forms, checklists, and submissions.',
+        },
+        {
+          label: 'Document Library',
+          route: '/documents',
+          icon: FilesIcon,
+          description: 'Find, preview, and download archived documents.',
         },
         {
           label: 'Knowledge Base',

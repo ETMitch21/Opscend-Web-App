@@ -1,0 +1,170 @@
+@if (settingsPage) {
+<app-settings-layout pageTitle="Document settings" pageDescription="Customize document appearance, customer policies, receipt automation, and scheduled reports.">
+  <a settings-actions routerLink="/documents" class="settings-secondary-action cursor-pointer">Document library</a>
+  <button settings-actions type="button" class="settings-primary-action cursor-pointer" [disabled]="settingsBusy() || !settings" (click)="saveSettings()">{{ settingsBusy() ? 'Saving...' : 'Save changes' }}</button>
+
+  @if (settingsMessage()) {
+    <div class="mb-3 settings-alert" [class.is-error]="settingsError()" [class.is-success]="!settingsError()" role="status">{{ settingsMessage() }}</div>
+  }
+  @if (!showSettings() || !settings) {
+    <section class="settings-card"><div class="settings-card-body py-10 text-center text-sm text-app-text-muted">{{ settingsBusy() ? 'Loading document settings...' : 'Document settings are unavailable. Refresh the page to try again.' }}</div></section>
+  } @else {
+    <div class="space-y-3">
+      <div class="settings-grid">
+        <section class="settings-card">
+          <div class="settings-card-header"><div><h2 class="settings-card-title">Document branding</h2><p class="settings-card-description">Use your shop identity on newly generated documents. Archived PDFs remain unchanged.</p></div></div>
+          <div class="settings-card-body">
+            <div class="flex flex-wrap items-center gap-3 mb-3">
+              <label class="settings-secondary-action cursor-pointer">Upload logo<input type="file" class="sr-only" accept="image/png,image/jpeg" (change)="onLogoChange($event)" [disabled]="settingsBusy()" /></label>
+              @if (settings.hasLogo) {
+                <span class="text-xs text-app-text-muted">Logo uploaded</span>
+                <button type="button" class="settings-secondary-action cursor-pointer" (click)="removeLogo()" [disabled]="settingsBusy()">Remove logo</button>
+              } @else { <span class="text-xs text-app-text-muted">No document logo uploaded</span> }
+            </div>
+            <p class="settings-hint mb-3">PNG or JPEG, up to 350 KB. Your shop name is shown when no logo is available.</p>
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Show shop logo</p><p class="settings-toggle-description">Include the uploaded logo in document headers.</p></div><button type="button" role="switch" aria-label="Show shop logo" [attr.aria-checked]="settings.showLogo" class="settings-switch" [class.is-on]="settings.showLogo" (click)="settings.showLogo = !settings.showLogo"><span class="settings-switch-handle"></span></button></div>
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Customer contact information</p><p class="settings-toggle-description">Include the customer’s email and phone on customer-facing documents.</p></div><button type="button" role="switch" aria-label="Include customer contact information" [attr.aria-checked]="settings.showCustomerContact" class="settings-switch" [class.is-on]="settings.showCustomerContact" (click)="settings.showCustomerContact = !settings.showCustomerContact"><span class="settings-switch-handle"></span></button></div>
+          </div>
+        </section>
+        <section class="settings-card">
+          <div class="settings-card-header"><div><h2 class="settings-card-title">Automatic receipts</h2><p class="settings-card-description">Choose whether fully paid orders automatically produce a receipt.</p></div></div>
+          <div class="settings-card-body">
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Save receipt after full payment</p><p class="settings-toggle-description">Archive a PDF once for eligible newly completed orders.</p></div><button type="button" role="switch" aria-label="Automatically save receipts" [attr.aria-checked]="settings.autoReceiptEnabled" class="settings-switch" [class.is-on]="settings.autoReceiptEnabled" (click)="settings.autoReceiptEnabled = !settings.autoReceiptEnabled; onAutoReceiptChange()"><span class="settings-switch-handle"></span></button></div>
+            <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Email receipts to customers</p><p class="settings-toggle-description">Send the archived PDF to the customer email on file.</p></div><button type="button" role="switch" aria-label="Automatically email receipts" [attr.aria-checked]="settings.autoReceiptEmailEnabled" [disabled]="!settings.autoReceiptEnabled" class="settings-switch" [class.is-on]="settings.autoReceiptEmailEnabled" (click)="settings.autoReceiptEmailEnabled = !settings.autoReceiptEmailEnabled"><span class="settings-switch-handle"></span></button></div>
+            <p class="settings-hint mt-3">Both options are disabled by default. Changes do not send receipts for past orders.</p>
+          </div>
+        </section>
+      </div>
+
+      <section class="settings-card">
+        <div class="settings-card-header"><div><h2 class="settings-card-title">Label printing</h2><p class="settings-card-description">Set defaults for device and inventory labels. You can override these when generating labels later.</p></div></div>
+        <div class="settings-card-body space-y-4">
+          <div class="settings-field-grid">
+            <div class="settings-field is-third"><label class="settings-label" for="device-label-size">Device label size</label><select id="device-label-size" class="settings-control" [(ngModel)]="settings.deviceLabelSize"><option value="4x2">4 × 2 inches</option><option value="2x1">2 × 1 inches</option></select></div>
+            <div class="settings-field is-third"><label class="settings-label" for="product-label-size">Inventory label size</label><select id="product-label-size" class="settings-control" [(ngModel)]="settings.productLabelSize"><option value="2x1">2 × 1 inches</option><option value="4x2">4 × 2 inches</option></select></div>
+            <div class="settings-field is-third"><label class="settings-label" for="label-copies">Copies per item</label><input id="label-copies" type="number" min="1" max="10" step="1" class="settings-control" [(ngModel)]="settings.labelCopies" /><p class="settings-hint">1–10 copies, up to 100 labels per batch.</p></div>
+          </div>
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Show retail price</p><p class="settings-toggle-description">Include the selling price on inventory labels.</p></div><button type="button" role="switch" aria-label="Show retail price on labels" [attr.aria-checked]="settings.labelShowPrice" class="settings-switch" [class.is-on]="settings.labelShowPrice" (click)="settings.labelShowPrice = !settings.labelShowPrice"><span class="settings-switch-handle"></span></button></div>
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Show customer name</p><p class="settings-toggle-description">Include the customer name on device labels.</p></div><button type="button" role="switch" aria-label="Show customer name on device labels" [attr.aria-checked]="settings.labelShowCustomer" class="settings-switch" [class.is-on]="settings.labelShowCustomer" (click)="settings.labelShowCustomer = !settings.labelShowCustomer"><span class="settings-switch-handle"></span></button></div>
+          <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">Show repair QR code</p><p class="settings-toggle-description">Include an authenticated repair link on 4 × 2 device labels.</p></div><button type="button" role="switch" aria-label="Show repair QR code" [attr.aria-checked]="settings.labelShowQr" class="settings-switch" [class.is-on]="settings.labelShowQr" (click)="settings.labelShowQr = !settings.labelShowQr"><span class="settings-switch-handle"></span></button></div>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <div class="settings-card-header"><div><h2 class="settings-card-title">Customer document footer & policies</h2><p class="settings-card-description">Terms and footer copy used on newly generated customer documents. Internal reports use their own neutral footer.</p></div></div>
+        <div class="settings-card-body space-y-4">
+          <div><label for="doc-footer" class="settings-label">Footer text</label><input id="doc-footer" [(ngModel)]="settings.footerText" maxlength="500" class="settings-control" placeholder="Thank you for choosing us" /><p class="settings-hint">Shown on customer-facing PDFs, not sales or inventory reports.</p></div>
+          <div class="settings-field-grid">
+            <div class="settings-field is-half"><label for="doc-ticket" class="settings-label">Repair ticket policy</label><textarea id="doc-ticket" [(ngModel)]="settings.ticketPolicy" maxlength="1500" rows="3" class="settings-control"></textarea></div>
+            <div class="settings-field is-half"><label for="doc-quote" class="settings-label">Quote policy</label><textarea id="doc-quote" [(ngModel)]="settings.quotePolicy" maxlength="1500" rows="3" class="settings-control"></textarea></div>
+            <div class="settings-field is-half"><label for="doc-invoice" class="settings-label">Invoice policy</label><textarea id="doc-invoice" [(ngModel)]="settings.invoicePolicy" maxlength="1500" rows="3" class="settings-control"></textarea></div>
+            <div class="settings-field is-half"><label for="doc-receipt" class="settings-label">Receipt policy</label><textarea id="doc-receipt" [(ngModel)]="settings.receiptPolicy" maxlength="1500" rows="3" class="settings-control"></textarea></div>
+            <div class="settings-field"><label for="doc-work-order" class="settings-label">Internal work order instructions</label><textarea id="doc-work-order" [(ngModel)]="settings.workOrderPolicy" maxlength="1500" rows="3" class="settings-control"></textarea></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <div class="settings-card-header"><div><h2 class="settings-card-title">Scheduled reports</h2><p class="settings-card-description">Email sales and inventory reports on a recurring schedule. Times are configured in UTC.</p></div></div>
+        <div class="settings-card-body space-y-4">
+          @if (scheduleMessage()) { <div role="status" class="settings-alert" [class.is-error]="scheduleError()" [class.is-success]="!scheduleError()">{{ scheduleMessage() }}</div> }
+          @for (schedule of reportSchedules; track schedule.kind) {
+            <div class="border-b border-app-border pb-4 last:border-0 last:pb-0">
+              <div class="settings-toggle-row"><div class="settings-toggle-copy"><p class="settings-toggle-title">{{ schedule.kind === 'sales' ? 'Sales report' : 'Inventory report' }}</p><p class="settings-toggle-description">{{ schedule.kind === 'sales' ? 'Summarizes the completed reporting period.' : 'A stock snapshot taken when the report runs.' }}</p></div><button type="button" role="switch" [attr.aria-label]="'Enable ' + schedule.kind + ' report'" [attr.aria-checked]="schedule.enabled" class="settings-switch" [class.is-on]="schedule.enabled" (click)="schedule.enabled = !schedule.enabled"><span class="settings-switch-handle"></span></button></div>
+              <div class="settings-field-grid mt-3">
+                <div class="settings-field is-third"><label class="settings-label" [for]="schedule.kind + '-frequency'">Frequency</label><select [id]="schedule.kind + '-frequency'" [(ngModel)]="schedule.frequency" class="settings-control"><option value="daily">Daily</option><option value="weekly">Weekly (Monday)</option><option value="monthly">Monthly (1st)</option></select></div>
+                <div class="settings-field is-third"><label class="settings-label" [for]="schedule.kind + '-hour'">Send hour (UTC)</label><select [id]="schedule.kind + '-hour'" [(ngModel)]="schedule.hourUtc" class="settings-control">@for (hour of utcHours; track hour) { <option [ngValue]="hour">{{ hour.toString().padStart(2, '0') }}:00 UTC</option> }</select></div>
+                <div class="settings-field is-third"><label class="settings-label" [for]="schedule.kind + '-recipient'">Recipient email</label><input [id]="schedule.kind + '-recipient'" type="email" [(ngModel)]="schedule.recipientEmail" maxlength="254" placeholder="manager@example.com" class="settings-control" /></div>
+              </div>
+              <div class="mt-3 flex flex-wrap items-center justify-between gap-2"><span class="settings-hint">{{ schedule.nextRunAt ? 'Next run: ' + (schedule.nextRunAt | date:'medium') : 'Not scheduled' }} · Next run is displayed in your local timezone</span><button type="button" class="settings-secondary-action cursor-pointer" (click)="saveReportSchedule(schedule)" [disabled]="scheduleBusy()">{{ scheduleBusy() ? 'Saving...' : 'Save ' + schedule.kind + ' schedule' }}</button></div>
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (automaticReceipts().length || reportJobs().length) {
+        <section class="settings-card"><div class="settings-card-header"><div><h2 class="settings-card-title">Recent document automation activity</h2><p class="settings-card-description">Recent receipt and scheduled report jobs.</p></div></div>
+          <div class="settings-card-body space-y-4">
+            @if (automaticReceipts().length) { <div><p class="settings-label">Automatic receipts</p><div class="divide-y divide-app-border">@for (job of automaticReceipts(); track job.id) { <div class="flex flex-wrap justify-between gap-2 py-2 text-xs text-app-text-muted"><span>Order {{ job.orderId.slice(-8) }} · {{ job.createdAt | date:'short' }}</span><span>{{ job.status }}</span>@if (job.error) {<span class="text-red-600">{{ job.error }}</span>}</div> }</div></div> }
+            @if (reportJobs().length) { <div><p class="settings-label">Scheduled reports</p><div class="divide-y divide-app-border">@for (job of reportJobs(); track job.id) { <div class="flex flex-wrap justify-between gap-2 py-2 text-xs text-app-text-muted"><span>{{ job.kind }} · {{ job.periodKey }} · {{ job.recipientEmail }}</span><span>{{ job.status }}</span>@if (job.error) {<span class="text-red-600">{{ job.error }}</span>}</div> }</div></div> }
+          </div>
+        </section>
+      }
+    </div>
+  }
+</app-settings-layout>
+
+} @else {
+  <div class="min-h-full bg-slate-50/70 px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-6xl space-y-6">
+      <header class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Business documents</p>
+          <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Document library</h1>
+          <p class="mt-2 text-sm text-slate-500">Find permanent copies of customer documents and business reports.</p>
+        </div>
+        <a routerLink="/settings/shop/documents" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">Document settings</a>
+      </header>
+    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <label class="flex items-center gap-3 text-sm font-medium text-slate-600">Type
+          <select #typePicker (change)="selectKind(typePicker.value)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
+            @for (type of types; track type.value) { <option [value]="type.value">{{ type.label }}</option> }
+          </select>
+        </label>
+        <div class="flex flex-wrap items-end gap-2">
+          <label class="text-xs font-medium text-slate-600">Search
+            <input type="search" [(ngModel)]="search" (keyup.enter)="refresh()" maxlength="100" placeholder="Reference, customer, email" class="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+          </label>
+          <label class="text-xs font-medium text-slate-600">From
+            <input type="date" [(ngModel)]="dateFrom" class="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+          </label>
+          <label class="text-xs font-medium text-slate-600">Through
+            <input type="date" [(ngModel)]="dateTo" class="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+          </label>
+          <button type="button" (click)="refresh()" [disabled]="loading()" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Search</button>
+        </div>
+        <button type="button" (click)="refresh()" [disabled]="loading()" class="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-50">Refresh</button>
+      </div>
+
+      @if (error()) { <p role="alert" class="mx-5 mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ error() }}</p> }
+      @if (!rows().length && !loading()) {
+        <div class="px-5 py-16 text-center">
+          <p class="font-semibold text-slate-700">No saved documents yet</p>
+          <p class="mt-2 text-sm text-slate-500">Documents sent by email are archived automatically. Other snapshots can be saved through the API.</p>
+        </div>
+      }
+      @if (rows().length) {
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-100 text-left text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr>
+              <th class="px-5 py-3 font-semibold">Document</th>
+              <th class="px-5 py-3 font-semibold">Customer</th>
+              <th class="px-5 py-3 font-semibold">Saved</th>
+              <th class="px-5 py-3 font-semibold">Delivery</th>
+              <th class="px-5 py-3 text-right font-semibold">Actions</th>
+            </tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (row of rows(); track row.id) {
+                <tr class="hover:bg-slate-50/60">
+                  <td class="px-5 py-4"><div class="font-semibold text-slate-900">{{ row.documentNumber }}</div><div class="mt-1 capitalize text-xs text-slate-500">{{ row.kind.replace('-', ' ') }}</div></td>
+                  <td class="px-5 py-4 text-slate-600">{{ row.customerName || '—' }}</td>
+                  <td class="px-5 py-4 text-slate-600">{{ row.createdAt | date:'mediumDate' }}</td>
+                  <td class="px-5 py-4 text-slate-600">
+                    @if (row.deliveries.length) { {{ row.deliveries[0].status }} · {{ row.deliveries[0].recipient }} }
+                    @else { Not emailed }
+                  </td>
+                  <td class="px-5 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" (click)="preview(row)" class="rounded-lg border border-slate-200 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50">Preview</button><button type="button" (click)="download(row)" [disabled]="!!busyId()" class="rounded-lg bg-slate-900 px-3 py-2 font-semibold text-white disabled:opacity-50">Download</button></div></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      @if (loading()) { <p class="px-5 py-6 text-center text-sm text-slate-500">Loading documents…</p> }
+      @if (cursor() && !loading()) { <div class="border-t border-slate-100 p-4 text-center"><button type="button" (click)="loadMore()" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Load more</button></div> }
+    </div>
+  </div>
+</div>
+
+}

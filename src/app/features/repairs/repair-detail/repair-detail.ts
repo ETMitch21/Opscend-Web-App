@@ -48,6 +48,7 @@ import {
   X,
 } from 'lucide-angular';
 
+import { DocumentsService } from '../../../core/documents/documents.service';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
 import { CustomerDevice } from '../../../core/customer-devices/customer-device.model';
@@ -115,6 +116,7 @@ interface ShopListResponse {
 export class RepairDetail implements OnInit, OnDestroy {
   @ViewChild('patternPad') patternPad?: ElementRef<HTMLElement>;
 
+  private readonly documents = inject(DocumentsService);
   private readonly appConfig = inject(AppConfigService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -545,6 +547,85 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
   }
 
+  async printDeviceLabel(id: string): Promise<void> {
+    try { await this.documents.previewLabel('repair', id); }
+    catch { this.toast.error('Label unavailable', 'Could not generate the device label.'); }
+  }
+
+  async emailRepairTicket(id: string): Promise<void> {
+    if (!window.confirm('Email the repair ticket PDF to the customer?')) return;
+    try { const recipient = await this.documents.email('ticket', id); this.toast.success('Document sent', `Emailed to ${recipient}`); }
+    catch { this.toast.error('Email failed', 'Check the customer email and try again.'); }
+  }
+
+  async saveRepairPdf(kind: 'ticket' | 'work-order', id: string): Promise<void> {
+    try { await this.documents.archive(kind, id); this.toast.success('Saved to library', 'A permanent PDF copy was created.'); }
+    catch { this.toast.error('Save failed', 'Could not archive the document.'); }
+  }
+
+  readonly ticketSignatureHistory = signal<Array<{ id: string; status: string; signedAt: string | null; signerName: string | null; signedDocumentId: string | null; expiresAt?: string | null }>>([]);
+  readonly ticketSignatureLoading = signal(false);
+  readonly currentTicketAuthorization = computed(() => this.ticketSignatureHistory().find(r => r.status === 'signed') ?? this.ticketSignatureHistory().find(r => r.status === 'pending' && (!r.expiresAt || new Date(r.expiresAt).getTime() > Date.now())) ?? null);
+  readonly ticketSignatureHistoryVisible = signal(false);
+  readonly documentsMenuOpen = signal(false);
+  toggleDocumentsMenu(): void {
+    this.statusMenuOpen.set(false);
+    this.documentsMenuOpen.update(open => !open);
+  }
+  async refreshTicketAuthorization(id: string): Promise<void> {
+    this.ticketSignatureLoading.set(true);
+    try {
+      const result = await this.documents.signatureHistory('ticket', id);
+      if (this.repairId() === id) this.ticketSignatureHistory.set(result.requests);
+    } catch { this.toast.error('Could not load authorization status'); }
+    finally { this.ticketSignatureLoading.set(false); }
+  }
+  async toggleTicketSignatures(id: string): Promise<void> {
+    if (this.ticketSignatureHistoryVisible()) { this.ticketSignatureHistoryVisible.set(false); return; }
+    await this.refreshTicketAuthorization(id);
+    this.ticketSignatureHistoryVisible.set(true);
+  }
+  async revokeTicketSignature(id: string, repairId: string): Promise<void> {
+    if (!window.confirm('Revoke this unsigned authorization link?')) return;
+    try {
+      await this.documents.revokeSignature(id);
+      await this.refreshTicketAuthorization(repairId);
+      this.toast.success('Authorization request revoked');
+    } catch { this.toast.error('Could not revoke the link'); }
+  }
+  async previewSignedTicket(savedId: string): Promise<void> {
+    try { await this.documents.previewSavedId(savedId, 'Signed repair authorization'); }
+    catch { this.toast.error('Could not open signed authorization'); }
+  }
+  async requestTicketSignature(id: string): Promise<void> {
+    await this.refreshTicketAuthorization(id);
+    const existing = this.currentTicketAuthorization();
+    if (existing?.status === 'signed') {
+      this.toast.error('Already authorized', 'The signed authorization is available below.');
+      return;
+    }
+    if (existing?.status === 'pending') {
+      this.toast.error('Request already pending', 'Revoke the pending request before creating a new one.');
+      return;
+    }
+    try {
+      const result = await this.documents.createSignature('ticket', id);
+      await this.refreshTicketAuthorization(id);
+      await navigator.clipboard.writeText(`${window.location.origin}/sign/${encodeURIComponent(result.token)}`);
+      this.toast.success('Authorization link copied', 'Share this link with the customer.');
+    } catch { this.toast.error('Authorization request failed', 'Could not create or copy the link.'); }
+  }
+
+  async downloadWorkOrder(id: string): Promise<void> {
+    try { await this.documents.previewLive('work-order', id); }
+    catch { this.toast.error('Download failed', 'Could not generate the work order.'); }
+  }
+
+  async downloadRepairTicket(id: string): Promise<void> {
+    try { await this.documents.previewLive('ticket', id); }
+    catch { this.toast.error('PDF unavailable', 'Could not generate the repair ticket.'); }
+  }
+
   private get apiBase(): string {
     return this.appConfig.config.apiBase;
   }
@@ -614,6 +695,8 @@ export class RepairDetail implements OnInit, OnDestroy {
       await this.router.navigate(['/repairs']);
       return;
     }
+
+    void this.refreshTicketAuthorization(id);
 
     // Optional installed-app action; errors must not affect repair details.
     void this.loadWarrantyRequestLink(id);
@@ -2116,6 +2199,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   }
 
   toggleStatusMenu(): void {
+    this.documentsMenuOpen.set(false);
     this.statusMenuOpen.update((v) => !v);
   }
 
@@ -2211,6 +2295,9 @@ export class RepairDetail implements OnInit, OnDestroy {
 
     if (!target.closest('.status-menu-wrap')) {
       this.statusMenuOpen.set(false);
+    }
+    if (!target.closest('.documents-menu-wrap')) {
+      this.documentsMenuOpen.set(false);
     }
   }
 }
