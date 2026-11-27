@@ -22,7 +22,7 @@ import {
   Home,
   Laptop,
   Loader2,
-  LucideAngularModule,
+  OpscendIconComponent,
   Mail,
   MapPin,
   Monitor,
@@ -38,7 +38,7 @@ import {
   User,
   Watch,
   Wrench,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 
 import { PublicBookingService } from '../../../core/public-booking/service';
@@ -141,7 +141,7 @@ const PUBLIC_POPULAR_BRANDS_BY_CATEGORY: Record<string, string[]> = {
 @Component({
   selector: 'app-public-booking-page',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, ReactiveFormsModule],
+  imports: [CommonModule, OpscendIconComponent, ReactiveFormsModule],
   templateUrl: './public-booking.html',
 })
 export class PublicBooking implements OnDestroy {

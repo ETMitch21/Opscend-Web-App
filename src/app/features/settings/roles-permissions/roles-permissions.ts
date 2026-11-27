@@ -2,8 +2,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { CheckIcon, LockKeyholeIcon, PlusIcon, ShieldCheckIcon, Trash2Icon, UsersIcon } from 'lucide-angular';
-import { LucideAngularModule } from 'lucide-angular';
+import { CheckIcon, LockKeyholeIcon, PlusIcon, ShieldCheckIcon, Trash2Icon, UsersIcon } from '../../../core/ui/opscend-icon/index';
+import { OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 
 import { AuthService } from '../../../core/auth/auth.service';
 import {
@@ -16,7 +16,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-roles-permissions',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './roles-permissions.html',
   styleUrl: './roles-permissions.scss',
 })

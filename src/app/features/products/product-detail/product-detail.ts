@@ -25,12 +25,12 @@ import { mapMobileSentrixItems } from '../../../core/mobilesentrix/mobilesentrix
 import { MobileSentrixSearchResult } from '../../../core/mobilesentrix/mobilesentrix-model';
 import { InventoryStore } from '../../../core/inventory/inventory.store';
 import { InventoryBalance, InventoryMovement } from '../../../core/inventory/inventory.model';
-import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, ChevronLeftIcon, LucideAngularModule } from 'lucide-angular';
+import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon, ChevronLeftIcon, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, LucideAngularModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, DatePipe, OpscendIconComponent, FormsModule, ReactiveFormsModule],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

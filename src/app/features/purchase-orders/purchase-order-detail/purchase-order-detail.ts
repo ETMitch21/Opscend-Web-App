@@ -2,7 +2,7 @@ import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideAngularModule, ChevronLeftIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from 'lucide-angular';
+import { OpscendIconComponent, ChevronLeftIcon, MoreHorizontalIcon, PencilIcon, Trash2Icon } from '../../../core/ui/opscend-icon/index';
 
 import { PurchaseOrderStore } from '../../../core/purchase-orders/purchase-orders.store';
 import {
@@ -22,7 +22,7 @@ import { TablePaginationStateService } from '../../../shared/table-pagination/ta
 @Component({
   selector: 'app-purchase-order-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePipe, LucideAngularModule, TablePagination, TablePageSize],
+  imports: [CommonModule, FormsModule, RouterLink, DatePipe, OpscendIconComponent, TablePagination, TablePageSize],
   templateUrl: './purchase-order-detail.html',
 })
 export class PurchaseOrderDetail implements OnInit, OnDestroy {

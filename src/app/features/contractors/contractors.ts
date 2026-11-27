@@ -21,8 +21,8 @@ import {
     ShieldCheckIcon,
     HandshakeIcon,
     XIcon,
-    LucideAngularModule,
-} from 'lucide-angular';
+    OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 
 import { AppConfigService } from '../../core/app-config/app-config.service';
 import { ToastService } from '../../core/toast/toast-service';
@@ -55,7 +55,7 @@ type ContractorFilter = 'all' | 'active' | 'inactive';
 @Component({
     selector: 'app-contractors',
     standalone: true,
-    imports: [ReactiveFormsModule, LucideAngularModule, TablePagination, TablePageSize],
+    imports: [ReactiveFormsModule, OpscendIconComponent, TablePagination, TablePageSize],
     templateUrl: './contractors.html',
     styleUrl: './contractors.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

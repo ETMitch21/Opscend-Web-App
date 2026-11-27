@@ -9,11 +9,11 @@ import {
   CheckIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   MapPinIcon,
   PlusIcon,
   XIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import {
   AccessibleLocation,
@@ -25,7 +25,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-shop-locations',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './shop-locations.html',
 })
 export class ShopLocations {

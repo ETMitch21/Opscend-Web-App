@@ -34,8 +34,8 @@ import {
   RefreshCw,
   UserRound,
   Wrench,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 
 import type { RepairStatus } from '../../core/repairs/repair.model';
 import { RepairsService } from '../../core/repairs/repairs-service';
@@ -51,7 +51,7 @@ import { WorkQueueService } from '../../core/work-queue/service';
 @Component({
   selector: 'app-technician-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, OpscendIconComponent],
   templateUrl: './technician-dashboard.html',
   styleUrl: './technician-dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

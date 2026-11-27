@@ -10,8 +10,8 @@ import {
   Smartphone,
   Users,
   X,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
@@ -30,7 +30,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-fleet-plans',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './fleet-plans.html',
   styleUrl: './fleet-plans.scss',
 })

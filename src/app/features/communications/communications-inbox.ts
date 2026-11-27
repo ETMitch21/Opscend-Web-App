@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Inbox,
   Loader2,
-  LucideAngularModule,
+  OpscendIconComponent,
   Mail,
   MessageSquare,
   Phone,
@@ -38,7 +38,7 @@ import {
   Flag,
   Tags,
   Sparkles,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { CommunicationService } from '../../core/communications/service';
 import { AuthService } from '../../core/auth/auth.service';
@@ -60,7 +60,7 @@ type ComposerChannel = 'email' | 'sms' | 'web_chat' | 'repair_message' | 'note';
 @Component({
   selector: 'app-communications-inbox',
   standalone: true,
-  imports: [CommonModule, DatePipe, FormsModule, LucideAngularModule, RouterLink, PhonePipe],
+  imports: [CommonModule, DatePipe, FormsModule, OpscendIconComponent, RouterLink, PhonePipe],
   templateUrl: './communications-inbox.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

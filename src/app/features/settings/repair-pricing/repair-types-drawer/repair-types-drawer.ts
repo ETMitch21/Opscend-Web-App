@@ -1,14 +1,14 @@
 
 import { Component, output } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { LucideAngularModule } from 'lucide-angular';
+import { OpscendIconComponent } from '../../../../core/ui/opscend-icon/index';
 import { RepairPricingTypes } from '../../repair-pricing-types/repair-pricing-types';
 
 /** Reuses the existing repair-type catalog logic without routing away from pricing. */
 @Component({
   selector: 'app-repair-types-drawer',
   standalone: true,
-  imports: [ReactiveFormsModule, LucideAngularModule],
+  imports: [ReactiveFormsModule, OpscendIconComponent],
   templateUrl: './repair-types-drawer.html',
 })
 export class RepairTypesDrawer extends RepairPricingTypes {

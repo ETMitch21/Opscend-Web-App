@@ -13,8 +13,8 @@ import {
   ShieldCheck,
   UsersRound,
   X,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../core/auth/auth.service';
@@ -31,7 +31,7 @@ import { ToastService } from '../../core/toast/toast-service';
 @Component({
   selector: 'app-business-accounts',
   standalone: true,
-  imports: [FormsModule, RouterLink, LucideAngularModule],
+  imports: [FormsModule, RouterLink, OpscendIconComponent],
   templateUrl: './business-accounts.html',
   styleUrl: './business-accounts.scss',
 })

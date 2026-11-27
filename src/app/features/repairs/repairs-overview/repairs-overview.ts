@@ -14,7 +14,7 @@ import {
   type RepairListParams,
   type RepairStatus,
 } from '../../../core/repairs/repair.model';
-import { ChevronDownIcon, Building2, House, LucideAngularModule } from 'lucide-angular';
+import { ChevronDownIcon, Building2, House, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -45,7 +45,7 @@ type SortDirection = 'asc' | 'desc';
 @Component({
   selector: 'app-repairs-overview',
   standalone: true,
-  imports: [CommonModule, DatePipe, LucideAngularModule, PhonePipe, RouterLink, TablePagination, TablePageSize],
+  imports: [CommonModule, DatePipe, OpscendIconComponent, PhonePipe, RouterLink, TablePagination, TablePageSize],
   templateUrl: './repairs-overview.html',
   styleUrl: './repairs-overview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

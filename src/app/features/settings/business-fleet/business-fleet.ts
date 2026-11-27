@@ -16,8 +16,8 @@ import {
   Sparkles,
   Trash2,
   X,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
@@ -39,7 +39,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-business-fleet-settings',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './business-fleet.html',
   styleUrl: './business-fleet.scss',
 })

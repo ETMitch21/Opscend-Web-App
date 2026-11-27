@@ -9,8 +9,8 @@ import {
   PowerIcon,
   SaveIcon,
   ShieldCheckIcon,
-} from 'lucide-angular';
-import { LucideAngularModule } from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
+import { OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { OpscendApp, OpscendAppSettingField, OpscendAppSettingsSection } from '../../../core/apps/model';
@@ -22,7 +22,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-opscend-apps-settings',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, SettingsLayoutComponent],
+  imports: [FormsModule, OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './apps.html',
 })
 export class OpscendAppsSettings implements OnInit {

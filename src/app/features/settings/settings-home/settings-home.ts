@@ -4,11 +4,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
   ArrowRightIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   SearchIcon,
   SettingsIcon,
   XIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import { AuthService } from '../../../core/auth/auth.service';
 import {
@@ -19,7 +19,7 @@ import {
 @Component({
   selector: 'app-settings-home',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule],
+  imports: [RouterLink, OpscendIconComponent],
   templateUrl: './settings-home.html',
 })
 export class SettingsHome {

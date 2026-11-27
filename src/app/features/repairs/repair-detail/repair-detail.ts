@@ -32,7 +32,7 @@ import {
   ExternalLink,
   Grip,
   LockKeyhole,
-  LucideAngularModule,
+  OpscendIconComponent,
   LucideIconData,
   MailIcon,
   MessageSquareText,
@@ -46,7 +46,7 @@ import {
   UserRound,
   UserRoundX,
   X,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import { DocumentsService } from '../../../core/documents/documents.service';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
@@ -105,7 +105,7 @@ interface ShopListResponse {
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
-    LucideAngularModule,
+    OpscendIconComponent,
     RepairOrderCard,
     SchedulingPickerModalComponent,
     PhonePipe,

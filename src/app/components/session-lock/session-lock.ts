@@ -8,8 +8,8 @@ import {
   LoaderCircleIcon,
   LockKeyholeIcon,
   LogOutIcon,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { SessionIdleService } from '../../core/auth/session-idle.service';
@@ -17,7 +17,7 @@ import { SessionIdleService } from '../../core/auth/session-idle.service';
 @Component({
   selector: 'app-session-lock',
   standalone: true,
-  imports: [ReactiveFormsModule, LucideAngularModule],
+  imports: [ReactiveFormsModule, OpscendIconComponent],
   templateUrl: './session-lock.html',
 })
 export class SessionLockComponent {

@@ -8,14 +8,14 @@ import {
   Database,
   Download,
   Loader2,
-  LucideAngularModule,
+  OpscendIconComponent,
   Pencil,
   Plus,
   RefreshCw,
   Search,
   Smartphone,
   X,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import {
   DeviceCatalogBrandInput,
@@ -37,7 +37,7 @@ type EditorType = 'category' | 'brand' | 'model';
 @Component({
   selector: 'app-device-catalog-settings',
   standalone: true,
-  imports: [SettingsLayoutComponent, CommonModule, FormsModule, LucideAngularModule],
+  imports: [SettingsLayoutComponent, CommonModule, FormsModule, OpscendIconComponent],
   templateUrl: './device-catalog.html',
 })
 export class DeviceCatalogSettings implements OnInit {

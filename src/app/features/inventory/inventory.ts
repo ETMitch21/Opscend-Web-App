@@ -3,7 +3,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import {
-  LucideAngularModule,
+  OpscendIconComponent,
   PackageIcon,
   AlertTriangleIcon,
   SlidersHorizontalIcon,
@@ -12,7 +12,7 @@ import {
   SettingsIcon,
   PackagePlusIcon,
   ExternalLinkIcon,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { DocumentsService } from '../../core/documents/documents.service';
 import { InventoryStore } from '../../core/inventory/inventory.store';
@@ -28,7 +28,7 @@ type InventoryView = 'all' | 'low' | 'out' | 'available';
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TitleCasePipe, LucideAngularModule, TablePagination, TablePageSize],
+  imports: [CommonModule, FormsModule, RouterLink, TitleCasePipe, OpscendIconComponent, TablePagination, TablePageSize],
   templateUrl: './inventory.html',
 })
 export class Inventory implements OnInit {

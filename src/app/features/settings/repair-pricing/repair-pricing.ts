@@ -29,7 +29,7 @@ import {
   EyeOffIcon,
   FilterIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   PlusIcon,
   SearchIcon,
   SlidersHorizontalIcon,
@@ -40,7 +40,7 @@ import {
   SmartphoneIcon,
   WrenchIcon,
   XIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import {
   Subject,
   Subscription,
@@ -199,7 +199,7 @@ function parsePricingCsv(content: string): Array<Record<string, string>> {
   imports: [
     CommonModule,
     FormsModule,
-    LucideAngularModule,
+    OpscendIconComponent,
     SettingsLayoutComponent,
     RepairTypesDrawer,
   ],

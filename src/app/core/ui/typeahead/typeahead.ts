@@ -11,10 +11,10 @@ import {
 import {
   CheckIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   SearchIcon,
   XIcon,
-} from 'lucide-angular';
+} from '../opscend-icon/index';
 
 export interface TypeaheadItem {
   id: string;
@@ -29,7 +29,7 @@ let nextTypeaheadId = 0;
 @Component({
   selector: 'app-typeahead',
   standalone: true,
-  imports: [LucideAngularModule, OverlayModule],
+  imports: [OpscendIconComponent, OverlayModule],
   templateUrl: './typeahead.html',
   styleUrl: './typeahead.scss',
 })

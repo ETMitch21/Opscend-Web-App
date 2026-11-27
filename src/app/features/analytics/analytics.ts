@@ -29,9 +29,9 @@ import {
   TrendingUp,
   Users,
   Wrench,
-  LucideAngularModule,
+  OpscendIconComponent,
   type LucideIconData,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { DocumentsService } from '../../core/documents/documents.service';
 import { AnalyticsService } from '../../core/analytics/service';
@@ -65,7 +65,7 @@ interface AnalyticsStateCard {
 @Component({
   selector: 'app-analytics',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule],
+  imports: [CommonModule, OpscendIconComponent],
   templateUrl: './analytics.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -23,8 +23,8 @@ import {
   Trash2,
   Wrench,
   X,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
@@ -69,7 +69,7 @@ import { TablePaginationStateService } from '../../../shared/table-pagination/ta
 @Component({
   selector: 'app-business-account-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule, TablePagination, TablePageSize],
+  imports: [CommonModule, FormsModule, RouterLink, OpscendIconComponent, TablePagination, TablePageSize],
   templateUrl: './business-account-detail.html',
   styleUrl: './business-account-detail.scss',
 })

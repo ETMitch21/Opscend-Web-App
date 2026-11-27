@@ -18,13 +18,13 @@ import {
   CircleHelpIcon,
   DollarSignIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   RefreshCwIcon,
   SearchIcon,
   SparklesIcon,
   WrenchIcon,
   XIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import {
   Subject,
   Subscription,
@@ -59,7 +59,7 @@ import { ToastService } from '../../../core/toast/toast-service';
 @Component({
   selector: 'app-quick-quote-modal',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, TypeaheadComponent],
+  imports: [CommonModule, OpscendIconComponent, TypeaheadComponent],
   templateUrl: './quick-quote-modal.html',
 })
 export class QuickQuoteModalComponent implements OnInit, OnDestroy {

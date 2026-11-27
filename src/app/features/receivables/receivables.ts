@@ -22,8 +22,8 @@ import {
   UserRound,
   WalletCards,
   Wrench,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 import { ReceivablesService } from '../../core/receivables/service';
 import { OrdersService } from '../../core/orders/orders-service';
 import { ToastService } from '../../core/toast/toast-service';
@@ -41,7 +41,7 @@ type BalanceFilter = 'all' | 'unpaid' | 'partial' | 'issues';
 @Component({
   selector: 'app-receivables',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule, TablePagination, TablePageSize],
+  imports: [CommonModule, FormsModule, RouterLink, OpscendIconComponent, TablePagination, TablePageSize],
   templateUrl: './receivables.html',
   styleUrl: './receivables.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -12,9 +12,9 @@ import {
   Building2,
   ChevronDownIcon,
   House,
-  LucideAngularModule,
+  OpscendIconComponent,
   Search,
-} from "lucide-angular";
+} from '../../../../core/ui/opscend-icon/index';
 
 import { BookingAdminService } from "../../../../core/booking/service";
 import { PhonePipe } from "../../../../core/pipes/phone-pipe";
@@ -40,7 +40,7 @@ type SortDirection = "asc" | "desc";
 @Component({
   selector: "app-quote-requests-overview",
   standalone: true,
-  imports: [CommonModule, DatePipe, LucideAngularModule, PhonePipe, TablePagination, TablePageSize],
+  imports: [CommonModule, DatePipe, OpscendIconComponent, PhonePipe, TablePagination, TablePageSize],
   templateUrl: "./quote-requests-overview.html",
   styleUrl: "./quote-requests-overview.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,

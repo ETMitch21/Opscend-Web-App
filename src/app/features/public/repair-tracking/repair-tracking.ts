@@ -13,7 +13,7 @@ import { ActivatedRoute } from '@angular/router';
 import {
   Check,
   Clock3,
-  LucideAngularModule,
+  OpscendIconComponent,
   MessageCircle,
   RefreshCw,
   Send,
@@ -23,7 +23,7 @@ import {
   Smartphone,
   Wrench,
   XCircle,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { RepairsService } from '../../../core/repairs/repairs-service';
@@ -285,7 +285,7 @@ function buildPublicTrackerSteps(status: PublicRepairStatus | null | undefined):
 @Component({
   selector: 'app-repair-tracking-page',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, DatePipe, ReactiveFormsModule, PhonePipe],
+  imports: [CommonModule, OpscendIconComponent, DatePipe, ReactiveFormsModule, PhonePipe],
   templateUrl: './repair-tracking.html',
 })
 export class RepairTracking implements AfterViewChecked {

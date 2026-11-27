@@ -27,8 +27,8 @@ import {
   UserRound,
   X,
   type LucideIconData,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 
 import { ToastService } from '../../core/toast/toast-service';
 import { FormsService } from '../../core/forms/service';
@@ -61,7 +61,7 @@ type FieldTypeOption = {
 @Component({
   selector: 'app-forms',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, LucideAngularModule, SignaturePadComponent],
+  imports: [CommonModule, FormsModule, DragDropModule, OpscendIconComponent, SignaturePadComponent],
   templateUrl: './forms.html',
 })
 export class FormsPage implements OnInit {

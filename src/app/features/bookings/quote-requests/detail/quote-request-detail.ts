@@ -22,7 +22,7 @@ import {
   Plus,
   Trash2,
   House,
-  LucideAngularModule,
+  OpscendIconComponent,
   Mail,
   MapPin,
   MessageSquare,
@@ -33,7 +33,7 @@ import {
   Wrench,
   X,
   ChevronLeftIcon,
-} from "lucide-angular";
+} from '../../../../core/ui/opscend-icon/index';
 
 import { DocumentsService } from "../../../../core/documents/documents.service";
 import { BookingAdminService } from "../../../../core/booking/service";
@@ -80,7 +80,7 @@ interface QuoteLineItemDraft {
   imports: [
     CommonModule,
     RouterLink,
-    LucideAngularModule,
+    OpscendIconComponent,
     PhonePipe,
     ReactiveFormsModule,
   ],

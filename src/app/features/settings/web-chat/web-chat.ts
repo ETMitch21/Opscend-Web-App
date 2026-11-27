@@ -17,8 +17,8 @@ import {
   Trash2Icon,
   MegaphoneIcon,
   StarIcon,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import type { WebChatProactiveRule, WebChatSettings } from '../../../core/web-chat/model';
@@ -30,7 +30,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 @Component({
   selector: 'app-web-chat-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SettingsLayoutComponent, LucideAngularModule],
+  imports: [CommonModule, ReactiveFormsModule, SettingsLayoutComponent, OpscendIconComponent],
   templateUrl: './web-chat.html',
   styleUrl: './web-chat.scss',
 })

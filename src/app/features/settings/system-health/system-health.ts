@@ -11,11 +11,11 @@ import {
   Clock3Icon,
   ExternalLinkIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   RefreshCwIcon,
   ShieldCheckIcon,
   WrenchIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
@@ -37,7 +37,7 @@ type SeverityFilter = 'all' | 'critical' | 'warning';
   imports: [
     CommonModule,
     RouterLink,
-    LucideAngularModule,
+    OpscendIconComponent,
     SettingsLayoutComponent,
   ],
   templateUrl: './system-health.html',

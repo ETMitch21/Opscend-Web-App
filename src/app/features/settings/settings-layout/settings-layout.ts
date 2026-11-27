@@ -1,7 +1,7 @@
 
 import { Component, Input, OnDestroy, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
-import { ArrowLeftIcon, LucideAngularModule } from 'lucide-angular';
+import { ArrowLeftIcon, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 import { filter, Subscription } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
@@ -13,7 +13,7 @@ import {
 @Component({
   selector: 'app-settings-layout',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule],
+  imports: [RouterLink, OpscendIconComponent],
   templateUrl: './settings-layout.html',
 })
 export class SettingsLayoutComponent implements OnDestroy {

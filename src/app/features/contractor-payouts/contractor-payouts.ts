@@ -13,9 +13,9 @@ import {
   Clock3Icon,
   ExternalLinkIcon,
   Loader2Icon,
-  LucideAngularModule,
+  OpscendIconComponent,
   WalletCardsIcon,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { ToastService } from '../../core/toast/toast-service';
 import { ContractorPayoutsStore } from '../../core/contractor-payout/contractor-payouts.store';
@@ -48,7 +48,7 @@ type PayoutActivityEvent = {
 @Component({
   selector: 'app-contractor-payouts',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, TablePagination, TablePageSize],
+  imports: [RouterLink, OpscendIconComponent, TablePagination, TablePageSize],
   templateUrl: './contractor-payouts.html',
   styleUrl: './contractor-payouts.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

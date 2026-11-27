@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ChevronDownIcon, LucideAngularModule } from 'lucide-angular';
+import { ChevronDownIcon, OpscendIconComponent } from '../../core/ui/opscend-icon/index';
 
 import { ProductsStore } from '../../core/products/products-store';
 import {
@@ -26,7 +26,7 @@ type ProductViewFilter = 'all' | 'active' | 'inactive' | 'archived';
 @Component({
   selector: 'app-products-overview',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideAngularModule, ProductCreateDrawer, TablePagination, TablePageSize],
+  imports: [CommonModule, RouterLink, OpscendIconComponent, ProductCreateDrawer, TablePagination, TablePageSize],
   templateUrl: './products.html',
   styleUrl: './products.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

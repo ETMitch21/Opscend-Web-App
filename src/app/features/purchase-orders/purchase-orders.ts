@@ -3,13 +3,13 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
-  LucideAngularModule,
+  OpscendIconComponent,
   FileTextIcon,
   PlusIcon,
   RefreshCcwIcon,
   MoreHorizontalIcon,
   ExternalLinkIcon,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { PurchaseOrderStore } from '../../core/purchase-orders/purchase-orders.store';
 import {
@@ -41,7 +41,7 @@ type PurchaseOrderView =
     RouterLink,
     DatePipe,
     TitleCasePipe,
-    LucideAngularModule,
+    OpscendIconComponent,
   ],
   templateUrl: './purchase-orders.html',
 })

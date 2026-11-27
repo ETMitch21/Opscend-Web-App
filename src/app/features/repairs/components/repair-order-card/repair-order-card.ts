@@ -28,7 +28,7 @@ import {
   FilePlus2,
   LoaderCircle,
   Menu,
-  LucideAngularModule,
+  OpscendIconComponent,
   Package2,
   Pencil,
   Plus,
@@ -39,7 +39,7 @@ import {
   Trash2,
   Wallet,
   XCircle,
-} from 'lucide-angular';
+} from '../../../../core/ui/opscend-icon/index';
 import type { StripeCardElement, StripeElements } from '@stripe/stripe-js';
 
 import { DocumentsService } from '../../../../core/documents/documents.service';
@@ -71,7 +71,7 @@ interface CatalogItemOption {
 @Component({
   selector: 'app-repair-order-card',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [CommonModule, ReactiveFormsModule, OpscendIconComponent],
   templateUrl: './repair-order-card.html',
 })
 export class RepairOrderCard {

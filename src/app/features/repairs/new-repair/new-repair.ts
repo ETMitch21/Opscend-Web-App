@@ -31,9 +31,9 @@ import {
 } from 'rxjs';
 import {
   ChevronLeftIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   LucideIconData,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import { CustomersStore } from '../../../core/customers/customers.store';
 import {
@@ -213,7 +213,7 @@ interface SelectedPartDraft {
   selector: 'app-new-repair',
   imports: [
     CommonModule,
-    LucideAngularModule,
+    OpscendIconComponent,
     RouterModule,
     FormsModule,
     ReactiveFormsModule,

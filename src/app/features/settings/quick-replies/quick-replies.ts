@@ -13,8 +13,8 @@ import {
   Trash2Icon,
   XIcon,
   Zap,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { CommunicationService } from '../../../core/communications/service';
@@ -29,7 +29,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 @Component({
   selector: 'app-quick-replies-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, SettingsLayoutComponent, LucideAngularModule],
+  imports: [ReactiveFormsModule, SettingsLayoutComponent, OpscendIconComponent],
   templateUrl: './quick-replies.html',
 })
 export class QuickRepliesSettingsComponent implements OnInit {

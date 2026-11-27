@@ -20,11 +20,11 @@ import {
   Clock3,
   ExternalLink,
   Loader2,
-  LucideAngularModule,
+  OpscendIconComponent,
   RefreshCw,
   ShieldCheck,
   WalletCards,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import { StripeService } from '../../../core/stripe/stripe-service';
 import type { StripeStatusResponse } from '../../../core/stripe/stripe-model';
@@ -40,7 +40,7 @@ type PayoutsPageState =
 @Component({
   selector: 'app-payouts',
   standalone: true,
-  imports: [SettingsLayoutComponent, RouterLink, LucideAngularModule],
+  imports: [SettingsLayoutComponent, RouterLink, OpscendIconComponent],
   templateUrl: './payouts.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -46,8 +46,8 @@ import {
   Wrench,
   X,
   Zap,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 
 import { AiAssistantService } from '../../core/ai-assistant/service';
 import type {
@@ -69,7 +69,7 @@ import { WorkQueueService } from '../../core/work-queue/service';
 @Component({
   selector: 'app-ai-assistant',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, OpscendIconComponent],
   templateUrl: './ai-assistant.html',
   styleUrl: './ai-assistant.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -14,7 +14,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { LucideAngularModule, SearchIcon, XIcon } from 'lucide-angular';
+import { OpscendIconComponent, SearchIcon, XIcon } from '../../../core/ui/opscend-icon/index';
 import { Subscription } from 'rxjs';
 
 import { ProductsStore } from '../../../core/products/products-store';
@@ -25,7 +25,7 @@ import { MobileSentrixSearchResult } from '../../../core/mobilesentrix/mobilesen
 @Component({
   selector: 'app-product-create-drawer',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LucideAngularModule],
+  imports: [CommonModule, ReactiveFormsModule, OpscendIconComponent],
   templateUrl: './product-create-drawer.html',
   styleUrl: './product-create-drawer.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

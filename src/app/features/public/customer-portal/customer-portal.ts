@@ -32,7 +32,7 @@ import {
   Inbox,
   Loader2,
   LogOut,
-  LucideAngularModule,
+  OpscendIconComponent,
   Mail,
   MessageCircle,
   PackageCheck,
@@ -52,7 +52,7 @@ import {
   X,
   XCircle,
   type LucideIconData,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import { CustomerPortalService } from '../../../core/customer-portal/service';
 import {
@@ -86,7 +86,7 @@ type CustomerPortalScreen = 'login' | 'link-sent' | 'portal';
 @Component({
   selector: 'app-customer-portal',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
+  imports: [CommonModule, FormsModule, RouterLink, OpscendIconComponent],
   templateUrl: './customer-portal.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

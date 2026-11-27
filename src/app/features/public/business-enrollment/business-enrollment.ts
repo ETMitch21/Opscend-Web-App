@@ -21,8 +21,8 @@ import {
   Trash2,
   Users,
   WalletCards,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 
 import { BusinessEnrollmentService } from '../../../core/business-enrollment/service';
 import type { PublicBusinessEnrollment, PublicBusinessEnrollmentCatalogBrand, PublicBusinessEnrollmentCatalogCategory, PublicBusinessEnrollmentCatalogModel, PublicBusinessEnrollmentDeviceInput } from '../../../core/business-enrollment/model';
@@ -34,7 +34,7 @@ type EnrollmentDeviceRow = PublicBusinessEnrollmentDeviceInput & { categoryId: s
 @Component({
   selector: 'app-business-enrollment',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule],
+  imports: [FormsModule, OpscendIconComponent],
   templateUrl: './business-enrollment.html',
   styleUrl: './business-enrollment.scss',
 })

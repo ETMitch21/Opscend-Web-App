@@ -29,8 +29,8 @@ import {
   Search,
   RotateCcw,
   Loader2,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 
 import { CustomersStore } from '../../../core/customers/customers.store';
 import {
@@ -157,7 +157,7 @@ type AddressForm = FormGroup<{
     RouterModule,
     FormsModule,
     ReactiveFormsModule,
-    LucideAngularModule,
+    OpscendIconComponent,
   ],
   templateUrl: './edit-customer.html',
   styleUrl: './edit-customer.scss',

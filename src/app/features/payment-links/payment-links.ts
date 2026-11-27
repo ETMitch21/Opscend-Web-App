@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { Link2, Plus, RefreshCw, Search, CircleCheck, Ban, Copy, ExternalLink, Loader2, CreditCard, X, Trash2, LucideAngularModule } from 'lucide-angular';
+import { Link2, Plus, RefreshCw, Search, CircleCheck, Ban, Copy, ExternalLink, Loader2, CreditCard, X, Trash2, OpscendIconComponent } from '../../core/ui/opscend-icon/index';
 import { TablePagination } from '../../shared/table-pagination/table-pagination';
 import { TablePageSize } from '../../shared/table-pagination/table-page-size';
 import { TablePaginationStateService } from '../../shared/table-pagination/table-pagination-state.service';
@@ -11,7 +11,7 @@ import { AppConfigService } from '../../core/app-config/app-config.service';
 
 type Item = { name: string; price: number | null; quantity: number };
 type PaymentLink = { id: string; url: string; active: boolean; created: number; paidCount: number; items: { name: string; quantity: number; unitAmountCents: number }[] };
-@Component({ selector: 'app-payment-links', standalone: true, imports: [CommonModule, FormsModule, LucideAngularModule, TablePagination, TablePageSize], templateUrl: './payment-links.html', styleUrl: './payment-links.css' })
+@Component({ selector: 'app-payment-links', standalone: true, imports: [CommonModule, FormsModule, OpscendIconComponent, TablePagination, TablePageSize], templateUrl: './payment-links.html', styleUrl: './payment-links.css' })
 export class PaymentLinks implements OnInit {
   readonly icons = { Link2, Plus, RefreshCw, Search, CircleCheck, Ban, Copy, ExternalLink, Loader2, CreditCard, X, Trash2 };
   readonly tablePagination = inject(TablePaginationStateService);

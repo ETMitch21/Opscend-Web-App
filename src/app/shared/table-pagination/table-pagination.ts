@@ -5,14 +5,14 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 import { TablePaginationStateService } from './table-pagination-state.service';
 
 @Component({
   selector: 'app-table-pagination',
   standalone: true,
-  imports: [LucideAngularModule],
+  imports: [OpscendIconComponent],
   template: `
     @if (totalItems > 0) {
       <div class="flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">

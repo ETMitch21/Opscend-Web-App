@@ -6,9 +6,9 @@ import {
   DownloadIcon,
   FileSpreadsheetIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   ShieldCheckIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import {
@@ -21,7 +21,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
 @Component({
   selector: 'app-data-export',
   standalone: true,
-  imports: [LucideAngularModule, SettingsLayoutComponent],
+  imports: [OpscendIconComponent, SettingsLayoutComponent],
   templateUrl: './data-export.html',
 })
 export class DataExportSettings implements OnInit {

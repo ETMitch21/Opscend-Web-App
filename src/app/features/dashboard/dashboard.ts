@@ -21,7 +21,7 @@ import {
   Loader2,
   ListTodo,
   AlertTriangle,
-  LucideAngularModule,
+  OpscendIconComponent,
   MessageSquareQuote,
   PackageCheck,
   RefreshCw,
@@ -29,7 +29,7 @@ import {
   TrendingUp,
   Wrench,
   type LucideIconData,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { TechDayView } from '../../components/tech-day-view/tech-day-view';
 import { BookingAdminService } from '../../core/booking/service';
@@ -153,7 +153,7 @@ const WAITING_REPAIR_STATUSES = new Set<RepairStatus>([
   imports: [
     CommonModule,
     RouterLink,
-    LucideAngularModule,
+    OpscendIconComponent,
     TechDayView,
   ],
   templateUrl: './dashboard.html',

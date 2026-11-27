@@ -24,8 +24,8 @@ import {
   LoaderCircle,
   LayoutDashboard,
   History,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
@@ -44,7 +44,7 @@ import { ToastService } from '../../../core/toast/toast-service';
 @Component({
   selector: 'app-crm-company-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, OpscendIconComponent],
   templateUrl: './crm-company-detail.html',
   styleUrl: './crm-company-detail.scss',
 })

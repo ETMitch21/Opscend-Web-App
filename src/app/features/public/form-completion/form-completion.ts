@@ -10,8 +10,8 @@ import {
   ShieldCheck,
   Upload,
   XCircle,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 
 import { FormsService } from '../../../core/forms/service';
 import { FormField, PublicFormResponse } from '../../../core/forms/model';
@@ -22,7 +22,7 @@ import { FORM_PHOTO_MAX_BYTES, formImageFileToDataUrl } from '../../../core/form
 @Component({
   selector: 'app-form-completion',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, SignaturePadComponent],
+  imports: [CommonModule, FormsModule, OpscendIconComponent, SignaturePadComponent],
   templateUrl: './form-completion.html',
 })
 export class FormCompletion implements OnInit {

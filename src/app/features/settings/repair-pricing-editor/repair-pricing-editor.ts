@@ -21,13 +21,13 @@ import {
   PlusIcon,
   SearchIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   PackageIcon,
   SaveIcon,
   SmartphoneIcon,
   Trash2Icon,
   WrenchIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import {
   Subject,
   Subscription,
@@ -89,7 +89,7 @@ type DepositPreview = {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    LucideAngularModule,
+    OpscendIconComponent,
     SettingsLayoutComponent,
     TypeaheadComponent,
   ],

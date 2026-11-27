@@ -19,7 +19,7 @@ import {
   UsersIcon,
   WalletCardsIcon,
   Zap,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 export type SettingsNavItem = {
   label: string;

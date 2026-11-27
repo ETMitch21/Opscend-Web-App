@@ -2,7 +2,7 @@ import { CommonModule, DatePipe, TitleCasePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  LucideAngularModule,
+  OpscendIconComponent,
   MoreHorizontalIcon,
   PlusIcon,
   RefreshCcwIcon,
@@ -11,7 +11,7 @@ import {
   PencilIcon,
   ArchiveIcon,
   RotateCcwIcon,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { SupplierStore } from '../../core/suppliers/suppliers.store';
 import {
@@ -31,7 +31,7 @@ type SupplierView = 'active' | 'inactive' | 'archived' | 'all';
 @Component({
   selector: 'app-suppliers',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, LucideAngularModule, TablePagination, TablePageSize],
+  imports: [CommonModule, FormsModule, DatePipe, OpscendIconComponent, TablePagination, TablePageSize],
   templateUrl: './suppliers.html',
 })
 export class Suppliers implements OnInit {

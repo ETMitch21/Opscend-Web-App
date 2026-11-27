@@ -6,7 +6,7 @@ import { UsersStore } from '../../core/users/users-store';
 import { AuthService } from '../../core/auth/auth.service';
 import type { AppointmentListItem } from '../../core/appointments/appointments.model';
 import type { User } from '../../core/users/users.model';
-import { Building2, House, LucideAngularModule } from 'lucide-angular';
+import { Building2, House, OpscendIconComponent } from '../../core/ui/opscend-icon/index';
 
 type TechDayRow = {
   user: User;
@@ -16,7 +16,7 @@ type TechDayRow = {
 @Component({
   selector: 'app-tech-day-view',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule],
+  imports: [FormsModule, OpscendIconComponent],
   templateUrl: './tech-day-view.html',
 })
 export class TechDayView implements OnInit {

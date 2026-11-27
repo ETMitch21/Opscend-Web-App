@@ -39,8 +39,8 @@ import {
   Wrench,
   X,
   type LucideIconData,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 
 import { ToastService } from '../../core/toast/toast-service';
 import { AppointmentsStore } from '../../core/appointments/appointments.store';
@@ -82,7 +82,7 @@ interface TaskDraft {
 @Component({
   selector: 'app-work-queue',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, OpscendIconComponent],
   templateUrl: './work-queue.html',
   styleUrl: './work-queue.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

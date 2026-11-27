@@ -15,14 +15,14 @@ import {
   CreditCard,
   Home,
   Loader2,
-  LucideAngularModule,
+  OpscendIconComponent,
   Mail,
   Phone,
   ShieldCheck,
   Store,
   Wrench,
   XCircle,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 
 import { PublicBookingService } from '../../../core/public-booking/service';
 import {
@@ -34,7 +34,7 @@ import {
 @Component({
   selector: 'app-public-quote-approval',
   standalone: true,
-  imports: [CommonModule, DatePipe, LucideAngularModule],
+  imports: [CommonModule, DatePipe, OpscendIconComponent],
   templateUrl: './public-quote-approval.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

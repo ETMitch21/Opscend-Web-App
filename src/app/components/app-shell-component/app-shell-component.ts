@@ -11,7 +11,7 @@ import {
   BarChart3,
   LogOutIcon,
   LockKeyholeIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   LucideIconData,
   MenuIcon,
   SearchIcon,
@@ -42,7 +42,7 @@ import {
   LoaderCircleIcon,
   CalculatorIcon,
   Building2Icon,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 import { AccessibleLocation, AuthService } from '../../core/auth/auth.service';
 import { ManageDevicesModalComponent } from '../modals/manage-devices-modal-component/manage-devices-modal-component';
 import { QuickQuoteModalComponent } from '../modals/quick-quote-modal/quick-quote-modal';
@@ -61,7 +61,7 @@ import { AiAssistant } from '../../features/ai-assistant/ai-assistant';
 import { SessionIdleService } from '../../core/auth/session-idle.service';
 import { BusinessSettingsService } from '../../core/business-settings/service';
 import { AppsService } from '../../core/apps/service';
-import { ShieldCheckIcon } from 'lucide-angular';
+import { ShieldCheckIcon } from '../../core/ui/opscend-icon/index';
 
 type NavItem = {
   label: string;
@@ -122,7 +122,7 @@ type FlatSearchRow =
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
-    LucideAngularModule,
+    OpscendIconComponent,
     ManageDevicesModalComponent,
     QuickQuoteModalComponent,
     AiAssistant,

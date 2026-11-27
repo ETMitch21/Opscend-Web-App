@@ -10,7 +10,7 @@ import {
   FlaskConical,
   History,
   LayoutTemplate,
-  LucideAngularModule,
+  OpscendIconComponent,
   Pause,
   Pencil,
   Play,
@@ -23,7 +23,7 @@ import {
   X,
   XCircle,
   Zap,
-} from 'lucide-angular';
+} from '../../core/ui/opscend-icon/index';
 
 import { ToastService } from '../../core/toast/toast-service';
 import { AutomationService } from '../../core/automations/service';
@@ -46,7 +46,7 @@ type PageTab = 'automations' | 'templates' | 'history';
 @Component({
   selector: 'app-automations',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, OpscendIconComponent],
   templateUrl: './automations.html',
 })
 export class Automations implements OnInit {

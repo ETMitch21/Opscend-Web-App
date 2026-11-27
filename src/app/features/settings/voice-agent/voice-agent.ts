@@ -22,8 +22,8 @@ import {
   Trash2Icon,
   ArrowUpIcon,
   ArrowDownIcon,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom, forkJoin } from 'rxjs';
 
 import {
@@ -46,7 +46,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
     ReactiveFormsModule,
     RouterLink,
     SettingsLayoutComponent,
-    LucideAngularModule,
+    OpscendIconComponent,
   ],
   templateUrl: './voice-agent.html',
   styleUrl: './voice-agent.scss',

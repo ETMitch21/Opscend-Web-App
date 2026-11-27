@@ -43,8 +43,8 @@ import {
   Undo2,
   Upload,
   X,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../core/ui/opscend-icon/index';
 
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -90,7 +90,7 @@ const EMPTY_DRAFT: ArticleDraft = {
 @Component({
   selector: 'app-knowledge-base',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, LucideAngularModule],
+  imports: [CommonModule, FormsModule, RouterLink, OpscendIconComponent],
   templateUrl: './knowledge-base.html',
   styleUrl: './knowledge-base.scss',
 })

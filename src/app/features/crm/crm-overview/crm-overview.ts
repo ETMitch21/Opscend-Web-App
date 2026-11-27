@@ -19,8 +19,8 @@ import {
   TrendingUp,
   UsersRound,
   X,
-  LucideAngularModule,
-} from 'lucide-angular';
+  OpscendIconComponent,
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
@@ -31,7 +31,7 @@ import { ToastService } from '../../../core/toast/toast-service';
 @Component({
   selector: 'app-crm-overview',
   standalone: true,
-  imports: [FormsModule, DragDropModule, LucideAngularModule],
+  imports: [FormsModule, DragDropModule, OpscendIconComponent],
   templateUrl: './crm-overview.html',
   styleUrl: './crm-overview.scss',
 })

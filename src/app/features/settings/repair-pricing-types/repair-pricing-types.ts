@@ -5,13 +5,13 @@ import {
   DollarSignIcon,
   GripVerticalIcon,
   LoaderCircleIcon,
-  LucideAngularModule,
+  OpscendIconComponent,
   PlusIcon,
   SearchIcon,
   Trash2Icon,
   WrenchIcon,
   XIcon,
-} from 'lucide-angular';
+} from '../../../core/ui/opscend-icon/index';
 import { firstValueFrom } from 'rxjs';
 
 import {
@@ -30,7 +30,7 @@ import { SettingsLayoutComponent } from '../settings-layout/settings-layout';
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    LucideAngularModule,
+    OpscendIconComponent,
     SettingsLayoutComponent
 ],
   templateUrl: './repair-pricing-types.html',

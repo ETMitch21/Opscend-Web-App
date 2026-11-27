@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { CheckIcon, LucideAngularModule } from 'lucide-angular';
+import { CheckIcon, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 
 import { GoogleCalendarService } from '../../../core/google-calendar/google-calendar-service';
 import {
@@ -20,7 +20,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-shop-integrations',
-  imports: [SettingsLayoutComponent, CommonModule, LucideAngularModule],
+  imports: [SettingsLayoutComponent, CommonModule, OpscendIconComponent],
   templateUrl: './shop-integrations.html',
   styleUrl: './shop-integrations.scss',
 })
