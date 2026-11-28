@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { MatSelectModule } from '@angular/material/select';
 import {
   Component,
   DestroyRef,
@@ -72,7 +73,7 @@ interface CatalogItemOption {
 @Component({
   selector: 'app-repair-order-card',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, OpscendIconComponent],
+  imports: [CommonModule, ReactiveFormsModule, OpscendIconComponent, MatSelectModule],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './repair-order-card.html',
 })

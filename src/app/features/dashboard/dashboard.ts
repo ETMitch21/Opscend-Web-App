@@ -31,7 +31,6 @@ import {
   type LucideIconData,
 } from '../../core/ui/opscend-icon/index';
 
-import { TechDayView } from '../../components/tech-day-view/tech-day-view';
 import { BookingAdminService } from '../../core/booking/service';
 import type {
   BookingQuoteRequest,
@@ -154,7 +153,6 @@ const WAITING_REPAIR_STATUSES = new Set<RepairStatus>([
     CommonModule,
     RouterLink,
     OpscendIconComponent,
-    TechDayView,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -537,7 +535,7 @@ export class DashboardComponent implements OnInit {
       return {
         total,
         items,
-        gradient: 'conic-gradient(#e2e8f0 0deg 360deg)',
+        gradient: 'conic-gradient(#303137 0deg 360deg)',
       };
     }
 

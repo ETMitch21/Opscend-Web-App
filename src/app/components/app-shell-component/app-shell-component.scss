@@ -110,3 +110,42 @@
   .ops-v2-sidebar { border-right:0; }
   .ops-v2-workspace { margin:8px 8px 8px 0; border:1px solid #303137; border-radius:8px; background:white; box-shadow:none; }
 }
+
+/* Opscend 2.0 — grouped workspace navigation */
+.ops-v2-sidebar:not(.compact-sidebar-shell) { width: 224px; }
+.ops-v2-brand { height: 56px; padding-inline: 14px; }
+.ops-v2-nav:not(.compact-sidebar-nav) { padding: 8px 10px 12px; }
+.workspace-nav-group { display: grid; gap: 2px; margin-bottom: 15px; }
+.workspace-nav-heading { margin: 0 0 4px; padding: 0 10px; font-size: 11px; font-weight: 500; line-height: 18px; color: #a0a1aa; }
+.workspace-nav-group > a, .workspace-nav-group > div > button { min-height: 34px; padding: 6px 10px; gap: 9px; font-weight: 500; line-height: 20px; }
+.workspace-nav-group a > lucide-icon, .workspace-nav-group button > lucide-icon { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+.workspace-nav-group > div > div { padding-left: 16px; margin-left: 12px; border-left: 1px solid #303137; }
+.workspace-nav-group > div > div a { padding: 5px 8px; min-height: 30px; }
+.workspace-nav-group a[class~="bg-brand/8"], .workspace-nav-group button[class~="bg-brand/8"] { background: #27282d; }
+.workspace-nav-group a[class~="bg-brand/8"] > lucide-icon:first-child, .workspace-nav-group button[class~="bg-brand/8"] > lucide-icon:first-child { color: #ff9554; }
+.workspace-nav-group :is(a,button):focus-visible, .ops-v2-header button:focus-visible { outline: 2px solid #ff9554; outline-offset: -2px; }
+.ops-v2-nav > div { scrollbar-width: thin; scrollbar-color: #45464e transparent; }
+.workspace-toolbar { height: 56px; gap: 10px; }
+.workspace-toolbar > div:first-of-type { min-width: 0; }
+.workspace-toolbar .ops-v2-search { height: 36px; min-width: 0; }
+.workspace-toolbar .workspace-quick-quote { height: 34px; border-radius: 6px; background: #ff9554; border-color: #ff9554; color: #20140e; font-weight: 600; white-space: nowrap; }
+.workspace-toolbar .workspace-quick-quote:hover { background: #ffa66f; border-color: #ffa66f; }
+.workspace-toolbar .workspace-quick-quote:active { background: #ed8240; border-color: #ed8240; }
+@media (min-width: 1024px) { .ops-v2-workspace { margin: 6px 6px 6px 0; } }
+
+/* Dashboard and toolbar polish; leave other workspaces and public pages intact. */
+.ops-v2-main:has(app-dashboard) { background:#101113; padding:0; }
+.workspace-toolbar .workspace-icon-action { color:#bcbec6; background:transparent; border:1px solid transparent; }
+.workspace-toolbar .workspace-icon-action:hover { background:#28292f; color:#ececef; }
+.workspace-toolbar button[aria-expanded="true"]:is([aria-label="Open work queue"],[aria-label="Open notifications"],[aria-label="Open user menu"],[aria-label="Open Opscend AI"]) { background:#28292f; color:#ececef; }
+.workspace-popover { box-shadow:0 8px 24px #0005; }
+.ops-v2-header .bg-rose-50 { background:#34252b; }
+.ops-v2-header .bg-amber-50 { background:#342b22; }
+.ops-v2-header .bg-emerald-50 { background:#20312b; }
+.ops-v2-header .text-rose-600, .ops-v2-header .text-rose-700, .ops-v2-header .text-rose-800 { color:#f49a9e; }
+.ops-v2-header .text-amber-600, .ops-v2-header .text-amber-700, .ops-v2-header .text-amber-800 { color:#e7b66c; }
+.ops-v2-header .text-emerald-700 { color:#86c9a6; }
+.workspace-popover button.rounded-full { border-radius:6px; }
+
+/* Keep the entire repairs workspace dark, including empty result sets. */
+.ops-v2-main:has(app-repairs-overview) { background:#101113; padding:0; }

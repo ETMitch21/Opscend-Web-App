@@ -1,20 +1,21 @@
-<div class="">
+<div class="repairs-v2">
+<div class="repair-fixed-controls">
     <!-- Top Header -->
     <div class="flex items-center justify-between px-6 pt-1 pb-4">
         <h1 class="text-2xl font-semibold text-gray-900">Repairs</h1>
 
         @if (canCreateRepair()) {
         <button
-            class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-soft transition"
+            class="ops-action-button bg-brand"
             [routerLink]="['/repairs', 'create']">
-            Create Repair
+            <lucide-icon [name]="plusIcon" [size]="16"></lucide-icon> New repair
         </button>
         }
     </div>
 
     <!-- Tabs -->
     <div class="px-6">
-        <nav class="flex space-x-6 text-sm font-medium text-gray-600">
+        <nav class="repair-tabs flex text-sm font-medium text-gray-600">
 
             <!-- All -->
             <button (click)="setView('all')" class="pb-3 cursor-pointer border-b-2 transition"
@@ -87,96 +88,50 @@
     </div>
 
     <!-- Search + Filters -->
-    <div class="flex items-center justify-between gap-4 px-6 py-4">
+    <div class="repair-toolbar flex items-center justify-between gap-4 px-6 py-4">
 
-        <!-- Search -->
-        <div class="relative w-80">
-            <input type="text" placeholder="Search jobs..."
-                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 pl-10 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none"
-                [value]="searchTerm()" (input)="setSearchTerm($any($event.target).value)" />
-
-            <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
-                stroke-width="2" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-            </svg>
-        </div>
-
-        <!-- Filters -->
-        <div class="flex items-center gap-2">
-
-            <!-- Status dropdown -->
-            <div class="relative">
-                <select
-                    class="appearance-none rounded-full bg-gray-100 px-3 py-1.5 pr-8 text-sm text-gray-700 hover:bg-gray-200"
-                    (change)="setStatus($any($event.target).value || null)">
-                    <option value="">Any status</option>
-
-                    @for (status of statuses; track status) {
-                    <option [value]="status">
-                        {{ status.replaceAll('_', ' ') | titlecase }}
-                    </option>
-                    }
-                </select>
-
-                <lucide-icon [size]="14" [name]="chevronDownIcon"
-                    class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-                </lucide-icon>
+        <app-ops-search [value]="searchTerm()" (valueChange)="setSearchTerm($event)" placeholder="Search repairs..." />
+        <details class="ops-filter-popover" #filterMenu>
+          <summary class="ops-action-button"><lucide-icon [name]="filterIcon" [size]="16"></lucide-icon> Filters @if (activeFilterCount()) { <span class="ops-count">{{ activeFilterCount() }}</span> }<lucide-icon [name]="chevronDownIcon" [size]="16"></lucide-icon></summary>
+          <div class="ops-filter-panel">
+            <div class="ops-filter-heading"><strong>Filters</strong><button type="button" class="ops-text-action" (click)="clearFilters()">Reset</button></div>
+            <div class="ops-select-shell repair-filter">
+                <mat-select class="ops-mat-select" aria-label="Repair status" [value]="selectedStatus() || 'all'" (selectionChange)="setStatus($event.value === 'all' ? null : $event.value)" panelClass="ops-dark-select-panel">
+                    <mat-option [value]="'all'">Any status</mat-option>
+                    @for (status of statuses; track status) { <mat-option [value]="status">{{ status.replaceAll('_', ' ') | titlecase }}</mat-option> }
+                </mat-select>
+            </div>
+            <div class="ops-select-shell repair-filter">
+                <mat-select class="ops-mat-select" aria-label="Service mode" [value]="serviceMode() || 'all'" (selectionChange)="setServiceMode($event.value === 'all' ? null : $event.value)" panelClass="ops-dark-select-panel">
+                    <mat-option [value]="'all'">Any service</mat-option><mat-option value="in_shop">In-shop</mat-option><mat-option value="on_site">On-site</mat-option>
+                </mat-select>
+            </div>
+            <div class="ops-select-shell repair-filter">
+                <mat-select class="ops-mat-select" aria-label="Provider" [value]="selectedDispatchType() || 'all'" (selectionChange)="setDispatchType($event.value === 'all' ? null : $event.value)" panelClass="ops-dark-select-panel">
+                    <mat-option [value]="'all'">Any provider</mat-option>
+                    @for (dispatchType of dispatchTypes; track dispatchType) { <mat-option [value]="dispatchType">{{ prettyDispatchType(dispatchType) }}</mat-option> }
+                </mat-select>
             </div>
 
-            <!-- Service Mode dropdown -->
-            <div class="relative">
-                <select
-                    class="appearance-none rounded-full bg-gray-100 px-3 py-1.5 pr-8 text-sm text-gray-700 hover:bg-gray-200"
-                    (change)="setServiceMode($any($event.target).value || null)">
-                    <option value="">Any service</option>
-                    <option value="in_shop">In-shop</option>
-                    <option value="on_site">On-site</option>
-                </select>
-
-                <lucide-icon [size]="14" [name]="chevronDownIcon"
-                    class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-                </lucide-icon>
-            </div>
-
-            <!-- Dispatch dropdown -->
-            <div class="relative">
-                <select
-                    class="appearance-none rounded-full bg-gray-100 px-3 py-1.5 pr-8 text-sm text-gray-700 hover:bg-gray-200"
-                    (change)="setDispatchType($any($event.target).value || null)">
-                    <option value="">Any provider</option>
-
-                    @for (dispatchType of dispatchTypes; track dispatchType) {
-                    <option [value]="dispatchType">
-                        {{ prettyDispatchType(dispatchType) }}
-                    </option>
-                    }
-                </select>
-
-                <lucide-icon [size]="14" [name]="chevronDownIcon"
-                    class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-                </lucide-icon>
-            </div>
-
-            <app-table-page-size storageKey="repairs" [totalItems]="filteredRepairs().length"></app-table-page-size>
-
-        </div>
+            <button type="button" class="ops-action-button bg-brand" (click)="filterMenu.open = false">Done</button>
+          </div>
+        </details>
 
     </div>
 </div>
 
-<div class="px-6 pb-6">
-    <div class="overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm">
+<div class="repair-table-region px-6 pb-6">
+    <div class="repair-table-card ops-table-workspace overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm">
         <!-- Loading state -->
         @if (loading()) {
-        <div class="flex items-center justify-center px-6 py-16">
+        <div class="ops-table-state flex items-center justify-center px-6 py-16">
             <div class="text-sm text-gray-500">Loading repairs...</div>
         </div>
         }
 
         <!-- Error state -->
         @else if (error()) {
-        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
+        <div class="ops-table-state flex flex-col items-center justify-center px-6 py-16 text-center">
             <p class="text-sm font-medium text-red-600">{{ error() }}</p>
             <button (click)="refresh()"
                 class="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800">
@@ -187,8 +142,8 @@
 
         <!-- Empty state -->
         @else if (filteredRepairs().length === 0) {
-        <div class="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <h3 class="text-base font-semibold text-gray-900">No repairs found</h3>
+        <div class="ops-table-state flex flex-col items-center justify-center px-6 py-10 text-center">
+            <lucide-icon [name]="wrenchIcon" [size]="24" class="empty-icon"></lucide-icon><h3 class="text-sm font-semibold text-gray-900">No repairs found</h3>
             <p class="mt-1 text-sm text-gray-500">
                 Try adjusting your filters or create a new repair job.
             </p>
@@ -197,7 +152,7 @@
 
         <!-- Table -->
         @else {
-        <div class="overflow-x-auto overflow-y-visible">
+        <div class="ops-table-scroll overflow-x-auto overflow-y-visible" tabindex="0" role="region" aria-label="Repair records">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50/80">
                     <tr>
@@ -291,7 +246,7 @@
 
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @for (repair of tablePagination.slice('repairs', filteredRepairs()); track trackByRepairId($index, repair)) {
-                    <tr class="transition hover:bg-gray-50/70">
+                    <tr class="repair-row transition hover:bg-gray-50/70" (click)="openRepair(repair.id)">
                         <td class="px-4 py-4 align-top">
                             <div class="flex justify-center overflow-visible">
                                 @if (repair.serviceMode === 'on_site') {
@@ -325,19 +280,16 @@
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-col">
                                 <div class="flex items-center gap-2">
-                                    <p class="text-sm font-semibold text-gray-900">
+                                    <p class="repair-title text-sm font-semibold text-gray-900" [title]="repair.problemSummary">
                                         {{ repair.problemSummary }}
                                     </p>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    {{ repair.id }}
-                                </p>
                             </div>
                         </td>
 
                         <!-- Status -->
                         <td class="px-6 py-4 align-top">
-                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                            <span class="repair-status inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
                                 [class.bg-amber-50]="
             repair.status === 'intake' ||
             repair.status === 'awaiting_parts' ||
@@ -459,7 +411,7 @@
                                     {{ repair.assignedTo }}
                                 </span>
 
-                                <span class="w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold" [ngClass]="{
+                                <span class="provider-label" [ngClass]="{
                                         'bg-blue-50 text-blue-700': repair.dispatchType === 'internal',
                                         'bg-orange-50 text-orange-700': repair.dispatchType === 'contractor',
                                         'bg-gray-50 text-gray-500': repair.dispatchType === 'unassigned'
@@ -472,7 +424,7 @@
                                 <span class="text-sm text-gray-400">Unassigned</span>
 
                                 <span
-                                    class="w-fit rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                                    class="provider-label">
                                     {{ prettyDispatchType(repair.dispatchType) }}
                                 </span>
                             </div>
@@ -483,9 +435,9 @@
                         <td class="px-6 py-4 align-top text-right">
                             <div class="flex items-center justify-end gap-2">
                                 <button
-                                    class="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                    [routerLink]="['/repairs', 'detail', repair.id]">
-                                    View
+                                    class="repair-row-link" type="button" aria-label="View repair"
+                                    (click)="$event.stopPropagation()" [routerLink]="['/repairs', 'detail', repair.id]">
+                                    <lucide-icon [name]="rowChevron" [size]="16"></lucide-icon>
                                 </button>
                             </div>
                         </td>
@@ -495,8 +447,9 @@
             </table>
         </div>
 
-        <!-- Footer / pagination -->
-        <app-table-pagination storageKey="repairs" [totalItems]="filteredRepairs().length" singularLabel="repair" pluralLabel="repairs" [hasMore]="!!nextCursor()" [loadingMore]="loadingMore()" (loadMoreRequested)="loadMore()"></app-table-pagination>
         }
+        <!-- Footer / pagination -->
+        <app-table-pagination [compactDark]="true" storageKey="repairs" [totalItems]="filteredRepairs().length" singularLabel="repair" pluralLabel="repairs" [hasMore]="!!nextCursor()" [loadingMore]="loadingMore()" (loadMoreRequested)="loadMore()"></app-table-pagination>
     </div>
+</div>
 </div>

@@ -1,15 +1,144 @@
-<div class="mx-auto max-w-7xl px-6 py-6">
-    <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-1 pb-4">
+<div class="rd-workspace">
+            <dialog #repairFormsDrawer class="rd-tool-drawer rd-clean-forms" aria-label="Forms and checklists"><div class="rd-drawer-head"><strong>Forms &amp; checklists</strong><button type="button" class="rd-secondary" (click)="repairFormsDrawer.close()">Close</button></div><div class="rd-drawer-body">
+@if (repair(); as currentRepair) { @if (!currentTicketAuthorization()) { <div class="rd-inline-heading"><strong>Repair authorization</strong><button type="button" class="rd-secondary" (click)="requestTicketSignature(currentRepair.id)">Request signature</button></div> } }
+    @if (repair(); as currentRepair) {
+      @if (currentTicketAuthorization(); as authorization) {
+        <div class="rd-authorization-row rd-auth-card flex flex-wrap items-center justify-between gap-3 text-sm rd-clean-auth rd-library-auth" [ngClass]="authorization.status === 'signed' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'">
+          <div>
+            <p class="font-semibold" [ngClass]="authorization.status === 'signed' ? 'text-emerald-900' : 'text-amber-900'">{{ authorization.status === 'signed' ? 'Repair authorized' : 'Authorization awaiting signature' }}</p>
+            <p class="mt-1 text-gray-600">@if (authorization.status === 'signed') { Signed by {{ authorization.signerName }} · {{ authorization.signedAt | date:'medium' }} } @else { A signature link has been issued. }</p>
+          </div>
+          <div class="flex items-center gap-3">
+            @if (authorization.status === 'signed' && authorization.signedDocumentId) {
+              <button type="button" class="rounded-lg bg-white px-3 py-2 font-medium text-emerald-800 shadow-sm hover:bg-emerald-100" (click)="repairFormsDrawer.close(); previewSignedTicket(authorization.signedDocumentId)">View signed PDF</button>
+            }
+            @if (authorization.status === 'pending') {
+              <button type="button" class="font-medium text-amber-800 hover:underline" (click)="refreshTicketAuthorization(currentRepair.id)">Refresh status</button>
+              <button type="button" class="rounded-lg bg-white px-3 py-2 font-medium text-amber-800 shadow-sm hover:bg-amber-100" (click)="revokeTicketSignature(authorization.id, currentRepair.id)">Revoke request</button>
+            }
+            <button type="button" class="font-medium text-gray-600 hover:underline" (click)="toggleTicketSignatures(currentRepair.id)">History</button>
+          </div>
+        </div>
+      }
+    }
+    @if (ticketSignatureHistoryVisible()) {
+      <div class="mb-2 rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-sm">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <h2 class="font-semibold text-gray-900">Authorization history</h2>
+          <button type="button" (click)="ticketSignatureHistoryVisible.set(false)" class="text-sm font-medium text-gray-500 hover:text-gray-900">Close</button>
+        </div>
+        @for (request of ticketSignatureHistory(); track request.id) {
+          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 py-2">
+            <span>{{ request.status }} @if (request.signerName) { · {{ request.signerName }} } @if (request.signedAt) { · {{ request.signedAt | date:'medium' }} }</span>
+            @if (request.status === 'signed' && request.signedDocumentId) { <button type="button" class="font-medium text-emerald-700 hover:underline" (click)="repairFormsDrawer.close(); previewSignedTicket(request.signedDocumentId)">View signed PDF</button> }
+            @if (repair(); as currentRepair) {
+              @if (request.status === 'pending') {
+              <button type="button" class="font-medium text-red-700 hover:underline" (click)="revokeTicketSignature(request.id, currentRepair.id)">Revoke</button>
+              }
+            }
+          </div>
+        } @empty { <p class="text-gray-500">No authorizations yet.</p> }
+      </div>
+    }
+
+            <div class="rd-forms-list">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                            <lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-semibold text-gray-900">Forms & Checklists</h2>
+
+                        </div>
+                    </div>
+
+                    <a [routerLink]="['/forms']"
+                        class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5 hover:text-brand-soft">
+                        Manage
+                    </a>
+                </div>
+
+                @if (incompleteRequiredRepairForms().length > 0) {
+                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-800">
+                    <span class="font-semibold">{{ incompleteRequiredRepairForms().length }} required {{ incompleteRequiredRepairForms().length === 1 ? 'form is' : 'forms are' }} incomplete.</span>
+                    Repair progress may be blocked until completion.
+                </div>
+                }
+
+                <div class="mt-4 space-y-3">
+                    @if (repairFormsLoading()) {
+                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-500">
+                        Loading forms...
+                    </div>
+                    } @else if (repairFormsError()) {
+                    <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                        {{ repairFormsError() }}
+                    </div>
+                    } @else {
+                    @for (assignment of repairForms(); track assignment.id) {
+                    <div class="rounded-xl border border-gray-200 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="truncate text-sm font-semibold text-gray-900">{{ assignment.title }}</p>
+                                    <span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                                        [ngClass]="formStatusClasses(assignment.status)">
+                                        {{ formStatusLabel(assignment.status) }}
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    {{ assignment.audience === 'staff' ? 'Staff checklist' : 'Customer form' }}
+                                    @if (assignment.assignedToUser?.name) { · {{ assignment.assignedToUser?.name }} }
+                                </p>
+                            </div>
+
+                            <a [routerLink]="['/forms']" [queryParams]="{ assignment: assignment.id }"
+                                class="cursor-pointer shrink-0 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-brand hover:text-brand">
+                                {{ assignment.status === 'completed' ? 'View' : assignment.audience === 'staff' ? 'Complete' : 'Manage' }}
+                            </a>
+                        </div>
+
+                        <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
+                            @if (formRequirementLabel($safeNavigationMigration(assignment.template?.requiredBeforeRepairStatus)); as requirement) {
+                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">
+                                {{ requirement }}
+                            </span>
+                            }
+                            @if (formatFormDueDate(assignment.dueAt); as dueDate) {
+                            <span class="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 font-medium text-gray-600">
+                                Due {{ dueDate }}
+                            </span>
+                            }
+                            @if (assignment.completedByCustomer) {
+                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+                                Completed by customer
+                            </span>
+                            }
+                        </div>
+                    </div>
+                    } @empty {
+                    <div class="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">
+                        No forms are connected to this repair yet.
+                    </div>
+                    }
+                    }
+                </div>
+            </div>
+            </div></dialog>
+  <div class="rd-sticky">
+    <div class="rd-header">
         <div class="flex min-w-0 items-center gap-2">
             <button type="button" class="cursor-pointer text-sm font-medium hover:text-brand"
                 [routerLink]="['/repairs']">
                 <lucide-icon [name]="leftChevronIcon"></lucide-icon>
             </button>
             <h1 class="text-2xl font-semibold text-gray-900">
-                Repair Details
+                {{ repair()?.customerDevice?.nickname || repair()?.customerDevice?.displayName || 'Repair details' }}
             </h1>
         </div>
-        <div class="flex flex-wrap items-center justify-end gap-2">
+        <div class="rd-actions">
+            @if (repair()) { <button type="button" class="rd-secondary" (click)="openRepairConversation()"><lucide-icon [name]="icons.MessageSquareText" class="h-4 w-4"></lucide-icon> Conversation</button> }
             @if (repair(); as currentRepair) {
             <a
                 class="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-brand/30 hover:bg-brand/5 hover:text-brand"
@@ -26,41 +155,6 @@
               <lucide-icon [name]="icons.Shield" class="h-4 w-4"></lucide-icon>
               Warranty Request
             </a>
-            }
-            @if (repair(); as currentRepair) {
-            <div class="relative documents-menu-wrap">
-              <button type="button" (click)="toggleDocumentsMenu()" [attr.aria-expanded]="documentsMenuOpen()"
-                aria-haspopup="menu"
-                class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30">
-                <lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon>
-                Documents
-                <lucide-icon [name]="icons.ChevronDown" class="h-4 w-4 text-gray-400"></lucide-icon>
-              </button>
-              @if (documentsMenuOpen()) {
-                <div role="menu" aria-label="Repair documents"
-                  class="absolute right-0 top-full z-[80] mt-2 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl">
-                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Preview</p>
-                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); downloadRepairTicket(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Repair ticket</button>
-                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); printDeviceLabel(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print device label</button>
-                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); downloadWorkOrder(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Work order</button>
-                  <div class="my-1 border-t border-gray-100"></div>
-                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Save & share</p>
-                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); saveRepairPdf('ticket', currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Save ticket to library</button>
-                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); saveRepairPdf('work-order', currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Save work order to library</button>
-                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); emailRepairTicket(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Email ticket</button>
-                  <div class="my-1 border-t border-gray-100"></div>
-                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Authorization</p>
-                  @if (currentTicketAuthorization()?.status === 'signed') {
-                    <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); previewSignedTicket(currentTicketAuthorization()!.signedDocumentId!)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50" [disabled]="!currentTicketAuthorization()?.signedDocumentId">View signed authorization</button>
-                  } @else if (currentTicketAuthorization()?.status === 'pending') {
-                    <p class="px-4 py-2 text-sm text-amber-700">Awaiting customer signature</p>
-                  } @else {
-                    <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); requestTicketSignature(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Request authorization</button>
-                  }
-                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); toggleTicketSignatures(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">View history</button>
-                </div>
-              }
-            </div>
             }
             <div class="relative status-menu-wrap">
                 <button type="button" (click)="toggleStatusMenu()"
@@ -95,378 +189,171 @@
             </div>
             <button
                 class="cursor-pointer rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-soft transition disabled:opacity-80 disabled:cursor-not-allowed"
-                (click)="saveRepair()" [disabled]="!repairForm.valid">
+                (click)="saveRepair()" [disabled]="!repairForm.valid" [hidden]="!hasRepairEdits()">
                 Save Changes
             </button>
         </div>
     </div>
-
     @if (repair(); as currentRepair) {
-      @if (currentTicketAuthorization(); as authorization) {
-        <div class="mx-6 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm" [ngClass]="authorization.status === 'signed' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'">
-          <div>
-            <p class="font-semibold" [ngClass]="authorization.status === 'signed' ? 'text-emerald-900' : 'text-amber-900'">{{ authorization.status === 'signed' ? 'Repair authorized' : 'Authorization awaiting signature' }}</p>
-            <p class="mt-1 text-gray-600">@if (authorization.status === 'signed') { Signed by {{ authorization.signerName }} · {{ authorization.signedAt | date:'medium' }} } @else { A signature link has been issued. }</p>
-          </div>
-          <div class="flex items-center gap-3">
-            @if (authorization.status === 'signed' && authorization.signedDocumentId) {
-              <button type="button" class="rounded-lg bg-white px-3 py-2 font-medium text-emerald-800 shadow-sm hover:bg-emerald-100" (click)="previewSignedTicket(authorization.signedDocumentId)">View signed PDF</button>
-            }
-            @if (authorization.status === 'pending') {
-              <button type="button" class="font-medium text-amber-800 hover:underline" (click)="refreshTicketAuthorization(currentRepair.id)">Refresh status</button>
-              <button type="button" class="rounded-lg bg-white px-3 py-2 font-medium text-amber-800 shadow-sm hover:bg-amber-100" (click)="revokeTicketSignature(authorization.id, currentRepair.id)">Revoke request</button>
-            }
-            <button type="button" class="font-medium text-gray-600 hover:underline" (click)="toggleTicketSignatures(currentRepair.id)">History</button>
-          </div>
-        </div>
-      }
-    }
-    @if (ticketSignatureHistoryVisible()) {
-      <div class="mx-6 mb-4 rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-sm">
-        <div class="mb-2 flex items-center justify-between gap-2">
-          <h2 class="font-semibold text-gray-900">Authorization history</h2>
-          <button type="button" (click)="ticketSignatureHistoryVisible.set(false)" class="text-sm font-medium text-gray-500 hover:text-gray-900">Close</button>
-        </div>
-        @for (request of ticketSignatureHistory(); track request.id) {
-          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 py-2">
-            <span>{{ request.status }} @if (request.signerName) { · {{ request.signerName }} } @if (request.signedAt) { · {{ request.signedAt | date:'medium' }} }</span>
-            @if (request.status === 'signed' && request.signedDocumentId) { <button type="button" class="font-medium text-emerald-700 hover:underline" (click)="previewSignedTicket(request.signedDocumentId)">View signed PDF</button> }
-            @if (repair(); as currentRepair) {
-              @if (request.status === 'pending') {
-              <button type="button" class="font-medium text-red-700 hover:underline" (click)="revokeTicketSignature(request.id, currentRepair.id)">Revoke</button>
-              }
-            }
-          </div>
-        } @empty { <p class="text-gray-500">No authorizations yet.</p> }
+      <div class="rd-context">
+      @if (incompleteRequiredRepairForms().length) { <button type="button" class="rd-attention" (click)="repairFormsDrawer.showModal()">{{ incompleteRequiredRepairForms().length }} required forms incomplete</button> }
       </div>
+      <nav class="rd-tabs" aria-label="Repair workspace">
+        @for (tab of detailTabs; track tab.id) { <button type="button" [class.active]="detailTab() === tab.id" [attr.aria-pressed]="detailTab() === tab.id" (click)="detailTab.set(tab.id); credentialsVisible.set(false)">{{ tab.label }}</button> }
+      <button type="button" class="rd-forms-tab" aria-haspopup="dialog" (click)="repairFormsDrawer.showModal(); credentialsVisible.set(false)">Forms &amp; checklists <lucide-icon [name]="icons.ExternalLink" class="h-3.5 w-3.5"></lucide-icon></button>
+      </nav>
     }
-
-    <div class="px-6 pb-8">
-        @if (repair(); as repairValue) {
-        <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
-            <span class="rounded-full border border-gray-200 bg-white px-3 py-1 font-medium text-gray-700">
-                {{ repairValue.id }}
-            </span>
-            <span class="rounded-full px-3 py-1 text-xs font-semibold"
-                [ngClass]="statusPillClasses(repairValue.status)">
-                {{ prettyStatus(repairValue.status) }}
-            </span>
-            @if (repairValue.orderId) {
-            <span
-                class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-                Order linked
-            </span>
-            } @else {
-            <span class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
-                No order yet
-            </span>
-            }
-        </div>
-        }
-    </div>
-
+  </div>
     @if (loading()) {
     <div class="rounded-2xl border border-gray-200 bg-white p-8 text-sm text-gray-500 shadow-sm">
         Loading repair...
     </div>
     } @else if (repair(); as repairValue) {
-    <div class="grid gap-6 px-6 xl:grid-cols-[minmax(0,2fr)_380px]">
-        <div class="space-y-6">
+    <div class="rd-layout">
+      <section class="rd-command" [hidden]="detailTab() !== 'overview'" aria-label="Repair overview">
+        <div class="rd-command-metrics rd-quick-stats">
+          <button type="button" class="rd-metric" (click)="openOverviewOrder(orderChooser)" [attr.data-tone]="overviewOrder() ? (overviewOrder()!.totals.balanceCents > 0 ? 'attention' : 'good') : 'neutral'">
+            <span class="rd-stat-top"><span class="rd-stat-icon"><lucide-icon [name]="icons.DollarSign" class="h-5 w-5"></lucide-icon></span><lucide-icon [name]="icons.ArrowRight" class="h-4 w-4"></lucide-icon></span>
+            <span>Order total</span><strong>{{ overviewOrder() ? formatMoney(overviewOrder()!.totals.totalCents) : hasOrder() ? (orderStore.selectedOrderLoading() ? 'Loading…' : 'Unavailable') : '—' }}</strong>
+            <small>{{ overviewOrder() ? 'Balance: '+formatMoney(overviewOrder()!.totals.balanceCents) : hasOrder() ? 'View order' : 'Link an order' }}</small>
+          </button>
+          <button type="button" class="rd-metric" (click)="detailTab.set('scheduling')" data-tone="info">
+            <span class="rd-stat-top"><span class="rd-stat-icon"><lucide-icon [name]="icons.Clock3" class="h-5 w-5"></lucide-icon></span><lucide-icon [name]="icons.ArrowRight" class="h-4 w-4"></lucide-icon></span>
+            <span>Appointment</span><strong>{{ repairValue.appointment?.startAt ? (repairValue.appointment?.startAt | date:'MMM d') : 'Not scheduled' }}</strong>
+            <small>@if (repairValue.appointment; as appt) { {{ appt.startAt | date:'h:mm a' }} · {{ prettyAppointmentStatus(appt.status) }} } @else { View scheduling }</small>
+          </button>
+          <button type="button" class="rd-metric" (click)="repairFormsDrawer.showModal()" [attr.data-tone]="repairFormsLoading() || repairFormsError() ? 'neutral' : incompleteRequiredRepairForms().length ? 'attention' : 'good'">
+            <span class="rd-stat-top"><span class="rd-stat-icon"><lucide-icon [name]="icons.Clipboard" class="h-5 w-5"></lucide-icon></span><lucide-icon [name]="icons.ArrowRight" class="h-4 w-4"></lucide-icon></span>
+            <span>Required forms</span><strong>{{ repairFormsLoading() ? 'Loading…' : repairFormsError() ? 'Unavailable' : incompleteRequiredRepairForms().length + ' outstanding' }}</strong><small>Review requirements</small>
+          </button>
+        </div>
+        <div class="rd-command-panel rd-progress-panel">
+          <div class="rd-command-panel-head"><h3>Repair progress</h3><span class="rd-progress-current">{{ prettyStatus(repairValue.status) }}</span></div>
+          <div class="rd-progress-steps">
+            @for (stage of overviewStages; track stage.status) {
+              <div class="rd-progress-step" [attr.data-state]="overviewStageState(stage.status, repairValue.status)">
+                <span class="rd-progress-node">@if (overviewStageState(stage.status, repairValue.status) === 'recorded') {<lucide-icon [name]="icons.Check" class="h-4 w-4"></lucide-icon>} @else {<span></span>}</span>
+                <span>{{ stage.label }}</span>
+              </div>
+            }
+          </div>
+          
+        </div>
+        <div class="rd-command-grid rd-flat-summary">
+          <div class="rd-command-panel">
+            <div class="rd-command-panel-head"><h3>Repair summary</h3><button type="button" class="rd-text-action" (click)="summaryEditor.showModal()">Edit summary</button></div>
+            <p class="rd-command-summary">{{ repairForm.controls.problemSummary.value || 'No problem summary recorded.' }}</p>
+            <div class="rd-summary-facts">
+              <div><lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon><span><small>Provider</small><strong>{{ assignedTech()?.name || repairValue.assignedTo || 'Unassigned' }}</strong></span></div>
+              <div><lucide-icon [name]="icons.Building2" class="h-5 w-5"></lucide-icon><span><small>Service mode</small><strong>{{ repairValue.serviceMode === 'on_site' ? 'On-site' : 'In-shop' }}</strong></span></div>
+            </div>
+          </div>
+          <div class="rd-command-panel">
+            <div class="rd-command-panel-head"><h3>Customer &amp; device</h3><button type="button" class="rd-text-action" (click)="detailTab.set('customer')">View details →</button></div>
+            <div class="rd-summary-facts">
+              <div><lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon><span><small>Customer</small><strong>{{ repairValue.customer?.name || 'Unassigned' }}</strong></span></div>
+              <div><lucide-icon [name]="icons.SmartphoneIcon" class="h-5 w-5"></lucide-icon><span><small>Device</small><strong>{{ repairValue.customerDevice?.displayName || 'Not recorded' }}</strong></span></div>
+              <div><lucide-icon [name]="icons.LockKeyhole" class="h-5 w-5"></lucide-icon><span><small>Unlock method</small><strong>{{ repairValue.unlockType && repairValue.unlockType !== 'none' ? 'Recorded' : 'Not recorded' }}</strong></span></div>
+            </div>
+          </div>
+          <div class="rd-command-panel">
+            <div class="rd-command-panel-head"><h3>Documents</h3><button type="button" class="rd-text-action" (click)="detailTab.set('documents')">View documents →</button></div>
+            <div class="rd-summary-facts">
+              <div><lucide-icon [name]="icons.Shield" class="h-5 w-5"></lucide-icon><span><small>Authorization</small><strong>{{ ticketSignatureLoading() ? 'Loading…' : currentTicketAuthorization()?.status === 'signed' ? 'Signed' : currentTicketAuthorization()?.status === 'pending' ? 'Pending signature' : 'No current signature' }}</strong></span></div>
+              <div><lucide-icon [name]="icons.Paperclip" class="h-5 w-5"></lucide-icon><span><small>Attachments</small><strong>{{ attachments().length }}</strong></span></div>
+            </div>
+          </div>
+          <div class="rd-command-panel">
+            <div class="rd-command-panel-head"><h3>Recent activity</h3><button type="button" class="rd-text-action" (click)="detailTab.set('activity')">View timeline →</button></div>
+            @for (event of activityFeed().slice(0,3); track event.key) {
+              <div class="rd-quick-event"><lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon><span>{{ event.title }}</span><small>{{ event.date | date:'MMM d' }}</small></div>
+            } @empty { <p class="rd-command-empty">No activity recorded.</p> }
+          </div>
+        </div>
+
+        <dialog #summaryEditor class="rd-tool-drawer" aria-label="Edit problem summary"><div class="rd-drawer-head"><strong>Edit problem summary</strong><button type="button" class="rd-secondary" (click)="summaryEditor.close()">Done</button></div><div class="rd-drawer-body" [formGroup]="repairForm"><textarea aria-label="Problem summary" rows="5" formControlName="problemSummary" class="w-full border p-3"></textarea><p class="rd-command-empty">Use Save Changes in the repair header to save.</p></div></dialog>
+        <dialog #orderChooser class="rd-tool-drawer" aria-label="Link customer order"><div class="rd-drawer-head"><strong>Link an order</strong><button type="button" class="rd-secondary" (click)="orderChooser.close()">Close</button></div><div class="rd-drawer-body"><p class="rd-command-empty">Choose an existing order for this customer.</p>@if (linkLoading()) {<p>Loading…</p>} @if (linkError()) {<p role="alert">{{ linkError() }}</p>} @for (order of linkCandidates(); track order.id) {<label class="rd-link-choice"><input type="radio" name="repairOrderChoice" [checked]="linkChoice() === order.id" (change)="linkChoice.set(order.id)"><span>Order #{{ order.orderNumber }} · {{ formatMoney(order.totals.totalCents) }}</span></label>} @empty { @if (!linkLoading()) {<p>No matching orders. You can create an order from Order.</p>} } <button type="button" class="rd-secondary rd-accent-button" [disabled]="!linkChoice() || linkLoading()" (click)="linkChosenOrder(orderChooser)">Link selected order</button><button type="button" class="rd-secondary" (click)="orderChooser.close(); detailTab.set('payments')">Go to order</button></div></dialog>
+      </section>
+      <main class="rd-stack rd-main" [hidden]="detailTab() === 'overview'">
             <form class="space-y-6" [formGroup]="repairForm">
-                <div class="grid gap-6 lg:grid-cols-2">
-                    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 class="text-base font-semibold text-gray-900">Overview</h2>
-                        <p class="mt-1 text-sm text-gray-500">Core repair info and current status.</p>
+                <div class="rd-stack">
+                    <section class="rd-appointment-workspace" [hidden]="detailTab() !== 'scheduling'">
+  <div class="rd-appointment-grid">
+    <article class="rd-appointment-panel"><div class="rd-inline-heading"><h2>Appointment</h2><button type="button" class="rd-secondary rd-accent-button" (click)="openAssignModal()">{{ repairValue.appointment ? 'Reschedule / reassign' : 'Schedule appointment' }}</button></div>
+      @if (repairValue.appointment; as appointment) {
+        <div class="rd-location-mode rd-appointment-hero">
+          <span class="rd-location-mode-icon" aria-hidden="true"><lucide-icon [name]="icons.Clock3" class="h-6 w-6"></lucide-icon></span>
+          <div><strong>{{ formatAppointmentWindow(appointment.startAt, appointment.endAt || appointment.endsAt) }}</strong><small class="rd-appointment-meta"><span class="rd-glance-status" [attr.data-tone]="appointment.status === 'completed' ? 'good' : appointment.status === 'canceled' || appointment.status === 'no_show' ? 'danger' : 'neutral'">{{ prettyAppointmentStatus(appointment.status) }}</span><span>·</span>{{ appointmentDuration() }}</small></div>
+        </div>
+        <div class="rd-appointment-facts">
+          <div class="rd-location-fact"><lucide-icon [name]="icons.UserRound" class="h-4 w-4"></lucide-icon><div><small>Provider</small><strong>{{ assignedTech()?.name || repairValue.assignedTo || 'Unassigned' }}</strong><small>{{ prettyDispatchType(repairValue.dispatchType) }}</small></div></div>
+          <div class="rd-location-fact"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><div><small>Scheduled on</small><strong>{{ formatDate(appointment.createdAt) }}</strong></div></div>
+          @if (appointment.notes) {<div class="rd-location-fact rd-appointment-note"><lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon><div><small>Notes</small><strong>{{ appointment.notes }}</strong></div></div>}
+        </div>
+      } @else {<p class="rd-command-empty">No appointment scheduled.</p>}
+                      @if (repairValue.appointment; as appointment) {
+                        @if (appointment.status === 'scheduled' && repairValue.status !== 'picked_up' && repairValue.status !== 'canceled') {
+                        <div class="rd-schedule-actions"><button type="button" class="rd-secondary rd-accent-button" [disabled]="appointmentSaving()" (click)="markAppointmentCompleted()">Complete appointment</button><button type="button" class="rd-secondary" [disabled]="appointmentSaving()" (click)="markAppointmentNoShow()">No-show</button><button type="button" class="rd-text-action rd-danger" [disabled]="appointmentSaving()" (click)="cancelRepairAppointment()">Cancel appointment</button></div>
+                        } @else if (repairValue.status !== 'picked_up' && repairValue.status !== 'canceled') {<p class="rd-command-empty">Rescheduling will return the appointment to Scheduled.</p>}
+                      }
+                    </article>
+    <article class="rd-appointment-panel rd-location-summary">
+      <h2>Service location</h2>
+      <div class="rd-location-mode">
+        <span class="rd-location-mode-icon" aria-hidden="true">
+          @if (repairValue.serviceMode === 'on_site') {
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5h14v12H1zM15 9h4l3 3v5h-7"/><circle cx="5.5" cy="18" r="2.5" fill="var(--rd-surface)"/><circle cx="18.5" cy="18" r="2.5" fill="var(--rd-surface)"/></svg>
+          } @else { <lucide-icon [name]="icons.Building2" class="h-6 w-6"></lucide-icon> }
+        </span>
+        <div><strong>{{ repairValue.serviceMode === 'on_site' ? 'On-site' : 'In-shop' }}</strong><small>{{ repairValue.serviceMode === 'on_site' ? 'Mobile visit' : 'Shop appointment' }}</small></div>
+      </div>
+      <div class="rd-location-facts">
+        <div class="rd-location-fact">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <div><small>{{ repairValue.serviceMode === 'on_site' ? 'Service address' : 'Shop profile address' }}</small><strong>{{ schedulingAddress() || 'No address recorded' }}</strong>@if (repairValue.serviceMode === 'in_shop' && schedulingAddress()) {<small>Verify location if using multiple shops.</small>}</div>
+        </div>
+        @if (repairValue.serviceMode === 'on_site' && repairValue.serviceAddressNotes) {
+          <div class="rd-location-fact"><lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon><div><small>Access instructions</small><strong>{{ repairValue.serviceAddressNotes }}</strong></div></div>
+        }
+        @if (repairValue.serviceMode === 'on_site' && repairValue.tripFeeApplied) {
+          <div class="rd-location-fact"><lucide-icon [name]="icons.DollarSign" class="h-4 w-4"></lucide-icon><div><small>Trip fee</small><strong>{{ formatMoney(repairValue.tripFeeCents) }}</strong></div></div>
+        }
+      </div>
+    </article>
+    <article class="rd-appointment-panel rd-map-panel"><div class="rd-inline-heading"><h2>Location map</h2>@if (schedulingAddress()) {<a class="rd-secondary" [href]="schedulingMapsUrl()" target="_blank" rel="noopener noreferrer">Open in Maps <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon></a>}</div>
+      @if (schedulingAddress()) { @if (mapPreviewUrl() && mapPreviewAddress() === schedulingAddress()) {<iframe title="Repair service location map" [src]="mapPreviewUrl()" referrerpolicy="no-referrer" loading="lazy"></iframe>} @else {<div class="rd-map-placeholder"><lucide-icon [name]="icons.Building2" class="h-6 w-6"></lucide-icon><button type="button" class="rd-secondary" (click)="loadSchedulingMap()">Load map preview</button><small>Loads the address with Google Maps.</small></div>} } @else {<p class="rd-command-empty">Add a service address to view its location.</p>}
+    </article>
+    <article class="rd-appointment-panel rd-readiness-panel">
+      <h2>Readiness</h2>
+      <div class="rd-readiness-grid">
+        <button type="button" class="rd-readiness-tile" (click)="openAssignModal()" [attr.data-tone]="assignedTech()?.name || repairValue.assignedTo ? 'good' : 'attention'">
+          <span class="rd-readiness-icon"><lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon></span><span class="rd-readiness-copy"><small>Provider</small><strong>{{ assignedTech()?.name || repairValue.assignedTo || 'Unassigned' }}</strong></span>
+        </button>
+        <button type="button" class="rd-readiness-tile" (click)="detailTab.set('customer')" [attr.data-tone]="repairValue.passcodeProvided ? 'good' : 'neutral'">
+          <span class="rd-readiness-icon"><lucide-icon [name]="icons.LockKeyhole" class="h-5 w-5"></lucide-icon></span><span class="rd-readiness-copy"><small>Unlock</small><strong>{{ repairValue.passcodeProvided ? 'Recorded' : 'Not recorded' }}</strong></span>
+        </button>
+        <button type="button" class="rd-readiness-tile" (click)="repairFormsDrawer.showModal()" [attr.data-tone]="repairFormsLoading() || repairFormsError() ? 'neutral' : incompleteRequiredRepairForms().length ? 'attention' : 'good'">
+          <span class="rd-readiness-icon"><lucide-icon [name]="icons.Clipboard" class="h-5 w-5"></lucide-icon></span><span class="rd-readiness-copy"><small>Required forms</small><strong>{{ repairFormsLoading() ? 'Loading…' : repairFormsError() ? 'Unavailable' : incompleteRequiredRepairForms().length + ' outstanding' }}</strong></span>
+        </button>
+        <button type="button" class="rd-readiness-tile" (click)="detailTab.set('payments')" [attr.data-tone]="overviewOrder() ? (overviewOrder()!.totals.balanceCents > 0 ? 'attention' : 'good') : 'neutral'">
+          <span class="rd-readiness-icon"><lucide-icon [name]="icons.DollarSign" class="h-5 w-5"></lucide-icon></span><span class="rd-readiness-copy"><small>Order balance</small><strong>{{ overviewOrder() ? formatMoney(overviewOrder()!.totals.balanceCents) : hasOrder() ? 'Unavailable' : 'No order linked' }}</strong></span>
+        </button>
+      </div>
+    </article>
+  </div>
+</section>
 
-                        <div class="mt-6 grid gap-4">
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">Problem Summary</label>
-                                <textarea rows="3" formControlName="problemSummary"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand resize-none"></textarea>
-                            </div>
 
-                            <div>
-                                <div class="mb-3 flex items-center justify-between">
-                                    <label class="block text-sm font-medium text-gray-700">
-                                        Assigned Provider
-                                    </label>
-
-                                    <button type="button"
-                                        class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5 hover:text-brand-soft"
-                                        (click)="openAssignModal()">
-                                        {{ repairValue.appointment ? 'Reschedule / Reassign' : 'Schedule / Assign' }}
-                                    </button>
-                                </div>
-
-                                @if (assignedTech(); as tech) {
-                                <button type="button"
-                                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-left transition hover:border-gray-300"
-                                    (click)="openAssignModal()">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-sm font-semibold text-gray-700">
-                                            <span>{{ getInitials(tech.name) }}</span>
-                                        </div>
-
-                                        <div class="min-w-0 flex-1">
-                                            <div class="truncate text-sm font-semibold text-gray-900">
-                                                {{ tech.name }}
-                                            </div>
-
-                                            <div
-                                                class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
-                                                @if (tech.email) {
-                                                <span class="truncate">{{ tech.email }}</span>
-                                                }
-                                                @if (tech.role) {
-                                                <span
-                                                    class="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-600">
-                                                    {{ tech.role }}
-                                                </span>
-                                                }
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                                } @else {
-                                <button type="button"
-                                    class="w-full rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-left transition hover:border-gray-300"
-                                    (click)="openAssignModal()">
-                                    <div class="flex items-start gap-3">
-                                        <div
-                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-gray-300 bg-white text-gray-400">
-                                            <lucide-icon [name]="icons.UserRoundX" class="h-5 w-5"></lucide-icon>
-                                        </div>
-
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-gray-700">
-                                                Unassigned
-                                            </p>
-                                            <p class="text-sm text-gray-500">
-                                                Use scheduling to choose an available provider.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </button>
-                                }
-
-                                <p class="mt-2 text-xs leading-5 text-gray-400">
-                                    Provider changes are handled through scheduling so availability, contractor
-                                    assignment, and appointment timing stay in sync.
-                                </p>
-
-                                @if (repairValue.appointment; as appointment) {
-                                <div class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                                    <div class="flex items-center gap-3 px-4 py-3.5">
-                                        <div
-                                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
-                                            <lucide-icon [name]="icons.Clock3" class="h-4 w-4"></lucide-icon>
-                                        </div>
-
-                                        <div class="min-w-0 flex-1">
-                                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400">
-                                                Appointment
-                                            </p>
-                                            <p class="mt-0.5 text-sm font-semibold leading-5 text-gray-900">
-                                                {{ formatAppointmentWindow(appointment.startAt, appointment.endAt || appointment.endsAt) }}
-                                            </p>
-                                        </div>
-
-                                        <span
-                                            class="w-fit shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold"
-                                            [ngClass]="appointmentStatusPillClasses(appointment.status)">
-                                            {{ prettyAppointmentStatus(appointment.status) }}
-                                        </span>
-                                    </div>
-
-                                    @if (
-                                    appointment.status === 'scheduled' &&
-                                    repairValue.status !== 'picked_up' &&
-                                    repairValue.status !== 'canceled'
-                                    ) {
-                                    <div
-                                        class="flex flex-wrap items-center gap-2 border-t border-gray-100 bg-gray-50/70 px-3 py-3">
-                                        <button type="button"
-                                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
-                                            [disabled]="appointmentSaving()" (click)="markAppointmentCompleted()">
-                                            <lucide-icon [name]="icons.Check" class="h-3.5 w-3.5"></lucide-icon>
-                                            Complete
-                                        </button>
-
-                                        <button type="button"
-                                            class="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
-                                            [disabled]="appointmentSaving()" (click)="markAppointmentNoShow()">
-                                            <lucide-icon [name]="icons.UserRoundX" class="h-3.5 w-3.5"></lucide-icon>
-                                            No-show
-                                        </button>
-
-                                        <button type="button"
-                                            class="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-semibold text-gray-500 transition hover:bg-white hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto sm:w-auto"
-                                            [disabled]="appointmentSaving()" (click)="cancelRepairAppointment()">
-                                            <lucide-icon [name]="icons.X" class="h-3.5 w-3.5"></lucide-icon>
-                                            Cancel
-                                        </button>
-                                    </div>
-                                    } @else if (
-                                    appointment.status !== 'scheduled' &&
-                                    repairValue.status !== 'picked_up' &&
-                                    repairValue.status !== 'canceled'
-                                    ) {
-                                    <div class="border-t border-gray-100 bg-gray-50/70 px-4 py-3">
-                                        <p class="text-xs leading-5 text-gray-500">
-                                            Rescheduling this repair will return the appointment to Scheduled.
-                                        </p>
-                                    </div>
-                                    } @else {
-                                    <div class="border-t border-gray-100 bg-gray-50/70 px-4 py-3">
-                                        <p class="text-xs leading-5 text-gray-500">
-                                            Appointment status follows this closed repair automatically.
-                                        </p>
-                                    </div>
-                                    }
-                                </div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 class="text-base font-semibold text-gray-900">Intake</h2>
-                        <p class="mt-1 text-sm text-gray-500">Captured at drop-off.</p>
-
-                        <div class="mt-6 space-y-4">
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">Intake Notes</label>
-                                <textarea rows="3" formControlName="intakeNotes"
-                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand resize-none"></textarea>
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">Accessories</label>
-                                <div
-                                    class="rounded-xl border border-gray-200 bg-white px-3 py-2 focus-within:border-brand">
-                                    <div class="flex flex-wrap items-center gap-1.5">
-                                        @for (item of accessoriesList(); track item) {
-                                        <div
-                                            class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
-                                            <span>{{ item }}</span>
-                                            <button type="button" class="text-gray-400 hover:text-gray-600"
-                                                (click)="removeAccessory(item)">
-                                                ×
-                                            </button>
-                                        </div>
-                                        }
-
-                                        <input type="text" placeholder="Add accessory..."
-                                            class="min-w-[120px] flex-1 bg-transparent py-0.5 text-sm text-gray-700 outline-none placeholder:text-gray-400"
-                                            [value]="accessoryInput()"
-                                            (input)="accessoryInput.set($any($event.target).value)"
-                                            (keydown)="onAccessoryKeydown($event)" />
-                                    </div>
-                                </div>
-
-                                <p class="mt-2 ps-1 text-xs text-gray-500">
-                                    Press enter or comma to add.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
+                <div [hidden]="detailTab() !== 'payments'">
                 <app-repair-order-card [repairId]="repairValue.id" [orderId]="repairValue.orderId"
                     (createRequested)="createOrder()" [customerId]="repairValue.customerId">
                 </app-repair-order-card>
+                </div>
             </form>
 
-            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div class="flex items-center gap-2">
-                    <lucide-icon [name]="icons.MessageSquareText" class="h-4 w-4 text-gray-500"></lucide-icon>
-                    <h2 class="text-base font-semibold text-gray-900">Notes</h2>
-                </div>
 
-                <form class="mt-5 space-y-3" [formGroup]="noteForm">
-                    <div class="flex gap-3">
-                        <select formControlName="visibility"
-                            class="w-40 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand">
-                            <option value="internal">Internal</option>
-                            <option value="customer">Customer</option>
-                        </select>
-
-                        <button type="button"
-                            class="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-soft disabled:opacity-70"
-                            [disabled]="saving()" (click)="addNote()">
-                            Add Note
-                        </button>
-                    </div>
-
-                    <textarea rows="4" formControlName="body" placeholder="Add a note..."
-                        class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand"></textarea>
-                </form>
-
-                <div class="mt-6 space-y-3">
-                    @for (note of notes(); track trackById($index, note)) {
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                        <div class="mb-2 flex items-center justify-between gap-2">
-                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [ngClass]="{
-                      'bg-gray-200 text-gray-700': note.visibility === 'internal',
-                      'bg-blue-100 text-blue-700': note.visibility === 'customer'
-                    }">
-                                {{ note.visibility }}
-                            </span>
-
-                            <span class="text-xs text-gray-500">{{ formatDate(note.createdAt) }}</span>
-                        </div>
-
-                        <p class="whitespace-pre-wrap text-sm text-gray-700">{{ note.body }}</p>
-                    </div>
-                    } @empty {
-                    <div class="rounded-xl border border-dashed border-gray-200 p-5 text-sm text-gray-500">
-                        No notes yet.
-                    </div>
-                    }
-                </div>
-            </div>
-
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div class="flex items-center gap-2">
-                    <lucide-icon [name]="icons.Clock3" class="h-4 w-4 text-gray-500"></lucide-icon>
-                    <h2 class="text-base font-semibold text-gray-900">Timeline</h2>
-                </div>
-
-                <div class="mt-5 space-y-4">
-                    @for (event of events(); track trackById($index, event)) {
-                    <div class="flex gap-4">
-                        <div class="mt-1 h-2.5 w-2.5 rounded-full bg-brand"></div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-sm font-medium text-gray-900">
-                                @if (event.type === 'status_change' && event.toStatus) {
-                                Status changed to {{ prettyStatus(event.toStatus) }}
-                                } @else {
-                                {{ event.message || event.type }}
-                                }
-                            </div>
-
-                            @if (event.fromStatus || event.toStatus) {
-                            <div class="mt-1 text-xs text-gray-500">
-                                {{ prettyStatus(event.fromStatus) }} → {{ prettyStatus(event.toStatus) }}
-                            </div>
-                            }
-
-                            <div class="mt-1 text-xs text-gray-500">
-                                {{ formatDate(event.createdAt) }}
-                            </div>
-                        </div>
-                    </div>
-                    } @empty {
-                    <div class="rounded-xl border border-dashed border-gray-200 p-5 text-sm text-gray-500">
-                        No timeline items yet.
-                    </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-6">
+            <section class="rd-section" [hidden]="detailTab() !== 'payments'">
             @if (repairValue.sourceQuote; as sourceQuote) {
             <div class="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
                 <div class="flex items-start justify-between gap-4">
@@ -573,445 +460,88 @@
                 </div>
             </div>
             }
-
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex min-w-0 items-start gap-3.5">
-                    @if (repairValue.customer?.name) {
-                    <div
-                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">
-                        {{ getInitials($safeNavigationMigration(repairValue.customer?.name)) }}
-                    </div>
-                    } @else {
-                    <div
-                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                        <lucide-icon [name]="icons.UserRound" class="h-4 w-4"></lucide-icon>
-                    </div>
-                    }
-
-                    <div class="min-w-0 flex-1 pt-0.5">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Customer</p>
-                        <p class="mt-0.5 truncate text-base font-semibold leading-tight text-slate-950">
-                            {{ repairValue.customer?.name || 'Unassigned' }}
-                        </p>
-
-                        @if (repairValue.customer) {
-                        <div class="mt-2.5 space-y-1.5">
-                            @if (repairValue.customer.phone) {
-                            <div class="flex min-w-0 items-center gap-2 text-xs text-slate-600">
-                                <lucide-icon [name]="icons.PhoneIcon" class="h-3.5 w-3.5 shrink-0 text-slate-400"></lucide-icon>
-                                <span class="truncate">{{ repairValue.customer.phone | phone }}</span>
-                            </div>
-                            }
-                            @if (repairValue.customer.email) {
-                            <div class="flex min-w-0 items-center gap-2 text-xs text-slate-600">
-                                <lucide-icon [name]="icons.MailIcon" class="h-3.5 w-3.5 shrink-0 text-slate-400"></lucide-icon>
-                                <span class="truncate">{{ repairValue.customer.email }}</span>
-                            </div>
-                            }
-                        </div>
-                        }
-                    </div>
+            </section>
+            <section class="rd-section" [hidden]="detailTab() !== 'documents'">
+<div class="rd-document-heading"><div class="rd-library-actions"><button type="button" class="rd-secondary rd-accent-button" (click)="repairUpload.click()"><lucide-icon [name]="icons.Paperclip" class="h-4 w-4"></lucide-icon> Upload</button><input #repairUpload type="file" hidden (change)="onFileSelected($event)" /></div>            @if (repair(); as currentRepair) {
+            <div class="relative documents-menu-wrap">
+              <button type="button" (click)="toggleDocumentsMenu()" [attr.aria-expanded]="documentsMenuOpen()"
+                aria-haspopup="menu"
+                class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30">
+                <lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon>
+                Document actions
+                <lucide-icon [name]="icons.ChevronDown" class="h-4 w-4 text-gray-400"></lucide-icon>
+              </button>
+              @if (documentsMenuOpen()) {
+                <div role="menu" aria-label="Repair documents"
+                  class="absolute right-0 top-full z-[80] mt-2 w-60 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl">
+                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Preview</p>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); downloadRepairTicket(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Repair ticket</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); printDeviceLabel(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print device label</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); downloadWorkOrder(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Work order</button>
+                  <div class="my-1 border-t border-gray-100"></div>
+                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Save & share</p>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); saveRepairPdf('ticket', currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Save ticket to library</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); saveRepairPdf('work-order', currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Save work order to library</button>
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); emailRepairTicket(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Email ticket</button>
+                  <div class="my-1 border-t border-gray-100"></div>
+                  <p class="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Authorization</p>
+                  @if (currentTicketAuthorization()?.status === 'signed') {
+                    <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); previewSignedTicket(currentTicketAuthorization()!.signedDocumentId!)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50" [disabled]="!currentTicketAuthorization()?.signedDocumentId">View signed authorization</button>
+                  } @else if (currentTicketAuthorization()?.status === 'pending') {
+                    <p class="px-4 py-2 text-sm text-amber-700">Awaiting customer signature</p>
+                  } @else {
+                    <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); requestTicketSignature(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Request authorization</button>
+                  }
+                  <button role="menuitem" type="button" (click)="documentsMenuOpen.set(false); repairFormsDrawer.showModal(); toggleTicketSignatures(currentRepair.id)" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">View history</button>
                 </div>
-
-                @if (repairValue.customer) {
-                <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4">
-                    @if (repairValue.customer.phone) {
-                    <a [href]="'tel:' + repairValue.customer.phone"
-                        class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950">
-                        <lucide-icon [name]="icons.PhoneIcon" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
-                        <span>Call</span>
-                    </a>
-                    }
-
-                    @if (repairValue.customer.email) {
-                    <a [href]="'mailto:' + repairValue.customer.email"
-                        class="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950">
-                        <lucide-icon [name]="icons.MailIcon" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
-                        <span>Email</span>
-                    </a>
-                    }
-
-                    <button type="button"
-                        class="inline-flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-xs font-medium text-slate-700 transition hover:border-brand/40 hover:bg-brand/5 hover:text-brand"
-                        (click)="openRepairConversation()">
-                        <lucide-icon [name]="icons.MessageSquareText" class="h-3.5 w-3.5 shrink-0"></lucide-icon>
-                        <span>Message</span>
-                    </button>
-                </div>
-
-                <a [routerLink]="['/customers', $safeNavigationMigration(repair()?.customerId), 'edit']"
-                    class="mt-2.5 flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">
-                    <span>View customer profile</span>
-                    <lucide-icon [name]="icons.ArrowRight" class="h-3.5 w-3.5"></lucide-icon>
-                </a>
-                } @else {
-                <div class="mt-5 border-t border-slate-100 pt-4 text-center text-sm text-slate-400">
-                    No customer assigned
-                </div>
-                }
-            </div>
-
-            @if (repairValue.businessAccount) {
-            <div class="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white">
-                            <lucide-icon [name]="icons.Building2" class="h-5 w-5"></lucide-icon>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Business account</p>
-                            <p class="truncate text-sm font-semibold text-slate-950">{{ repairValue.businessAccount.name }}</p>
-                            <p class="mt-0.5 text-xs text-slate-600">
-                                {{ repairValue.businessAccount.planName || 'No service plan' }}
-                                @if (repairValue.businessAccount.planName) {
-                                <span class="capitalize"> · {{ repairValue.businessAccount.planStatus }}</span>
-                                }
-                            </p>
-                        </div>
-                    </div>
-                    <a [routerLink]="['/business-accounts', repairValue.businessAccount.id]"
-                        class="cursor-pointer inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:border-slate-500 hover:bg-slate-50">
-                        View account
-                        <lucide-icon [name]="icons.ArrowRight" class="h-3 w-3"></lucide-icon>
-                    </a>
-                </div>
-
-                @if (repairValue.businessContact) {
-                <div class="mt-4 border-t border-slate-200 pt-4">
-                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Authorized contact</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ repairValue.businessContact.name }}</p>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        @if (repairValue.businessContact.phone) {
-                        <a [href]="'tel:' + repairValue.businessContact.phone"
-                            class="cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-brand hover:text-brand">
-                            <lucide-icon [name]="icons.PhoneIcon" class="h-3 w-3"></lucide-icon> Call
-                        </a>
-                        }
-                        @if (repairValue.businessContact.email) {
-                        <a [href]="'mailto:' + repairValue.businessContact.email"
-                            class="cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-brand hover:text-brand">
-                            <lucide-icon [name]="icons.MailIcon" class="h-3 w-3"></lucide-icon> Email
-                        </a>
-                        }
-                    </div>
-                </div>
-                }
+              }
             </div>
             }
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <div
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                            <lucide-icon [name]="icons.MailIcon" class="h-5 w-5"></lucide-icon>
-                        </div>
-
-                        <div class="min-w-0">
-                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                                Repair Emails
-                            </span>
-                            <div class="text-sm font-semibold text-gray-900">
-                                Notification History
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="button"
-                        class="cursor-pointer rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-                        [disabled]="repairNotificationsLoading()" (click)="loadRepairNotifications()">
-                        Refresh
-                    </button>
-                </div>
-
-                <div class="my-4 h-px bg-gray-100"></div>
-
-                @if (repairNotificationsLoading()) {
-                <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-                    Loading email history...
-                </div>
-                } @else if (repairNotificationsError()) {
-                <div class="rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-700">
-                    {{ repairNotificationsError() }}
-                </div>
-                } @else {
-                <div class="space-y-3">
-                    @for (notification of repairNotifications(); track notification.id) {
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                        <div class="flex items-start justify-between gap-3">
+</div>
+    @if (repair(); as currentRepair) {
+      <div class="rd-document-grid">
+        <button type="button" class="rd-doc-card" (click)="downloadRepairTicket(currentRepair.id)"><span class="rd-doc-preview">@if (documentPreviews()['ticket']; as preview) { <iframe tabindex="-1" aria-hidden="true" title="Document preview" [src]="preview"></iframe> } @else { <lucide-icon [name]="icons.Clipboard"></lucide-icon> }</span><span class="rd-doc-meta"><strong>Repair ticket</strong><small>Preview</small></span></button>
+        <button type="button" class="rd-doc-card" (click)="downloadWorkOrder(currentRepair.id)"><span class="rd-doc-preview">@if (documentPreviews()['work-order']; as preview) { <iframe tabindex="-1" aria-hidden="true" title="Document preview" [src]="preview"></iframe> } @else { <lucide-icon [name]="icons.BookOpen"></lucide-icon> }</span><span class="rd-doc-meta"><strong>Work order</strong><small>Preview</small></span></button>
+        <button type="button" class="rd-doc-card" (click)="printDeviceLabel(currentRepair.id)"><span class="rd-doc-preview">@if (documentPreviews()['label']; as preview) { <iframe tabindex="-1" aria-hidden="true" title="Document preview" [src]="preview"></iframe> } @else { <lucide-icon [name]="icons.SmartphoneIcon"></lucide-icon> }</span><span class="rd-doc-meta"><strong>Device label</strong><small>Print</small></span></button>
+        @if (currentTicketAuthorization()?.signedDocumentId; as signedId) {
+          <button type="button" class="rd-doc-card" (click)="previewSignedTicket(signedId)"><span class="rd-doc-preview">@if (documentPreviews()['authorization']; as preview) { <iframe tabindex="-1" aria-hidden="true" title="Signed authorization preview" [src]="preview"></iframe> } @else { <lucide-icon [name]="icons.Shield"></lucide-icon> }</span><span class="rd-doc-meta"><strong>Repair authorization</strong><small>Signed PDF</small></span></button>
+        } @else if (currentTicketAuthorization()?.status === 'pending') {
+          <button type="button" class="rd-doc-card" (click)="repairFormsDrawer.showModal()"><span class="rd-doc-preview"><lucide-icon [name]="icons.Shield"></lucide-icon></span><span class="rd-doc-meta"><strong>Repair authorization</strong><small>Pending signature</small></span></button>
+        } @else if (!currentTicketAuthorization() || (currentTicketAuthorization()?.status !== 'signed' && currentTicketAuthorization()?.status !== 'pending')) {
+          <button type="button" class="rd-doc-card" (click)="requestTicketSignature(currentRepair.id)"><span class="rd-doc-preview"><lucide-icon [name]="icons.Shield"></lucide-icon></span><span class="rd-doc-meta"><strong>Repair authorization</strong><small>Request signature</small></span></button>
+        }
+                    @for (attachment of attachments(); track trackById($index, attachment)) {
+                    <div class="rd-attachment-card rd-library-file"><div class="rd-doc-preview">@if (attachmentPreviews()[attachment.id]; as image) { <img [src]="image" alt="" loading="lazy" /> } @else { <lucide-icon [name]="icons.Paperclip"></lucide-icon> }</div>
+                        <div class="rd-attachment-meta rd-library-meta">
                             <div class="min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <span class="h-2 w-2 shrink-0 rounded-full"
-                                        [ngClass]="notificationStatusDotClasses(notification.status)">
-                                    </span>
-
-                                    <p class="truncate text-sm font-semibold text-gray-900">
-                                        {{ prettyNotificationEvent(notification.event) }}
-                                    </p>
+                                <div class="truncate text-sm font-medium text-gray-900">{{ attachment.filename }}
                                 </div>
-
-                                @if (notification.subject) {
-                                <p class="mt-1 truncate text-xs text-gray-600">
-                                    {{ notification.subject }}
-                                </p>
-                                }
-
-                                <p class="mt-1 text-xs text-gray-400">
-                                    {{ formatDate(notification.createdAt) }}
-                                </p>
+                                <div class="mt-1 text-xs text-gray-500">
+                                    {{ attachment.mimeType || 'Unknown type' }}
+                                    @if (attachment.sizeBytes) {
+                                    • {{ attachment.sizeBytes | number }} bytes
+                                    }
+                                </div>
                             </div>
 
-                            <span class="shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
-                                [ngClass]="notificationStatusClasses(notification.status)">
-                                {{ prettyNotificationStatus(notification.status) }}
-                            </span>
-                        </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button"
+                                    class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
+                                    (click)="downloadAttachment(attachment)">
+                                    Download
+                                </button>
 
-                        @if (notification.recipientEmail) {
-                        <div class="mt-2 truncate text-xs text-gray-500">
-                            To: {{ notification.recipientEmail }}
-                        </div>
-                        }
-
-                        @if (notification.errorMessage) {
-                        <div
-                            class="mt-2 rounded-lg border border-amber-100 bg-white px-3 py-2 text-xs leading-5 text-amber-700">
-                            {{ notification.errorMessage }}
-                        </div>
-                        }
-                    </div>
-                    } @empty {
-                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
-                        <p class="text-sm font-medium text-gray-800">
-                            No emails yet.
-                        </p>
-                        <p class="mt-1 text-xs leading-5 text-gray-500">
-                            Automated repair emails will appear here once they are sent, skipped, or failed.
-                        </p>
-                    </div>
-                    }
-                </div>
-                }
-            </div>
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <div
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                            <lucide-icon [name]="icons.Shield" class="h-5 w-5"></lucide-icon>
-                        </div>
-
-                        <div class="min-w-0">
-                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                                Customer Tracking
-                            </span>
-                            <div class="text-sm font-semibold text-gray-900">
-                                @if (publicRepairTrackingEnabled()) {
-                                Public repair page
-                                } @else {
-                                Tracking disabled
-                                }
+                                <button type="button"
+                                    class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                                    (click)="deleteAttachment(attachment)">
+                                    Delete
+                                </button>
                             </div>
                         </div>
                     </div>
-
-                    <span class="shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold" [ngClass]="publicRepairTrackingEnabled()
-                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                            : 'border-gray-200 bg-gray-50 text-gray-500'">
-                        {{ publicRepairTrackingEnabled() ? 'Shop On' : 'Shop Off' }}
-                    </span>
-                </div>
-
-                <div class="my-4 h-px bg-gray-100"></div>
-
-                @if (!publicRepairTrackingEnabled()) {
-                <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
-                    <p class="text-sm font-medium text-gray-800">
-                        Public tracking is off for this shop.
-                    </p>
-                    <p class="mt-1 text-xs leading-5 text-gray-500">
-                        Turn it on in shop settings before customers can view repair status pages.
-                    </p>
-                </div>
-                } @else {
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">This repair</p>
-                            <p class="mt-0.5 text-xs text-gray-500">
-                                Controls whether this specific repair link works.
-                            </p>
-                        </div>
-
-                        <button type="button"
-                            class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition"
-                            [disabled]="trackingActionSaving()"
-                            [ngClass]="repairValue.publicTrackingEnabled ? 'bg-brand' : 'bg-gray-200'"
-                            (click)="togglePublicTrackingForRepair(!repairValue.publicTrackingEnabled)">
-                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition"
-                                [ngClass]="repairValue.publicTrackingEnabled ? 'translate-x-6' : 'translate-x-1'">
-                            </span>
-                        </button>
-                    </div>
-
-                    @if (repairValue.publicTrackingEnabled && repairValue.publicTrackingToken) {
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                        <div class="mb-2 flex items-center justify-between gap-2">
-                            <span class="text-xs font-medium text-gray-500">Tracking Link</span>
-                            <span
-                                class="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-100">
-                                Active
-                            </span>
-                        </div>
-
-                        <div class="truncate rounded-lg bg-white px-3 py-2 text-xs text-gray-600 ring-1 ring-gray-200">
-                            {{ preferredPublicTrackingUrl() }}
-                        </div>
-
-                        @if (repairValue.publicShortUrl) {
-                        <div
-                            class="mt-2 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
-                            Short link active
-                        </div>
-                        } @else {
-                        <div
-                            class="mt-2 inline-flex items-center rounded-full bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-500 ring-1 ring-gray-200">
-                            Using full tracking link
-                        </div>
-                        }
-
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <button type="button"
-                                class="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-                                [disabled]="trackingActionSaving()" (click)="copyPublicTrackingLink()">
-                                <lucide-icon [name]="icons.Copy" class="h-3.5 w-3.5"></lucide-icon>
-                                Copy
-                            </button>
-
-                            <button type="button"
-                                class="cursor-pointer inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-                                [disabled]="trackingActionSaving()" (click)="openPublicTrackingLink()">
-                                <lucide-icon [name]="icons.ExternalLink" class="h-3.5 w-3.5"></lucide-icon>
-                                Open
-                            </button>
-                        </div>
-                    </div>
-                    } @else {
-                    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4">
-                        <p class="text-sm font-medium text-gray-800">
-                            Tracking is off for this repair.
-                        </p>
-                        <p class="mt-1 text-xs leading-5 text-gray-500">
-                            Enable it to create a customer-safe repair status page.
-                        </p>
-                    </div>
                     }
-
-                    <div class="grid grid-cols-1 gap-2">
-                        <button type="button"
-                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-                            [disabled]="trackingActionSaving() || !repairValue.publicTrackingEnabled"
-                            (click)="generatePublicShortTrackingLink()">
-                            <lucide-icon [name]="icons.ExternalLink" class="h-3.5 w-3.5"></lucide-icon>
-                            {{ repairValue.publicShortUrl ? 'Refresh short link' : 'Generate short link' }}
-                        </button>
-
-                        <button type="button"
-                            class="cursor-pointer inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-60"
-                            [disabled]="trackingActionSaving() || !repairValue.publicTrackingEnabled"
-                            (click)="regeneratePublicTrackingLink()">
-                            <lucide-icon [name]="icons.RefreshCw" class="h-3.5 w-3.5"></lucide-icon>
-                            Regenerate tracking link
-                        </button>
-                    </div>
-
-                    <p class="text-[11px] leading-5 text-gray-400">
-                        Short links are optional. Regenerating the tracking link invalidates the old destination and
-                        clears the saved short link.
-                    </p>
-                </div>
-                }
-            </div>
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex min-w-0 items-center gap-3">
-                        <div
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                            <lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon>
-                        </div>
-
-                        <div class="min-w-0">
-                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                                Provider
-                            </span>
-                            <div class="text-sm font-semibold text-gray-900">
-                                @if (repairValue.assignedTo) {
-                                {{ repairValue.assignedTo }}
-                                } @else {
-                                Unassigned
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                        [ngClass]="dispatchPillClasses(repairValue.dispatchType)">
-                        {{ prettyDispatchType(repairValue.dispatchType) }}
-                    </span>
-                </div>
-
-                <div class="my-4 h-px bg-gray-100"></div>
-
-                <div class="space-y-2 text-sm">
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Provider Type</span>
-                        <span class="font-medium text-gray-900">
-                            {{ prettyDispatchType(repairValue.dispatchType) }}
-                        </span>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Assigned To</span>
-                        <span class="font-medium text-gray-900">
-                            {{ repairValue.assignedTo || 'Unassigned' }}
-                        </span>
-                    </div>
-
-                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor && repairValue.contractor.email) {
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Email</span>
-                        <span class="truncate font-medium text-gray-900">
-                            {{ repairValue.contractor.email }}
-                        </span>
-                    </div>
-                    }
-
-                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor && repairValue.contractor.phone) {
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Phone</span>
-                        <span class="font-medium text-gray-900">
-                            {{ repairValue.contractor.phone | phone }}
-                        </span>
-                    </div>
-                    }
-
-                    @if (repairValue.dispatchType === 'contractor') {
-                    <div
-                        class="mt-3 rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 text-xs leading-5 text-orange-700">
-                        This repair is assigned to a contractor. Confirm customer verification and documentation before
-                        closing the job.
-                    </div>
-                    }
-
-                    @if (repairValue.dispatchType === 'unassigned') {
-                    <div
-                        class="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500">
-                        No provider has been assigned yet.
-                    </div>
-                    }
-                </div>
-            </div>
+      </div>
+    }
             @if (repairValue.dispatchType === 'contractor' || contractorSubmissionAvailable()) {
             <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="flex items-start justify-between gap-4">
@@ -1221,430 +751,217 @@
                 </div>
             </div>
             }
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                        <lucide-icon [name]="icons.ArrowRight" class="h-5 w-5"></lucide-icon>
-                    </div>
+            </section>
 
-                    <div class="min-w-0">
-                        <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                            Service
-                        </span>
-                        <div class="text-sm font-semibold text-gray-900">
-                            {{ repairForm.controls.serviceMode.value === 'on_site' ? 'On-site' : 'In-shop' }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="my-4 h-px bg-gray-100"></div>
-
-                @if (repairValue.serviceMode === 'on_site') {
-                <div class="space-y-2 text-sm text-gray-600">
-                    @if (repairValue.serviceAddressLabel) {
-                    <div class="font-medium text-gray-900">{{ repairValue.serviceAddressLabel }}</div>
-                    }
-                    @if (repairValue.serviceAddressLine1) {
-                    <div>{{ repairValue.serviceAddressLine1 }}</div>
-                    }
-                    @if (repairValue.serviceAddressLine2) {
-                    <div>{{ repairValue.serviceAddressLine2 }}</div>
-                    }
-                    <div>
-                        {{ repairValue.serviceAddressCity }},
-                        {{ repairValue.serviceAddressState }}
-                        {{ repairValue.serviceAddressPostalCode }}
-                    </div>
-                    @if (repairValue.tripFeeApplied) {
-                    <div class="pt-2 text-xs font-medium text-gray-500">
-                        Trip Fee: {{ formatMoney(repairValue.tripFeeCents) }}
-                    </div>
-                    }
-                </div>
-                } @else {
-                <div class="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
-                    This repair is marked as in-shop.
-                </div>
-                }
+            <section class="rd-section rd-activity-page" [hidden]="detailTab() !== 'activity'">
+              <div class="rd-inline-heading"><h2>Activity timeline</h2><div class="rd-actions"><button type="button" class="rd-secondary" (click)="notificationDrawer.showModal()">Notifications</button><button type="button" class="rd-secondary" (click)="trackingDrawer.showModal()">Tracking</button><button type="button" class="rd-secondary rd-accent-button" (click)="noteDrawer.showModal()">Add note</button></div></div>
+              <div class="rd-timeline" tabindex="0" aria-label="Repair history">
+                @for (entry of activityFeed(); track entry.key) {
+                  <article class="rd-timeline-item"><span class="rd-timeline-dot"><lucide-icon [name]="entry.kind === 'Note' ? icons.MessageSquareText : entry.kind === 'Email' ? icons.MailIcon : icons.Clock3" class="h-4 w-4"></lucide-icon></span><div><div class="rd-timeline-title"><strong>{{ entry.title }}</strong><small>{{ formatDate(entry.date) }}</small></div>@if (entry.detail) {<p>{{ entry.detail }}</p>}</div></article>
+                } @empty {<p class="rd-command-empty">No activity recorded.</p>}
+              </div>
+<dialog #noteDrawer class="rd-tool-drawer rd-utility-drawer" aria-label="Add note"><div class="rd-drawer-head"><strong>Add note</strong><button type="button" class="rd-close-action" (click)="noteDrawer.close()" aria-label="Close"><lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon></button></div>
+<form class="rd-utility-form" [formGroup]="noteForm" (ngSubmit)="addNote(noteDrawer)"><div class="rd-drawer-body"><label class="rd-compose-label">Note<textarea rows="4" formControlName="body" placeholder="Write a note…"></textarea></label><fieldset class="rd-note-visibility"><legend>Visibility</legend><label><input type="radio" formControlName="visibility" value="internal"><span>Internal<small>Only your team can see this.</small></span></label><label><input type="radio" formControlName="visibility" value="customer"><span>Customer visible<small>May appear on the customer repair page.</small></span></label></fieldset></div><footer class="rd-drawer-footer"><button type="button" class="rd-secondary" (click)="noteDrawer.close()">Cancel</button><button type="submit" class="rd-secondary rd-accent-button" [disabled]="saving() || noteForm.invalid || !noteForm.controls.body.value?.trim()">Add note</button></footer></form></dialog>
+<dialog #notificationDrawer class="rd-tool-drawer rd-utility-drawer" aria-label="Notification history"><div class="rd-drawer-head"><strong>Notification history</strong><button type="button" class="rd-close-action" (click)="notificationDrawer.close()" aria-label="Close"><lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon></button></div><div class="rd-drawer-body"><div class="rd-inline-heading"><small class="rd-command-empty">Repair notifications</small><button type="button" class="rd-secondary" [disabled]="repairNotificationsLoading()" (click)="loadRepairNotifications()"><lucide-icon [name]="icons.RefreshCw" class="h-4 w-4"></lucide-icon> Refresh</button></div>
+@if (repairNotificationsLoading()) {<p role="status">Loading history…</p>} @else if (repairNotificationsError()) {<p role="alert" class="rd-danger">{{ repairNotificationsError() }}</p>} @else {
+<div class="rd-notification-timeline">@for (notification of sortedNotifications(); track notification.id) {<article class="rd-notification-event"><span class="rd-notification-dot" [attr.data-status]="notification.status"></span><div class="rd-notification-content"><div class="rd-notification-heading"><strong>{{ prettyNotificationEvent(notification.event) }}</strong><span class="rd-notification-status" [attr.data-status]="notification.status">{{ prettyNotificationStatus(notification.status) }}</span></div><small>{{ formatDate(notification.createdAt) }}</small>@if (notification.recipientEmail || notification.recipientPhone) {<small>To: {{ notification.recipientEmail || notification.recipientPhone }}</small>} @if (notification.subject) {<p>{{ notification.subject }}</p>} @if (notification.errorMessage) {<details><summary>Delivery details</summary><p>{{ notification.errorMessage }}</p></details>}</div></article>} @empty {<p class="rd-command-empty">No notifications yet.</p>}</div>}</div><footer class="rd-drawer-footer"><button type="button" class="rd-secondary" (click)="notificationDrawer.close()">Close</button></footer></dialog>
+<dialog #trackingDrawer class="rd-tool-drawer rd-sharing-drawer rd-utility-drawer" aria-label="Share repair"><div class="rd-drawer-head"><strong>Share repair</strong><button type="button" class="rd-close-action" (click)="trackingDrawer.close()" aria-label="Close"><lucide-icon [name]="icons.X" class="h-4 w-4"></lucide-icon></button></div><div class="rd-drawer-body">
+@if (!publicRepairTrackingEnabled()) {<p>Public tracking is disabled in shop settings.</p>} @else {
+<div class="rd-share-toggle"><label for="rd-track-enable">Enable tracking</label><input id="rd-track-enable" class="rd-switch" type="checkbox" role="switch" [checked]="repairValue.publicTrackingEnabled" [disabled]="trackingActionSaving()" (change)="togglePublicTrackingForRepair($any($event.target).checked)"></div>
+@if (repairValue.publicTrackingEnabled && repairValue.publicTrackingToken) {<label class="rd-share-label" for="rd-track-url">{{ repairValue.publicShortUrl ? 'Short link' : 'Tracking link' }}</label><div class="rd-share-link"><input id="rd-track-url" readonly [value]="preferredPublicTrackingUrl()"><button type="button" [disabled]="trackingActionSaving()" (click)="copyPublicTrackingLink()" aria-label="Copy link" title="Copy link"><lucide-icon [name]="icons.Copy" class="h-4 w-4"></lucide-icon></button></div><details class="mt-1"><summary class="cursor-pointer text-xs" style="color:var(--rd-muted)">Link options</summary><div class="flex flex-col items-start gap-3 pt-3"><button type="button" class="rd-text-action" [disabled]="trackingActionSaving()" (click)="generatePublicShortTrackingLink()">{{ repairValue.publicShortUrl ? 'Refresh short link' : 'Generate short link' }}</button><p class="rd-command-empty">Regenerating invalidates the old link and clears the saved short link.</p><button type="button" class="rd-text-action rd-danger" [disabled]="trackingActionSaving()" (click)="regeneratePublicTrackingLink()">Regenerate link</button></div></details>} @else {<p class="rd-command-empty">Enable tracking to create a customer-safe status page.</p>}}</div>
+@if (publicRepairTrackingEnabled() && repairValue.publicTrackingEnabled && repairValue.publicTrackingToken) {<footer class="rd-drawer-footer"><button type="button" class="rd-secondary rd-accent-button" style="width:100%" [disabled]="trackingActionSaving()" (click)="openPublicTrackingLink()">Open customer page <lucide-icon [name]="icons.ExternalLink" class="h-4 w-4"></lucide-icon></button></footer>}</dialog>            </section>
+      </main>
+      <section class="rd-customer-page rd-cd-grid" aria-label="Customer and device" [hidden]="detailTab() !== 'customer'">
+        <article class="rd-appointment-panel">
+          <div class="rd-inline-heading"><h2>Customer</h2>@if (repairValue.customer) {<a class="rd-text-action" [routerLink]="['/customers', $safeNavigationMigration(repair()?.customerId), 'edit']">View profile <lucide-icon [name]="icons.ArrowRight" class="h-4 w-4"></lucide-icon></a>}</div>
+          <div class="rd-location-mode"><span class="rd-location-mode-icon"><lucide-icon [name]="icons.UserRound" class="h-6 w-6"></lucide-icon></span><div><strong>{{ repairValue.customer?.name || 'Unassigned' }}</strong><small>Customer</small></div></div>
+          @if (repairValue.customer; as customer) {
+            <div class="rd-cd-facts">
+              <div class="rd-cd-fact"><span class="rd-readiness-icon"><lucide-icon [name]="icons.PhoneIcon" class="h-5 w-5"></lucide-icon></span><div><small>Phone</small><strong>{{ customer.phone ? (customer.phone | phone) : 'Not recorded' }}</strong></div></div>
+              <div class="rd-cd-fact"><span class="rd-readiness-icon"><lucide-icon [name]="icons.MailIcon" class="h-5 w-5"></lucide-icon></span><div><small>Email</small><strong>{{ customer.email || 'Not recorded' }}</strong></div></div>
             </div>
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <!-- Header -->
-                <div class="flex items-center gap-3">
-                    <!-- Icon -->
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                        <lucide-icon [name]="icons.SmartphoneIcon" class="h-5 w-5"></lucide-icon>
-                    </div>
-
-                    <!-- Title -->
-                    <div class="flex flex-col">
-                        <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                            Device
-                        </span>
-                        <span class="text-sm font-semibold text-gray-900">
-                            {{ repairValue.customerDevice?.nickname || repairValue.customerDevice?.displayName }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Divider -->
-                <div class="my-4 h-px bg-gray-100"></div>
-
-                <!-- Device Details -->
-                <div class="space-y-2 text-sm text-gray-600">
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-400">Model</span>
-                        <span class="font-medium text-gray-900">
-                            {{ repairValue.customerDevice?.brand }} {{ repairValue.customerDevice?.model }}
-                        </span>
-                    </div>
-
-                    @if (repairValue.customerDevice?.imei) {
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-400">IMEI</span>
-                        <span class="font-mono text-xs text-gray-700">
-                            {{ repairValue.customerDevice?.imei }}
-                        </span>
-                    </div>
-                    }
-
-                    @if (repairValue.customerDevice?.serial) {
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-400">Serial</span>
-                        <span class="font-mono text-xs text-gray-700">
-                            {{ repairValue.customerDevice?.serial }}
-                        </span>
-                    </div>
-                    }
-                    @if (repairValue.customerDevice?.businessAccountId) {
-                    @if (repairValue.customerDevice?.assetTag) {
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-400">Asset tag</span>
-                        <span class="font-mono text-xs font-semibold text-gray-900">{{ repairValue.customerDevice?.assetTag }}</span>
-                    </div>
-                    }
-                    @if (repairValue.customerDevice?.assignedToName) {
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Assigned to</span>
-                        <span class="text-right font-medium text-gray-900">{{ repairValue.customerDevice?.assignedToName }}</span>
-                    </div>
-                    }
-                    @if (repairValue.customerDevice?.department) {
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Department</span>
-                        <span class="text-right font-medium text-gray-900">{{ repairValue.customerDevice?.department }}</span>
-                    </div>
-                    }
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-400">Fleet status</span>
-                        <span class="capitalize font-medium text-gray-900">{{ repairValue.customerDevice?.fleetStatus }}</span>
-                    </div>
-                    }
-                </div>
-
-                <!-- Notes -->
-                @if (repairValue.customerDevice?.notes) {
-                <div class="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
-                    {{ repairValue.customerDevice?.notes }}
-                </div>
-                }
-                <!-- Actions -->
-                <div class="mt-4 flex gap-2">
-                    <button (click)="editAssignedDevice(repairValue.customerId, repairValue.customerDevice)"
-                        class="cursor-pointer flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                        Edit
-                    </button>
-                </div>
-
+          }
+        </article>
+        <article class="rd-appointment-panel">
+          <div class="rd-inline-heading"><h2>Device</h2><button type="button" class="rd-text-action" (click)="editAssignedDevice(repairValue.customerId, repairValue.customerDevice)">Edit device</button></div>
+          <div class="rd-location-mode"><span class="rd-location-mode-icon"><lucide-icon [name]="icons.SmartphoneIcon" class="h-6 w-6"></lucide-icon></span><div><strong>{{ repairValue.customerDevice?.nickname || repairValue.customerDevice?.displayName || 'Not recorded' }}</strong><small>{{ repairValue.customerDevice?.brand }} {{ repairValue.customerDevice?.model }}</small></div></div>
+          @if (repairValue.customerDevice; as device) {
+            <div class="rd-cd-facts">
+              <div class="rd-cd-fact"><span class="rd-readiness-icon"><lucide-icon [name]="icons.Clipboard" class="h-5 w-5"></lucide-icon></span><div><small>IMEI</small><strong class="rd-cd-identifier">{{ device.imei || 'Not recorded' }}</strong></div></div>
+              <div class="rd-cd-fact"><span class="rd-readiness-icon"><lucide-icon [name]="icons.Clipboard" class="h-5 w-5"></lucide-icon></span><div><small>Serial number</small><strong class="rd-cd-identifier">{{ device.serial || 'Not recorded' }}</strong></div></div>
             </div>
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-600">
-                        <lucide-icon
-                            [name]="repairForm.controls.unlockType.value === 'pattern' ? icons.Grip : icons.LockKeyhole"
-                            class="h-5 w-5">
-                        </lucide-icon>
-                    </div>
-
-                    <div class="min-w-0">
-                        <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                            Device Unlock
-                        </span>
-                        <div class="text-sm font-semibold text-gray-900">
-                            @if (repairForm.controls.unlockType.value === 'pin') {
-                            PIN Passcode
-                            } @else if (repairForm.controls.unlockType.value === 'pattern') {
-                            Pattern Lock
-                            } @else {
-                            No Passcode Saved
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <div class="my-4 h-px bg-gray-100"></div>
-
-                <div class="space-y-2 text-sm text-gray-600">
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Type</span>
-                        <span class="font-medium text-gray-900">
-                            @if (repairForm.controls.unlockType.value === 'pin') {
-                            PIN
-                            } @else if (repairForm.controls.unlockType.value === 'pattern') {
-                            Pattern
-                            } @else {
-                            None
-                            }
-                        </span>
-                    </div>
-
-                    @if (repairForm.controls.unlockType.value === 'pin' && repairForm.controls.pinCode.value) {
-                    <div class="flex items-center justify-between gap-4">
-                        <span class="text-gray-400">Passcode</span>
-                        <span class="font-mono text-sm text-gray-900">
-                            {{ repairForm.controls.pinCode.value }}
-                        </span>
-                    </div>
+            @if (device.businessAccountId) {<div class="rd-cd-facts rd-cd-extra">
+              @if (device.assetTag) {<div class="rd-cd-fact"><div><small>Asset tag</small><strong>{{ device.assetTag }}</strong></div></div>}
+              @if (device.assignedToName) {<div class="rd-cd-fact"><div><small>Assigned to</small><strong>{{ device.assignedToName }}</strong></div></div>}
+              @if (device.department) {<div class="rd-cd-fact"><div><small>Department</small><strong>{{ device.department }}</strong></div></div>}
+              <div class="rd-cd-fact"><div><small>Fleet status</small><strong>{{ device.fleetStatus }}</strong></div></div>
+            </div>}
+            @if (device.notes) {<div class="rd-cd-note"><small>Device notes</small><p>{{ device.notes }}</p></div>}
+          }
+        </article>
+        <article class="rd-appointment-panel">
+          <div class="rd-inline-heading"><h2>Device unlock</h2><button type="button" class="rd-text-action" (click)="openUnlockModal()">{{ repairForm.controls.unlockType.value === 'none' ? 'Add' : 'Edit' }}</button></div>
+          <div class="rd-location-mode"><span class="rd-location-mode-icon rd-cd-security"><lucide-icon [name]="repairForm.controls.unlockType.value === 'pattern' ? icons.Grip : icons.LockKeyhole" class="h-6 w-6"></lucide-icon></span><div><strong>{{ repairForm.controls.unlockType.value === 'pin' ? 'PIN passcode' : repairForm.controls.unlockType.value === 'pattern' ? 'Pattern lock' : 'Not recorded' }}</strong><small>{{ repairForm.controls.unlockType.value === 'none' ? 'No unlock method saved' : 'Repair credentials' }}</small></div></div>
+          @if (repairForm.controls.unlockType.value !== 'none') {
+            <div class="rd-unlock-display">
+              @if (repairForm.controls.unlockType.value === 'pin' && repairForm.controls.pinCode.value) {
+                @if (credentialsVisible()) {
+                  <div class="rd-unlock-digits" aria-label="Saved passcode">
+                    @for (digit of repairForm.controls.pinCode.value.split(''); track $index) { <span>{{ digit }}</span> }
+                  </div>
+                } @else { <div class="rd-unlock-digits" aria-label="Passcode hidden">@for (dot of [0,1,2,3]; track dot) { <span>•</span> }</div> }
+              } @else if (repairForm.controls.unlockType.value === 'pattern' && repairForm.controls.patternCode.value) {
+                <svg viewBox="0 0 100 100" class="rd-unlock-pattern" role="img" [attr.aria-label]="credentialsVisible() ? 'Saved unlock pattern' : 'Unlock pattern hidden'">
+                  @if (credentialsVisible()) {
+                    @for (segment of patternPreviewSegments(); track $index) {
+                      <line [attr.x1]="segment.x1" [attr.y1]="segment.y1" [attr.x2]="segment.x2" [attr.y2]="segment.y2" class="rd-pattern-line" />
                     }
-
-                    @if (repairForm.controls.unlockType.value === 'pattern' && repairForm.controls.patternCode.value) {
-                    <div class="flex items-start justify-between gap-4">
-                        <span class="pt-2 text-gray-400">Pattern</span>
-
-                        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                            <svg viewBox="0 0 100 100" class="h-24 w-24 overflow-visible">
-                                @for (segment of patternPreviewSegments(); track $index) {
-                                <line [attr.x1]="segment.x1" [attr.y1]="segment.y1" [attr.x2]="segment.x2"
-                                    [attr.y2]="segment.y2" stroke="currentColor" stroke-width="4" stroke-linecap="round"
-                                    class="text-brand/45">
-                                </line>
-                                }
-
-                                @for (node of previewPatternNodes; track node.index) {
-                                <circle [attr.cx]="previewPatternPoint(node.index).x"
-                                    [attr.cy]="previewPatternPoint(node.index).y" r="9"
-                                    [attr.fill]="previewPatternFill(node.index)"
-                                    [attr.stroke]="previewPatternStroke(node.index)" stroke-width="2">
-                                </circle>
-
-                                <circle [attr.cx]="previewPatternPoint(node.index).x"
-                                    [attr.cy]="previewPatternPoint(node.index).y" r="2.75"
-                                    [attr.fill]="previewPatternInnerFill(node.index)">
-                                </circle>
-                                }
-                            </svg>
-                        </div>
-                    </div>
-                    }
-
-                    @if (repairForm.controls.unlockType.value === 'none') {
-                    <div class="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
-                        No unlock method has been stored for this repair.
-                    </div>
-                    }
-                </div>
-
-                <div class="mt-4 flex gap-2">
-                    <button type="button" (click)="openUnlockModal()"
-                        class="cursor-pointer flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                        @if (repairForm.controls.unlockType.value === 'none') {
-                        Add
-                        } @else {
-                        Edit
-                        }
-                    </button>
-                </div>
+                  }
+                  @for (node of previewPatternNodes; track node.index) {
+                    <circle [attr.cx]="previewPatternPoint(node.index).x" [attr.cy]="previewPatternPoint(node.index).y" r="6" class="rd-pattern-node" [class.active]="credentialsVisible() && isPreviewPatternNodeActive(node.index)" />
+                    @if (credentialsVisible() && isPreviewPatternStart(node.index)) { <circle [attr.cx]="previewPatternPoint(node.index).x" [attr.cy]="previewPatternPoint(node.index).y" r="10" class="rd-pattern-start" /> }
+                  }
+                </svg>
+              }
+              @if ((repairForm.controls.unlockType.value === 'pin' && repairForm.controls.pinCode.value) || (repairForm.controls.unlockType.value === 'pattern' && repairForm.controls.patternCode.value)) {
+                <button type="button" class="rd-secondary rd-unlock-reveal" [attr.aria-pressed]="credentialsVisible()" (click)="credentialsVisible.set(!credentialsVisible())">{{ credentialsVisible() ? 'Hide' : 'Reveal' }}</button>
+              } @else { <small class="rd-unlock-empty">No credential recorded</small> }
             </div>
-            @if (bookingEnabled()) {
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <lucide-icon [name]="icons.Clock3" class="h-4 w-4 text-gray-400"></lucide-icon>
-                        <h2 class="text-sm font-semibold text-gray-900">Appointment</h2>
-                    </div>
+          }
+        </article>
+        <div class="rd-appointment-panel rd-intake-card" [formGroup]="repairForm">
+                        <div class="rd-inline-heading"><h2>Intake</h2><button type="button" class="rd-text-action" (click)="editingIntake.set(!editingIntake())">{{ editingIntake() ? 'Done' : 'Edit' }}</button></div>
+                        @if (!editingIntake()) { <div class="rd-cd-facts"><div class="rd-cd-fact"><span class="rd-readiness-icon"><lucide-icon [name]="icons.Clipboard" class="h-5 w-5"></lucide-icon></span><div><small>Notes</small><strong>{{ repairForm.controls.intakeNotes.value || 'None recorded' }}</strong></div></div><div class="rd-cd-fact"><span class="rd-readiness-icon"><lucide-icon [name]="icons.Paperclip" class="h-5 w-5"></lucide-icon></span><div><small>Accessories</small><strong>{{ accessoriesList().join(', ') || 'None recorded' }}</strong></div></div></div> }
 
-                    <div class="flex items-center gap-3">
-                        @if (repairValue.appointment) {
-                        <span class="text-xs font-medium text-gray-500">
-                            Scheduled
-                        </span>
-                        }
-                        <button type="button"
-                            class="cursor-pointer text-sm font-medium text-brand transition hover:text-brand-soft"
-                            (click)="openRescheduleModal()">
-                            {{ repairValue.appointment ? 'Reschedule' : 'Schedule' }}
-                        </button>
-                    </div>
-                </div>
+                        <div class="mt-6 space-y-4" [hidden]="!editingIntake()">
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-gray-700">Intake Notes</label>
+                                <textarea rows="3" formControlName="intakeNotes"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand resize-none"></textarea>
+                            </div>
 
-                @if (repairValue.appointment) {
-                <div class="mt-3 space-y-1.5 border-l-2 border-gray-100 pl-3">
-                    <div class="text-sm font-medium text-gray-900">
-                        {{ formatAppointmentDate($any(repairValue.appointment).startsAt ??
-                        $any(repairValue.appointment).startAt) }}
-                    </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-gray-700">Accessories</label>
+                                <div
+                                    class="rounded-xl border border-gray-200 bg-white px-3 py-2 focus-within:border-brand">
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        @for (item of accessoriesList(); track item) {
+                                        <div
+                                            class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                            <span>{{ item }}</span>
+                                            <button type="button" class="text-gray-400 hover:text-gray-600"
+                                                (click)="removeAccessory(item)">
+                                                ×
+                                            </button>
+                                        </div>
+                                        }
 
-                    <div class="text-sm text-gray-500">
-                        {{ formatAppointmentTimeRange(
-                        $any(repairValue.appointment).startsAt ?? $any(repairValue.appointment).startAt,
-                        repairValue.appointment.endsAt
-                        ) }}
-                    </div>
-
-                    @if (repairValue.appointment.notes) {
-                    <div class="mt-2 text-xs text-gray-500">
-                        {{ repairValue.appointment.notes }}
-                    </div>
-                    }
-                </div>
-                } @else {
-                <div class="mt-3 text-sm text-gray-500">
-                    No appointment scheduled
-                </div>
-                }
-            </div>
-            }
-
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
-                            <lucide-icon [name]="icons.Clipboard" class="h-4 w-4"></lucide-icon>
-                        </div>
-                        <div>
-                            <h2 class="text-sm font-semibold text-gray-900">Forms & Checklists</h2>
-                            <p class="mt-1 text-xs leading-5 text-gray-500">Assignments connected to this repair.</p>
-                        </div>
-                    </div>
-
-                    <a [routerLink]="['/forms']"
-                        class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand transition hover:bg-brand/5 hover:text-brand-soft">
-                        Manage
-                    </a>
-                </div>
-
-                @if (incompleteRequiredRepairForms().length > 0) {
-                <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-800">
-                    <span class="font-semibold">{{ incompleteRequiredRepairForms().length }} required {{ incompleteRequiredRepairForms().length === 1 ? 'form is' : 'forms are' }} incomplete.</span>
-                    Repair progress may be blocked until completion.
-                </div>
-                }
-
-                <div class="mt-4 space-y-3">
-                    @if (repairFormsLoading()) {
-                    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-500">
-                        Loading forms...
-                    </div>
-                    } @else if (repairFormsError()) {
-                    <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-                        {{ repairFormsError() }}
-                    </div>
-                    } @else {
-                    @for (assignment of repairForms(); track assignment.id) {
-                    <div class="rounded-xl border border-gray-200 p-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="truncate text-sm font-semibold text-gray-900">{{ assignment.title }}</p>
-                                    <span class="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-                                        [ngClass]="formStatusClasses(assignment.status)">
-                                        {{ formStatusLabel(assignment.status) }}
-                                    </span>
+                                        <input type="text" placeholder="Add accessory..."
+                                            class="min-w-[120px] flex-1 bg-transparent py-0.5 text-sm text-gray-700 outline-none placeholder:text-gray-400"
+                                            [value]="accessoryInput()"
+                                            (input)="accessoryInput.set($any($event.target).value)"
+                                            (keydown)="onAccessoryKeydown($event)" />
+                                    </div>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500">
-                                    {{ assignment.audience === 'staff' ? 'Staff checklist' : 'Customer form' }}
-                                    @if (assignment.assignedToUser?.name) { · {{ assignment.assignedToUser?.name }} }
+
+                                <p class="mt-2 ps-1 text-xs text-gray-500">
+                                    Press enter or comma to add.
                                 </p>
                             </div>
-
-                            <a [routerLink]="['/forms']" [queryParams]="{ assignment: assignment.id }"
-                                class="cursor-pointer shrink-0 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-700 transition hover:border-brand hover:text-brand">
-                                {{ assignment.status === 'completed' ? 'View' : assignment.audience === 'staff' ? 'Complete' : 'Manage' }}
-                            </a>
-                        </div>
-
-                        <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
-                            @if (formRequirementLabel($safeNavigationMigration(assignment.template?.requiredBeforeRepairStatus)); as requirement) {
-                            <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">
-                                {{ requirement }}
-                            </span>
-                            }
-                            @if (formatFormDueDate(assignment.dueAt); as dueDate) {
-                            <span class="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 font-medium text-gray-600">
-                                Due {{ dueDate }}
-                            </span>
-                            }
-                            @if (assignment.completedByCustomer) {
-                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
-                                Completed by customer
-                            </span>
-                            }
                         </div>
                     </div>
-                    } @empty {
-                    <div class="rounded-xl border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500">
-                        No forms are connected to this repair yet.
-                    </div>
-                    }
-                    }
-                </div>
-            </div>
+        @if (repairValue.businessAccount) {
+          <article class="rd-appointment-panel rd-cd-business">
+            <div class="rd-inline-heading"><h2>Business account</h2><a class="rd-text-action" [routerLink]="['/business-accounts', repairValue.businessAccount.id]">View account <lucide-icon [name]="icons.ArrowRight" class="h-4 w-4"></lucide-icon></a></div>
+            <div class="rd-location-mode"><span class="rd-location-mode-icon"><lucide-icon [name]="icons.Building2" class="h-6 w-6"></lucide-icon></span><div><strong>{{ repairValue.businessAccount.name }}</strong><small>{{ repairValue.businessAccount.planName || 'No service plan' }} @if (repairValue.businessAccount.planName) { · {{ repairValue.businessAccount.planStatus }} }</small></div></div>
+            @if (repairValue.businessContact; as contact) {<div class="rd-cd-facts"><div class="rd-cd-fact"><span class="rd-readiness-icon"><lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon></span><div><small>Authorized contact</small><strong>{{ contact.name }}</strong></div></div>@if (contact.phone) {<a class="rd-cd-fact" [href]="'tel:' + contact.phone"><span class="rd-readiness-icon"><lucide-icon [name]="icons.PhoneIcon" class="h-5 w-5"></lucide-icon></span><div><small>Phone</small><strong>{{ contact.phone | phone }}</strong></div></a>} @if (contact.email) {<a class="rd-cd-fact" [href]="'mailto:' + contact.email"><span class="rd-readiness-icon"><lucide-icon [name]="icons.MailIcon" class="h-5 w-5"></lucide-icon></span><div><small>Email</small><strong>{{ contact.email }}</strong></div></a>}</div>}
+          </article>
+        }
+      </section>
+      <section class="rd-section rd-provider-page" [hidden]="detailTab() !== 'scheduling'" aria-label="Provider details" [class.rd-contractor-only]="repairValue.dispatchType !== 'contractor'">
+            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <lucide-icon [name]="icons.UserRound" class="h-5 w-5"></lucide-icon>
+                        </div>
 
-            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                        <lucide-icon [name]="icons.Paperclip" class="h-4 w-4 text-gray-500"></lucide-icon>
-                        <h2 class="text-base font-semibold text-gray-900">Attachments</h2>
-                    </div>
-
-                    <label
-                        class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-brand hover:text-brand">
-                        <input type="file" class="hidden" (change)="onFileSelected($event)" />
-                        Upload
-                    </label>
-                </div>
-
-                <div class="mt-5 space-y-3">
-                    @for (attachment of attachments(); track trackById($index, attachment)) {
-                    <div class="rounded-xl border border-gray-200 p-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <div class="truncate text-sm font-medium text-gray-900">{{ attachment.filename }}
-                                </div>
-                                <div class="mt-1 text-xs text-gray-500">
-                                    {{ attachment.mimeType || 'Unknown type' }}
-                                    @if (attachment.sizeBytes) {
-                                    • {{ attachment.sizeBytes | number }} bytes
-                                    }
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <button type="button"
-                                    class="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand"
-                                    (click)="downloadAttachment(attachment)">
-                                    Download
-                                </button>
-
-                                <button type="button"
-                                    class="cursor-pointer rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50"
-                                    (click)="deleteAttachment(attachment)">
-                                    Delete
-                                </button>
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                                Provider
+                            </span>
+                            <div class="text-sm font-semibold text-gray-900">
+                                @if (repairValue.assignedTo) {
+                                {{ repairValue.assignedTo }}
+                                } @else {
+                                Unassigned
+                                }
                             </div>
                         </div>
                     </div>
-                    } @empty {
-                    <div class="rounded-xl border border-dashed border-gray-200 p-5 text-sm text-gray-500">
-                        No attachments yet.
+
+                    <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        [ngClass]="dispatchPillClasses(repairValue.dispatchType)">
+                        {{ prettyDispatchType(repairValue.dispatchType) }}
+                    </span>
+                </div>
+
+                <div class="my-4 h-px bg-gray-100"></div>
+
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Provider Type</span>
+                        <span class="font-medium text-gray-900">
+                            {{ prettyDispatchType(repairValue.dispatchType) }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Assigned To</span>
+                        <span class="font-medium text-gray-900">
+                            {{ repairValue.assignedTo || 'Unassigned' }}
+                        </span>
+                    </div>
+
+                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor && repairValue.contractor.email) {
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Email</span>
+                        <span class="truncate font-medium text-gray-900">
+                            {{ repairValue.contractor.email }}
+                        </span>
+                    </div>
+                    }
+
+                    @if (repairValue.dispatchType === 'contractor' && repairValue.contractor && repairValue.contractor.phone) {
+                    <div class="flex items-center justify-between gap-4">
+                        <span class="text-gray-400">Phone</span>
+                        <span class="font-medium text-gray-900">
+                            {{ repairValue.contractor.phone | phone }}
+                        </span>
+                    </div>
+                    }
+
+                    @if (repairValue.dispatchType === 'contractor') {
+                    <div
+                        class="mt-3 rounded-xl border border-orange-100 bg-orange-50 px-3 py-2 text-xs leading-5 text-orange-700">
+                        This repair is assigned to a contractor. Confirm customer verification and documentation before
+                        closing the job.
+                    </div>
+                    }
+
+                    @if (repairValue.dispatchType === 'unassigned') {
+                    <div
+                        class="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500">
+                        No provider has been assigned yet.
                     </div>
                     }
                 </div>
             </div>
-        </div>
+      </section>
     </div>
     }
 </div>
-
 @if (bookingEnabled()) {
 <app-scheduling-picker displayMode="modal"></app-scheduling-picker>
 }

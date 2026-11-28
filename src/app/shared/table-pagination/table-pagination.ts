@@ -7,24 +7,30 @@ import {
   ChevronsRight,
   OpscendIconComponent,
 } from '../../core/ui/opscend-icon/index';
+import { MatSelectModule } from '@angular/material/select';
 import { TablePaginationStateService } from './table-pagination-state.service';
 
 @Component({
   selector: 'app-table-pagination',
   standalone: true,
-  imports: [OpscendIconComponent],
+  imports: [OpscendIconComponent, MatSelectModule],
   changeDetection: ChangeDetectionStrategy.Eager,
   template: `
-    @if (totalItems > 0) {
-      <div class="flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    @if (totalItems > 0 || compactDark) {
+      <div [class.ops-pagination-dark]="compactDark" class="flex flex-col gap-3 border-t border-gray-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="text-sm text-gray-500">
+          @if (totalItems === 0) { 0 {{ pluralLabel }} } @else {
           Showing
           <span class="font-medium text-gray-700">{{ rangeStart }}</span>–<span class="font-medium text-gray-700">{{ rangeEnd }}</span>
           of <span class="font-medium text-gray-700">{{ totalItems }}</span>
           {{ totalItems === 1 ? singularLabel : pluralLabel }}
+          }
         </div>
 
         <div class="flex items-center justify-between gap-2 sm:justify-end">
+          @if (compactDark) {
+            <div class="ops-select-shell ops-page-size"><mat-select class="ops-mat-select" aria-label="Rows per page" [value]="pageSize" (selectionChange)="changePageSize($event.value)" panelClass="ops-dark-select-panel">@for (size of pageSizeOptions; track size) { <mat-option [value]="size">{{ size }} per page</mat-option> }</mat-select></div>
+          }
           <span class="mr-1 whitespace-nowrap text-sm text-gray-500">
             Page <span class="font-medium text-gray-700">{{ page }}</span> of
             <span class="font-medium text-gray-700">{{ totalPages }}</span>
@@ -86,6 +92,7 @@ export class TablePagination implements OnChanges {
   private readonly pagination = inject(TablePaginationStateService);
 
   @Input({ required: true }) storageKey = '';
+  @Input() compactDark = false;
   @Input() totalItems = 0;
   @Input() defaultPageSize = 25;
   @Input() pageSizeOptions: number[] = [10, 25, 50, 100];

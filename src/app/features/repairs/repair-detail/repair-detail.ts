@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import {
   Component,
   DestroyRef,
@@ -49,6 +50,9 @@ import {
   X,
 } from '../../../core/ui/opscend-icon/index';
 
+import { OrdersStore } from '../../../core/orders/orders-store';
+import { OrdersService } from '../../../core/orders/orders-service';
+import type { Order } from '../../../core/orders/orders-model';
 import { DocumentsService } from '../../../core/documents/documents.service';
 import { AppConfigService } from '../../../core/app-config/app-config.service';
 import { AppointmentsStore } from '../../../core/appointments/appointments.store';
@@ -116,6 +120,61 @@ interface ShopListResponse {
   styleUrl: './repair-detail.scss',
 })
 export class RepairDetail implements OnInit, OnDestroy {
+  readonly detailTabs = [ {id:'overview', label:'Overview'}, {id:'customer', label:'Customer & device'}, {id:'scheduling', label:'Scheduling'}, {id:'payments', label:'Order'}, {id:'documents', label:'Documents'}, {id:'activity', label:'Activity'} ] as const;
+  readonly detailTab = signal<'overview' | 'customer' | 'scheduling' | 'payments' | 'documents' | 'activity'>('overview');
+  readonly orderStore = inject(OrdersStore);
+  private readonly orderService = inject(OrdersService);
+  readonly overviewOrder = computed(() => {
+    const order = this.orderStore.selectedOrder();
+    return order && order.id === this.repair()?.orderId ? order : null;
+  });
+  readonly linkCandidates = signal<Order[]>([]);
+  readonly linkLoading = signal(false);
+  readonly linkError = signal('');
+  readonly linkChoice = signal('');
+  openOverviewOrder(dialog: HTMLDialogElement): void {
+    if (this.hasOrder()) { this.detailTab.set('payments'); return; }
+    dialog.showModal(); void this.openOrderChooser();
+  }
+  async openOrderChooser(): Promise<void> {
+    const repair = this.repair();
+    this.linkCandidates.set([]); this.linkChoice.set(''); this.linkError.set('');
+    if (!repair?.customerId || repair.orderId) return;
+    this.linkLoading.set(true);
+    try {
+      const result = await firstValueFrom(this.orderService.list({customerId: repair.customerId, limit: 50}));
+      if (this.repair()?.id === repair.id) this.linkCandidates.set(result.data.filter(o => o.customerId === repair.customerId && o.paymentStatus !== 'voided'));
+    } catch { this.linkError.set('Unable to load customer orders.'); }
+    finally { this.linkLoading.set(false); }
+  }
+  async linkChosenOrder(dialog: HTMLDialogElement): Promise<void> {
+    const repair = this.repair();
+    const order = this.linkCandidates().find(o => o.id === this.linkChoice());
+    if (!repair || repair.orderId || !order || order.customerId !== repair.customerId || this.linkLoading()) return;
+    this.linkLoading.set(true); this.linkError.set('');
+    try {
+      const updated = await this.store.linkOrder(repair.id, order.id);
+      if (!updated) { this.linkError.set(this.error() || 'Unable to link order.'); return; }
+      await this.store.loadRepair(repair.id); dialog.close();
+    } catch { this.linkError.set('Unable to link order.'); }
+    finally { this.linkLoading.set(false); }
+  }
+  readonly activityFeed = computed(() => [
+    ...this.events().map(e => ({key:'event-'+e.id, date:e.createdAt, title:e.type === 'status_change' && e.toStatus ? 'Status changed to '+this.prettyStatus(e.toStatus) : e.message || e.type, detail:e.fromStatus && e.toStatus ? this.prettyStatus(e.fromStatus)+' → '+this.prettyStatus(e.toStatus) : '', kind:'Event'})),
+    ...this.notes().map(n => ({key:'note-'+n.id, date:n.createdAt, title:n.visibility === 'internal' ? 'Internal note' : 'Customer-visible note', detail:n.body, kind:'Note'})),
+    ...this.repairNotifications().map(n => ({key:'notification-'+n.id, date:n.createdAt, title:this.prettyNotificationEvent(n.event), detail:this.prettyNotificationStatus(n.status), kind:'Email'})),
+  ].sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime()));
+  readonly editingSummary = signal(false);
+  readonly editingIntake = signal(false);
+  private repairEditBaseline = '';
+  hasRepairEdits(): boolean {
+    return !!this.repairEditBaseline && this.repairEditSnapshot() !== this.repairEditBaseline;
+  }
+  private repairEditSnapshot(): string {
+    return JSON.stringify([this.repairForm.getRawValue(), this.accessoriesList()]);
+  }
+  readonly credentialsVisible = signal(false);
+
   @ViewChild('patternPad') patternPad?: ElementRef<HTMLElement>;
 
   private readonly documents = inject(DocumentsService);
@@ -133,6 +192,33 @@ export class RepairDetail implements OnInit, OnDestroy {
   private readonly communicationApi = inject(CommunicationService);
   private readonly formsApi = inject(FormsService);
 
+  private readonly mapSanitizer = inject(DomSanitizer);
+  readonly mapPreviewUrl = signal<SafeResourceUrl | null>(null);
+  readonly mapPreviewAddress = signal('');
+  readonly schedulingShopAddress = signal('');
+  schedulingAddress(): string {
+    const repair = this.repair();
+    if (!repair) return '';
+    return repair.serviceMode === 'on_site'
+      ? (repair.serviceAddressLine1 ? [repair.serviceAddressLine1, repair.serviceAddressLine2, repair.serviceAddressCity, repair.serviceAddressState, repair.serviceAddressPostalCode, repair.serviceAddressCountry].filter(Boolean).join(', ') : '')
+      : this.schedulingShopAddress();
+  }
+  schedulingMapsUrl(): string {
+    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(this.schedulingAddress());
+  }
+  loadSchedulingMap(): void {
+    const address = this.schedulingAddress();
+    if (!address) return;
+    this.mapPreviewAddress.set(address);
+    this.mapPreviewUrl.set(this.mapSanitizer.bypassSecurityTrustResourceUrl('https://maps.google.com/maps?q=' + encodeURIComponent(address) + '&output=embed'));
+  }
+  appointmentDuration(): string {
+    const appointment = this.repair()?.appointment;
+    if (!appointment) return 'Duration unavailable';
+    const end = appointment.endAt || appointment.endsAt;
+    const minutes = end ? Math.round((Date.parse(end) - Date.parse(appointment.startAt)) / 60000) : NaN;
+    return Number.isFinite(minutes) && minutes > 0 ? minutes + ' min' : 'Duration unavailable';
+  }
   public shopCountry = 'US';
 
   readonly states = [
@@ -237,6 +323,7 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly trackingActionSaving = signal(false);
 
   readonly repairNotifications = signal<RepairNotification[]>([]);
+  readonly sortedNotifications = computed(() => [...this.repairNotifications()].sort((a,b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)));
   readonly repairNotificationsLoading = signal(false);
   readonly repairNotificationsError = signal<string | null>(null);
 
@@ -277,6 +364,19 @@ export class RepairDetail implements OnInit, OnDestroy {
     'picked_up',
     'canceled',
   ];
+
+  readonly overviewStages: { status: RepairStatus; label: string }[] = [
+    { status: 'scheduled', label: 'Scheduled' },
+    { status: 'intake', label: 'Intake' },
+    { status: 'in_repair', label: 'In repair' },
+    { status: 'ready', label: 'Ready' },
+    { status: 'picked_up', label: 'Picked up' },
+  ];
+
+  overviewStageState(status: RepairStatus, current: RepairStatus): 'current' | 'recorded' | 'unknown' {
+    if (status === current) return 'current';
+    return this.events().some(event => event.type === 'status_change' && (event.toStatus === status || event.fromStatus === status)) ? 'recorded' : 'unknown';
+  }
 
   readonly patternNodes = Array.from({ length: 9 }, (_, index) => ({ index }));
   readonly previewPatternNodes = Array.from({ length: 9 }, (_, index) => ({ index }));
@@ -493,11 +593,11 @@ export class RepairDetail implements OnInit, OnDestroy {
     return segments;
   });
 
-  readonly previewPatternPath = computed(() =>
-    this.parsePatternCode(this.repairForm.controls.patternCode.value)
-  );
+  previewPatternPath(): number[] {
+    return this.parsePatternCode(this.repairForm.controls.patternCode.value);
+  }
 
-  readonly patternPreviewSegments = computed(() => {
+  patternPreviewSegments(): Array<{ x1: number; y1: number; x2: number; y2: number }> {
     const path = this.previewPatternPath();
     const segments: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
 
@@ -514,7 +614,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     }
 
     return segments;
-  });
+  }
 
   readonly repairForm = this.fb.nonNullable.group({
     status: ['intake' as RepairStatus, Validators.required],
@@ -569,6 +669,51 @@ export class RepairDetail implements OnInit, OnDestroy {
   readonly ticketSignatureLoading = signal(false);
   readonly currentTicketAuthorization = computed(() => this.ticketSignatureHistory().find(r => r.status === 'signed') ?? this.ticketSignatureHistory().find(r => r.status === 'pending' && (!r.expiresAt || new Date(r.expiresAt).getTime() > Date.now())) ?? null);
   readonly ticketSignatureHistoryVisible = signal(false);
+  readonly documentPreviews = signal<Record<string, SafeResourceUrl>>({});
+  readonly attachmentPreviews = signal<Record<string, string>>({});
+  private readonly attachmentPreviewEffect = effect((onCleanup) => {
+    const repair = this.repair();
+    const active = this.detailTab() === 'documents';
+    const images = this.attachments().filter(item => this.isImageAttachment(item)).slice(0, 24);
+    let canceled = false;
+    onCleanup(() => { canceled = true; });
+    this.attachmentPreviews.set({});
+    if (!repair || !active) return;
+    for (const item of images) {
+      void this.store.getAttachmentDownloadUrl(repair.id, item.id).then(url => {
+        if (canceled || !url) return;
+        this.attachmentPreviews.update(current => ({ ...current, [item.id]: url }));
+      }).catch(() => { /* Keep the file icon on failure. */ });
+    }
+  });
+
+  // Keep thumbnail requests independent of the full document preview modal.
+  private readonly documentPreviewEffect = effect((onCleanup) => {
+    const repair = this.repair();
+    const active = this.detailTab() === 'documents';
+    const signedId = this.currentTicketAuthorization()?.signedDocumentId;
+    let canceled = false;
+    const urls: string[] = [];
+    onCleanup(() => { canceled = true; urls.forEach(url => URL.revokeObjectURL(url)); });
+    this.documentPreviews.set({});
+    if (!active || !repair) return;
+    const id = encodeURIComponent(repair.id);
+    const paths: Record<string, string> = {
+      ticket: `/documents/ticket/${id}.pdf`,
+      'work-order': `/documents/work-order/${id}.pdf`,
+      label: `/documents/labels/repair/${id}.pdf`,
+    };
+    if (signedId) paths['authorization'] = `/documents/archive/${encodeURIComponent(signedId)}.pdf`;
+    for (const [key, path] of Object.entries(paths)) {
+      void firstValueFrom(this.http.get(`${this.apiBase}${path}`, { responseType: 'blob' })).then(blob => {
+        if (canceled || !blob.size || !['application/pdf', 'application/octet-stream'].includes(blob.type)) return;
+        const url = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        urls.push(url);
+        const preview = this.mapSanitizer.bypassSecurityTrustResourceUrl(url + '#page=1&toolbar=0&navpanes=0&scrollbar=0&view=Fit');
+        this.documentPreviews.update(current => ({ ...current, [key]: preview }));
+      }).catch(() => { /* Icon remains available when preview is unavailable. */ });
+    }
+  });
   readonly documentsMenuOpen = signal(false);
   toggleDocumentsMenu(): void {
     this.statusMenuOpen.set(false);
@@ -657,6 +802,7 @@ export class RepairDetail implements OnInit, OnDestroy {
       { emitEvent: false }
     );
 
+    this.repairEditBaseline = JSON.stringify([this.repairForm.getRawValue(), repair.accessories ?? []]);
     if ((repair.unlockType ?? 'none') === 'pattern') {
       this.syncPatternPathFromControl();
     } else {
@@ -1411,7 +1557,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     );
   }
 
-  async addNote(): Promise<void> {
+  async addNote(drawer?: HTMLDialogElement): Promise<void> {
     const id = this.repairId();
     if (!id || this.noteForm.invalid) {
       this.noteForm.markAllAsTouched();
@@ -1427,6 +1573,7 @@ export class RepairDetail implements OnInit, OnDestroy {
     if (note) {
       this.noteForm.patchValue({ body: '', visibility: 'internal' });
       this.toast.success('Note added', 'Repair note saved.');
+      drawer?.close();
     } else {
       this.toast.error('Note failed', this.error() ?? 'Unable to add note.');
     }
@@ -2263,6 +2410,8 @@ export class RepairDetail implements OnInit, OnDestroy {
   private async loadShopCountry(): Promise<void> {
     const shop = await firstValueFrom(this.shopContext.load());
     this.shopCountry = shop?.address?.country || shop?.locale?.country || 'US';
+    const address = shop?.address;
+    this.schedulingShopAddress.set(address?.line1 ? [address.line1, address.line2, address.city, address.state, address.postalCode, address.country].filter(Boolean).join(', ') : '');
   }
 
   prettyDispatchType(dispatchType: string | null | undefined): string {

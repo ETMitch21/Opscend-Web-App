@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { MatSelectModule } from '@angular/material/select';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RepairsService } from '../../../core/repairs/repairs-service';
 import {
@@ -14,13 +15,13 @@ import {
   type RepairListParams,
   type RepairStatus,
 } from '../../../core/repairs/repair.model';
-import { ChevronDownIcon, Building2, House, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
+import { Plus, Wrench, ListFilter, ChevronDownIcon, ChevronRight, Building2, House, OpscendIconComponent } from '../../../core/ui/opscend-icon/index';
 import { PhonePipe } from '../../../core/pipes/phone-pipe';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 
 import { TablePagination } from '../../../shared/table-pagination/table-pagination';
-import { TablePageSize } from '../../../shared/table-pagination/table-page-size';
+import { OpsSearch } from '../../../core/ui/ops-search';
 import { TablePaginationStateService } from '../../../shared/table-pagination/table-pagination-state.service';
 
 type RepairViewFilter =
@@ -45,7 +46,7 @@ type SortDirection = 'asc' | 'desc';
 @Component({
   selector: 'app-repairs-overview',
   standalone: true,
-  imports: [CommonModule, DatePipe, OpscendIconComponent, PhonePipe, RouterLink, TablePagination, TablePageSize],
+  imports: [MatSelectModule, CommonModule, DatePipe, OpscendIconComponent, PhonePipe, RouterLink, TablePagination, OpsSearch],
   templateUrl: './repairs-overview.html',
   styleUrl: './repairs-overview.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +57,13 @@ export class RepairsOverview {
   private readonly auth = inject(AuthService);
   readonly canCreateRepair = computed(() => this.auth.hasPermission('repairs:write'));
 
+  private readonly rowRouter = inject(Router);
+  readonly rowChevron = ChevronRight;
+  openRepair(id: string): void { void this.rowRouter.navigate(['/repairs', 'detail', id]); }
+  readonly plusIcon = Plus;
+  readonly wrenchIcon = Wrench;
+  readonly filterIcon = ListFilter;
+  readonly activeFilterCount = computed(() => [this.selectedStatus(), this.serviceMode(), this.selectedDispatchType()].filter(Boolean).length);
   readonly chevronDownIcon = ChevronDownIcon;
   readonly buildingIcon = Building2;
   readonly houseIcon = House;

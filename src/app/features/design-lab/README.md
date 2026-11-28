@@ -8,3 +8,6 @@ Use charcoal canvas #101113, restrained borders, compact typography and orange o
 
 ## Compact actions and drawers
 Primary action surface #ff9554, hover #ffa66f, pressed #ed8240, ink #20140e. No glow or gradient. Standard compact drawer width 400px; larger workflows may use wider drawers. Header 14px/16px, field gap 10px, footer 10px/16px, 34px minimum control height. Keep content scrollable and actions reachable. Migrate legacy drawers individually.
+
+## Workspace navigation and select standard
+Group routes by workflow, preserve permissions and feature flags, hide empty groups, and retain installed-app navigation. Keep location switching and operational header controls accessible. Use the approved `.ops-mat-select` trigger with its independent 16px masked chevron, 12px inset and centered rotation; do not restore the native Material arrow.

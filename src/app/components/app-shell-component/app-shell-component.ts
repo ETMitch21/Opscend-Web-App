@@ -379,6 +379,28 @@ export class AppShellComponent implements OnInit, OnDestroy {
       });
   }
 
+  /** Group existing, permission-filtered routes without changing route contracts. */
+  get workspaceNavGroups(): { label: string; items: NavItem[] }[] {
+    const visible = this.visibleNavItems;
+    const pick = (...labels: string[]) => labels.flatMap(label => visible.filter(item => item.label === label && !item.route?.startsWith('/app/')));
+    const secondary = (label: string): NavItem[] => this.visibleSecondaryNavGroups.find(group => group.label === label)?.items ?? [];
+    const extra = (item: NavItem): NavItem[] => this.canAccess(item.permission) ? [item] : [];
+    const groups = [
+      { label: 'Workspace', items: [...pick('Dashboard'), ...extra({ label: 'Work queue', route: '/work-queue', icon: this.workQueueIcon, permission: 'workQueue:read' }), ...extra({ label: 'Inbox', route: '/communications', icon: this.inboxIcon, permission: 'communications:read', badgeCount: () => this.unreadCommunicationCount() })] },
+      { label: 'Operations', items: pick('Repairs', 'Quotes', 'Customers', 'CRM', 'Business') },
+      { label: 'Commerce', items: pick('Products', 'Services', 'Balances', 'Payment Links') },
+      { label: 'Insights', items: secondary('Insights') },
+      { label: 'Tools', items: secondary('Tools') },
+      { label: 'Team', items: secondary('Team') },
+      { label: 'Apps', items: visible.filter(item => item.route?.startsWith('/app/')) },
+      { label: 'Administration', items: [{ label: 'Settings', route: '/settings', icon: this.wrenchIcon }] },
+    ];
+    const included = new Set(groups.flatMap(group => group.items.map(item => item.route ?? item.label)));
+    const remaining = visible.filter(item => !included.has(item.route ?? item.label));
+    if (remaining.length) groups.splice(groups.length - 1, 0, { label: 'Other', items: remaining });
+    return groups.filter(group => group.items.length > 0);
+  }
+
   get installedAppsSectionStart(): number {
     return this.visibleNavItems.findIndex(item => item.route?.startsWith('/app/'));
   }

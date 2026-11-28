@@ -273,3 +273,79 @@
 .ops-mat-select[aria-expanded="true"]::after {
   transform: translateY(-50%) rotate(180deg);
 }
+/* Repairs workspace: scoped shared controls and Material overlay. */
+.ops-v2-main:has(app-repairs-overview) { background:#101113; padding:0; }
+.repairs-v2 .ops-select-shell { --ops-control:#202126; --ops-ink:#ececef; --ops-field-border:#45464e; }
+.repairs-v2 .ops-mat-select { color:#ececef; font-size:13px; }
+.ops-v2-shell .repairs-v2 .ops-mat-select .mat-mdc-select-trigger { min-height:34px; }
+.repairs-v2 .mat-mdc-select-value { color:#ececef; }
+.repairs-v2 .ops-select-shell:focus-within { border-color:#ff9554; }
+.cdk-overlay-pane .ops-dark-select-panel.mat-mdc-select-panel { background:#191a1e; border:1px solid #45464e; border-radius:8px; padding:4px; margin-block:4px; box-shadow:0 8px 24px #0005; color:#ececef; }
+.cdk-overlay-pane .ops-dark-select-panel .mat-mdc-option { min-height:34px; padding-inline:10px; border-radius:5px; color:#ececef; font-size:13px; }
+.cdk-overlay-pane .ops-dark-select-panel .mdc-list-item__primary-text { color:#ececef; font-size:13px; }
+.cdk-overlay-pane .ops-dark-select-panel .mat-mdc-option:is(:hover,.mat-mdc-option-active) { background:#28292f; }
+.cdk-overlay-pane .ops-dark-select-panel .mat-mdc-option.mdc-list-item--selected { background:#352a22; }
+.repairs-v2 :is(app-table-pagination,app-table-page-size) .bg-white { background:#191a1e; }
+.repairs-v2 :is(app-table-pagination,app-table-page-size) :is(.text-gray-500,.text-gray-600,.text-gray-700) { color:#a0a1aa; }
+.repairs-v2 :is(app-table-pagination,app-table-page-size) .border-gray-200 { border-color:#303137; }
+.repairs-v2 app-table-pagination button:hover:not(:disabled) { background:#28292f; }
+.repairs-v2 app-table-page-size select { color:#ececef; color-scheme:dark; border-radius:6px; }
+
+/* Reusable compact workspace controls. */
+.ops-v2-shell .ops-action-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; height:34px; padding:0 11px; border:1px solid #45464e; border-radius:6px; font:500 13px/20px Inter,system-ui,sans-serif; color:#ececef; background:#202126; cursor:pointer; white-space:nowrap; }
+.ops-v2-shell .ops-action-button:hover { background:#28292f; }
+.ops-search-field { display:flex; align-items:center; gap:8px; height:34px; width:min(260px,100%); padding:0 10px; background:#202126; color:#a0a1aa; border:1px solid #45464e; border-radius:6px; box-sizing:border-box; }
+.ops-v2-shell .ops-search-field input { flex:1; min-width:0; border:0; background:transparent; padding:0; height:100%; font:400 13px/20px Inter,system-ui,sans-serif; color:#ececef; outline:none; }
+.ops-search-field:focus-within { border-color:#ff9554; }
+.ops-search-field lucide-icon { display:flex; flex:none; }
+.ops-filter-popover { position:relative; }
+.ops-filter-popover summary { list-style:none; }
+.ops-filter-popover summary::-webkit-details-marker { display:none; }
+.ops-filter-panel { position:absolute; top:calc(100% + 6px); left:0; z-index:20; width:min(260px,80vw); display:grid; gap:10px; padding:12px; border:1px solid #45464e; border-radius:8px; background:#191a1e; box-shadow:0 8px 24px #0005; }
+.ops-filter-heading { display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+.ops-text-action { color:#ff9554; font-size:12px; cursor:pointer; }
+.ops-count { background:#35302c; color:#ff9554; padding:0 5px; border-radius:4px; }
+.ops-v2-shell .ops-pagination-dark { background:#191a1e; color:#a0a1aa; padding:8px 12px; gap:8px; font-size:12px; border-color:#303137; border-radius:0 0 6px 6px; }
+.ops-pagination-dark :is(.text-sm,.text-gray-700,.text-gray-500) { color:#a0a1aa; font-size:12px; }
+.ops-pagination-dark button { width:30px; height:30px; border-radius:6px; }
+.ops-pagination-dark .ops-page-size { width:116px; --ops-control:#202126; --ops-ink:#ececef; --ops-field-border:#45464e; }
+.ops-v2-shell .ops-pagination-dark .ops-mat-select .mat-mdc-select-trigger { min-height:30px; font-size:12px; }
+
+.ops-v2-shell .ops-pagination-dark .ops-page-size { width:150px; min-width:150px; }
+
+/* Shared sticky table headers: opt in with .ops-table-scroll. */
+.ops-table-scroll > table > thead > tr > th {
+  position:sticky; top:0; z-index:1; background:#202126;
+  box-shadow:inset 0 -1px #303137;
+}
+.ops-table-scroll:focus-visible { outline:2px solid #ff9554; outline-offset:-2px; }
+.ops-v2-main:has(app-repairs-overview) > div > app-repairs { display:block; height:100%; min-height:0; min-width:0; }
+@media (min-height:541px) {
+  .ops-v2-main:has(app-repairs-overview) { overflow:hidden; }
+}
+
+/* Full-page tables: fill the remaining bounded flex workspace.
+   Opt in only when the parent provides a definite available height. */
+@media (min-height:541px) {
+  .ops-table-workspace {
+    display:flex; flex-direction:column; flex:1 1 0%;
+    min-height:0; min-width:0;
+  }
+  .ops-table-workspace > .ops-table-scroll,
+  .ops-table-workspace > .ops-table-state {
+    flex:1 1 0%; min-height:0; min-width:0; overflow:auto;
+  }
+  .ops-table-workspace > .ops-table-state {
+    padding-block:16px; justify-content:safe center;
+  }
+  .ops-table-workspace > app-table-pagination { flex:0 0 auto; }
+}
+
+/* Interactive cursor standards */
+.ops-v2-shell :is(a[href], a[routerlink], button, [role="button"], [role="link"], summary, label:has(input[type="file"])) {
+  cursor: pointer;
+}
+
+.ops-v2-shell :is(button:disabled, [aria-disabled="true"], input:disabled, select:disabled) {
+  cursor: not-allowed;
+}

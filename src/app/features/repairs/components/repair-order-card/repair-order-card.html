@@ -1,24 +1,20 @@
-<div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
-  <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+<div class="rd-order-surface rd-order-native">
+  <div class="rd-order-heading flex items-center justify-between">
     <div>
       <div class="mb-2 flex items-center gap-2">
         <lucide-icon [name]="icons.Package2" class="h-4 w-4 text-gray-400"></lucide-icon>
-        <h2 class="text-sm font-semibold text-gray-900">Order</h2>
+        <h2 class="text-sm font-semibold text-gray-900">Order @if (order(); as headerOrder) { #{{ headerOrder.orderNumber }} }</h2>
       </div>
 
       @if (order(); as orderValue) {
       <div class="flex flex-wrap items-center gap-2">
-        <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-          {{ orderValue.orderNumber }}
-        </span>
-
-        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
+        <span class="rd-order-status inline-flex items-center gap-1.5 text-xs font-medium"
           [ngClass]="statusClasses(orderValue.paymentStatus)">
           <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
           {{ orderValue.paymentStatus | titlecase }}
         </span>
 
-        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
+        <span class="rd-order-status inline-flex items-center gap-1.5 text-xs font-medium"
           [ngClass]="statusClasses(orderValue.fulfillmentStatus)">
           <span class="h-1.5 w-1.5 rounded-full bg-current opacity-60"></span>
           {{ orderValue.fulfillmentStatus | titlecase }}
@@ -30,15 +26,8 @@
     @if (order(); as headerOrder) {
     @if (headerOrder.paymentStatus !== 'voided') {
     <div class="flex items-center gap-3">
-      <div class="hidden rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-right sm:block">
-        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-          {{ balanceSummaryLabel() }}
-        </p>
-        <p class="mt-0.5 text-sm font-bold" [ngClass]="balanceSummaryCents() > 0 ? 'text-amber-700' : 'text-emerald-700'">
-          {{ money(balanceSummaryCents()) }}
-        </p>
-      </div>
-
+      <button type="button" class="rd-secondary rd-accent-button" [disabled]="saving() || !canOpenPaymentModal()" (click)="openPaymentModal()">{{ primaryPaymentButtonLabel() }}</button>
+      @if (canEditItems() && hasUnsavedItemChanges()) { <button type="button" class="rd-secondary" [disabled]="saving() || !canSaveItems()" (click)="saveItems()">{{ saveButtonLabel() }}</button> }
       <div class="relative" (click)="$event.stopPropagation()">
         <button type="button"
           class="cursor-pointer inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200"
@@ -47,7 +36,7 @@
           aria-label="Order actions"
           title="Order actions"
           (click)="toggleOrderMenu()">
-          <lucide-icon [name]="icons.Menu" class="h-5 w-5"></lucide-icon>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
         </button>
 
         @if (orderMenuOpen()) {
@@ -151,6 +140,12 @@
     </div>
     } @else if (order(); as orderValue) {
     <div class="space-y-6">
+      <div class="rd-order-summary">
+        <div><lucide-icon [name]="icons.Package2" class="h-5 w-5"></lucide-icon><span>Order total</span><strong>{{ money(orderValue.totals.totalCents) }}</strong></div>
+        <div><lucide-icon [name]="icons.CreditCard" class="h-5 w-5"></lucide-icon><span>Paid</span><strong>{{ money(orderValue.totals.paidCents) }}</strong></div>
+        <div><lucide-icon [name]="icons.ReceiptText" class="h-5 w-5"></lucide-icon><span>Balance due</span><strong [class.rd-warning]="orderValue.totals.balanceCents > 0">{{ money(orderValue.totals.balanceCents) }}</strong></div>
+      </div>
+      <h3 class="rd-order-section-title">Items</h3>
       <form [formGroup]="itemsForm">
         @if (canEditItems()) {
         @if (orderValue.paymentStatus !== 'voided') {
@@ -254,12 +249,12 @@
           <div [formGroupName]="$index" class="group border-b border-gray-200">
             <div class="grid grid-cols-[1fr_80px_100px_120px_80px] items-center gap-3 px-3 py-2">
               <div class="min-w-0">
-                <h3 class="max-w-[155px] truncate text-sm text-gray-900">
+                <h3 class="break-words text-sm text-gray-900">
                   {{ item.get('name')?.value || 'Untitled item' }}
                 </h3>
 
                 @if (item.get('notes')?.value) {
-                <p class="mt-0.5 max-w-[150px] truncate text-xs text-gray-500">
+                <p class="mt-0.5 break-words text-xs text-gray-500">
                   {{ item.get('notes')?.value }}
                 </p>
                 }
@@ -307,11 +302,10 @@
               <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div>
                   <label class="mb-1 block text-xs font-medium text-gray-500">Type</label>
-                  <select formControlName="type"
-                    class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
-                    <option value="service">Service</option>
-                    <option value="product">Product</option>
-                  </select>
+                  <div class="ops-select-shell rd-order-select"><mat-select class="ops-mat-select" formControlName="type" aria-label="Item type" panelClass="ops-select-panel">
+                    <mat-option value="service">Service</mat-option>
+                    <mat-option value="product">Product</mat-option>
+                  </mat-select></div>
                 </div>
 
                 <div class="md:col-span-2">
@@ -580,15 +574,14 @@
 
         <div>
           <label class="mb-1 block text-xs font-medium text-gray-500">Method</label>
-          <select formControlName="method"
-            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
+          <div class="ops-select-shell rd-order-select"><mat-select class="ops-mat-select" formControlName="method" aria-label="Payment method" panelClass="ops-select-panel">
             @if (stripeAvailable()) {
-            <option value="stripe">Stripe</option>
+            <mat-option value="stripe">Stripe</mat-option>
             }
-            <option value="card">Manual Card</option>
-            <option value="cash">Cash</option>
-            <option value="other">Other</option>
-          </select>
+            <mat-option value="card">Manual Card</mat-option>
+            <mat-option value="cash">Cash</mat-option>
+            <mat-option value="other">Other</mat-option>
+          </mat-select></div>
         </div>
 
         @if (stripeConnectedButNotReady()) {
@@ -680,15 +673,14 @@
 
         <div>
           <label class="mb-1 block text-xs font-medium text-gray-500">Method</label>
-          <select formControlName="method"
-            class="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-gray-300">
+          <div class="ops-select-shell rd-order-select"><mat-select class="ops-mat-select" formControlName="method" aria-label="Payment method" panelClass="ops-select-panel">
             @if (stripeAvailable()) {
-            <option value="stripe">Stripe</option>
+            <mat-option value="stripe">Stripe</mat-option>
             }
-            <option value="card">Manual Card</option>
-            <option value="cash">Cash</option>
-            <option value="other">Other</option>
-          </select>
+            <mat-option value="card">Manual Card</mat-option>
+            <mat-option value="cash">Cash</mat-option>
+            <mat-option value="other">Other</mat-option>
+          </mat-select></div>
         </div>
 
         @if (refundMethod() !== 'stripe') {
